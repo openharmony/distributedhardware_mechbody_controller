@@ -61,6 +61,7 @@
 #include "mc_normal_set_mech_rotation_to_location_cmd.h"
 #include "mc_normal_set_mech_rotation_trace_cmd.h"
 #include "mc_get_mech_protocol_ver_cmd.h"
+#include "mc_set_mech_disconnect_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -72,6 +73,7 @@ public:
     std::shared_ptr<CommonGetMechLimitInfoCmd> CreateGetMechLimitInfoCmd();
     std::shared_ptr<NormalGetMechCapabilityInfoCmd> CreateGetMechCapabilityInfoCmd();
     std::shared_ptr<GetMechProtocolVerCmd> CreateGetMechProtocolVerCmd();
+    std::shared_ptr<SetMechDisconnectCmd> CreateSetMechDisconnectCmd(uint8_t reason);
     std::shared_ptr<GetMechRealNameCmd> CreateGetMechRealNameCmd();
     std::shared_ptr<NormalGetMechBaseInfoCmd> CreateGetMechBaseInfoCmd();
     std::shared_ptr<NormalGetMechPoseInfoCmd> CreateGetMechPoseInfoCmd();

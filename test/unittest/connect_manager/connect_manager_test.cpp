@@ -227,7 +227,7 @@ HWTEST_F(MechConnectManagerTest, GetMechState_001, TestSize.Level3)
     mechInfo.state = AttachmentState::ATTACHED;
     mechConnectManager.mechInfos_.erase(mechInfo);
     AttachmentStateMap ret = mechConnectManager.GetMechState(mechId);
-    EXPECT_EQ(ret, AttachmentStateMap::DETACHED);
+    EXPECT_EQ(ret, AttachmentStateMap::UNKNOWN);
 
     mechConnectManager.mechInfos_.insert(mechInfo);
     ret = mechConnectManager.GetMechState(mechId);

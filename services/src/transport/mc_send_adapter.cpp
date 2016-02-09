@@ -290,7 +290,9 @@ int32_t TransportSendAdapter::OnReceive(bool isAck, uint16_t seqNo, std::shared_
     }
     recvEventHandler_->PostTask(responseTask);
     const std::string taskName = RESPONSE_TIMEOUT_TASK + std::to_string(seqNo);
+    const std::string taskNameReset = RESPONSE_TIMEOUT_RESET_TASK + std::to_string(seqNo);
     recvEventHandler_->RemoveTask(taskName);
+    recvEventHandler_->RemoveTask(taskNameReset);
     return ERR_OK;
 }
 
