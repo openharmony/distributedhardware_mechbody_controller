@@ -517,19 +517,15 @@ int32_t MotionManager::Init()
     }
 
     factory.SetFactoryProtocolVer(protocolVer_);
-    switch (protocolVer_) {
-        case 0x01:
-            GetMechRealName();
-            break;
-        case 0x02:
-            SetProtocolVer();
-            GetDeviceBaseInfo();
-            GetDeviceCapabilityInfo();
-            GetDeviceStateInfo();
-            break;
-        default:
-            HILOGW("Unknown protocol version: %{public}d", protocolVer_);
-            break;
+    if (protocolVer_ == 0x01) {
+        GetMechRealName();
+    } else if (protocolVer_ == 0x02) {
+        SetProtocolVer();
+        GetDeviceBaseInfo();
+        GetDeviceCapabilityInfo();
+        GetDeviceStateInfo();
+    } else {
+        HILOGW("Unknown protocol version: %{public}d", protocolVer_);
     }
 
     GetMechLimitInfo();
@@ -817,7 +813,7 @@ void MotionManager::RegisterEventListener()
         notifyListenerType_.push_back(paramCmd->GetCmdType());
     }
     SubscriptionCenter::GetInstance().Subscribe(paramCmd->GetCmdType(), mechEventListener_);
-    if (protocolVer_ == 0x02) {
+    if (protocolVer_ >= 0x02) {
         std::shared_ptr<CommandBase> paramCmd = factory.CreateRegisterMechGenericEventCmd();
         CHECK_POINTER_RETURN(paramCmd, "GenericInfoCmd is empty.");
         {
@@ -1402,7 +1398,7 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
         return ERR_OK;
     }
 
-    if (protocolVer_ == 0x02 && !SetMechCameraInfo_) {
+    if (protocolVer_ >= 0x02 && !SetMechCameraInfo_) {
         HILOGE("device cameraInfo is not enabled");
         return ERR_OK;
     }
@@ -1679,7 +1675,7 @@ void MotionManager::LimitCalculationLocked(EulerAngles& position, RotationAxesSt
 int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &actionControlParams)
 {
     HILOGI("ActionGimbalFeatureControl start.");
-    if (protocolVer_ == 0x02) {
+    if (protocolVer_ >= 0x02) {
         return ERR_OK;
     }
     if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {

@@ -33,6 +33,10 @@ public:
 
     std::shared_ptr<MechDataBuffer> Marshal() const override;
     bool Unmarshal(std::shared_ptr<MechDataBuffer> data);
+    bool RegisterAttachEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset);
+    bool RegisterAxisEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset);
+    bool RegisterPowerEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset);
+    bool DropGenericTLV(std::shared_ptr<MechDataBuffer> data, size_t& offset);
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
     DeviceStateInfo GetParams() const;
