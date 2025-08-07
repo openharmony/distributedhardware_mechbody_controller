@@ -21,10 +21,10 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include <string>
 
-#define private public
-#define protected public
+#define PRIVATE public
+#define PROTECTED public
 #include "mechbody_controller_service.h"
-#undef private
+#undef PRIVATE
 #undef protected
 #include "ipc_skeleton.h"
 #include "securec.h"

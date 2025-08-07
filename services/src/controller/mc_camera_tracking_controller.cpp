@@ -92,7 +92,6 @@ void McCameraTrackingController::UnInit()
 
 int32_t McCameraTrackingController::OnUsingAppChange(const CameraStandard::CameraAppInfo &cameraAppInfo)
 {
-
     cameraAppInfo_ = cameraAppInfo;
     uint32_t tokenId = cameraAppInfo.tokenId;
     HILOGI("The app that is using the camera changes., app token id: %{public}s; ", GetAnonymUint32(tokenId).c_str());
@@ -351,7 +350,7 @@ bool McCameraTrackingController::IsSelectTrackingObject()
     float lastWidth = 0.0f;
     float lastHeight = 0.0f;
     std::lock_guard<std::mutex> lock(roiWindowMutex_);
-    if (roiWindow_.size() < 2) {
+    if (roiWindow_.size() < NUM_2) {
         return false;
     }
     for (const auto &item: roiWindow_) {
@@ -871,7 +870,8 @@ void McCameraTrackingController::RegisterSensorListener()
     HILOGI("success");
 }
 
-void McCameraTrackingController::UnRegisterSensorListener() {
+void McCameraTrackingController::UnRegisterSensorListener()
+{
     if (user.callback == nullptr) {
         return;
     }

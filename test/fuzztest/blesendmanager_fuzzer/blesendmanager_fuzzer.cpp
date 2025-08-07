@@ -21,9 +21,9 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include <string>
 
-#define private public
+#define PRIVATE public
 #include "ble_send_manager.h"
-#undef private
+#undef PRIVATE
 #include "mechbody_controller_log.h"
 #include "securec.h"
 

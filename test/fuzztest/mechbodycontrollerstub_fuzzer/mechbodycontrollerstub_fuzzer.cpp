@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
- #include "mechbodycontrollerstub_fuzzer.h"
+#include "mechbodycontrollerstub_fuzzer.h"
 
 #include <cstddef>
 #include <cstdint>
