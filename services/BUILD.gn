@@ -1,0 +1,115 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+ohos_shared_library("mechbody_service") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    boundary_sanitize = true
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+    integer_overflow = true
+    ubsan = true
+  }
+
+  install_enable = true
+
+  cflags = [
+    "-frtti",
+    "-fpie",
+  ]
+
+  sources = [
+    "src/connect/bluetooth_state_adapter.cpp",
+    "src/connect/bluetooth_state_listener.cpp",
+    "src/connect/mc_connect_manager.cpp",
+    "src/controller/mc_camera_tracking_controller.cpp",
+    "src/controller/mc_controller_ipc_death_listener.cpp",
+    "src/controller/mc_controller_manager.cpp",
+    "src/transport/mc_send_adapter.cpp",
+    "src/mechbody_controller_service.cpp",
+    "src/mechbody_controller_stub.cpp",
+    "src/mechbody_controller_utils.cpp",
+    "src/motion/mc_motion_manager.cpp",
+    "src/transport/command/mc_command_base.cpp",
+    "src/transport/command/mc_command_factory.cpp",
+    "src/transport/command/mc_get_mech_camera_tracking_layout_cmd.cpp",
+    "src/transport/command/mc_get_mech_capability_info_cmd.cpp",
+    "src/transport/command/mc_register_mech_camera_key_event_cmd.cpp",
+    "src/transport/command/mc_register_mech_control_result_cmd.cpp",
+    "src/transport/command/mc_register_mech_position_info_cmd.cpp",
+    "src/transport/command/mc_register_mech_state_info_cmd.cpp",
+    "src/transport/command/mc_register_mech_tracking_enable_cmd.cpp",
+    "src/transport/command/mc_register_mech_wheel_data_cmd.cpp",
+    "src/transport/command/mc_set_mech_camera_info_cmd.cpp",
+    "src/transport/command/mc_set_mech_camera_tracking_enable_cmd.cpp",
+    "src/transport/command/mc_set_mech_camera_tracking_frame_cmd.cpp",
+    "src/transport/command/mc_set_mech_camera_tracking_layout_cmd.cpp",
+    "src/transport/command/mc_set_mech_config_cmd.cpp",
+    "src/transport/command/mc_set_mech_hid_preemptive_cmd.cpp",
+    "src/transport/command/mc_set_mech_rotation_by_speed_cmd.cpp",
+    "src/transport/command/mc_set_mech_rotation_cmd.cpp",
+    "src/transport/command/mc_set_mech_rotation_trace_cmd.cpp",
+    "src/transport/command/mc_set_mech_stop_cmd.cpp",
+    "src/transport/mc_data_buffer.cpp",
+    "src/transport/mc_protocol_convertor.cpp",
+    "src/transport/mc_subscription_center.cpp",
+    "src/ble_send_manager.cpp",
+  ]
+
+  include_dirs = [
+    "include",
+    "include/connect",
+    "include/controller",
+    "include/motion",
+    "include/transport",
+    "include/transport/command",
+    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/interface/inner_api",
+  ]
+
+  ldflags = [
+    "-Wl,-z,relro",
+    "-Wl,-z,now",
+  ]
+
+  external_deps = [
+    "ability_base:base",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libtokenid_sdk",
+    "access_token:libtokensetproc_shared",
+    "bluetooth:btframework",
+    "bluetooth:btcommon",
+    "camera_framework:camera_framework",
+    "cJSON:cjson",
+    "c_utils:utils",
+    "eventhandler:libeventhandler",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "input:libmmi-client",
+    "input:oh_input_manager",
+    "ipc:ipc_core",
+    "os_account:libaccountkits",
+    "os_account:os_account_innerkits",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "sensor:sensor_interface_native",
+    "window_manager:libdm_lite"
+  ]
+
+  install_images = [ system_base_dir ]
+  part_name = "mechbody_controller"
+  subsystem_name = "distributedhardware"
+}
