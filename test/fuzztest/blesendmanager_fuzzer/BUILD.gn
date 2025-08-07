@@ -1,0 +1,77 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/features.gni")
+import("//build/ohos.gni")
+import("//build/test.gni")
+import(
+    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/mechbody.gni")
+
+ohos_fuzztest("BleSendManagerFuzzTest") {
+  module_out_path = "mechbody_controller/"
+  mechbody_path =
+      "//vendor/huawei/foundation/distributedhardware/mechbody_controller"
+  fuzz_config_file = "${mechbody_path}/test/fuzztest/blesendmanager_fuzzer"
+  include_dirs = [
+    "${mechbody_path}/services/include",
+    "${mechbody_path}/services/include/connect",
+    "${mechbody_path}/services/include/controller",
+    "${mechbody_path}/services/include/motion",
+    "${mechbody_path}/services/include/transport",
+    "${mechbody_path}/services/include/transport/command",
+    "${mechbody_path}/interface/napi/mech_manager",
+  ]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+  sources = [
+    "${mechbody_path}/services/src/ble_send_manager.cpp",
+    "${mechbody_path}/test/fuzztest/blesendmanager_fuzzer/blesendmanager_fuzzer.cpp",
+  ]
+
+  deps = [ "${mechbody_path}/services:mechbody_service" ]
+
+  external_deps = [
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
+    "bluetooth:btframework",
+    "bluetooth:btcommon",
+    "camera_framework:camera_framework",
+    "cJSON:cjson_static",
+    "c_utils:utils",
+    "device_manager:devicemanagersdk",
+    "eventhandler:libeventhandler",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "input:libmmi-client",
+    "input:oh_input_manager",
+    "ipc:ipc_single",
+    "os_account:libaccountkits",
+    "os_account:os_account_innerkits",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "selinux_adapter:librestorecon",
+    "sensor:sensor_interface_native",
+    "window_manager:libdm_lite",
+  ]
+}
+
+group("fuzztest") {
+  testonly = true
+  deps = [ ":BleSendManagerFuzzTest" ]
+}
