@@ -27,30 +27,29 @@ namespace {
 void MechControllerIpcDeathListener::OnRemoteDied(const wptr <IRemoteObject> &object)
 {
     HILOGE("IRemoteObject dead; ");
-    if(RemoteObjectType::DEVICE_ATTACH_CALLBACK == objectType_){
+    if (RemoteObjectType::DEVICE_ATTACH_CALLBACK == objectType_) {
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().deviceAttachCallbackMutex);
         MechBodyControllerService::GetInstance().deviceAttachCallback_.erase(tokenId_);
         return;
     }
 
-    if(RemoteObjectType::TRACKING_EVENT_CALLBACK == objectType_){
+    if (RemoteObjectType::TRACKING_EVENT_CALLBACK == objectType_) {
         std::lock_guard<std::mutex> lock(McCameraTrackingController::GetInstance().trackingEventCallbackMutex_);
         McCameraTrackingController::GetInstance().trackingEventCallback_.erase(tokenId_);
         return;
     }
 
-    if(RemoteObjectType::ROTATION_AXES_STATUS_CALLBACK == objectType_){
+    if (RemoteObjectType::ROTATION_AXES_STATUS_CALLBACK == objectType_) {
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().AxesStatusChangeCallbackMutex_);
         MechBodyControllerService::GetInstance().rotationAxesStatusChangeCallback_.erase(tokenId_);
         return;
     }
 
-    if(RemoteObjectType::COMMAND_CHANNEL == objectType_){
+    if (RemoteObjectType::COMMAND_CHANNEL == objectType_) {
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().cmdChannelMutex_);
         MechBodyControllerService::GetInstance().cmdChannels_.erase(tokenId_);
         return;
     }
-
 }
 }
 }

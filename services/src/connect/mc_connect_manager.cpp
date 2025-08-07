@@ -55,7 +55,6 @@ void MechConnectManager::UnInit()
 
 int32_t MechConnectManager::NotifyMechConnect(MechInfo& mechInfo)
 {
-
     {
         std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
         GenConnectMechInfo(mechInfo);

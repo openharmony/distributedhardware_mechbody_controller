@@ -311,19 +311,19 @@ int32_t McCameraTrackingController::ParseRectToROI(CameraStandard::Rect &rect, R
         HILOGW("failed, tracking rect lost, width or height is zero.");
         return INVALID_PARAMETERS_ERR;
     }
-    if(currentCameraInfo_->cameraType == CameraType::FRONT){
-        if(sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::LEFT){
+    if (currentCameraInfo_->cameraType == CameraType::FRONT) {
+        if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::LEFT) {
             roi.x = NUM_1 - rect.topLeftX - roi.width / NUM_2;
             roi.y = NUM_1 - rect.topLeftY - roi.height / NUM_2;
-        }else if(sensorRotation_ == MobileRotation::RIGHT || sensorRotation_ == MobileRotation::DOWN){
+        } else if (sensorRotation_ == MobileRotation::RIGHT || sensorRotation_ == MobileRotation::DOWN) {
             roi.x = rect.topLeftX + roi.width / NUM_2;
             roi.y = rect.topLeftY + rect.height / NUM_2;
         }
-    }else if(currentCameraInfo_->cameraType == CameraType::BACK){
-        if(sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::LEFT){
+    } else if (currentCameraInfo_->cameraType == CameraType::BACK) {
+        if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::LEFT) {
             roi.x = rect.topLeftX + roi.width / NUM_2;
             roi.y = rect.topLeftY + roi.height / NUM_2;
-        }else if(sensorRotation_ == MobileRotation::RIGHT || sensorRotation_ == MobileRotation::DOWN){
+        } else if (sensorRotation_ == MobileRotation::RIGHT || sensorRotation_ == MobileRotation::DOWN) {
             roi.x = NUM_1 - rect.topLeftX - roi.width / NUM_2;
             roi.y = NUM_1 - rect.topLeftY - roi.height / NUM_2;
         }
@@ -334,7 +334,7 @@ int32_t McCameraTrackingController::ParseRectToROI(CameraStandard::Rect &rect, R
 void McCameraTrackingController::AddROIToWindow(CameraStandard::Rect &rect)
 {
     ROI roi;
-    if(ParseRectToROI(rect, roi) != ERR_OK){
+    if (ParseRectToROI(rect, roi) != ERR_OK) {
         return;
     }
     std::lock_guard<std::mutex> lock(roiWindowMutex_);
@@ -351,20 +351,20 @@ bool McCameraTrackingController::IsSelectTrackingObject()
     float lastWidth = 0.0f;
     float lastHeight = 0.0f;
     std::lock_guard<std::mutex> lock(roiWindowMutex_);
-    if(roiWindow_.size() < 2){
+    if (roiWindow_.size() < 2) {
         return false;
     }
     for (const auto &item: roiWindow_) {
-        if(lastX > 0 && std::abs(item.x - lastX) > TOUCH_CHAECK){
+        if (lastX > 0 && std::abs(item.x - lastX) > TOUCH_CHAECK) {
             return false;
         }
-        if(lastX > 0 && std::abs(item.y - lastY) > TOUCH_CHAECK){
+        if (lastX > 0 && std::abs(item.y - lastY) > TOUCH_CHAECK) {
             return false;
         }
-        if(lastX > 0 && std::abs(item.width - lastWidth) > TOUCH_CHAECK){
+        if (lastX > 0 && std::abs(item.width - lastWidth) > TOUCH_CHAECK) {
             return false;
         }
-        if(lastX > 0 && std::abs(item.height - lastHeight) > TOUCH_CHAECK){
+        if (lastX > 0 && std::abs(item.height - lastHeight) > TOUCH_CHAECK) {
             return false;
         }
         lastX = item.x;
@@ -511,7 +511,7 @@ void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> 
 }
 
 int32_t McCameraTrackingController::UpdateMotionsWithTrackingData(
-const std::shared_ptr<TrackingFrameParams> &params, int32_t trackingObjectId)
+    const std::shared_ptr<TrackingFrameParams> &params, int32_t trackingObjectId)
 {
     if (params == nullptr) {
         HILOGW("Params is null for tracking ID: %{public}d", trackingObjectId);
@@ -543,7 +543,7 @@ int32_t McCameraTrackingController::SetTrackingEnabled(const uint32_t &tokenId, 
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
         std::map<int32_t, std::shared_ptr<MotionManager>> motionManagers =
             MechBodyControllerService::GetInstance().motionManagers_;
-        for (const auto &item: motionManagers){
+        for (const auto &item: motionManagers) {
             int32_t mechId = item.first;
             std::shared_ptr<MotionManager> motionManager = item.second;
             if (motionManager == nullptr) {
@@ -638,9 +638,9 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
         MessageOption option;
         CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
         int32_t error = callback->SendRequest(
-                static_cast<uint32_t>(IMechBodyControllerCode::TRACKING_EVENT_CALLBACK), data, reply, option);
+            static_cast<uint32_t>(IMechBodyControllerCode::TRACKING_EVENT_CALLBACK), data, reply, option);
         HILOGI("notify tracking event to tokenId: %{public}u; result: %{public}s", tokenId,
-               error == ERR_NONE ? "success" : "failed");
+            error == ERR_NONE ? "success" : "failed");
     }
     return ERR_OK;
 }
@@ -725,11 +725,13 @@ int32_t McCameraTrackingController::GetTrackingLayout(const uint32_t &tokenId,
     return ERR_OK;
 }
 
-std::shared_ptr<CameraInfo> McCameraTrackingController::GetCurrentCameraInfo() const{
+std::shared_ptr<CameraInfo> McCameraTrackingController::GetCurrentCameraInfo() const
+{
     return currentCameraInfo_;
 }
 
-void McCameraTrackingController::SensorCallback(SensorEvent* event){
+void McCameraTrackingController::SensorCallback(SensorEvent* event)
+{
     if (event == nullptr) {
         return;
     }
@@ -751,7 +753,8 @@ void McCameraTrackingController::SensorCallback(SensorEvent* event){
     }
 }
 
-MobileRotation McCameraTrackingController::CalculateSensorRotation(GravityData* gravityData) {
+MobileRotation McCameraTrackingController::CalculateSensorRotation(GravityData* gravityData)
+{
     if (gravityData == nullptr) {
         return MobileRotation::UP;
     }
@@ -848,7 +851,7 @@ void McCameraTrackingController::RegisterTrackingListener()
 
 void McCameraTrackingController::UnRegisterTrackingListener()
 {
-    if(pMechSession == nullptr){
+    if (pMechSession == nullptr) {
         return;
     }
     pMechSession->EnableMechDelivery(false);
@@ -882,13 +885,13 @@ void McCameraTrackingController::UnRegisterSensorListener() {
 
 float McCameraTrackingController::ParseLayout(CameraTrackingLayout &cameraTrackingLayout)
 {
-    if(cameraTrackingLayout == CameraTrackingLayout::LEFT){
+    if (cameraTrackingLayout == CameraTrackingLayout::LEFT) {
         return LAYOUT_LEFT;
     }
-    if(cameraTrackingLayout == CameraTrackingLayout::MIDDLE){
+    if (cameraTrackingLayout == CameraTrackingLayout::MIDDLE) {
         return LAYOUT_MIDDLE;
     }
-    if(cameraTrackingLayout == CameraTrackingLayout::RIGHT){
+    if (cameraTrackingLayout == CameraTrackingLayout::RIGHT) {
         return LAYOUT_RIGHT;
     }
     return LAYOUT_MIDDLE;
@@ -896,13 +899,13 @@ float McCameraTrackingController::ParseLayout(CameraTrackingLayout &cameraTracki
 
 float McCameraTrackingController::ParseReverseLayout(CameraTrackingLayout &cameraTrackingLayout)
 {
-    if(cameraTrackingLayout == CameraTrackingLayout::LEFT){
+    if (cameraTrackingLayout == CameraTrackingLayout::LEFT) {
         return LAYOUT_RIGHT;
     }
-    if(cameraTrackingLayout == CameraTrackingLayout::MIDDLE){
+    if (cameraTrackingLayout == CameraTrackingLayout::MIDDLE) {
         return LAYOUT_MIDDLE;
     }
-    if(cameraTrackingLayout == CameraTrackingLayout::RIGHT){
+    if (cameraTrackingLayout == CameraTrackingLayout::RIGHT) {
         return LAYOUT_LEFT;
     }
     return LAYOUT_MIDDLE;
@@ -917,7 +920,7 @@ void MechSessionCallbackImpl::OnCameraAppInfo(const std::vector<CameraStandard::
 {
     // There is currently only one application information.
     HILOGI("app info size: %{public}zu;", cameraAppInfos.size());
-    if(!cameraAppInfos.empty()){
+    if (!cameraAppInfos.empty()) {
         HILOGI("app width: %{public}d; height: %{public}d", cameraAppInfos[0].width, cameraAppInfos[0].height);
         McCameraTrackingController::GetInstance().OnUsingAppChange(cameraAppInfos[0]);
     }

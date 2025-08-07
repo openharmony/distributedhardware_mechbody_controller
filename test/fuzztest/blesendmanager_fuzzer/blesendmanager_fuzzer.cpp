@@ -43,9 +43,10 @@ BleSendManager& bleSendManager = BleSendManager::GetInstance();
 
 class MyBleReceiveListener : public BleReceviceListener {
 public:
-    MyBleReceiveListener(){}
+    MyBleReceiveListener() {}
 
-    int32_t OnReceive(const uint8_t *data, uint32_t dataLen) override {
+    int32_t OnReceive(const uint8_t *data, uint32_t dataLen) override
+    {
         return ERR_OK;
     }
     virtual ~MyBleReceiveListener() {}

@@ -62,7 +62,7 @@ int32_t McControllerManager::UnRegisterTrackingEventCallback(const uint32_t &tok
 {
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     int32_t unregisterResult = McCameraTrackingController::GetInstance().UnRegisterTrackingEventCallback(
-            tokenId);
+        tokenId);
     HILOGI("end. result code: %{public}d.", unregisterResult);
     return unregisterResult;
 }
