@@ -13,6 +13,7 @@ The Mechbody Controller includes the following common features:
 ## System Architecture
 
 **Figure 1** OpenHarmony Mechbody Controller Architecture
+![dd8fbe80_8158620.png](https://raw.gitcode.com/user-images/assets/6945035/cfb47fd2-eaec-4367-91e5-fb738ecc28fc/dd8fbe80_8158620.png 'dd8fbe80_8158620.png')
 
 - **Mechanic Kit**: Provides applications with query and control interfaces. Commands such as queries and controls are sent to the accessory side via Bluetooth connection to direct accessories to perform corresponding actions.
 
