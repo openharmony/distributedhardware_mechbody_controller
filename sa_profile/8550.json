@@ -2,7 +2,7 @@
     "process": "mechbody",
     "systemability": [
         {
-            "name": 7811,
+            "name": 8550,
             "libpath": "libmechbody_service.z.so",
             "run-on-create": false,
             "auto-restart": true,

@@ -15,6 +15,6 @@ import("//build/ohos/sa_profile/sa_profile.gni")
 import("//vendor/huawei/foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
 ohos_sa_profile("mechbody_sa_profile") {
-  sources = [ "7811.json" ]
+  sources = [ "8550.json" ]
   part_name = "mechbody_controller"
 }
