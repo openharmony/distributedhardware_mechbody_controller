@@ -287,8 +287,8 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     auto now = std::chrono::system_clock::now();
     int64_t now_millis = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     int64_t delta = now_millis - static_cast<int64_t>(trackingFrameParams->timeStamp);
-    HILOGI("current time: %{public}zu", now_millis);
-    HILOGI("target timestamp: %{public}zu", trackingFrameParams->timeStamp);
+    HILOGI("current time: %{public}lld", now_millis);
+    HILOGI("target timestamp: %{public}llu", trackingFrameParams->timeStamp);
     if (delta < 0) {
         trackingFrameParams->timeDelay = 0;
     } else {

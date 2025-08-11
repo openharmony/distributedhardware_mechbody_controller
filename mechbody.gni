@@ -11,10 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos/sa_profile/sa_profile.gni")
-import("//foundation/distributedhardware/mechbody_controller/mechbody.gni")
-
-ohos_sa_profile("mechbody_sa_profile") {
-  sources = [ "8550.json" ]
-  part_name = "mechbody_controller"
+declare_args() {
+  mechbody_controller_feature_product = true
 }

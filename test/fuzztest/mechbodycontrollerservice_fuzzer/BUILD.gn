@@ -15,12 +15,12 @@ import("//build/config/features.gni")
 import("//build/ohos.gni")
 import("//build/test.gni")
 import(
-    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/mechbody.gni")
+    "//foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
 ohos_fuzztest("MechBodyControllerServiceFuzzTest") {
   module_out_path = "mechbody_controller/"
   mechbody_path =
-      "//vendor/huawei/foundation/distributedhardware/mechbody_controller"
+      "//foundation/distributedhardware/mechbody_controller"
   fuzz_config_file =
       "${mechbody_path}/test/fuzztest/mechbodycontrollerservice_fuzzer"
   include_dirs = [

@@ -19,7 +19,7 @@ mechbody_module_output_path =
     "mechbody_controller/mechbody_controller/mechbodyservicetest"
 
 mechbody_path =
-    "//vendor/huawei/foundation/distributedhardware/mechbody_controller"
+    "//foundation/distributedhardware/mechbody_controller"
 
 config("mech_test_config") {
   visibility = [ ":*" ]

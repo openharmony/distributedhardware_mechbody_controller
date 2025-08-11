@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//vendor/huawei/foundation/distributedhardware/mechbody_controller/mechbody.gni")
+import("//foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
 ohos_shared_library("mechanicmanager_napi") {
   branch_protector_ret = "pac_ret"

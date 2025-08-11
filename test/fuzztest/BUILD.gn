@@ -10,15 +10,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import("//vendor/huawei/foundation/distributedhardware/mechbody_controller/mechbody.gni")
+import("//foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
 group("fuzztest") {
   testonly = true
 
   deps = [
-    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanager_fuzzer:BleSendManagerFuzzTest",
-    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservice_fuzzer:MechBodyControllerServiceFuzzTest",
-    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstub_fuzzer:MechBodyControllerStubFuzzTest",
-    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerutils_fuzzer:MechBodyControllerUtilsFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanager_fuzzer:BleSendManagerFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservice_fuzzer:MechBodyControllerServiceFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstub_fuzzer:MechBodyControllerStubFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerutils_fuzzer:MechBodyControllerUtilsFuzzTest",
   ]
 }

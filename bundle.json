@@ -1,0 +1,71 @@
+{
+    "name": "@ohos/mechbody_controller",
+    "description": "mechbody controller service",
+    "version": "1.0",
+    "license": "Apache License 2.0",
+    "repository": "https://gitcode.com/openharmony-sig/distributedhardware_mechbody_controller",
+    "publishAs": "code-segment",
+    "segment": {
+      "destPath": "foundation/distributedhardware/mechbody_controller"
+    },
+    "dirs": {},
+    "scripts": {},
+    "component": {
+      "name": "mechbody_controller",
+      "subsystem": "distributedhardware",
+      "syscap": [
+        "SystemCapability.Mechanic.Core"
+      ],
+      "adapted_system_type": [ "standard" ],
+      "features" : [
+        "mechbody_controller_feature_product"
+      ],
+      "rom": "",
+      "ram": "",
+      "deps": {
+        "components": [
+          "access_token",
+          "ability_base",
+          "bluetooth",
+          "camera_framework",
+          "cJSON",
+          "c_utils",
+          "eventhandler",
+          "graphic_surface",
+          "ffrt",
+          "hilog",
+          "init",
+          "ipc",
+          "napi",
+          "safwk",
+          "samgr",
+          "ability_runtime",
+          "input",
+          "window_manager",
+          "sensor",
+          "os_account"
+        ],
+        "third_party": []
+      },
+      "build": {
+        "sub_component": [
+          "//foundation/distributedhardware/mechbody_controller/services:mechbody_service",
+          "//foundation/distributedhardware/mechbody_controller/interface/napi/mech_manager:mechanicmanager_napi",
+          "//foundation/distributedhardware/mechbody_controller/etc/init:etc",
+          "//foundation/distributedhardware/mechbody_controller/sa_profile:mechbody_sa_profile"
+        ],
+        "group_type": {
+          "base_group": [],
+          "fwk_group": [],
+          "service_group": [
+            "//foundation/distributedhardware/mechbody_controller/services:mechbody_service"
+          ]
+        },
+        "inner_kits": [],
+        "test": [
+          "//foundation/distributedhardware/mechbody_controller/test/fuzztest:fuzztest",
+          "//foundation/distributedhardware/mechbody_controller/test/unittest:unittest"
+        ]
+      }
+    }
+  }
