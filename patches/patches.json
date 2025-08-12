@@ -1,0 +1,14 @@
+{
+    "patches": [
+      {
+        "project":"productdefine_common",
+        "path":"productdefine/common",
+        "pr_url":"https://gitee.com/openharmony/productdefine_common/pulls/1045"
+      },
+      {
+        "project":"security_selinux_adapter",
+        "path":"base/security/selinux_adapter",
+        "pr_url":"https://gitee.com/openharmony/security_selinux_adapter/pulls/6864"
+      }
+    ]
+  }

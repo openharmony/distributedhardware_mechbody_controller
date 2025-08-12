@@ -15,6 +15,8 @@
 
 #include "mc_protocol_convertor.h"
 
+#include <securec.h>
+
 #include "mechbody_controller_log.h"
 
 namespace OHOS {

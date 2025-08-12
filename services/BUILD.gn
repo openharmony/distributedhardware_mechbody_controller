@@ -76,7 +76,7 @@ ohos_shared_library("mechbody_service") {
     "include/motion",
     "include/transport",
     "include/transport/command",
-    "//vendor/huawei/foundation/distributedhardware/mechbody_controller/interface/inner_api",
+    "//foundation/distributedhardware/mechbody_controller/interface/inner_api",
   ]
 
   ldflags = [
