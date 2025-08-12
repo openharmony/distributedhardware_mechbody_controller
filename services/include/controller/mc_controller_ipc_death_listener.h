@@ -22,7 +22,7 @@
 namespace OHOS {
 namespace MechBodyController {
 
-enum class RemoteObjectType : int32_t{
+enum class RemoteObjectType : int32_t {
     DEVICE_ATTACH_CALLBACK = 0,
     TRACKING_EVENT_CALLBACK = 1,
     ROTATION_AXES_STATUS_CALLBACK = 2,

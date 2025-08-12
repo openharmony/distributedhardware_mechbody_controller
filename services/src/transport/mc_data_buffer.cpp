@@ -15,7 +15,7 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <securec.h> 
+#include <securec.h>
 #include "mc_data_buffer.h"
 #include "mechbody_controller_log.h"
 

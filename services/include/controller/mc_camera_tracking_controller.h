@@ -34,7 +34,7 @@ struct AppSetting {
     CameraTrackingLayout cameraTrackingLayout = CameraTrackingLayout::DEFAULT;
 };
 
-struct CameraInfo{
+struct CameraInfo {
     int32_t targetId;
     float sensorWidth = 36.0f; // All devices have sensor width equivalent to 36mm
     float sensorHeight = 24.0f; // All devices have sensor height equivalent to 24mm
@@ -48,7 +48,8 @@ struct CameraInfo{
     CameraTrackingLayout currentCameraTrackingLayout = CameraTrackingLayout::DEFAULT;
     CameraType cameraType = CameraType::BACK;
 
-    std::string ToString() {
+    std::string ToString()
+    {
         return "targetId: " + std::to_string(targetId) +
                ", sensorWidth: " + std::to_string(sensorWidth) +
                ", sensorHeight: " + std::to_string(sensorHeight) +
@@ -62,8 +63,6 @@ struct CameraInfo{
                ", currentCameraTrackingLayout: " + std::to_string(static_cast<int32_t>(currentCameraTrackingLayout)) +
                ", cameraType: " + std::to_string(static_cast<uint8_t>(cameraType));
     }
-
-
 };
 
 enum class TrackingObjectType : uint8_t {
@@ -88,7 +87,7 @@ public:
     void OnCameraAppInfo(const std::vector<CameraStandard::CameraAppInfo> &cameraAppInfos) override;
 };
 
-class McCameraTrackingController{
+class McCameraTrackingController {
 public:
     static McCameraTrackingController& GetInstance();
 private:

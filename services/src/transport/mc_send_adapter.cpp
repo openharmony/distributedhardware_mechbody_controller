@@ -17,7 +17,7 @@
 
 #include <map>
 #include <string>
-#include <securec.h> 
+#include <securec.h>
 
 #include "mechbody_controller_log.h"
 #include "mc_command_factory.h"
