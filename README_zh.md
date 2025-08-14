@@ -13,7 +13,7 @@
 ## 系统架构
 
 **图 1**  OpenHarmony具身控制器架构图
-![dd8fbe80_8158620.png](https://raw.gitcode.com/user-images/assets/6945035/33864072-2b55-4490-ad50-19140a3da6f4/dd8fbe80_8158620.png 'dd8fbe80_8158620.png')
+![dcb31eb2_8158620.png](https://raw.gitcode.com/user-images/assets/6945035/da619641-ffb3-40e4-b09b-8a4e541ace82/dcb31eb2_8158620.png 'dcb31eb2_8158620.png')
 
 - **Mechanic Kit**: 为应用提供查询、控制等接口，通过蓝牙连接的形式，将查询、控制等命令发送至配件侧，来控制配件完成对应的行为
 
