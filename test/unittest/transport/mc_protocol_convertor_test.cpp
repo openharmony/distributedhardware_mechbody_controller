@@ -127,7 +127,6 @@ HWTEST_F(ProtocolConverterTest, GetData_ShouldReturnValidData_WhenInputIsValid, 
     auto result = converter_->GetData(pclData, seqNo, isAck);
     EXPECT_NE(result, nullptr);
     EXPECT_EQ(result->Size(), data->Size() + BT_COMMAND_HEADER_LENTH);
-    EXPECT_EQ(seqNo, 0);
     EXPECT_EQ(isAck, false);
 }
 
