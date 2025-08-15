@@ -20,8 +20,8 @@
       "features" : [
         "mechbody_controller_feature_product"
       ],
-      "rom": "",
-      "ram": "",
+      "rom": "950KB",
+      "ram": "11000KB",
       "deps": {
         "components": [
           "access_token",
