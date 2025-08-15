@@ -362,7 +362,7 @@ HWTEST_F(BleSendManagerTest, OnGattReady_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest OnGattReady_001 begin" << std::endl;
     MechInfo mechInfo;
-    bleSendManager_.OnGattReady(mechInfo);
+    EXPECT_NO_FATAL_FAILURE(bleSendManager_.OnGattReady(mechInfo));
     DTEST_LOG << "BleSendManagerTest OnGattReady_001 end" << std::endl;
 }
 
