@@ -62,6 +62,8 @@ Note:If the text contains special characters, please escape them according to th
                 <filteritem type="filepath" name="test/demo/GimbalTestDemo/entry/src/main/resources/base/media/background.png" desc="pictures for test demo"/>
                 <filteritem type="filepath" name="test/demo/GimbalTestDemo/AppScope/resources/base/media/app_icon.png" desc="Dynamic diagram for test demo"/>
                 <filteritem type="filepath" name="test/demo/GimbalTestDemo/entry/src/main/resources/base/media/foreground.png" desc="pictures for test demo"/>
+                <filteritem type="filepath" name="figures/mechanic-architecture.png" desc="pictures for README"/>
+                <filteritem type="filepath" name="figures/mechanic-architecture-zh.png" desc="pictures for README"/>
             </filefilter>
         </filefilterlist>
     </oatconfig>

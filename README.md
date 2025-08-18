@@ -12,8 +12,9 @@ The Mechbody Controller includes the following common features:
 
 ## System Architecture
 
-**Figure 1** OpenHarmony Mechbody Controller Architecture
-![dcb31eb2_8158620.png](https://raw.gitcode.com/user-images/assets/6945035/1b102d63-9451-4188-820a-e65249fd655d/dcb31eb2_8158620.png 'dcb31eb2_8158620.png')
+**Figure 1** OpenHarmony Mechbody Controller Architecture<a name="fig4460722185514"></a></b>
+
+![](figures/mechanic-architecture.png)
 - **Mechanic Kit**: A set of APIs provided by the Mechanical Device Control Service, offering applications the capability to discover and control mechanical devices through standardized interfaces.
 - **Mechanical Device Control Service**: The core service of the mechanical device controller. Currently, it supports managing mechanical devices, controlling their movement by setting position trajectories and motion speeds, and directing mechanical devices to rotate and follow individuals based on camera face recognition results. Motion management capabilities for mechanical devices and the ability to control their movement based on sound direction are under planning.
 - **Universal Interconnect APP**: An optional system application for OpenHarmony devices. It is responsible for discovering and filtering mechanical devices, enabling device developers to quickly identify accessory devices that comply with the OpenHarmony mechanical control protocol, and notifying the mechanical device control service to establish connections.
