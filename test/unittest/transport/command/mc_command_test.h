@@ -18,6 +18,8 @@
 
 #include "gtest/gtest.h"
 
+#define private public
+#define protected public
 #include "mc_command_base.h"
 #include "mc_command_factory.h"
 #include "mc_get_mech_camera_tracking_layout_cmd.h"
@@ -35,6 +37,8 @@
 #include "mc_set_mech_rotation_cmd.h"
 #include "mc_set_mech_rotation_trace_cmd.h"
 #include "mc_set_mech_stop_cmd.h"
+#undef private
+#undef protected
 
 namespace OHOS {
 namespace MechBodyController {

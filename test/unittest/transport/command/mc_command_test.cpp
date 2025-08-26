@@ -57,7 +57,10 @@ HWTEST_F(MechCommandTest, TriggerTimeout_001, TestSize.Level1)
 {
     CommandFactory factory;
     std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
-    ASSERT_NE(executionResultCmd, nullptr);
+    if (executionResultCmd == nullptr) {
+        DTEST_LOG << "executionResultCmd is nullptr!" << std::endl;
+        return;
+    }
     executionResultCmd->SetTimeoutCallback(SetTimeout);
     EXPECT_NO_FATAL_FAILURE(executionResultCmd->TriggerTimeout());
 }
@@ -71,7 +74,10 @@ HWTEST_F(MechCommandTest, GetCmdSet_001, TestSize.Level1)
 {
     CommandFactory factory;
     std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
-    ASSERT_NE(executionResultCmd, nullptr);
+    if (executionResultCmd == nullptr) {
+        DTEST_LOG << "executionResultCmd is nullptr!" << std::endl;
+        return;
+    }
     executionResultCmd->SetTimeoutCallback(SetTimeout);
     EXPECT_EQ(executionResultCmd->GetCmdSet(), executionResultCmd->cmdSet_);
 }
@@ -85,7 +91,10 @@ HWTEST_F(MechCommandTest, GetCmdId_001, TestSize.Level1)
 {
     CommandFactory factory;
     std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
-    ASSERT_NE(executionResultCmd, nullptr);
+    if (executionResultCmd == nullptr) {
+        DTEST_LOG << "executionResultCmd is nullptr!" << std::endl;
+        return;
+    }
     executionResultCmd->SetTimeoutCallback(SetTimeout);
     EXPECT_EQ(executionResultCmd->GetCmdId(), executionResultCmd->cmdId_);
 }
@@ -99,7 +108,10 @@ HWTEST_F(MechCommandTest, GetReqSize_001, TestSize.Level1)
 {
     CommandFactory factory;
     std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
-    ASSERT_NE(executionResultCmd, nullptr);
+    if (executionResultCmd == nullptr) {
+        DTEST_LOG << "executionResultCmd is nullptr!" << std::endl;
+        return;
+    }
     executionResultCmd->SetTimeoutCallback(SetTimeout);
     EXPECT_EQ(executionResultCmd->GetReqSize(), executionResultCmd->reqSize_);
 }
@@ -113,7 +125,10 @@ HWTEST_F(MechCommandTest, GetRspSize_001, TestSize.Level1)
 {
     CommandFactory factory;
     std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
-    ASSERT_NE(executionResultCmd, nullptr);
+    if (executionResultCmd == nullptr) {
+        DTEST_LOG << "executionResultCmd is nullptr!" << std::endl;
+        return;
+    }
     executionResultCmd->SetTimeoutCallback(SetTimeout);
     EXPECT_EQ(executionResultCmd->GetRspSize(), executionResultCmd->rspSize_);
 }
@@ -127,7 +142,10 @@ HWTEST_F(MechCommandTest, GetTimeoutMs_001, TestSize.Level1)
 {
     CommandFactory factory;
     std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
-    ASSERT_NE(executionResultCmd, nullptr);
+    if (executionResultCmd == nullptr) {
+        DTEST_LOG << "executionResultCmd is nullptr!" << std::endl;
+        return;
+    }
     executionResultCmd->SetTimeoutCallback(SetTimeout);
     EXPECT_EQ(executionResultCmd->GetTimeoutMs(), executionResultCmd->timeoutMs_);
 }

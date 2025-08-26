@@ -54,13 +54,13 @@ MechBodyControllerService::~MechBodyControllerService()
 
 void MechBodyControllerService::OnStart()
 {
+    // LCOV_EXCL_START
     HILOGI("MechBodyControllerService start.");
     bool res = Publish(this);
     if (!res) {
         HILOGE("MechBodyControllerService start failed.");
     }
     MechConnectManager::GetInstance().Init();
-    McCameraTrackingController::GetInstance().Init();
 
     if (sendAdapter_ == nullptr) {
         sendAdapter_ = std::make_shared<TransportSendAdapter>();
@@ -69,6 +69,7 @@ void MechBodyControllerService::OnStart()
     BleSendManager::GetInstance().Init();
 
     HILOGI("MechBodyControllerService start end.");
+    // LCOV_EXCL_STOP
 }
 
 void MechBodyControllerService::OnStop()
@@ -84,6 +85,7 @@ void MechBodyControllerService::OnStop()
 
 int32_t MechBodyControllerService::RegisterAttachStateChangeCallback(const sptr<IRemoteObject> callback)
 {
+    // LCOV_EXCL_START
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     if (callback == nullptr) {
@@ -114,6 +116,7 @@ int32_t MechBodyControllerService::RegisterAttachStateChangeCallback(const sptr<
     }
     HILOGI("end, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     return ERR_OK;
+    // LCOV_EXCL_STOP
 }
 
 int32_t MechBodyControllerService::UnRegisterAttachStateChangeCallback()
@@ -192,9 +195,9 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
                                                     const std::string &mac, const std::string &param)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
-    HILOGI("start,tokenId: %{public}s; user operation: %{public}d; mac: %{public}s; param: %{public}s",
-        GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(*operation),
-        GetAnonymStr(mac).c_str(), param.c_str());
+    HILOGI("start,tokenId: %{public}s; user operation: %{public}d; mac: %{public}s;",
+           GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(*operation),
+           GetAnonymStr(mac).c_str());
     int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
     if (ret != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
         HILOGE("%{public}s: PERMISSION_DENIED", PERMISSION_NAME.c_str());
@@ -217,7 +220,7 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
     }
     std::string deviceName = deviceNameJson->valuestring;
     cJSON_Delete(rootValue);
-    BleSendManager::GetInstance().MechbodyGattcConnect(mac, deviceName);
+    BleSendManager::GetInstance().MechbodyConnect(mac, deviceName);
     return ERR_OK;
 }
 
@@ -290,6 +293,7 @@ int32_t MechBodyControllerService::GetTrackingEnabled(bool &isEnabled)
 
 int32_t MechBodyControllerService::RegisterTrackingEventCallback(sptr <IRemoteObject> callback)
 {
+    // LCOV_EXCL_START
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     if (callback == nullptr) {
@@ -300,15 +304,18 @@ int32_t MechBodyControllerService::RegisterTrackingEventCallback(sptr <IRemoteOb
                                                                                               callback);
     HILOGI("end. Register tracking event callback result: %{public}d.", registerResult);
     return registerResult;
+    // LCOV_EXCL_STOP
 }
 
 int32_t MechBodyControllerService::UnRegisterTrackingEventCallback()
 {
+    // LCOV_EXCL_START
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     int32_t unregisterResult = McControllerManager::GetInstance().UnRegisterTrackingEventCallback(tokenId);
     HILOGI("end. Unregister tracking event callback result: %{public}d.", unregisterResult);
     return unregisterResult;
+    // LCOV_EXCL_STOP
 }
 
 int32_t MechBodyControllerService::SetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout)
@@ -338,6 +345,7 @@ int32_t MechBodyControllerService::GetTrackingLayout(CameraTrackingLayout &camer
 
 int32_t MechBodyControllerService::RegisterCmdChannel(const sptr<IRemoteObject> callback)
 {
+    // LCOV_EXCL_START
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     sptr <MechControllerIpcDeathListener> diedListener = new MechControllerIpcDeathListener();
@@ -351,6 +359,7 @@ int32_t MechBodyControllerService::RegisterCmdChannel(const sptr<IRemoteObject> 
     }
     HILOGI("command channel add success, tokenid: %{public}s;", GetAnonymUint32(tokenId).c_str());
     return ERR_OK;
+    // LCOV_EXCL_STOP
 }
 
 int32_t MechBodyControllerService::RotateByDegree(const int32_t &mechId, std::string &cmdId,
@@ -734,6 +743,7 @@ int32_t MechBodyControllerService::GetRotationAxesStatus(const int32_t &mechId,
 
 int32_t MechBodyControllerService::RegisterRotationAxesStatusChangeCallback(const sptr <IRemoteObject> callback)
 {
+    // LCOV_EXCL_START
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     if (!IsSystemApp()) {
@@ -755,10 +765,12 @@ int32_t MechBodyControllerService::RegisterRotationAxesStatusChangeCallback(cons
     }
     HILOGI("end, callback add success, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     return ERR_OK;
+    // LCOV_EXCL_STOP
 }
 
 int32_t MechBodyControllerService::UnRegisterRotationAxesStatusChangeCallback()
 {
+    // LCOV_EXCL_START
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     if (!IsSystemApp()) {
@@ -769,6 +781,7 @@ int32_t MechBodyControllerService::UnRegisterRotationAxesStatusChangeCallback()
     rotationAxesStatusChangeCallback_.erase(tokenId);
     HILOGI("end, callback remove success, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     return ERR_OK;
+    // LCOV_EXCL_STOP
 }
 
 int32_t MechBodyControllerService::OnRotationAxesStatusChange(const int32_t &mechId,

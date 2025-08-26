@@ -21,9 +21,9 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include <string>
 
-#define PRIVATE public
+#define private public
 #include "ble_send_manager.h"
-#undef PRIVATE
+#undef private
 #include "mechbody_controller_log.h"
 #include "securec.h"
 
@@ -40,17 +40,6 @@ UUID MECHBODY_CHARACTERISTIC_WRITE_UUID = UUID::FromString("15f1e602-a277-43fc-a
 UUID MECHBODY_CHARACTERISTIC_NOTIFY_UUID = UUID::FromString("15f1e603-a277-43fc-a484-dd39ef8a9100"); // notify uuid
 BleSendManager& bleSendManager = BleSendManager::GetInstance();
 }
-
-class MyBleReceiveListener : public BleReceviceListener {
-public:
-    MyBleReceiveListener() {}
-
-    int32_t OnReceive(const uint8_t *data, uint32_t dataLen) override
-    {
-        return ERR_OK;
-    }
-    virtual ~MyBleReceiveListener() {}
-};
 
 void OnConnectionStateChangedFuzzTest(const uint8_t *data, size_t size)
 {
@@ -179,43 +168,6 @@ void OnReceiveFuzzTest(const uint8_t *data, size_t size)
     bleSendManager.OnReceive(dataInputPtr, size);
 }
 
-void RegisterTransportSendAdapterFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    auto listener = std::make_shared<MyBleReceiveListener>();
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.RegisterTransportSendAdapter(listener);
-    bleSendManager.RegisterTransportSendAdapter(listener);
-}
-
-void UnRegisterTransportSendAdapterFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    auto listener = std::make_shared<MyBleReceiveListener>();
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.UnRegisterTransportSendAdapter(listener);
-    bleSendManager.RegisterTransportSendAdapter(listener);
-    bleSendManager.UnRegisterTransportSendAdapter(listener);
-}
-
-void CheckGattcIsReadyFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.CheckGattcIsReady();
-}
-
 void OnGattReadyFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
@@ -224,17 +176,11 @@ void OnGattReadyFuzzTest(const uint8_t *data, size_t size)
 
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
+    FuzzedDataProvider fdp(data, size);
+    std::string macHash = fdp.ConsumeRandomLengthString();
+    std::string mechName = fdp.ConsumeRandomLengthString();
+    mechInfo.mechName = mechName;
     bleSendManager.OnGattReady(mechInfo);
-}
-
-void InitScanParaFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.InitScanPara();
 }
 
 void OnScanCallbackFuzzTest(const uint8_t *data, size_t size)
@@ -244,29 +190,12 @@ void OnScanCallbackFuzzTest(const uint8_t *data, size_t size)
     }
 
     BleScanResult result;
+    FuzzedDataProvider fdp(data, size);
+    std::string name = fdp.ConsumeRandomLengthString();
+    result.name_ = name;
 
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
     bleSendManager.OnScanCallback(result);
-}
-
-void StartScanFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.StartScan();
-}
-
-void StopScanFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.StopScan();
 }
 
 void MechbodyGattcConnectFuzzTest(const uint8_t *data, size_t size)
@@ -319,6 +248,7 @@ void MechbodyGattcWriteCharacteristicFuzzTest(const uint8_t *data, size_t size)
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
     bleSendManager.gattClient_ = std::make_shared<GattClient>(device);
     bleSendManager.MechbodyGattcWriteCharacteristic(dataInputPtr, dataLen);
+    bleSendManager.MechbodyGattcWriteCharacteristic(nullptr, dataLen);
 }
 
 void SendDataFuzzTest(const uint8_t *data, size_t size)
@@ -337,6 +267,7 @@ void SendDataFuzzTest(const uint8_t *data, size_t size)
 
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
     bleSendManager.SendData(dataInputPtr, dataLen);
+    bleSendManager.SendData(nullptr, dataLen);
 }
 
 void OnScanCallbackBleCentralManagerCallbackImplFuzzTest(const uint8_t *data, size_t size)
@@ -346,10 +277,29 @@ void OnScanCallbackBleCentralManagerCallbackImplFuzzTest(const uint8_t *data, si
     }
 
     BleScanResult result;
+    FuzzedDataProvider fdp(data, size);
+    std::string name = fdp.ConsumeRandomLengthString();
+    result.name_ = name;
 
     std::shared_ptr<BleCentralManagerCallbackImpl> bleCentralManagerCallback =
         std::make_shared<BleCentralManagerCallbackImpl>();
     bleCentralManagerCallback->OnScanCallback(result);
+}
+
+void OnGattDisconnectFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    MechInfo mechInfo;
+    FuzzedDataProvider fdp(data, size);
+    std::string macHash = fdp.ConsumeRandomLengthString();
+    std::string mechName = fdp.ConsumeRandomLengthString();
+    mechInfo.mechName = mechName;
+
+    BleSendManager& bleSendManager = BleSendManager::GetInstance();
+    bleSendManager.OnGattDisconnect(mechInfo);
 }
 }
 
@@ -363,18 +313,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnCharacteristicChangedFuzzTest(data, size);
     OHOS::OnCharacteristicWriteResultFuzzTest(data, size);
     OHOS::OnReceiveFuzzTest(data, size);
-    OHOS::RegisterTransportSendAdapterFuzzTest(data, size);
-    OHOS::UnRegisterTransportSendAdapterFuzzTest(data, size);
-    OHOS::CheckGattcIsReadyFuzzTest(data, size);
     OHOS::OnGattReadyFuzzTest(data, size);
-    OHOS::InitScanParaFuzzTest(data, size);
     OHOS::OnScanCallbackFuzzTest(data, size);
-    OHOS::StartScanFuzzTest(data, size);
-    OHOS::StopScanFuzzTest(data, size);
     OHOS::MechbodyGattcConnectFuzzTest(data, size);
     OHOS::MechbodyGattcDisconnectFuzzTest(data, size);
     OHOS::MechbodyGattcWriteCharacteristicFuzzTest(data, size);
     OHOS::SendDataFuzzTest(data, size);
     OHOS::OnScanCallbackBleCentralManagerCallbackImplFuzzTest(data, size);
+    OHOS::OnGattDisconnectFuzzTest(data, size);
     return 0;
 }

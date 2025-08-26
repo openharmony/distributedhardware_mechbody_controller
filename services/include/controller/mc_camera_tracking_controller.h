@@ -29,6 +29,21 @@
 namespace OHOS {
 namespace MechBodyController {
 
+enum class TrackingObjectType : uint8_t {
+    MSG_OBJ_OTHER = 0,
+    MSG_OBJ_HEAD = 1,
+    MSG_OBJ_FACE = 2,
+    MSG_OBJ_BODY = 3,
+};
+
+enum class CameraVideoStabilizationMode : int32_t {
+    OHOS_CAMERA_VIDEO_STABILIZATION_OFF = 0,
+    OHOS_CAMERA_VIDEO_STABILIZATION_LOW = 1,
+    OHOS_CAMERA_VIDEO_STABILIZATION_MIDDLE = 2,
+    OHOS_CAMERA_VIDEO_STABILIZATION_HIGH = 3,
+    OHOS_CAMERA_VIDEO_STABILIZATION_AUTO = 4,
+};
+
 struct AppSetting {
     bool isTrackingEnabled = true;
     CameraTrackingLayout cameraTrackingLayout = CameraTrackingLayout::DEFAULT;
@@ -36,6 +51,7 @@ struct AppSetting {
 
 struct CameraInfo {
     int32_t targetId;
+    uint32_t tokenId = 0;
     float sensorWidth = 36.0f; // All devices have sensor width equivalent to 36mm
     float sensorHeight = 24.0f; // All devices have sensor height equivalent to 24mm
     uint8_t fovV = 0;
@@ -43,14 +59,20 @@ struct CameraInfo {
     int32_t width = 0;
     int32_t height = 0;
     float zoomFactor = 0;
+    int32_t equivalentFocus = 24;
     bool isRecording = false;
     bool currentTrackingEnable = true;
     CameraTrackingLayout currentCameraTrackingLayout = CameraTrackingLayout::DEFAULT;
     CameraType cameraType = CameraType::BACK;
-
-    std::string ToString()
+    int32_t focusMode = 1;
+    int32_t sessionMode;
+    int32_t videoStabilizationMode =
+        static_cast<int32_t>(CameraVideoStabilizationMode::OHOS_CAMERA_VIDEO_STABILIZATION_OFF);
+    bool isCameraOn = false;
+    std::string toString() const
     {
         return "targetId: " + std::to_string(targetId) +
+               ", tokenId: " + std::to_string(tokenId) +
                ", sensorWidth: " + std::to_string(sensorWidth) +
                ", sensorHeight: " + std::to_string(sensorHeight) +
                ", fovV: " + std::to_string(fovV) +
@@ -58,33 +80,27 @@ struct CameraInfo {
                ", width: " + std::to_string(width) +
                ", height: " + std::to_string(height) +
                ", zoomFactor: " + std::to_string(zoomFactor) +
+               ", equivalentFocus: " + std::to_string(equivalentFocus) +
                ", isRecording: " + std::to_string(isRecording) +
                ", currentTrackingEnable: " + std::to_string(currentTrackingEnable) +
-               ", currentCameraTrackingLayout: " + std::to_string(static_cast<int32_t>(currentCameraTrackingLayout)) +
-               ", cameraType: " + std::to_string(static_cast<uint8_t>(cameraType));
+               ", currentCameraTrackingLayout: " + std::to_string(static_cast<int>(currentCameraTrackingLayout)) +
+               ", cameraType: " + std::to_string(static_cast<int>(cameraType)) +
+               ", focusMode: " + std::to_string(focusMode) +
+               ", sessionMode: " + std::to_string(sessionMode) +
+               ", videoStabilizationMode: " + std::to_string(videoStabilizationMode) +
+               ", isCameraOn: " + std::to_string(isCameraOn);
     }
 };
 
-enum class TrackingObjectType : uint8_t {
-    MSG_OBJ_OTHER = 0,
-    MSG_OBJ_HEAD_SHOULDER = 1,
-    MSG_OBJ_PERSON = 2,
-    MSG_OBJ_CAR = 3,
-    MSG_OBJ_BOAT = 4,
-    MSG_OBJ_FACE = 5,
-    MSG_OBJ_HUMAN_BODY = 6,
-    MSG_OBJ_HUMAN_HEAD = 7,
-    MSG_OBJ_ANIMAL_BODY = 8,
-    MSG_OBJ_ANIMAL_HEAD = 9,
-};
 
 class MechSessionCallbackImpl : public CameraStandard::MechSessionCallback {
 public:
     ~MechSessionCallbackImpl() override = default;
 
     void OnFocusTrackingInfo(CameraStandard::FocusTrackingMetaInfo info) override;
-
-    void OnCameraAppInfo(const std::vector<CameraStandard::CameraAppInfo> &cameraAppInfos) override;
+    void OnCaptureSessionConfiged(CameraStandard::CaptureSessionInfo captureSessionInfo) override;
+    void OnZoomInfoChange(int sessionid, CameraStandard::ZoomInfo zoomInfo) override;
+    void OnSessionStatusChange(int sessionid, bool status) override;
 };
 
 class McCameraTrackingController {
@@ -101,7 +117,9 @@ public:
     ~McCameraTrackingController();
     void Init();
     void UnInit();
-    int32_t OnUsingAppChange(const CameraStandard::CameraAppInfo &cameraAppInfo);
+    int32_t OnCaptureSessionConfiged(const CameraStandard::CaptureSessionInfo& captureSessionInfo);
+    int32_t OnZoomInfoChange(int32_t sessionid, const CameraStandard::ZoomInfo& zoomInfo);
+    int32_t OnSessionStatusChange(int32_t sessionid, bool status);
     int32_t OnFocusTracking(CameraStandard::FocusTrackingMetaInfo &info);
     int32_t SetTrackingEnabled(const uint32_t &tokenId, bool &isEnabled);
     int32_t GetTrackingEnabled(const uint32_t &tokenId, bool &isEnabled);
@@ -114,18 +132,15 @@ public:
     std::shared_ptr<CameraInfo> GetCurrentCameraInfo() const;
 
 private:
-    std::shared_ptr<CameraInfo> CalculateCameraInfo(const CameraStandard::CameraAppInfo &cameraAppInfo);
-    int32_t UpdateMotionManagers(uint32_t tokenId);
+    int32_t ComputeFov();
+    bool IsCurrentFocus();
+    int32_t UpdateMotionManagers();
     std::shared_ptr<TrackingFrameParams> BuildTrackingParams(CameraStandard::FocusTrackingMetaInfo &info);
+    int32_t GetTrackingTarget(CameraStandard::Rect &trackingRegion,
+        std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects, int32_t trackingObjectId,
+        sptr<CameraStandard::MetadataObject> &targetObject);
     int32_t UpdateMotionsWithTrackingData(
         const std::shared_ptr<TrackingFrameParams> &params, int32_t trackingObjectId);
-
-    int32_t ParseRectToROI(CameraStandard::Rect &rect, ROI &roi);
-    void AddROIToWindow(CameraStandard::Rect &rect);
-    bool IsSelectTrackingObject();
-    int32_t SelectTrackingTarget(std::vector<sptr<CameraStandard::MetadataObject>> &targets,
-        sptr<CameraStandard::MetadataObject> &finalTarget, CameraStandard::Rect trachingRegion);
-    double ComputeRegistration(sptr<CameraStandard::MetadataObject> &target, CameraStandard::Rect &trackingRegion);
     bool FilterDetectedObject(sptr<CameraStandard::MetadataObject> &detectedObject);
     void UpdateROI(std::shared_ptr<TrackingFrameParams> &trackingFrameParams, CameraStandard::Rect &rect);
     static void SensorCallback(SensorEvent* event);
@@ -141,7 +156,6 @@ private:
 public:
     std::mutex trackingEventCallbackMutex_;
     std::map<uint32_t, sptr<IRemoteObject>> trackingEventCallback_;
-    CameraStandard::CameraAppInfo cameraAppInfo_;
 
 private:
     std::mutex cameraTrackingControllerInitMutex_;
@@ -153,9 +167,9 @@ private:
     sptr<CameraStandard::MechSession> pMechSession;
     std::shared_ptr<CameraInfo> currentCameraInfo_ = std::make_shared<CameraInfo>();
 
-    std::mutex roiWindowMutex_;
-    std::deque<ROI> roiWindow_;
     std::shared_ptr<TrackingFrameParams> lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
 };
 } // namespace MechBodyController
 } // namespace OHOS

@@ -33,12 +33,12 @@ SetMechCameraTrackingFrameCmd::SetMechCameraTrackingFrameCmd(const TrackingFrame
     rspSize_ = RSP_SIZE;
     needResponse_ = (RSP_SIZE > 0);
     timeoutMs_ = MECHBODY_MSG_TIMEOUT;
-    retryTimes_ = CMD_PRIORITY_MIDDLE;
+    retryTimes_ = CMD_PRIORITY_LOW;
 }
 
 std::shared_ptr<MechDataBuffer> SetMechCameraTrackingFrameCmd::Marshal() const
 {
-    HILOGI("start.");
+    HILOGD("start.");
     auto buffer = std::make_shared<MechDataBuffer>(reqSize_ + BIT_OFFSET_2);
     if (buffer == nullptr) {
         HILOGE("Failed to allocate memory for Marshal buffer");
@@ -61,7 +61,7 @@ std::shared_ptr<MechDataBuffer> SetMechCameraTrackingFrameCmd::Marshal() const
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(params_.isRecording), nullptr, "append isRecording");
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint32(params_.timeDelay), nullptr, "append timeDelay");
 
-    HILOGI("end.");
+    HILOGD("end.");
     return buffer;
 }
 

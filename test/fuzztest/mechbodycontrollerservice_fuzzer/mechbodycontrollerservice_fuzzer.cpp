@@ -21,10 +21,10 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include <string>
 
-#define PRIVATE public
-#define PROTECTED public
+#define private public
+#define protected public
 #include "mechbody_controller_service.h"
-#undef PRIVATE
+#undef private
 #undef protected
 #include "ipc_skeleton.h"
 #include "securec.h"
@@ -38,30 +38,6 @@ using namespace OHOS::MechBodyController;
 bool Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(uint64_t tokenId)
 {
     return true;
-}
-
-void OnStartFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.OnStart();
-}
-
-void RegisterAttachStateChangeCallbackFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    const sptr<OHOS::IRemoteObject> listenerNull = nullptr;
-    const sptr<OHOS::IRemoteObject> listener;
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.RegisterAttachStateChangeCallback(listenerNull);
-    mechBodyControllerService.RegisterAttachStateChangeCallback(listener);
 }
 
 void UnRegisterAttachStateChangeCallbackFuzzTest(const uint8_t *data, size_t size)
@@ -121,10 +97,16 @@ void GetAttachedDevicesFuzzTest(const uint8_t *data, size_t size)
         return;
     }
 
-    std::set<MechInfo> mechInfo;
+    std::set<MechInfo> mechInfos;
+    MechInfo mechInfo;
+    FuzzedDataProvider fdp(data, size);
+    std::string macHash = fdp.ConsumeRandomLengthString();
+    std::string mechName = fdp.ConsumeRandomLengthString();
+    mechInfo.mechName = mechName;
+    mechInfos.insert(mechInfo);
 
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.GetAttachedDevices(mechInfo);
+    mechBodyControllerService.GetAttachedDevices(mechInfos);
 }
 
 void SetTrackingEnabledFuzzTest(const uint8_t *data, size_t size)
@@ -151,28 +133,6 @@ void GetTrackingEnabledFuzzTest(const uint8_t *data, size_t size)
 
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
     mechBodyControllerService.GetTrackingEnabled(isEnabled);
-}
-
-void RegisterTrackingEventCallbackFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    sptr<IRemoteObject> callback;
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.RegisterTrackingEventCallback(callback);
-}
-
-void UnRegisterTrackingEventCallbackFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.UnRegisterTrackingEventCallback();
 }
 
 void SetTrackingLayoutFuzzTest(const uint8_t *data, size_t size)
@@ -415,28 +375,6 @@ void GetRotationAxesStatusFuzzTest(const uint8_t *data, size_t size)
     mechBodyControllerService.GetRotationAxesStatus(mechId, axesStatus);
 }
 
-void RegisterRotationAxesStatusChangeCallbackFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    auto callback = sptr<IRemoteObject>();
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.RegisterRotationAxesStatusChangeCallback(callback);
-}
-
-void UnRegisterRotationAxesStatusChangeCallbackFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.UnRegisterRotationAxesStatusChangeCallback();
-}
-
 void OnRotationAxesStatusChangeFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
@@ -459,22 +397,36 @@ void OnRotationAxesStatusChangeFuzzTest(const uint8_t *data, size_t size)
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
     mechBodyControllerService.OnRotationAxesStatusChange(mechId, axesStatus);
 }
+
+void SetUserOperationFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    FuzzedDataProvider fdp(data, size);
+    int32_t num = fdp.ConsumeIntegral<int32_t>();
+    std::shared_ptr<Operation> operation = std::make_shared<Operation>(
+            static_cast<Operation>(num));
+    std::string mac = fdp.ConsumeRandomLengthString();
+    std::string param = fdp.ConsumeRandomLengthString();
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.SetUserOperation(operation, mac, param);
+
+    int32_t mechId = fdp.ConsumeIntegral<int32_t>();
+    mechBodyControllerService.OnDeviceDisconnected(mechId);
+}
 }
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::OnStartFuzzTest(data, size);
-    OHOS::RegisterAttachStateChangeCallbackFuzzTest(data, size);
     OHOS::UnRegisterAttachStateChangeCallbackFuzzTest(data, size);
     OHOS::OnAttachStateChangeFuzzTest(data, size);
     OHOS::OnDeviceConnectedFuzzTest(data, size);
     OHOS::GetAttachedDevicesFuzzTest(data, size);
     OHOS::SetTrackingEnabledFuzzTest(data, size);
     OHOS::GetTrackingEnabledFuzzTest(data, size);
-    OHOS::RegisterTrackingEventCallbackFuzzTest(data, size);
-    OHOS::UnRegisterTrackingEventCallbackFuzzTest(data, size);
     OHOS::SetTrackingLayoutFuzzTest(data, size);
     OHOS::GetTrackingLayoutFuzzTest(data, size);
     OHOS::RotateByDegreeFuzzTest(data, size);
@@ -487,8 +439,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetRotationAnglesFuzzTest(data, size);
     OHOS::GetRotationDegreeLimitsFuzzTest(data, size);
     OHOS::GetRotationAxesStatusFuzzTest(data, size);
-    OHOS::RegisterRotationAxesStatusChangeCallbackFuzzTest(data, size);
-    OHOS::UnRegisterRotationAxesStatusChangeCallbackFuzzTest(data, size);
     OHOS::OnRotationAxesStatusChangeFuzzTest(data, size);
+    OHOS::SetUserOperationFuzzTest(data, size);
     return 0;
 }

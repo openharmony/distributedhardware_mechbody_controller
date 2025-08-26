@@ -17,7 +17,11 @@
 #define MECHBODY_CONTROLLER_SERVICE_TEST_H
 
 #include "gtest/gtest.h"
+#define private public
+#define protected public
 #include "mechbody_controller_service.h"
+#undef private
+#undef protected
 
 namespace OHOS {
 namespace MechBodyController {

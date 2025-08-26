@@ -488,6 +488,21 @@ void RotationAxesStatusChangeListenOffInnerFuzzTest(std::shared_ptr<MechBodyCont
 
     mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
 }
+
+void RotateToEulerAnglesInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
+    const uint8_t *data,
+    size_t size)
+{
+    uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_BY_DEGREE);
+    MessageParcel datas;
+    datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
+    datas.WriteBuffer(data, size);
+    datas.RewindRead(0);
+    MessageParcel reply;
+    MessageOption option;
+
+    mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
+}
 }
 
 /* Fuzzer entry point */
@@ -516,5 +531,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetRotationAxesStatusInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::RotationAxesStatusChangeListenOnInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::RotationAxesStatusChangeListenOffInnerFuzzTest(mechBodyControllerStubPtr, data, size);
+    OHOS::RotateToEulerAnglesInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     return 0;
 }

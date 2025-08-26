@@ -118,7 +118,7 @@ std::shared_ptr<MMI::KeyEvent> MotionManager::CreateKeyEvent(int32_t keyCode, in
 {
     std::shared_ptr<MMI::KeyEvent> keyEvent = MMI::KeyEvent::Create();
     if (keyEvent == nullptr) {
-        HILOGE("failed to create key event: %{public}d", keyCode);
+        HILOGE("Failed to create key event.");
         return nullptr;
     }
     MMI::KeyEvent::KeyItem keyItem;
@@ -145,6 +145,14 @@ void MotionManager::MechButtonEventNotify(const std::shared_ptr<RegisterMechCame
     CHECK_POINTER_RETURN(cmd, "cmd");
     CameraKeyEvent eventType = cmd->GetEvent();
     HILOGI("Received gimbal key press event. eventNo: %{public}d.", eventType);
+
+    std::shared_ptr<CameraInfo> cameraInfo = McCameraTrackingController::GetInstance().GetCurrentCameraInfo();
+    CHECK_POINTER_RETURN(cameraInfo, "cameraInfo");
+    if (!cameraInfo->isCameraOn) {
+        HILOGI("No camera working, ignore.");
+        return;
+    }
+
     std::shared_ptr<MMI::KeyEvent> event = MMI::KeyEvent::Create();
     CHECK_POINTER_RETURN(cmd, "KeyEvent");
     switch (eventType) {
@@ -239,6 +247,7 @@ void MotionManager::HandleMechPlacementChange(bool isPhoneOn)
         hidCmd->SetResponseCallback(callback);
         CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
         sendAdapter_->SendCommand(hidCmd);
+        MechConnectManager::GetInstance().NotifyMechState(mechId_, isPhoneOn);
     } else {
         MechConnectManager::GetInstance().NotifyMechState(mechId_, isPhoneOn);
     }
@@ -301,6 +310,12 @@ void MotionManager::MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelD
     CHECK_POINTER_RETURN(cmd, "cmd");
     WheelData data = cmd->GetWheelData();
     auto func = [this, data]() {
+        std::shared_ptr<CameraInfo> cameraInfo = McCameraTrackingController::GetInstance().GetCurrentCameraInfo();
+        if (cameraInfo == nullptr || !cameraInfo->isCameraOn) {
+            HILOGE("MechWheelZoomNotify current camera info is nullptr or no camera working, ignore");
+            return;
+        }
+
         HILOGI("MechWheelZoomNotify wheel data: degree %{public}d, speed %{public}d, speed_ratio %{public}u",
             data.degree, data.speed, data.speed_ratio);
         if (data.degree == 0) {
@@ -314,11 +329,6 @@ void MotionManager::MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelD
         }
         wheelFilterCnt_ = 0;
 
-        std::shared_ptr<CameraInfo> cameraInfo = McCameraTrackingController::GetInstance().GetCurrentCameraInfo();
-        if (cameraInfo == nullptr) {
-            HILOGE("MechWheelZoomNotify current camera info is nullptr");
-            return;
-        }
         float currentZoom = cameraInfo->zoomFactor;
         int32_t keyEventNum = WHEEL_ZOOM_01X_EVENT_NUM;
         if (currentZoom > WHEEL_ZOOM_THRESHOLD + FLOAT_EPSILON) {
@@ -475,17 +485,25 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
 
 void MotionManager::FormatLimit(RotateDegreeLimit &params)
 {
-    while (params.posMax.yaw > NO_LIMIT_MAX) {
+    bool flag = params.posMax.yaw > NO_LIMIT_MAX;
+    while (flag) {
         params.posMax.yaw -= DEGREE_CIRCLED_MAX;
+        flag = params.posMax.yaw > NO_LIMIT_MAX;
     }
-    while (params.posMax.yaw < NO_LIMIT_MIN) {
+    flag = params.posMax.yaw < NO_LIMIT_MIN;
+    while (flag) {
         params.posMax.yaw += DEGREE_CIRCLED_MAX;
+        flag = params.posMax.yaw < NO_LIMIT_MIN;
     }
-    while (params.negMax.yaw > NO_LIMIT_MAX) {
+    flag = params.negMax.yaw > NO_LIMIT_MAX;
+    while (flag) {
         params.negMax.yaw -= DEGREE_CIRCLED_MAX;
+        flag = params.negMax.yaw > NO_LIMIT_MAX;
     }
-    while (params.negMax.yaw < NO_LIMIT_MIN) {
+    flag = params.negMax.yaw < NO_LIMIT_MIN;
+    while (flag) {
         params.negMax.yaw += DEGREE_CIRCLED_MAX;
+        flag = params.negMax.yaw < NO_LIMIT_MIN;
     }
 }
 
@@ -696,11 +714,15 @@ void MotionManager::CheckYawDegree(std::shared_ptr<RotateParam> &rotateParam, co
         return;
     }
     yawResult += rotateParam->degree.yaw > 0 ? YAW_OFFSET : -YAW_OFFSET;
-    while (yawResult < NO_LIMIT_MIN) {
+    bool flag = yawResult < NO_LIMIT_MIN;
+    while (flag) {
         yawResult += DEGREE_CIRCLED_MAX;
+        flag = yawResult < NO_LIMIT_MIN;
     }
-    while (yawResult > NO_LIMIT_MAX) {
+    flag = yawResult > NO_LIMIT_MAX;
+    while (flag) {
         yawResult -= DEGREE_CIRCLED_MAX;
+        flag = yawResult > NO_LIMIT_MAX;
     }
     if (IsLimited(limit.negMax.yaw, limit.posMax.yaw, yawResult)) {
         if (rotateParam->degree.yaw > 0) {
@@ -722,11 +744,15 @@ void MotionManager::CheckRollDegree(std::shared_ptr<RotateParam> &rotateParam, c
         HILOGW("rotateParam is nullptr");
         return;
     }
-    while (rollResult < NO_LIMIT_MIN) {
+    bool flag = rollResult < NO_LIMIT_MIN;
+    while (flag) {
         rollResult += DEGREE_CIRCLED_MAX;
+        flag = rollResult < NO_LIMIT_MIN;
     }
-    while (rollResult > NO_LIMIT_MAX) {
+    flag = rollResult > NO_LIMIT_MIN;
+    while (flag) {
         rollResult -= DEGREE_CIRCLED_MAX;
+        flag = rollResult > NO_LIMIT_MIN;
     }
     if (IsLimited(limit.negMax.roll, limit.posMax.roll, rollResult)) {
         if (rotateParam->degree.roll > 0) {
@@ -748,11 +774,15 @@ void MotionManager::CheckPitchDegree(std::shared_ptr<RotateParam> &rotateParam, 
         HILOGW("rotateParam is nullptr");
         return;
     }
-    while (pitchResult < NO_LIMIT_MIN) {
+    bool flag = pitchResult < NO_LIMIT_MIN;
+    while (flag) {
         pitchResult += DEGREE_CIRCLED_MAX;
+        flag = pitchResult < NO_LIMIT_MIN;
     }
-    while (pitchResult > NO_LIMIT_MAX) {
+    flag = pitchResult > NO_LIMIT_MIN;
+    while (flag) {
         pitchResult -= DEGREE_CIRCLED_MAX;
+        flag = pitchResult > NO_LIMIT_MIN;
     }
     if (IsLimited(limit.negMax.pitch, limit.posMax.pitch, pitchResult)) {
         if (rotateParam->degree.pitch > 0) {
@@ -854,14 +884,22 @@ void MotionManager::CheckYawSpeed(const std::shared_ptr<RotateBySpeedParam> &rot
         return;
     }
     yawResult += rotateBySpeedParam->speed.yawSpeed > 0 ? YAW_OFFSET : -YAW_OFFSET;
-    while (yawResult < NO_LIMIT_MIN) {
+    bool flag = yawResult < NO_LIMIT_MIN;
+    while (flag) {
         yawResult += DEGREE_CIRCLED_MAX;
+        flag = yawResult < NO_LIMIT_MIN;
     }
-    while (yawResult > NO_LIMIT_MAX) {
+    flag = yawResult > NO_LIMIT_MAX;
+    while (flag) {
         yawResult -= DEGREE_CIRCLED_MAX;
+        flag = yawResult > NO_LIMIT_MAX;
     }
 
     if (IsLimited(limit.negMax.yaw, limit.posMax.yaw, yawResult)) {
+        if (status_.yawLimited == RotationAxisLimited::POS_LIMITED  ||
+            status_.yawLimited == RotationAxisLimited::NEG_LIMITED) {
+            return;
+        }
         if (rotateBySpeedParam->speed.yawSpeed > 0) {
             status_.yawLimited = RotationAxisLimited::POS_LIMITED;
         } else {
@@ -879,11 +917,15 @@ void MotionManager::CheckRollSpeed(const std::shared_ptr<RotateBySpeedParam> &ro
         HILOGW("rotateBySpeedParam is nullptr");
         return;
     }
-    while (rollResult < NO_LIMIT_MIN) {
+    bool flag = rollResult < NO_LIMIT_MIN;
+    while (flag) {
         rollResult += DEGREE_CIRCLED_MAX;
+        flag = rollResult < NO_LIMIT_MIN;
     }
-    while (rollResult > NO_LIMIT_MAX) {
+    flag = rollResult > NO_LIMIT_MAX;
+    while (flag) {
         rollResult -= DEGREE_CIRCLED_MAX;
+        flag = rollResult > NO_LIMIT_MAX;
     }
     if (IsLimited(limit.negMax.roll, limit.posMax.roll, rollResult)) {
         if (rotateBySpeedParam->speed.rollSpeed > 0) {
@@ -903,13 +945,21 @@ void MotionManager::CheckPitchSpeed(const std::shared_ptr<RotateBySpeedParam> &r
         HILOGW("rotateBySpeedParam is nullptr");
         return;
     }
-    while (pitchResult < NO_LIMIT_MIN) {
+    bool flag = pitchResult < NO_LIMIT_MIN;
+    while (flag) {
         pitchResult += DEGREE_CIRCLED_MAX;
+        flag = pitchResult < NO_LIMIT_MIN;
     }
-    while (pitchResult > NO_LIMIT_MAX) {
+    flag = pitchResult > NO_LIMIT_MAX;
+    while (flag) {
         pitchResult -= DEGREE_CIRCLED_MAX;
+        flag = pitchResult > NO_LIMIT_MAX;
     }
     if (IsLimited(limit.negMax.pitch, limit.posMax.pitch, pitchResult)) {
+        if (status_.pitchLimited == RotationAxisLimited::POS_LIMITED  ||
+            status_.pitchLimited == RotationAxisLimited::NEG_LIMITED) {
+            return;
+        }
         if (rotateBySpeedParam->speed.pitchSpeed > 0) {
             status_.pitchLimited = RotationAxisLimited::POS_LIMITED;
         } else {
@@ -993,7 +1043,7 @@ int32_t MotionManager::GetRotationLimit(RotateDegreeLimit &rotationLimit)
 
 int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<TrackingFrameParams> trackingFrameParams)
 {
-    HILOGI("SetCameraTrackingEnabled start.");
+    HILOGD("start.");
     if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
@@ -1002,12 +1052,8 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
 
     auto cameraTrackingFrameCallback = [this]() {
     };
-    bool isEnable = true;
-    {
-        std::unique_lock <std::mutex> lock(deviceStatusMutex_);
-        isEnable = deviceStatus_->isEnabled;
-    }
-    if (isEnable) {
+
+    if (deviceStatus_->isEnabled) {
         HILOGI("Start tracking.");
         std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory
                 .CreateSetMechCameraTrackingFrameCmd(*trackingFrameParams);

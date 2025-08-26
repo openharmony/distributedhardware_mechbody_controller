@@ -507,7 +507,7 @@ napi_value MechManager::MechInfoToNapiObject(napi_env env, const std::shared_ptr
 
     napi_value mechType;
     napi_create_int32(env, static_cast<int32_t>(info->mechType), &mechType);
-    napi_set_named_property(env, obj, "mechType", mechType);
+    napi_set_named_property(env, obj, "mechDeviceType", mechType);
 
     napi_value mechName;
     napi_create_string_utf8(env, info->mechName.c_str(), info->mechName.size(), &mechName);
@@ -535,14 +535,19 @@ napi_value MechManager::SetUserOperation(napi_env env, napi_callback_info info)
 
     int32_t jsOperation;
     napi_get_value_int32(env, args[0], &jsOperation);
+    if (jsOperation != 0 && jsOperation != 1) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(), "Operation error.");
+        return nullptr;
+    }
+
     auto operation = static_cast<Operation>(jsOperation);
 
     size_t macLength = 0;
     napi_get_value_string_utf8(env, args[1], nullptr, 0, &macLength);
     std::string mac(macLength, '\0');
-    if (napi_get_value_string_utf8(env, args[1], &mac[0], macLength + 1, nullptr) != napi_ok) {
+    if (napi_get_value_string_utf8(env, args[1], &mac[0], macLength + 1, nullptr) != napi_ok
+        || mac.empty() || mac == "") {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(), "Invalid mac.");
-        HILOGE("Invalid mac.");
         return nullptr;
     }
     size_t paramLength = 0;
@@ -658,6 +663,8 @@ napi_value MechManager::SetCameraTrackingLayout(napi_env env, napi_callback_info
         return nullptr;
     }
     if (jsLayout > LAYOUT_MAX || jsLayout < 0) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "trackingLayout out of range ");
         return nullptr;
     }
     auto layout = static_cast<CameraTrackingLayout>(jsLayout);

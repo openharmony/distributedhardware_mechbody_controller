@@ -201,6 +201,36 @@ enum {
      * Result(96469011) for device not placed on mech.
      */
     DETECTED_OBJECTS_EMPTY,
+
+    /**
+     * Result(96469012) for camera info is empty.
+     */
+    CAMERA_INFO_IS_EMPTY,
+
+    /**
+     * Result(96469013) for detected object is empty.
+     */
+    DETECTED_OBJECT_IS_EMPTY,
+
+    /**
+     * Result(96469012) for can not found mach info.
+     */
+    MECH_INFO_NOT_FOUND,
+
+    /**
+     * Result(96469013) for device has connected.
+     */
+    MECH_HAS_CONNECTED,
+
+    /**
+     * Result(96469014) for device connect failed.
+     */
+    MECH_CONNECT_FAILED,
+
+    /**
+     * Result(96469015) for device disconnect failed.
+     */
+    MECH_DISCONNECT_FAILED,
 };
 
 enum MechNapiErrorCode {

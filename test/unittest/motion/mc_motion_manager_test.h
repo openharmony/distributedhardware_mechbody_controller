@@ -19,7 +19,10 @@
 #include "event_handler.h"
 #include "iremote_stub.h"
 #include "gtest/gtest.h"
+
+#define private public
 #include "mc_motion_manager.h"
+#undef private
 
 namespace OHOS {
 namespace MechBodyController {
