@@ -33,7 +33,7 @@ GetMechCameraTrackingLayoutCmd::GetMechCameraTrackingLayoutCmd()
     rspSize_ = RSP_SIZE;
     needResponse_ = (RSP_SIZE > 0);
     timeoutMs_ = MECHBODY_MSG_TIMEOUT;
-    retryTimes_ = CMD_PRIORITY_LOW;
+    retryTimes_ = CMD_PRIORITY_MIDDLE;
 }
 
 std::shared_ptr<MechDataBuffer> GetMechCameraTrackingLayoutCmd::Marshal() const

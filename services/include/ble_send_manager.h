@@ -21,12 +21,21 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <condition_variable>
 #include <cstdint>
 
 #include "event_handler.h"
 
 #include "bluetooth_ble_central_manager.h"
 #include "bluetooth_gatt_client.h"
+#include "bluetooth_ble_central_manager.h"
+#include "bluetooth_gatt_client.h"
+#include "bluetooth_remote_device.h"
+#include "bluetooth_hid_host.h"
+#include "bluetooth_def.h"
+#include "bluetooth_host.h"
+#include "bluetooth_errorcode.h"
+#include "mechbody_controller_log.h"
 #include "mechbody_controller_types.h"
 
 namespace OHOS {
@@ -57,13 +66,54 @@ public:
     void OnServicesDiscovered(int status);
     void OnSetNotifyCharacteristic(const OHOS::Bluetooth::GattCharacteristic &characteristic, int status);
     void OnCharacteristicChanged(const OHOS::Bluetooth::GattCharacteristic &characteristic);
-
-    const MechInfo &GetMechInfo() const;
-
-    void SetMechInfo(const MechInfo &mechInfo);
+    const std::string &getMac() const;
+    void setMac(const std::string &mac);
 
 private:
-    MechInfo mechInfo_;
+    std::string mac;
+};
+
+class HostObserver : public OHOS::Bluetooth::BluetoothRemoteDeviceObserver {
+    const std::string TAG = "HostObserver";
+public:
+
+    ~HostObserver() = default;
+
+    void OnAclStateChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        int state, unsigned int reason) override;
+
+    void OnPairStatusChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        int status, int cause) override;
+
+    void OnRemoteUuidChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        const std::vector<Bluetooth::ParcelUuid> &uuids)override;
+
+    void OnRemoteNameChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        const std::string &deviceName)override;
+
+    void OnRemoteAliasChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        const std::string &alias)override;
+
+    void OnRemoteCodChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        const OHOS::Bluetooth::BluetoothDeviceClass &cod) override;
+
+    void OnRemoteBatteryLevelChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        int batteryLevel) override;
+
+    void OnReadRemoteRssiEvent(const OHOS::Bluetooth::BluetoothRemoteDevice &device, int rssi,
+        int status) override;
+
+    void OnRemoteBatteryChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        const OHOS::Bluetooth::DeviceBatteryInfo &batteryInfo) override;
+
+    void OnRemoteDeviceCommonInfoReport(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+        const std::vector<uint8_t> &value) override;
+};
+
+class HidObserver : public OHOS::Bluetooth::HidHostObserver {
+    const std::string TAG = "HidObserver";
+public:
+    void OnConnectionStateChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device, int state, int cause) override;
 };
 
 class BleSendManager {
@@ -80,6 +130,7 @@ public:
     ~BleSendManager();
 
     void Init();
+    void StartEvent();
     void UnInit();
 
     void OnScanCallback(const Bluetooth::BleScanResult &result);
@@ -87,13 +138,23 @@ public:
     int32_t SendData(uint8_t *data, uint32_t dataLen);
     int32_t OnReceive(uint8_t *data, size_t size);
     void OnConnectionStateChanged(int connectionState, int ret, MechInfo &mechInfo);
+    void OnPairStateChanged(int pairState, int cause, MechInfo &mechInfo);
+    void OnHidStateChanged(int hidState, int cause, MechInfo &mechInfo);
     bool CheckGattcIsReady();
     int32_t RegisterTransportSendAdapter(const std::shared_ptr<BleReceviceListener> listener);
     int32_t UnRegisterTransportSendAdapter(const std::shared_ptr<BleReceviceListener> listener);
     void OnGattReady(MechInfo &mechInfo);
     void OnGattDisconnect(MechInfo &mechInfo);
+    int32_t MechbodyConnect(std::string mac, std::string deviceName);
     int32_t MechbodyGattcConnect(std::string mac, std::string deviceName);
+    int32_t MechbodyPair(std::string &mac, std::string &deviceName);
+    int32_t MechbodyDisConnect(MechInfo &mechInfo);
+    int32_t MechbodyDisConnectSync(MechInfo &mechInfo);
+    int32_t MechbodyHidConnect(std::string &mac, std::string &deviceName);
     int32_t MechbodyGattcDisconnect(MechInfo mechInfo);
+    int32_t MechbodyHidDisconnect(MechInfo &mechInfo);
+
+public:
     bool isGattReady_ = false;
     std::mutex isGattReadyMtx_;
 
@@ -120,6 +181,23 @@ private:
     std::mutex bleReceviceMutex_;
     std::vector<std::shared_ptr<BleReceviceListener>> bleReceviceListeners_;
     std::atomic<bool> isBleConnected_ = false;
+
+    std::mutex observerRegisterMutex_;
+    std::shared_ptr<HidObserver> observer_ = nullptr;
+    std::shared_ptr<HostObserver> hostObserver_ = nullptr;
+
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
+
+    std::mutex gattMutex_;
+    std::condition_variable gattCv_;
+    std::mutex pairMutex_;
+    std::condition_variable pairCv_;
+    std::mutex hidMutex_;
+    std::condition_variable hidCv_;
+    std::mutex gattDisconnMutex_;
+    std::condition_variable gattDisconnCv_;
+    std::mutex hidDisconnMutex_;
+    std::condition_variable hidDisconnCv_;
 };
 
 class BleCentralManagerCallbackImpl : public Bluetooth::BleCentralManagerCallback {

@@ -362,7 +362,7 @@ HWTEST_F(BleSendManagerTest, OnGattReady_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest OnGattReady_001 begin" << std::endl;
     MechInfo mechInfo;
-    EXPECT_NO_FATAL_FAILURE(bleSendManager_.OnGattReady(mechInfo));
+    bleSendManager_.OnGattReady(mechInfo);
     DTEST_LOG << "BleSendManagerTest OnGattReady_001 end" << std::endl;
 }
 
@@ -608,30 +608,6 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_001, TestSize.Level1)
     int ret = bleSendManager_.MechbodyGattcConnect(mac, deviceName);
     EXPECT_EQ(ret, MECHBODY_GATT_CONNECT_FAILED);
     DTEST_LOG << "BleSendManagerTest MechbodyGattcConnect_001 end" << std::endl;
-}
-
-/**
- * @tc.name  : MechbodyGattcConnect_002
- * @tc.number: MechbodyGattcConnect_002
- * @tc.desc  : Test MechbodyGattcConnect function.
-*/
-HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_002, TestSize.Level1)
-{
-    DTEST_LOG << "BleSendManagerTest MechbodyGattcConnect_002 begin" << std::endl;
-    std::string mac = "123456789";
-    std::string deviceName = "deviceName";
-    bleSendManager_.bleGattClientCallBack_ = std::make_shared<BleGattClientCallback>();
-    int ret = bleSendManager_.MechbodyGattcConnect(mac, deviceName);
-    EXPECT_EQ(ret, MECHBODY_GATT_CONNECT_FAILED);
-
-    MechInfo mechInfo;
-    std::size_t hash = std::hash<std::string>()(mac);
-    std::string macHash = std::to_string(hash);
-    mechInfo.macHash = macHash;
-    bleSendManager_.bleGattClientCallBack_->SetMechInfo(mechInfo);
-    ret = bleSendManager_.MechbodyGattcConnect(mac, deviceName);
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "BleSendManagerTest MechbodyGattcConnect_002 end" << std::endl;
 }
 
 /**

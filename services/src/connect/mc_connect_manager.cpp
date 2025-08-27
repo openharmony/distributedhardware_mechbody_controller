@@ -33,7 +33,6 @@ MechConnectManager& MechConnectManager::GetInstance()
 
 namespace {
 const std::string TAG = "MechConnectManager";
-constexpr int32_t TIMEOUT = 3000;
 }
 
 void MechConnectManager::Init()
@@ -55,14 +54,7 @@ void MechConnectManager::UnInit()
 
 int32_t MechConnectManager::NotifyMechConnect(MechInfo& mechInfo)
 {
-    {
-        std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
-        GenConnectMechInfo(mechInfo);
-        HILOGI("called, mechId: %{public}d.", mechInfo.mechId);
-        MechInfo newMechInfo = mechInfo;
-        mechInfos_.insert(newMechInfo);
-        MechBodyControllerService::GetInstance().OnDeviceConnected(mechInfo.mechId);
-    }
+    MechBodyControllerService::GetInstance().OnDeviceConnected(mechInfo.mechId);
     auto connectNotifyTask = [this, mechInfo]() {
         std::lock_guard<std::mutex> autoLock(listenerSetMutex_);
         for (auto& listener : listenerSet_) {
@@ -76,21 +68,6 @@ int32_t MechConnectManager::NotifyMechConnect(MechInfo& mechInfo)
         return ERR_OK;
     }
     return ERR_OK;
-}
-
-void MechConnectManager::GenConnectMechInfo(MechInfo& mechInfo)
-{
-    HILOGI("called, mechType: %{public}d, mechName: %{public}s.", mechInfo.mechType,
-        GetAnonymStr(mechInfo.mechName).c_str());
-    int32_t mechId = 0;
-    MechInfo newMechInfo = mechInfo;
-    mechInfo.state = AttachmentState::ATTACHED;
-    while (mechInfos_.count(newMechInfo) != 0) {
-        mechId = (mechId + 1) % INT32_MAX;
-        newMechInfo.mechId = mechId;
-    }
-    HILOGI("end, mechId: %{public}d.", mechId);
-    mechInfo.mechId = mechId;
 }
 
 int32_t MechConnectManager::NotifyMechDisconnect(const MechInfo& mechInfo)
@@ -204,12 +181,12 @@ bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached)
     mechInfos_.erase(it);
     mechInfos_.insert(newMechInfo);
 
-    if (newMechInfo.state == AttachmentState::DETACHED) {
-        auto disconnectTask = [this, newMechInfo]() {
-            BleSendManager::GetInstance().MechbodyGattcDisconnect(newMechInfo);
+    if (!isAttached) {
+        auto disconnectTask = [this, newMechInfo]() mutable {
+            BleSendManager::GetInstance().MechbodyDisConnect(newMechInfo);
         };
-        if (eventHandler_ == nullptr || !eventHandler_->PostTask(disconnectTask, "disconnect", TIMEOUT)) {
-            HILOGE("post task failed");
+        if (eventHandler_ == nullptr || !eventHandler_->PostTask(disconnectTask, "disconnect")) {
+            HILOGE("MECHBODY_EXEC_CONNECT post task failed");
             return ERR_OK;
         }
     }
@@ -218,16 +195,15 @@ bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached)
 
 bool MechConnectManager::GetMechState(int32_t mechId)
 {
-    HILOGI("called, mechId: %{public}d", mechId);
     std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
     auto it = std::find_if(mechInfos_.begin(), mechInfos_.end(), [mechId](const MechInfo& mechInfo) {
         return mechInfo.mechId == mechId;
     });
     if (it == mechInfos_.end()) {
-        HILOGE("not found");
+        HILOGE("mechId: %{public}d not found", mechId);
         return false;
     }
-    HILOGI("found");
+    HILOGD("mechId: %{public}d found", mechId);
     MechInfo mechInfo = *it;
     return mechInfo.state == AttachmentState::ATTACHED ? true : false;
 }
@@ -241,8 +217,123 @@ bool MechConnectManager::UpdateBleStatus(bool isBLEActive)
 
 bool MechConnectManager::GetLocalDeviceBleStatus()
 {
-    HILOGI("called");
+    HILOGD("called");
     return isBLEActive_.load();
+}
+
+bool MechConnectManager::IsConnect()
+{
+    HILOGI("called");
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    if (mechInfos_.empty() || mechInfos_.size() == 0) {
+        HILOGW("list is empty");
+        return false;
+    }
+    return true;
+}
+
+int32_t MechConnectManager::AddMechInfo(MechInfo &mechInfo)
+{
+    {
+        HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", mechInfo.ToString().c_str());
+        std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+        while (mechInfos_.count(mechInfo) != 0) {
+            mechInfo.mechId = (mechInfo.mechId + 1) % INT32_MAX;
+        }
+        mechInfos_.insert(mechInfo);
+    }
+    return ERR_OK;
+}
+
+
+int32_t MechConnectManager::GetMechInfo(std::string &mac, MechInfo &mechInfo)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    for (auto &info: mechInfos_) {
+        if (info.mac == mac) {
+            mechInfo = info;
+            HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", info.ToString().c_str());
+            return ERR_OK;
+        }
+    }
+    return MECH_INFO_NOT_FOUND;
+}
+
+int32_t MechConnectManager::SetMechanicGattState(std::string &mac, bool state)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    for (const auto& info : mechInfos_) {
+        if (info.mac == mac) {
+            const_cast<MechInfo&>(info).gattCoonectState = state;
+            HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", info.ToString().c_str());
+            return ERR_OK;
+        }
+    }
+    return MECH_INFO_NOT_FOUND;
+}
+int32_t MechConnectManager::GetMechanicGattState(std::string &mac, bool &state)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    for (auto &info: mechInfos_) {
+        if (info.mac == mac) {
+            state = info.gattCoonectState;
+            HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", info.ToString().c_str());
+            return ERR_OK;
+        }
+    }
+    return MECH_INFO_NOT_FOUND;
+}
+
+int32_t MechConnectManager::SetMechanicPairState(std::string &mac, bool state)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    for (const auto& info : mechInfos_) {
+        if (info.mac == mac) {
+            const_cast<MechInfo&>(info).pairState = state;
+            HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", info.ToString().c_str());
+            return ERR_OK;
+        }
+    }
+    return MECH_INFO_NOT_FOUND;
+}
+
+int32_t MechConnectManager::GetMechanicPairState(std::string &mac, bool &state)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    for (auto &info: mechInfos_) {
+        if (info.mac == mac) {
+            state = info.pairState;
+            HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", info.ToString().c_str());
+            return ERR_OK;
+        }
+    }
+    return MECH_INFO_NOT_FOUND;
+}
+
+int32_t MechConnectManager::SetMechanicHidState(std::string &mac, bool state)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    for (const auto& info : mechInfos_) {
+        if (info.mac == mac) {
+            const_cast<MechInfo&>(info).hidState = state;
+            HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", info.ToString().c_str());
+            return ERR_OK;
+        }
+    }
+    return MECH_INFO_NOT_FOUND;
+}
+
+int32_t MechConnectManager::GetMechanicHidState(std::string &mac, bool &state)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    for (auto &info: mechInfos_) {
+        if (info.mac == mac) {
+            state = info.hidState;
+            HILOGI("MECHBODY_EXEC_CONNECT mechInfo: %{public}s", info.ToString().c_str());
+            return ERR_OK;
+        }
+    }
+    return MECH_INFO_NOT_FOUND;
 }
 } // namespace MechBodyController
 } // namespace OHOS

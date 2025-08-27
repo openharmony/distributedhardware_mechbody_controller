@@ -60,9 +60,16 @@ public:
     bool GetMechState(int32_t mechId);
     bool UpdateBleStatus(bool isBLEActive);
     bool GetLocalDeviceBleStatus();
+    bool IsConnect();
 
-private:
-    void GenConnectMechInfo(MechInfo& mechInfo);
+    int32_t AddMechInfo(MechInfo &mechInfo);
+    int32_t GetMechInfo(std::string &mac, MechInfo &mechInfo);
+    int32_t SetMechanicGattState(std::string &mac, bool state);
+    int32_t GetMechanicGattState(std::string &mac, bool &state);
+    int32_t SetMechanicPairState(std::string &mac, bool state);
+    int32_t GetMechanicPairState(std::string &mac, bool &state);
+    int32_t SetMechanicHidState(std::string &mac, bool state);
+    int32_t GetMechanicHidState(std::string &mac, bool &state);
 
 private:
     std::shared_ptr<AppExecFwk::EventHandler> eventHandler_;

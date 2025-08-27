@@ -174,12 +174,17 @@ int32_t TransportSendAdapter::SendCommand(const std::shared_ptr<CommandBase> &cm
             return;
         }
         int32_t result = BleSendManager::GetInstance().SendData(buffer->Data(), buffer->Size());
+        HILOGI("sendTask cmdType: 0x%{public}x; dataLen= %{public}zu, result = %{public}d",
+            cmd->GetCmdType(), buffer->Size(), result);
+        std::this_thread::sleep_for(std::chrono::milliseconds(CMD_RETRY_INTERVAL));
         int32_t retry = cmd->GetRetryTimes();
         while (result != Bluetooth::BT_SUCCESS && retry > 0) {
             HILOGI("data send failed, retry.");
             retry--;
-            std::this_thread::sleep_for(std::chrono::milliseconds(CMD_RETRY_INTERVAL));
             result = BleSendManager::GetInstance().SendData(buffer->Data(), buffer->Size());
+            HILOGI("sendTask cmdType: 0x%{public}x; dataLen= %{public}zu, result = %{public}d",
+                cmd->GetCmdType(), buffer->Size(), result);
+            std::this_thread::sleep_for(std::chrono::milliseconds(CMD_RETRY_INTERVAL));
         }
 
         if (cmd->NeedResponse()) {
@@ -265,13 +270,16 @@ int32_t TransportSendAdapter::PushResponseTask(const std::shared_ptr<CommandBase
         HILOGE("cmd is nullptr");
         return INVALID_PARAMETERS_ERR;
     }
+    {
+        std::unique_lock<std::shared_mutex> responseReadLock(responseMutex_);
+        pendingRequests_.insert(std::make_pair(seqNo, cmd));
+    }
     HILOGI("cmdType : 0x%{public}x, seqNo: %{public}d", cmd->GetCmdType(), seqNo);
     std::lock_guard<std::mutex> lock(recvEventMutex_);
     if (recvEventHandler_ == nullptr) {
         HILOGE("eventHandler is nullptr");
         return INVALID_PARAMETERS_ERR;
     }
-    pendingRequests_.insert(std::make_pair(seqNo, cmd));
     auto responseTimeoutTask = [this, seqNo]() {
         ExeRespTimeoutTask(seqNo);
     };
@@ -283,7 +291,6 @@ int32_t TransportSendAdapter::PushResponseTask(const std::shared_ptr<CommandBase
 
 uint16_t TransportSendAdapter::CreateResponseSeqNo()
 {
-    HILOGI("called");
     std::unique_lock<std::shared_mutex> responseReadLock(responseMutex_);
     if (lastSeqNo_ >= UINT16_MAX) {
         HILOGE("the seqNo is full, reorder the seqNo.");

@@ -60,7 +60,6 @@ mech_public_deps = [ "${mechbody_path}/services:mechbody_service" ]
 
 ohos_unittest("mc_montion_manager_test") {
   visibility = [ ":*" ]
-  cflags = [ "-Dprivate=public" ]
 
   module_out_path = mechbody_module_output_path
 

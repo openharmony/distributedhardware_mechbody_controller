@@ -53,22 +53,6 @@ void McCameraTrackingControllerTest::SetUp()
     DTEST_LOG << "McCameraTrackingControllerTest::SetUp" << std::endl;
 }
 
-/**
- * @tc.name  : OnUsingAppChange_001
- * @tc.number: OnUsingAppChange_001
- * @tc.desc  : Testing OnUsingAppChange function.
- */
-HWTEST_F(McCameraTrackingControllerTest, OnUsingAppChange_001, TestSize.Level1)
-{
-    DTEST_LOG << "McCameraTrackingControllerTest OnUsingAppChange_001 begin" << std::endl;
-
-    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
-    CameraStandard::CameraAppInfo cameraAppInfo;
-
-    int32_t ret = mcCameraTrackingController.OnUsingAppChange(cameraAppInfo);
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "McCameraTrackingControllerTest OnUsingAppChange_001 end" << std::endl;
-}
 
 /**
  * @tc.name  : UpdateMotionManagers_001
@@ -80,16 +64,15 @@ HWTEST_F(McCameraTrackingControllerTest, UpdateMotionManagers_001, TestSize.Leve
     DTEST_LOG << "McCameraTrackingControllerTest UpdateMotionManagers_001 begin" << std::endl;
 
     McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
-    uint32_t tokenId = 100;
 
-    int32_t ret = mcCameraTrackingController.UpdateMotionManagers(tokenId);
+    int32_t ret = mcCameraTrackingController.UpdateMotionManagers();
     EXPECT_EQ(ret, ERR_OK);
 
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
-    ret = mcCameraTrackingController.UpdateMotionManagers(tokenId);
+    ret = mcCameraTrackingController.UpdateMotionManagers();
     EXPECT_EQ(ret, DEVICE_NOT_PLACED_ON_MECH);
     
     DTEST_LOG << "McCameraTrackingControllerTest UpdateMotionManagers_001 end" << std::endl;
