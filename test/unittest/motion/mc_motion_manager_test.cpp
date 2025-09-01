@@ -148,7 +148,7 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_001, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<CameraInfo> cameraInfo = std::make_shared<CameraInfo>();
-    cameraInfo->isCameraOn_ = true;
+    cameraInfo->isCameraOn = true;
     McCameraTrackingController::GetInstance().currentCameraInfo_ = cameraInfo;
 
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
@@ -171,7 +171,7 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_002, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<CameraInfo> cameraInfo = std::make_shared<CameraInfo>();
-    cameraInfo->isCameraOn_ = true;
+    cameraInfo->isCameraOn = true;
     McCameraTrackingController::GetInstance().currentCameraInfo_ = cameraInfo;
 
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
@@ -194,7 +194,7 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_003, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<CameraInfo> cameraInfo = std::make_shared<CameraInfo>();
-    cameraInfo->isCameraOn_ = true;
+    cameraInfo->isCameraOn = true;
     McCameraTrackingController::GetInstance().currentCameraInfo_ = cameraInfo;
 
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
@@ -217,7 +217,7 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_004, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<CameraInfo> cameraInfo = std::make_shared<CameraInfo>();
-    cameraInfo->isCameraOn_ = true;
+    cameraInfo->isCameraOn = true;
     McCameraTrackingController::GetInstance().currentCameraInfo_ = cameraInfo;
 
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
@@ -240,7 +240,7 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_005, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<CameraInfo> cameraInfo = std::make_shared<CameraInfo>();
-    cameraInfo->isCameraOn_ = true;
+    cameraInfo->isCameraOn = true;
     McCameraTrackingController::GetInstance().currentCameraInfo_ = cameraInfo;
 
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
@@ -263,7 +263,7 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_006, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<CameraInfo> cameraInfo = std::make_shared<CameraInfo>();
-    cameraInfo->isCameraOn_ = true;
+    cameraInfo->isCameraOn = true;
     McCameraTrackingController::GetInstance().currentCameraInfo_ = cameraInfo;
 
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
@@ -286,7 +286,7 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_007, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<CameraInfo> cameraInfo = std::make_shared<CameraInfo>();
-    cameraInfo->isCameraOn_ = true;
+    cameraInfo->isCameraOn = true;
     McCameraTrackingController::GetInstance().currentCameraInfo_ = cameraInfo;
 
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
