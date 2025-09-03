@@ -48,6 +48,7 @@ constexpr int TASK_COMPLETED = 2;
 constexpr int32_t RESPONSE_TIMEOUT = 10000;
 constexpr float YAW_OFFSET = 0.2f;
 constexpr int32_t CMD_SEND_INTERVAL = 100;
+constexpr int32_t TRACKING_CHECKER_INTERVAL = 2;
 
 const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
     {CameraKeyEvent::START_FILMING, MMI::KeyEvent::KEYCODE_VOLUME_UP},
@@ -368,11 +369,15 @@ void MotionManager::MechTrackingStatusNotify(const std::shared_ptr<RegisterMechT
         if (!isEnabled) {
             trackingEvent = TrackingEvent::CAMERA_TRACKING_USER_DISABLED;
             deviceStatus_->isEnabled = false;
-            tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(MechTrackingStatus::MECH_TK_DISABLE);
+            deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_DISABLE;
+            tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
+            HILOGI("tkCmd is:MECH_TK_DISABLE.");
         } else {
             trackingEvent = TrackingEvent::CAMERA_TRACKING_USER_ENABLED;
             deviceStatus_->isEnabled = true;
-            tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET);
+            deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
+            tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
+            HILOGI("tkCmd is:MECH_TK_ENABLE_NO_TARGET.");
         }
     }
     CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_ is empty.");
@@ -445,8 +450,7 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     deviceStatus_->rotateSpeedLimit.speedMax.rollSpeed = DEGREE_CIRCLED_MIN;
     deviceStatus_->rotateSpeedLimit.speedMax.pitchSpeed = DEGREE_CIRCLED_MIN;
 
-    std::shared_ptr<GetMechCapabilityInfoCmd> limitCmd = factory
-            .CreateGetMechCapabilityInfoCmd();
+    std::shared_ptr<GetMechCapabilityInfoCmd> limitCmd = factory.CreateGetMechCapabilityInfoCmd();
     CHECK_POINTER_RETURN(limitCmd, "CapabilityInfoCmd is empty.");
     auto limitCallback = [this, limitCmd]() {
         auto rawParams = limitCmd->GetParams();
@@ -469,7 +473,8 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
     sendAdapter_->SendCommand(hidCmd, CMD_SEND_INTERVAL);
 
-    auto tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET);
+    deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
+    auto tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
     CHECK_POINTER_RETURN(tkCmd, "tkCmd is empty.");
     sendAdapter_->SendCommand(tkCmd, CMD_SEND_INTERVAL * BIT_OFFSET_2);
 
@@ -480,7 +485,47 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     eventCon_.wait(lock, [this] {
         return eventHandler_ != nullptr;
     });
+    startTrackingChecker_ = true;
+    trackingCheckerThread_ = std::make_unique<std::thread>(&MotionManager::TrackingChecker, this);
     HILOGI("MotionManager end.");
+}
+
+void MotionManager::TrackingChecker()
+{
+    HILOGI("TrackingChecker thread started");
+    while (startTrackingChecker_.load()) {
+        bool shouldProcessTracking = false;
+        {
+            std::unique_lock<std::mutex> lock(deviceStatusMutex_);
+            shouldProcessTracking = (deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_ENABLE_WITH_TARGET);
+        }
+        
+        if (shouldProcessTracking) {
+            ProcessTrackingStatus();
+        }
+        
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+void MotionManager::ProcessTrackingStatus()
+{
+    auto currentTime = std::chrono::steady_clock::now();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastTrackingFrameTime_).count();
+    if (timeDiff <= TRACKING_CHECKER_INTERVAL) {
+        return;
+    }
+    std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd = nullptr;
+    {
+        std::unique_lock<std::mutex> lock(deviceStatusMutex_);
+        deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
+        tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
+    }
+    
+    HILOGI("Tracking status set to MECH_TK_ENABLE_NO_TARGET due to inactivity.");
+    if (sendAdapter_ != nullptr) {
+        sendAdapter_->SendCommand(tkCmd);
+    }
 }
 
 void MotionManager::FormatLimit(RotateDegreeLimit &params)
@@ -600,6 +645,13 @@ MotionManager::~MotionManager()
         eventHandler_ = nullptr;
     } else {
         HILOGE("eventHandler_ is nullptr");
+    }
+
+    if (trackingCheckerThread_ != nullptr) {
+        startTrackingChecker_ = false;
+        if (trackingCheckerThread_->joinable()) {
+            trackingCheckerThread_->join();
+        }
     }
     HILOGI("~MotionManager end.");
 }
@@ -999,6 +1051,7 @@ int32_t MotionManager::GetSpeedControlTimeLimit(std::shared_ptr<TimeLimit> &time
     timeLimit->max = DEFAULT_DURATION;
     return ERR_OK;
 }
+
 int32_t MotionManager::GetRotateSpeedLimit(RotateSpeedLimit &speedLimit)
 {
     if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
@@ -1041,6 +1094,21 @@ int32_t MotionManager::GetRotationLimit(RotateDegreeLimit &rotationLimit)
     return ERR_OK;
 }
 
+void MotionManager::UpdateTrackingTime()
+{
+    lastTrackingFrameTime_ = std::chrono::steady_clock::now();
+    std::lock_guard<std::mutex> lock(deviceStatusMutex_);
+    if (deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET) {
+        deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_WITH_TARGET;
+        std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd = nullptr;
+        tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
+        HILOGI("tkCmd, is:MECH_TK_ENABLE_WITH_TARGET.");
+        if (sendAdapter_ != nullptr) {
+            sendAdapter_->SendCommand(tkCmd);
+        }
+    }
+}
+
 int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<TrackingFrameParams> trackingFrameParams)
 {
     HILOGD("start.");
@@ -1055,6 +1123,7 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
 
     if (deviceStatus_->isEnabled) {
         HILOGI("Start tracking.");
+        UpdateTrackingTime();
         std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory
                 .CreateSetMechCameraTrackingFrameCmd(*trackingFrameParams);
         CHECK_POINTER_RETURN_VALUE(cameraTrackingFrameCmd, INVALID_PARAMETERS_ERR, "CameraTrackingFrameCmd is empty.");

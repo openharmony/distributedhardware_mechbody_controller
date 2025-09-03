@@ -48,6 +48,7 @@ struct DeviceStatus {
     MechBaseInfo mechBaseInfo;
     MechCapabilityInfo mechCapabilityInfo;
     RotationAxesStatus rotationAxesStatus;
+    MechTrackingStatus trackingStatus;
 };
 
 struct MechNapiCommandCallbackInfo {
@@ -125,6 +126,10 @@ private:
         float rollResult);
     void CheckYawSpeed(const std::shared_ptr<RotateBySpeedParam> &rotateBySpeedParam, const RotateDegreeLimit &limit,
         float yawResult);
+    void TrackingChecker();
+    void ProcessTrackingStatus();
+    void UpdateTrackingTime();
+
 private:
     std::shared_ptr<DeviceStatus> deviceStatus_;
     std::mutex deviceStatusMutex_;
@@ -150,6 +155,11 @@ private:
     std::shared_mutex taskIdMutex_;
     uint8_t lastTaskId_ = 0;
     CommandFactory factory;
+
+    // tracking state manager
+    std::chrono::steady_clock::time_point lastTrackingFrameTime_;
+    std::unique_ptr<std::thread> trackingCheckerThread_;
+    std::atomic<bool> startTrackingChecker_;
 };
 
 class MechEventListenerImpl : public IMechEventListener {
