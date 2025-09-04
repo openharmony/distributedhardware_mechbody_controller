@@ -28,6 +28,7 @@ using namespace OHOS;
 
 namespace OHOS {
 namespace MechBodyController {
+
 void McCameraTrackingControllerTest::SetUpTestCase()
 {
     DTEST_LOG << "McCameraTrackingControllerTest::SetUpTestCase" << std::endl;
