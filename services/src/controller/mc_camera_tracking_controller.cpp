@@ -468,6 +468,7 @@ void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> 
     }
     trackingFrameParams->roi.width = rect.width - rect.topLeftX;
     trackingFrameParams->roi.height = rect.height - rect.topLeftY;
+    
     AdjustROI(trackingFrameParams->roi, rect, currentCameraInfo_->cameraType, sensorRotation_);
     HILOGI("roi info, roi.x: %{public}f; roi.y: %{public}f", trackingFrameParams->roi.x, trackingFrameParams->roi.y);
 }
