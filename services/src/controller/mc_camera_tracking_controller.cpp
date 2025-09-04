@@ -468,23 +468,8 @@ void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> 
     }
     trackingFrameParams->roi.width = rect.width - rect.topLeftX;
     trackingFrameParams->roi.height = rect.height - rect.topLeftY;
-    if (currentCameraInfo_->cameraType == CameraType::FRONT) {
-        if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::LEFT) {
-            trackingFrameParams->roi.x = NUM_1 - rect.topLeftX - trackingFrameParams->roi.width / NUM_2;
-            trackingFrameParams->roi.y = NUM_1 - rect.topLeftY - trackingFrameParams->roi.height / NUM_2;
-        } else if (sensorRotation_ == MobileRotation::RIGHT || sensorRotation_ == MobileRotation::DOWN) {
-            trackingFrameParams->roi.x = rect.topLeftX + trackingFrameParams->roi.width / NUM_2;
-            trackingFrameParams->roi.y = rect.topLeftY + trackingFrameParams->roi.height / NUM_2;
-        }
-    } else if (currentCameraInfo_->cameraType == CameraType::BACK) {
-        if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::LEFT) {
-            trackingFrameParams->roi.x = rect.topLeftX + trackingFrameParams->roi.width / NUM_2;
-            trackingFrameParams->roi.y = rect.topLeftY + trackingFrameParams->roi.height / NUM_2;
-        } else if (sensorRotation_ == MobileRotation::RIGHT || sensorRotation_ == MobileRotation::DOWN) {
-            trackingFrameParams->roi.x = NUM_1 - rect.topLeftX - trackingFrameParams->roi.width / NUM_2;
-            trackingFrameParams->roi.y = NUM_1 - rect.topLeftY - trackingFrameParams->roi.height / NUM_2;
-        }
-    }
+    AdjustROI(trackingFrameParams->roi, rect, currentCameraInfo_->cameraType, sensorRotation_);
+    HILOGI("roi info, roi.x: %{public}f; roi.y: %{public}f", trackingFrameParams->roi.x, trackingFrameParams->roi.y);
 }
 
 int32_t McCameraTrackingController::UpdateMotionsWithTrackingData(
@@ -601,22 +586,21 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
 
 int32_t McCameraTrackingController::SetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout)
 {
+    if (currentCameraInfo_ != nullptr) {
+        if (eventHandler_ != nullptr) {
+            eventHandler_->RemoveTask(SEND_TRACKING_LAYOUT_TASK_NAME);
+            eventHandler_->PostTask(
+                [this]() {
+                    SetTrackingLayout(currentCameraInfo_->currentCameraTrackingLayout);
+                },
+                SEND_TRACKING_LAYOUT_TASK_NAME,
+                SET_TRACKING_LAYOUT_TASK_DELAY);
+        }
+    }
     std::shared_ptr<LayoutParams> layoutParam = std::make_shared<LayoutParams>();
-    layoutParam->isDefault = cameraTrackingLayout == CameraTrackingLayout::DEFAULT;
+    layoutParam->isDefault = false;
     layoutParam->offsetX = LAYOUT_MIDDLE;
     layoutParam->offsetY = LAYOUT_MIDDLE;
-    if (sensorRotation_ == MobileRotation::UP) {
-        layoutParam->offsetY = ParseLayout(cameraTrackingLayout);
-    }
-    if (sensorRotation_ == MobileRotation::DOWN) {
-        layoutParam->offsetY = ParseReverseLayout(cameraTrackingLayout);
-    }
-    if (sensorRotation_ == MobileRotation::LEFT) {
-        layoutParam->offsetX = ParseReverseLayout(cameraTrackingLayout);
-    }
-    if (sensorRotation_ == MobileRotation::RIGHT) {
-        layoutParam->offsetX = ParseLayout(cameraTrackingLayout);
-    }
     bool hasSuccess = false;
     {
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
@@ -641,41 +625,9 @@ int32_t McCameraTrackingController::SetTrackingLayout(CameraTrackingLayout &came
     return hasSuccess ? ERR_OK : INVALID_TRACKING_LAYOUT;
 }
 
-int32_t McCameraTrackingController::SetTrackingLayout(const uint32_t &tokenId,
-    CameraTrackingLayout &cameraTrackingLayout)
+int32_t McCameraTrackingController::GetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout)
 {
-    HILOGI("tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
-    int32_t result = SetTrackingLayout(cameraTrackingLayout);
-    {
-        std::lock_guard<std::mutex> lock(appSettingsMutex_);
-        if (appSettings.find(tokenId) == appSettings.end()) {
-            std::shared_ptr<AppSetting> appSetting = std::make_shared<AppSetting>();
-            appSettings[tokenId] = appSetting;
-        }
-        if (result == ERR_OK) {
-            appSettings[tokenId]->cameraTrackingLayout = cameraTrackingLayout;
-        }
-    }
-    return ERR_OK;
-}
-
-int32_t McCameraTrackingController::GetTrackingLayout(const uint32_t &tokenId,
-    CameraTrackingLayout &cameraTrackingLayout)
-{
-    HILOGI("tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
-    if (appSettings.find(tokenId) == appSettings.end()) {
-        HILOGE("No configuration information is saved. app token id: %{public}s;", GetAnonymUint32(tokenId).c_str());
-        cameraTrackingLayout = CameraTrackingLayout::DEFAULT;
-        return ERR_OK;
-    }
-
-    std::shared_ptr<AppSetting> setting = appSettings[tokenId];
-    if (setting == nullptr) {
-        HILOGE("setting is nullptr. app token id: %{public}s;", GetAnonymUint32(tokenId).c_str());
-        cameraTrackingLayout = CameraTrackingLayout::DEFAULT;
-        return ERR_OK;
-    }
-    cameraTrackingLayout = setting->cameraTrackingLayout;
+    cameraTrackingLayout = currentCameraInfo_->currentCameraTrackingLayout;
     return ERR_OK;
 }
 
