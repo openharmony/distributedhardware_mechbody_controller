@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "event_runner.h"
+#include "mc_camera_tracking_controller.h"
 #include "mechbody_controller_service.h"
 
 namespace OHOS {
@@ -73,6 +74,7 @@ int32_t MechConnectManager::NotifyMechConnect(MechInfo& mechInfo)
 int32_t MechConnectManager::NotifyMechDisconnect(const MechInfo& mechInfo)
 {
     HILOGI("called, mechId: %{public}d.", mechInfo.mechId);
+    McCameraTrackingController::GetInstance().OnConnectChange();
     {
         std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
         auto it = mechInfos_.find(mechInfo);

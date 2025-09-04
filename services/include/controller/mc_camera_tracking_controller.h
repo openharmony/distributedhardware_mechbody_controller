@@ -46,7 +46,6 @@ enum class CameraVideoStabilizationMode : int32_t {
 
 struct AppSetting {
     bool isTrackingEnabled = true;
-    CameraTrackingLayout cameraTrackingLayout = CameraTrackingLayout::DEFAULT;
 };
 
 struct CameraInfo {
@@ -127,9 +126,9 @@ public:
     int32_t UnRegisterTrackingEventCallback(const uint32_t &tokenId);
     int32_t OnTrackingEvent(const int32_t &mechId, const TrackingEvent &event);
     int32_t SetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout);
-    int32_t SetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout);
-    int32_t GetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout);
+    int32_t GetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout);
     std::shared_ptr<CameraInfo> GetCurrentCameraInfo() const;
+    void OnConnectChange();
 
 private:
     int32_t ComputeFov();
@@ -150,8 +149,9 @@ private:
     void UnRegisterTrackingListener();
     void RegisterSensorListener();
     void UnRegisterSensorListener();
-    float ParseLayout(CameraTrackingLayout &cameraTrackingLayout);
-    float ParseReverseLayout(CameraTrackingLayout &cameraTrackingLayout);
+    void AdjustROI(ROI &roi, CameraStandard::Rect &rect, CameraType cameraType, MobileRotation sensorRotation);
+    void AdjustYOffset(ROI &roi, CameraType cameraType, CameraTrackingLayout trackingLayout);
+    void AdjustXOffset(ROI &roi, CameraType cameraType, CameraTrackingLayout trackingLayout);
 
 public:
     std::mutex trackingEventCallbackMutex_;

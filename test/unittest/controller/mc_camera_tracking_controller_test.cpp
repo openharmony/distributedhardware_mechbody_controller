@@ -28,11 +28,6 @@ using namespace OHOS;
 
 namespace OHOS {
 namespace MechBodyController {
-namespace {
-    constexpr float LAYOUT_LEFT = 0.3;
-    constexpr float LAYOUT_MIDDLE = 0.5;
-    constexpr float LAYOUT_RIGHT = 0.7;
-}
 void McCameraTrackingControllerTest::SetUpTestCase()
 {
     DTEST_LOG << "McCameraTrackingControllerTest::SetUpTestCase" << std::endl;
@@ -402,28 +397,6 @@ HWTEST_F(McCameraTrackingControllerTest, ConvertObjectType_001, TestSize.Level1)
 }
 
 /**
- * @tc.name  : ParseReverseLayout_001
- * @tc.number: ParseReverseLayout_001
- * @tc.desc  : Testing ParseReverseLayout function.
- */
-HWTEST_F(McCameraTrackingControllerTest, ParseReverseLayout_001, TestSize.Level1)
-{
-    DTEST_LOG << "McCameraTrackingControllerTest ParseReverseLayout_001 begin" << std::endl;
-
-    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
-    CameraTrackingLayout cameraTrackingLayout = CameraTrackingLayout::LEFT;
-    EXPECT_EQ(mcCameraTrackingController.ParseReverseLayout(cameraTrackingLayout), LAYOUT_RIGHT);
-
-    cameraTrackingLayout = CameraTrackingLayout::MIDDLE;
-    EXPECT_EQ(mcCameraTrackingController.ParseReverseLayout(cameraTrackingLayout), LAYOUT_MIDDLE);
-
-    cameraTrackingLayout = CameraTrackingLayout::RIGHT;
-    EXPECT_EQ(mcCameraTrackingController.ParseReverseLayout(cameraTrackingLayout), LAYOUT_LEFT);
-
-    DTEST_LOG << "McCameraTrackingControllerTest ParseReverseLayout_001 end" << std::endl;
-}
-
-/**
  * @tc.name  : OnMechConnect_001
  * @tc.number: OnMechConnect_001
  * @tc.desc  : Testing OnMechConnect function.
@@ -534,35 +507,12 @@ HWTEST_F(McCameraTrackingControllerTest, SetTrackingLayout_002, TestSize.Level1)
     std::shared_ptr<AppSetting> setting = std::make_shared<AppSetting>();
     std::shared_ptr<AppSetting> settingNull = nullptr;
     mcCameraTrackingController.appSettings[tokenId] = setting;
-    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(tokenId, cameraTrackingLayout), ERR_OK);
+    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(cameraTrackingLayout), ERR_OK);
 
     mcCameraTrackingController.appSettings[tokenId] = settingNull;
-    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(tokenId, cameraTrackingLayout), ERR_OK);
+    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(cameraTrackingLayout), ERR_OK);
 
     DTEST_LOG << "McCameraTrackingControllerTest SetTrackingLayout_002 end" << std::endl;
-}
-
-/**
- * @tc.name  : ParseLayout_001
- * @tc.number: ParseLayout_001
- * @tc.desc  : Testing ParseLayout function.
- */
-HWTEST_F(McCameraTrackingControllerTest, ParseLayout_001, TestSize.Level1)
-{
-    DTEST_LOG << "McCameraTrackingControllerTest ParseLayout_001 begin" << std::endl;
-
-    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
-    CameraTrackingLayout cameraTrackingLayout;
-    cameraTrackingLayout = CameraTrackingLayout::LEFT;
-    EXPECT_EQ(mcCameraTrackingController.ParseLayout(cameraTrackingLayout), LAYOUT_LEFT);
-
-    cameraTrackingLayout = CameraTrackingLayout::MIDDLE;
-    EXPECT_EQ(mcCameraTrackingController.ParseLayout(cameraTrackingLayout), LAYOUT_MIDDLE);
-
-    cameraTrackingLayout = CameraTrackingLayout::RIGHT;
-    EXPECT_EQ(mcCameraTrackingController.ParseLayout(cameraTrackingLayout), LAYOUT_RIGHT);
-
-    DTEST_LOG << "McCameraTrackingControllerTest ParseLayout_001 end" << std::endl;
 }
 
 /**

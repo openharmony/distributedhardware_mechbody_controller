@@ -277,6 +277,25 @@ int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled)
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s; isEnabled: %{public}s;",
         GetAnonymUint32(tokenId).c_str(), isEnabled ? "true" : "false");
+    int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
+    if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        HILOGI("Has permission.");
+        {
+            std::lock_guard<std::mutex> lock(motionManagersMutex);
+            if (motionManagers_.empty()) {
+                return DEVICE_NOT_CONNECTED;
+            }
+            for (auto it : motionManagers_) {
+                std::shared_ptr<MotionManager> motionManager = it.second;
+                if (motionManager == nullptr) {
+                    return DEVICE_NOT_CONNECTED;
+                }
+                HILOGI("Set main switch.");
+                motionManager->SetMechCameraTrackingEnabled(isEnabled);
+            }
+        }
+        return ERR_OK;
+    }
     int32_t setResult = McControllerManager::GetInstance().SetTrackingEnabled(tokenId, isEnabled);
     HILOGI("end. Set Tracking Enabled result: %{public}d.", setResult);
     return setResult;
@@ -286,6 +305,25 @@ int32_t MechBodyControllerService::GetTrackingEnabled(bool &isEnabled)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
+    int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
+    if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        HILOGI("Has permission.");
+        {
+            std::lock_guard<std::mutex> lock(motionManagersMutex);
+            if (motionManagers_.empty()) {
+                return DEVICE_NOT_CONNECTED;
+            }
+            for (auto it : motionManagers_) {
+                std::shared_ptr<MotionManager> motionManager = it.second;
+                if (motionManager == nullptr) {
+                    return DEVICE_NOT_CONNECTED;
+                }
+                HILOGI("Get main switch.");
+                motionManager->GetMechCameraTrackingEnabled(isEnabled);
+            }
+        }
+        return ERR_OK;
+    }
     int32_t getResult = McControllerManager::GetInstance().GetTrackingEnabled(tokenId, isEnabled);
     HILOGI("end. Get Tracking Enabled result: %{public}d.", getResult);
     return getResult;

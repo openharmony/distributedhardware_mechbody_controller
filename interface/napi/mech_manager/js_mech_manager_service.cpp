@@ -84,6 +84,7 @@ int32_t JsMechManagerService::AttachStateChangeCallback(const AttachmentState &a
 int32_t JsMechManagerService::TrackingEventCallback(const int32_t &mechId,
     const TrackingEvent &trackingEvent)
 {
+    HILOGI("start. mechId: %{public}d, TrackingEvent: %{public}d", mechId, trackingEvent);
     for (const auto &item: trackingEventCallback) {
         auto task = [item, mechId, trackingEvent]() {
             napi_handle_scope scope;

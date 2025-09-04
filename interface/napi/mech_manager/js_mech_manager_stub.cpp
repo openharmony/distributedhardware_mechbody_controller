@@ -69,7 +69,7 @@ int32_t JsMechManagerStub::TrackingEventCallback(MessageParcel &data,
         return NAPI_RECV_DATA_FAIL;
     }
 
-    TrackingEvent trackingEvent = static_cast<TrackingEvent>(data.ReadInt32());
+    TrackingEvent trackingEvent = static_cast<TrackingEvent>(track);
     return JsMechManagerService::GetInstance().TrackingEventCallback(mechId, trackingEvent);
 }
 
