@@ -78,6 +78,7 @@ namespace {
 
     const std::string SEND_TRACKING_LAYOUT_TASK_NAME = "send_tracking_layout_task";
     constexpr int32_t SET_TRACKING_LAYOUT_TASK_DELAY  = 500 * 3;
+    constexpr float OFFSET_VALUE = 0.2f;
 }
 
 McCameraTrackingController& McCameraTrackingController::GetInstance()
@@ -826,9 +827,9 @@ void McCameraTrackingController::AdjustYOffset(ROI &roi, CameraType cameraType, 
     float offset = 0;
     if (cameraType == CameraType::FRONT) {
         if (trackingLayout == CameraTrackingLayout::RIGHT) {
-            offset = 0.2;
+            offset = OFFSET_VALUE;
         } else if (trackingLayout == CameraTrackingLayout::LEFT) {
-            offset = -0.2;
+            offset = -OFFSET_VALUE;
         }
         if (trackingLayout == CameraTrackingLayout::RIGHT) {
             if (roi.y + roi.height / NUM_2 - NUM_1 > 0) {
@@ -841,9 +842,9 @@ void McCameraTrackingController::AdjustYOffset(ROI &roi, CameraType cameraType, 
         }
     } else if (cameraType == CameraType::BACK) {
         if (trackingLayout == CameraTrackingLayout::RIGHT) {
-            offset = -0.2;
+            offset = -OFFSET_VALUE;
         } else if (trackingLayout == CameraTrackingLayout::LEFT) {
-            offset = 0.2;
+            offset = OFFSET_VALUE;
         }
         if (trackingLayout == CameraTrackingLayout::RIGHT) {
             if (roi.y - roi.height / NUM_2 < 0) {
@@ -863,9 +864,9 @@ void McCameraTrackingController::AdjustXOffset(ROI &roi, CameraType cameraType, 
 {
     float offset = 0;
     if (trackingLayout == CameraTrackingLayout::RIGHT) {
-            offset = 0.2;
+            offset = OFFSET_VALUE;
         } else if (trackingLayout == CameraTrackingLayout::LEFT) {
-            offset = -0.2;
+            offset = -OFFSET_VALUE;
         }
     if (cameraType == CameraType::FRONT) {
         if (trackingLayout == CameraTrackingLayout::RIGHT) {
