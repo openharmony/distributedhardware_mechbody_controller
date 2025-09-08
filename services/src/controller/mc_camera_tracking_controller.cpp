@@ -349,7 +349,6 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     auto now = std::chrono::system_clock::now();
     trackingFrameParams->timeStamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
         now.time_since_epoch()).count());
-    UpdateROI(trackingFrameParams, trackingRegion);
     trackingFrameParams->fovV = currentCameraInfo_->fovV;
     trackingFrameParams->fovH = currentCameraInfo_->fovH;
     trackingFrameParams->isRecording = currentCameraInfo_->isRecording;
@@ -837,7 +836,7 @@ void McCameraTrackingController::UnRegisterSensorListener()
     }
     int32_t activateRet = DeactivateSensor(SENSOR_TYPE_ID_GRAVITY, &user);
     HILOGI("UnRegisterSensorCallback, activateRet: %{public}d", activateRet);
-    int32_t subscribeRet = SubscribeSensor(SENSOR_TYPE_ID_GRAVITY, &user);
+    int32_t subscribeRet = UnsubscribeSensor(SENSOR_TYPE_ID_GRAVITY, &user);
     HILOGI("UnRegisterSensorCallback, subscribeRet: %{public}d", subscribeRet);
     user.callback = nullptr;
     HILOGI("success");
