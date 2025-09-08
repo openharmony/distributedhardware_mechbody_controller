@@ -46,8 +46,8 @@ std::shared_ptr<MechDataBuffer> SetMechCameraInfoCmd::Marshal() const
 
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(cmdSet_), nullptr, "append cmdSet_");
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(cmdId_), nullptr, "append cmdId_");
-    CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(params_.fovV), nullptr, "append fovV");
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(params_.fovH), nullptr, "append fovH");
+    CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(params_.fovV), nullptr, "append fovV");
     CHECK_ERR_RETURN_VALUE(buffer->AppendFloat(params_.zoomFactor), nullptr, "append zoomFactor");
 
     uint8_t controlByte = 0;
@@ -55,7 +55,8 @@ std::shared_ptr<MechDataBuffer> SetMechCameraInfoCmd::Marshal() const
     controlByte |= (params_.cameraType != CameraType::BACK);
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(controlByte), nullptr, "append controlByte");
 
-    HILOGI("end.");
+    HILOGI("end. fovH: %{public}d; fovV: %{public}d; zoomFactor: %{public}f",
+        params_.fovH, params_.fovV, params_.zoomFactor);
     return buffer;
 }
 

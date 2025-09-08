@@ -54,6 +54,8 @@ struct CameraInfo {
     uint32_t tokenId = 0;
     float sensorWidth = 36.0f; // All devices have sensor width equivalent to 36mm
     float sensorHeight = 24.0f; // All devices have sensor height equivalent to 24mm
+    uint8_t fovVBasic = 0;
+    uint8_t fovHBasic = 0;
     uint8_t fovV = 0;
     uint8_t fovH = 0;
     int32_t width = 0;
@@ -69,26 +71,28 @@ struct CameraInfo {
     int32_t videoStabilizationMode =
         static_cast<int32_t>(CameraVideoStabilizationMode::OHOS_CAMERA_VIDEO_STABILIZATION_OFF);
     bool isCameraOn = false;
-    std::string toString() const
+
+    std::string ToString() const
     {
-        return "targetId: " + std::to_string(targetId) +
-               ", tokenId: " + std::to_string(tokenId) +
-               ", sensorWidth: " + std::to_string(sensorWidth) +
-               ", sensorHeight: " + std::to_string(sensorHeight) +
-               ", fovV: " + std::to_string(fovV) +
-               ", fovH: " + std::to_string(fovH) +
-               ", width: " + std::to_string(width) +
-               ", height: " + std::to_string(height) +
-               ", zoomFactor: " + std::to_string(zoomFactor) +
-               ", equivalentFocus: " + std::to_string(equivalentFocus) +
-               ", isRecording: " + std::to_string(isRecording) +
-               ", currentTrackingEnable: " + std::to_string(currentTrackingEnable) +
-               ", currentCameraTrackingLayout: " + std::to_string(static_cast<int>(currentCameraTrackingLayout)) +
-               ", cameraType: " + std::to_string(static_cast<int>(cameraType)) +
-               ", focusMode: " + std::to_string(focusMode) +
-               ", sessionMode: " + std::to_string(sessionMode) +
-               ", videoStabilizationMode: " + std::to_string(videoStabilizationMode) +
-               ", isCameraOn: " + std::to_string(isCameraOn);
+        return "CameraInfo { targetId=" + std::to_string(targetId) +
+               ", sensorWidth=" + std::to_string(sensorWidth) +
+               ", sensorHeight=" + std::to_string(sensorHeight) +
+               ", fovV=" + std::to_string(fovV) +
+               ", fovH=" + std::to_string(fovH) +
+               ", fovVBasic=" + std::to_string(fovVBasic) +
+               ", fovHBasic=" + std::to_string(fovHBasic) +
+               ", width=" + std::to_string(width) +
+               ", height=" + std::to_string(height) +
+               ", zoomFactor=" + std::to_string(zoomFactor) +
+               ", equivalentFocus=" + std::to_string(equivalentFocus) +
+               ", isRecording=" + std::to_string(isRecording) +
+               ", currentTrackingEnable=" + std::to_string(currentTrackingEnable) +
+               ", currentCameraTrackingLayout=" + std::to_string(static_cast<int>(currentCameraTrackingLayout)) +
+               ", cameraType=" + std::to_string(static_cast<int>(cameraType)) +
+               ", focusMode=" + std::to_string(focusMode) +
+               ", sessionMode=" + std::to_string(sessionMode) +
+               ", videoStabilizationMode=" + std::to_string(videoStabilizationMode) +
+               ", isCameraOn=" + std::to_string(isCameraOn) + " }";
     }
 };
 
@@ -133,6 +137,7 @@ public:
 
 private:
     int32_t ComputeFov();
+    void FovCutForVideoMode(float &shortSide, float &shortSideBasic, float &longSide, float &longSideBasic);
     bool IsCurrentFocus();
     int32_t UpdateMotionManagers();
     std::shared_ptr<TrackingFrameParams> BuildTrackingParams(CameraStandard::FocusTrackingMetaInfo &info);

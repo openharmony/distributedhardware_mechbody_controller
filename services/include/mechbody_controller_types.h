@@ -72,11 +72,15 @@ public:
 
     std::string ToString() const
     {
-        return "MechInfo { mechId=" + std::to_string(mechId) + ", mechType=" +
-            std::to_string(static_cast<int>(mechType)) + ", mac=" + GetAnonymStr(mac) + ", mechName=" +
-                GetAnonymStr(mechName) + ", state=" + std::to_string(static_cast<int>(state)) + ", gattCoonectState=" +
-                std::to_string(gattCoonectState) + ", pairState=" + std::to_string(pairState) + ", hidState=" +
-                std::to_string(hidState) + " }";
+        return "MechInfo { mechId=" + std::to_string(mechId) +
+               ", mechType=" + std::to_string(static_cast<int>(mechType)) +
+               ", mac=" + GetAnonymStr(mac) +
+               ", mechName=" + GetAnonymStr(mechName) +
+               ", state=" + std::to_string(static_cast<int>(state)) +
+               ", gattCoonectState=" + std::to_string(gattCoonectState) +
+               ", pairState=" + std::to_string(pairState) +
+               ", hidState=" + std::to_string(hidState) +
+               " }";
     }
 
     void SetGattConnectState(bool state)
@@ -104,20 +108,24 @@ struct EulerAngles : public OHOS::Parcelable {
     float yaw = 0;
     float roll = 0;
     float pitch = 0;
+
     EulerAngles() = default;
     EulerAngles(float yaw, float roll, float pitch) : yaw(yaw), roll(roll), pitch(pitch) {}
+
     bool operator!=(const EulerAngles& other) const
     {
         return (std::abs(yaw - other.yaw) > FLOAT_EPSILON) ||
             (std::abs(roll - other.roll) > FLOAT_EPSILON) ||
             (std::abs(pitch - other.pitch) > FLOAT_EPSILON);
     }
+
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
         return parcel.WriteFloat(yaw) &&
                 parcel.WriteFloat(roll) &&
                 parcel.WriteFloat(pitch);
     }
+
     static EulerAngles *Unmarshalling(OHOS::Parcel &parcel)
     {
         auto obj = new EulerAngles();
@@ -129,10 +137,12 @@ struct EulerAngles : public OHOS::Parcelable {
         }
         return obj;
     }
+
     std::string ToString() const
     {
-        return "EulerAngles { yaw=" + std::to_string(yaw) + ", roll=" + std::to_string(roll) +
-            ", pitch=" + std::to_string(pitch) + " }";
+        return "EulerAngles { yaw=" + std::to_string(yaw) +
+                ", roll=" + std::to_string(roll) +
+                ", pitch=" + std::to_string(pitch) + " }";
     }
 };
 
@@ -144,6 +154,7 @@ public:
     {
         return parcel.WriteParcelable(&degree) && parcel.WriteInt32(duration);
     }
+
     static RotateByDegreeParam *Unmarshalling(OHOS::Parcel &parcel)
     {
         auto param = new RotateByDegreeParam();
@@ -152,6 +163,7 @@ public:
             delete param;
             return nullptr;
         }
+
         param->degree = *degreePtr;
         delete degreePtr;
 
@@ -178,6 +190,7 @@ public:
         return parcel.WriteParcelable(&angles) &&
                parcel.WriteInt32(duration);
     }
+
     static RotateToEulerAnglesParam *Unmarshalling(OHOS::Parcel &parcel)
     {
         std::unique_ptr<RotateToEulerAnglesParam> param = std::make_unique<RotateToEulerAnglesParam>();
@@ -188,6 +201,7 @@ public:
         if (angles == nullptr) {
             return nullptr;
         }
+
         param->angles = *angles;
         if (!parcel.ReadInt32(param->duration)) {
             delete angles;
@@ -199,7 +213,8 @@ public:
 
     std::string ToString() const
     {
-        return "RotateToEulerAnglesParam { degree=" + angles.ToString() + ", duration=" + std::to_string(duration) +
+        return "RotateToEulerAnglesParam { degree=" + angles.ToString() +
+               ", duration=" + std::to_string(duration) +
                " }";
     }
 };
@@ -230,12 +245,14 @@ struct RotateSpeed : public OHOS::Parcelable {
     float yawSpeed = 0;
     float rollSpeed = 0;
     float pitchSpeed = 0;
+
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
         return parcel.WriteFloat(yawSpeed) &&
                parcel.WriteFloat(rollSpeed) &&
                parcel.WriteFloat(pitchSpeed);
     }
+
     static RotateSpeed *Unmarshalling(OHOS::Parcel &parcel)
     {
         auto param = new RotateSpeed();
@@ -247,21 +264,25 @@ struct RotateSpeed : public OHOS::Parcelable {
         }
         return param;
     }
+
     std::string ToString() const
     {
-        return "RotateSpeed { yawSpeed=" + std::to_string(yawSpeed) + ", rollSpeed=" + std::to_string(rollSpeed) +
-            ", pitchSpeed=" + std::to_string(pitchSpeed) + " }";
+        return "RotateSpeed { yawSpeed=" + std::to_string(yawSpeed) +
+               ", rollSpeed=" + std::to_string(rollSpeed) +
+               ", pitchSpeed=" + std::to_string(pitchSpeed) + " }";
     }
 };
 
 struct RotateBySpeedParam : public OHOS::Parcelable {
     RotateSpeed speed;
     float duration = 0;
+
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
         return speed.Marshalling(parcel) &&
                parcel.WriteFloat(duration);
     }
+
     static RotateBySpeedParam *Unmarshalling(OHOS::Parcel &parcel)
     {
         auto param = new RotateBySpeedParam();
@@ -280,20 +301,24 @@ struct RotateBySpeedParam : public OHOS::Parcelable {
         }
         return param;
     }
+
     std::string ToString() const
     {
-        return "RotateBySpeedParam { " + speed.ToString() + ", duration=" + std::to_string(duration) + " }";
+        return "RotateBySpeedParam { " + speed.ToString() +
+               ", duration=" + std::to_string(duration) + " }";
     }
 };
 
 struct RotateSpeedLimit : public OHOS::Parcelable {
     RotateSpeed speedMax;
     RotateSpeed speedMin;
+
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
         return parcel.WriteParcelable(&speedMax) &&
                parcel.WriteParcelable(&speedMin);
     }
+
     static RotateSpeedLimit *Unmarshalling(OHOS::Parcel &parcel)
     {
         auto obj = new RotateSpeedLimit();
@@ -311,20 +336,25 @@ struct RotateSpeedLimit : public OHOS::Parcelable {
         delete speedMin;
         return obj;
     }
+
     std::string ToString() const
     {
-        return "RotateSpeedLimit { speedMax=" + speedMax.ToString() + ", speedMin=" + speedMin.ToString() + " }";
+        return "RotateSpeedLimit { speedMax=" + speedMax.ToString() +
+               ", speedMin=" + speedMin.ToString() +
+               " }";
     }
 };
 
 struct RotateDegreeLimit : public OHOS::Parcelable {
     EulerAngles negMax;
     EulerAngles posMax;
+
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
         return parcel.WriteParcelable(&negMax) &&
                parcel.WriteParcelable(&posMax);
     }
+
     static RotateDegreeLimit *Unmarshalling(OHOS::Parcel &parcel)
     {
         auto obj = new RotateDegreeLimit();
@@ -342,9 +372,12 @@ struct RotateDegreeLimit : public OHOS::Parcelable {
         delete posMax;
         return obj;
     }
+
     std::string ToString() const
     {
-        return "RotateDegreeLimit { negMax=" + negMax.ToString() + ", posMax=" + posMax.ToString() + " }";
+        return "RotateDegreeLimit { negMax=" + negMax.ToString() +
+               ", posMax=" + posMax.ToString() +
+               " }";
     }
 };
 
@@ -366,6 +399,7 @@ public:
                parcel.WriteBool(pitchEnabled) &&
                parcel.WriteUint32(static_cast<uint32_t>(pitchLimited));
     }
+
     static RotationAxesStatus *Unmarshalling(OHOS::Parcel &parcel)
     {
         RotationAxesStatus *status = new (std::nothrow) RotationAxesStatus();
@@ -396,18 +430,21 @@ public:
         status->pitchLimited = static_cast<RotationAxisLimited>(limitValue);
         return status;
     }
+
     bool operator==(const RotationAxesStatus &other) const
     {
         return (yawEnabled == other.yawEnabled) && (rollEnabled == other.rollEnabled) &&
                (pitchEnabled == other.pitchEnabled) && (yawLimited == other.yawLimited) &&
                (rollLimited == other.rollLimited) && (pitchLimited == other.pitchLimited);
     }
+
     bool operator!=(const RotationAxesStatus &other) const
     {
         return (yawEnabled != other.yawEnabled) || (rollEnabled != other.rollEnabled) ||
                (pitchEnabled != other.pitchEnabled) || (yawLimited != other.yawLimited) ||
                (rollLimited != other.rollLimited) || (pitchLimited != other.pitchLimited);
     }
+
     std::string ToString() const
     {
         auto limitToString = [](RotationAxisLimited limit) {
@@ -422,10 +459,14 @@ public:
                     return "UNKNOWN";
             }
         };
-        return "RotateAxisStatus{yawEnabled:" + std::to_string(yawEnabled) + ", yawLimited:" +
-            limitToString(yawLimited) + ", rollEnabled:" + std::to_string(rollEnabled) + ", rollLimited:" +
-            limitToString(rollLimited) + ", pitchEnabled:" + std::to_string(pitchEnabled) +
-            ", pitchLimited:" + limitToString(pitchLimited) + "}";
+
+        return "RotateAxisStatus{"
+               "yawEnabled:" + std::to_string(yawEnabled) +
+               ", yawLimited:" + limitToString(yawLimited) +
+               ", rollEnabled:" + std::to_string(rollEnabled) +
+               ", rollLimited:" + limitToString(rollLimited) +
+               ", pitchEnabled:" + std::to_string(pitchEnabled) +
+               ", pitchLimited:" + limitToString(pitchLimited) + "}";
     }
 };
 
@@ -433,6 +474,7 @@ struct MechStateInfo {
     MechMode mechMode = MechMode::INVALID;
     bool isCaptureVertical = false;
     bool isPhoneOn = false;
+
     bool operator==(const MechStateInfo &other) const
     {
         return (mechMode == other.mechMode) && (isCaptureVertical == other.isCaptureVertical) &&
@@ -450,10 +492,13 @@ struct LayoutParams {
     bool isDefault = true;
     float offsetX = 0;
     float offsetY = 0;
+
     std::string ToString() const
     {
-        return "LayoutParams { isDefault=" + std::to_string(isDefault) + ", offsetX=" + std::to_string(offsetX) +
-            ", offsetY=" + std::to_string(offsetY) + " }";
+        return "LayoutParams { isDefault=" + std::to_string(isDefault) +
+               ", offsetX=" + std::to_string(offsetX) +
+               ", offsetY=" + std::to_string(offsetY) +
+               " }";
     }
 };
 
@@ -505,10 +550,15 @@ struct ROI {
     float y = 0.0f;
     float width = 0.0f;
     float height = 0.0f;
+
     std::string ToString() const
     {
-        return "ROI {x=" + std::to_string(x) + ", y=" + std::to_string(y) + ", width=" + std::to_string(width) +
-               ", height=" + std::to_string(height) + " }";
+        return "ROI {"
+               "x=" + std::to_string(x) +
+               ", y=" + std::to_string(y) +
+               ", width=" + std::to_string(width) +
+               ", height=" + std::to_string(height) +
+               " }";
     }
 };
 
@@ -522,14 +572,23 @@ struct TrackingFrameParams {
     float fovH;
     bool isRecording;
     uint32_t timeDelay;
+
     std::string ToString() const
     {
-        return "TrackingFrameParams {targetId=" + std::to_string(targetId) + ", timeStamp=" +
-            std::to_string(timeStamp) + ", confidence=" + std::to_string(static_cast<int>(confidence)) +
-            ", objectType=" + std::to_string(objectType) + ", roi.x=" + std::to_string(roi.x) + ", roi.y=" +
-            std::to_string(roi.y) + ", roi.width=" + std::to_string(roi.width) + ", roi.height=" +
-            std::to_string(roi.height) + ", fovV=" + std::to_string(fovV) + ", fovH=" + std::to_string(fovH) +
-            ", isRecording=" + std::to_string(isRecording) + ", timeDelay=" + std::to_string(timeDelay) + " }";
+        return "TrackingFrameParams {"
+               "targetId=" + std::to_string(targetId) +
+               ", timeStamp=" + std::to_string(timeStamp) +
+               ", confidence=" + std::to_string(static_cast<int>(confidence)) +
+               ", objectType=" + std::to_string(objectType) +
+               ", roi.x=" + std::to_string(roi.x) +
+               ", roi.y=" + std::to_string(roi.y) +
+               ", roi.width=" + std::to_string(roi.width) +
+               ", roi.height=" + std::to_string(roi.height) +
+               ", fovV=" + std::to_string(fovV) +
+               ", fovH=" + std::to_string(fovH) +
+               ", isRecording=" + std::to_string(isRecording) +
+               ", timeDelay=" + std::to_string(timeDelay) +
+               " }";
     }
 };
 }  // namespace MechBodyController

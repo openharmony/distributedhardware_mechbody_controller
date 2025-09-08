@@ -212,12 +212,12 @@ void BleGattClientCallback::OnCharacteristicChanged(const GattCharacteristic &ch
 
 void BleGattClientCallback::OnCharacteristicWriteResult(const GattCharacteristic &characteristic, int ret)
 {
-    HILOGD("called, ret = %{public}d\n", ret);
+    HILOGI("GattClientCallback::OnCharacteristicWriteResult called ret = %{public}d\n", ret);
     if (ret == OHOS::Bluetooth::GattStatus::GATT_SUCCESS) {
         HILOGI("write success");
         size_t size = 0;
         const std::unique_ptr<uint8_t[]> &value = characteristic.GetValue(&size);
-        HILOGI("write sucess, size = %{public}zu", size);
+        HILOGI("size = %{public}zu", size);
         if (value == nullptr || size == 0) {
             HILOGI("value is empty or null");
             return;
@@ -747,7 +747,7 @@ int32_t BleSendManager::MechbodyHidDisconnect(MechInfo &mechInfo)
 
 int32_t BleSendManager::MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t dataLen)
 {
-    HILOGD("WriteCharacteristic start");
+    HILOGI("WriteCharacteristic start");
     int32_t result = -1;
     if (data == nullptr || dataLen <= BUF_MIN_LEN) {
         HILOGE("data is nullptr or len is not enough");
@@ -761,7 +761,7 @@ int32_t BleSendManager::MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t
         handle_, permissions_, properties_);
     wrCharacteristic.SetValue(data, dataLen);
     wrCharacteristic.SetWriteType(GattCharacteristic::WriteType::DEFAULT);
-    HILOGD("Mech writeC");
+    HILOGI("Mech writeC");
     result = gattClient_->WriteCharacteristic(wrCharacteristic);
     HILOGI("Mech writeC, result = %{public}d handle: %{public}d dataLen: %{public}d \n", \
         result, handle_, dataLen);
