@@ -195,15 +195,16 @@ bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached)
 
 bool MechConnectManager::GetMechState(int32_t mechId)
 {
+    HILOGI("called, mechId: %{public}d", mechId);
     std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
     auto it = std::find_if(mechInfos_.begin(), mechInfos_.end(), [mechId](const MechInfo& mechInfo) {
         return mechInfo.mechId == mechId;
     });
     if (it == mechInfos_.end()) {
-        HILOGE("mechId: %{public}d not found", mechId);
+        HILOGE("not found");
         return false;
     }
-    HILOGD("mechId: %{public}d found", mechId);
+    HILOGI("found");
     MechInfo mechInfo = *it;
     return mechInfo.state == AttachmentState::ATTACHED ? true : false;
 }
@@ -217,7 +218,7 @@ bool MechConnectManager::UpdateBleStatus(bool isBLEActive)
 
 bool MechConnectManager::GetLocalDeviceBleStatus()
 {
-    HILOGD("called");
+    HILOGI("called");
     return isBLEActive_.load();
 }
 

@@ -291,6 +291,7 @@ int32_t TransportSendAdapter::PushResponseTask(const std::shared_ptr<CommandBase
 
 uint16_t TransportSendAdapter::CreateResponseSeqNo()
 {
+    HILOGI("called");
     std::unique_lock<std::shared_mutex> responseReadLock(responseMutex_);
     if (lastSeqNo_ >= UINT16_MAX) {
         HILOGE("the seqNo is full, reorder the seqNo.");

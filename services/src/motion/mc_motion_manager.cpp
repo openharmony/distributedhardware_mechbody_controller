@@ -48,7 +48,7 @@ constexpr int TASK_COMPLETED = 2;
 constexpr int32_t RESPONSE_TIMEOUT = 10000;
 constexpr float YAW_OFFSET = 0.2f;
 constexpr int32_t CMD_SEND_INTERVAL = 100;
-constexpr int32_t TRACKING_CHECKER_INTERVAL = 2;
+constexpr int32_t TRACKING_CHECKER_INTERVAL = 3;
 
 const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
     {CameraKeyEvent::START_FILMING, MMI::KeyEvent::KEYCODE_VOLUME_UP},
@@ -146,14 +146,6 @@ void MotionManager::MechButtonEventNotify(const std::shared_ptr<RegisterMechCame
     CHECK_POINTER_RETURN(cmd, "cmd");
     CameraKeyEvent eventType = cmd->GetEvent();
     HILOGI("Received gimbal key press event. eventNo: %{public}d.", eventType);
-
-    std::shared_ptr<CameraInfo> cameraInfo = McCameraTrackingController::GetInstance().GetCurrentCameraInfo();
-    CHECK_POINTER_RETURN(cameraInfo, "cameraInfo");
-    if (!cameraInfo->isCameraOn) {
-        HILOGI("No camera working, ignore.");
-        return;
-    }
-
     std::shared_ptr<MMI::KeyEvent> event = MMI::KeyEvent::Create();
     CHECK_POINTER_RETURN(cmd, "KeyEvent");
     switch (eventType) {
@@ -311,12 +303,6 @@ void MotionManager::MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelD
     CHECK_POINTER_RETURN(cmd, "cmd");
     WheelData data = cmd->GetWheelData();
     auto func = [this, data]() {
-        std::shared_ptr<CameraInfo> cameraInfo = McCameraTrackingController::GetInstance().GetCurrentCameraInfo();
-        if (cameraInfo == nullptr || !cameraInfo->isCameraOn) {
-            HILOGE("MechWheelZoomNotify current camera info is nullptr or no camera working, ignore");
-            return;
-        }
-
         HILOGI("MechWheelZoomNotify wheel data: degree %{public}d, speed %{public}d, speed_ratio %{public}u",
             data.degree, data.speed, data.speed_ratio);
         if (data.degree == 0) {
@@ -330,6 +316,11 @@ void MotionManager::MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelD
         }
         wheelFilterCnt_ = 0;
 
+        std::shared_ptr<CameraInfo> cameraInfo = McCameraTrackingController::GetInstance().GetCurrentCameraInfo();
+        if (cameraInfo == nullptr) {
+            HILOGE("MechWheelZoomNotify current camera info is nullptr");
+            return;
+        }
         float currentZoom = cameraInfo->zoomFactor;
         int32_t keyEventNum = WHEEL_ZOOM_01X_EVENT_NUM;
         if (currentZoom > WHEEL_ZOOM_THRESHOLD + FLOAT_EPSILON) {
@@ -450,7 +441,8 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     deviceStatus_->rotateSpeedLimit.speedMax.rollSpeed = DEGREE_CIRCLED_MIN;
     deviceStatus_->rotateSpeedLimit.speedMax.pitchSpeed = DEGREE_CIRCLED_MIN;
 
-    std::shared_ptr<GetMechCapabilityInfoCmd> limitCmd = factory.CreateGetMechCapabilityInfoCmd();
+    std::shared_ptr<GetMechCapabilityInfoCmd> limitCmd = factory
+        .CreateGetMechCapabilityInfoCmd();
     CHECK_POINTER_RETURN(limitCmd, "CapabilityInfoCmd is empty.");
     auto limitCallback = [this, limitCmd]() {
         auto rawParams = limitCmd->GetParams();
@@ -472,7 +464,6 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(false);
     CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
     sendAdapter_->SendCommand(hidCmd, CMD_SEND_INTERVAL);
-
     deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
     auto tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
     CHECK_POINTER_RETURN(tkCmd, "tkCmd is empty.");
@@ -1111,7 +1102,7 @@ void MotionManager::UpdateTrackingTime()
 
 int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<TrackingFrameParams> trackingFrameParams)
 {
-    HILOGD("start.");
+    HILOGI("SetCameraTrackingEnabled start.");
     if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
