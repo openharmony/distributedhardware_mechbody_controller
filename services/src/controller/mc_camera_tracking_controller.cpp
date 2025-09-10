@@ -76,9 +76,23 @@ namespace {
         static_cast<int32_t>(CameraStandard::SceneMode::VIDEO),     // 2
     };
 
+    const std::string SEARCH_TARGET_TASK_NAME = "searchTargetTaskName";
+    constexpr float ROTATE_LIMITED_MAX = 3.14f;
+    constexpr float ROTATE_LIMITED_MIN = -3.14f;
+    constexpr float PI = 3.1415926f;
+    constexpr int32_t ROTATE_TO_START_TIME_USED = 500; // ms
+    constexpr int32_t SEARCH_TARGET_ROTATE_TO_START_WAIT_TME = 1; // s
+    constexpr int32_t SEARCH_TARGET_TASK_DURATION = 500; // ms
+    constexpr int32_t SEARCH_TARGET_TASK_INTERVAL = 200; // ms
+    constexpr float SEARCH_TARGET_ROTATE_SPEED = 3.14 / 4; // rad/s
+    constexpr float SEARCH_TARGET_ROTATE_TIMES =
+            6.28 / (SEARCH_TARGET_ROTATE_SPEED * SEARCH_TARGET_TASK_DURATION / 1000 /
+            SEARCH_TARGET_TASK_DURATION * SEARCH_TARGET_TASK_INTERVAL);
+            
     const std::string SEND_TRACKING_LAYOUT_TASK_NAME = "send_tracking_layout_task";
     constexpr int32_t SET_TRACKING_LAYOUT_TASK_DELAY  = 500 * 3;
     constexpr float OFFSET_VALUE = 0.2f;
+
 }
 
 McCameraTrackingController& McCameraTrackingController::GetInstance()
@@ -304,13 +318,6 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
 int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackingMetaInfo &info)
 {
     HILOGI("OnFocusTracking.");
-    bool isEnableTrackingMode =
-        SESSION_MODE_WHITELIST.find(currentCameraInfo_->sessionMode) != SESSION_MODE_WHITELIST.end();
-    if (!currentCameraInfo_->currentTrackingEnable || IsCurrentFocus() || !isEnableTrackingMode) {
-        HILOGW("current tracking is not enabled");
-        return ERR_OK;
-    }
-
     HILOGI("Tracking mode: %{public}d; "
            "Tracking region: [x: %{public}f, y: %{public}f, width: %{public}f, height: %{public}f]; "
            "Tracking object ID: %{public}d",
@@ -385,6 +392,14 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
         ConvertObjectType(objectType, trackingFrameParams->objectType);
         CameraStandard::Rect targetRect = targetObject->GetBoundingBox();
         UpdateROI(trackingFrameParams, targetRect);
+    }
+
+    currentCameraInfo_->trackingTargetNum = detectedObjects.size();
+    if (currentCameraInfo_->searchingTarget && currentCameraInfo_->trackingTargetNum > 0) {
+        HILOGI("Stop searching, camera info: %{public}s", currentCameraInfo_->ToString().c_str());
+        eventHandler_->PostTask([this]() {
+            SearchTargetStop();
+            }, SEARCH_TARGET_TASK_NAME);
     }
     lastTrackingFrame_ = trackingFrameParams;
     return trackingFrameParams;
@@ -490,7 +505,12 @@ int32_t McCameraTrackingController::UpdateMotionsWithTrackingData(
         HILOGW("Params is null for tracking ID: %{public}d", trackingObjectId);
         return ERR_OK;
     }
-
+    bool isEnableTrackingMode =
+            SESSION_MODE_WHITELIST.find(currentCameraInfo_->sessionMode) != SESSION_MODE_WHITELIST.end();
+    if (!currentCameraInfo_->currentTrackingEnable || IsCurrentFocus() || !isEnableTrackingMode) {
+        HILOGW("current tracking is not enabled");
+        return ERR_OK;
+    }
     HILOGD("tracking frame info: %{public}s", params->ToString().c_str());
 
     std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
@@ -509,7 +529,7 @@ int32_t McCameraTrackingController::UpdateMotionsWithTrackingData(
     return ERR_OK;
 }
 
-int32_t McCameraTrackingController::SetTrackingEnabled(const uint32_t &tokenId, bool &isEnabled)
+int32_t McCameraTrackingController::SetTrackingEnabled(const uint32_t &tokenId, bool isEnabled)
 {
     std::lock_guard<std::mutex> lock(appSettingsMutex_);
     if (appSettings.find(tokenId) == appSettings.end()) {
@@ -640,6 +660,121 @@ int32_t McCameraTrackingController::GetTrackingLayout(CameraTrackingLayout &came
 {
     cameraTrackingLayout = currentCameraInfo_->currentCameraTrackingLayout;
     return ERR_OK;
+}
+
+int32_t McCameraTrackingController::SearchTarget(std::string &cmdId, uint32_t &tokenId,
+    const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams)
+{
+    if (targetInfo == nullptr || searchParams == nullptr) {
+        HILOGE("SEARCH_TARGET search param is nullptr");
+        return INVALID_PARAMETERS_ERR;
+    }
+    HILOGI("SEARCH_TARGET start, cmdId: %{public}s; target info: %{public}s, search param: %{public}s",
+           cmdId.c_str(), targetInfo->ToString().c_str(), searchParams->ToString().c_str());
+    std::shared_ptr<MotionManager> motionManager;
+    {
+        std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+        std::map<int32_t, std::shared_ptr<MotionManager>> motionManagers =
+                MechBodyControllerService::GetInstance().motionManagers_;
+        if (motionManagers.empty()) {
+            HILOGE("motion managers is empty. no useful mechanic.");
+            return NO_DEVICE_CONNECTED;
+        }
+        for (const auto &item: motionManagers) {
+            motionManager = item.second;
+            break;
+        }
+    }
+    if (motionManager == nullptr) {
+        HILOGE("SEARCH_TARGET motion managers is empty, can not search target.");
+        return NO_DEVICE_CONNECTED;
+    }
+    if (currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0) {
+        MechBodyControllerService::GetInstance().SearchTargetEnd(tokenId, cmdId, currentCameraInfo_->trackingTargetNum);
+        return ERR_OK;
+    }
+    currentCameraInfo_->currentTrackingEnable = false;
+    RotateDegreeLimit limit;
+    if (motionManager->GetRotationLimit(limit) != ERR_OK) {
+        HILOGE("SEARCH_TARGET get device limited info failed.");
+        return GET_LIMIT_INFO_FAILED;
+    }
+
+    std::shared_ptr<EulerAngles> currentPosition;
+    if (motionManager->GetCurrentPosition(currentPosition) != ERR_OK) {
+        HILOGE("SEARCH_TARGET get device limited info failed.");
+        return GET_CURRENT_POSITION_FAILED;
+    }
+    RunSearchTarget(cmdId, tokenId, searchParams, limit, currentPosition);
+    HILOGE("SEARCH_TARGET end.");
+    return ERR_OK;
+}
+
+void McCameraTrackingController::RunSearchTarget(std::string &cmdId, uint32_t &tokenId,
+    const std::shared_ptr<SearchParams> &searchParams, const RotateDegreeLimit &limit,
+    const std::shared_ptr<EulerAngles> &currentPosition)
+{
+    float toLeft = std::min(std::abs(limit.negMax.yaw - (currentPosition->yaw - PI - PI)),
+                            std::abs(limit.negMax.yaw - currentPosition->yaw));
+    float toRight = std::min(std::abs(limit.posMax.yaw - (currentPosition->yaw + PI + PI)),
+                             std::abs(limit.posMax.yaw - currentPosition->yaw));
+    bool startFromNeg = (searchParams->direction == SearchDirection::DEFAULT && toLeft < toRight) ||
+                        searchParams->direction == SearchDirection::RIGHTWARD;
+    HILOGI("SEARCH_TARGET current position: %{public}s; limit: %{public}s; start search from: %{public}s",
+           currentPosition->ToString().c_str(), limit.ToString().c_str(), startFromNeg ? "NEG" : "POS");
+    if (limit.negMax.yaw > ROTATE_LIMITED_MIN || limit.posMax.yaw < ROTATE_LIMITED_MAX) {
+        HILOGI("SEARCH_TARGET device has limited position, start from: %{public}s", startFromNeg ? "NEG" : "POS");
+        ExecSearchTaskWithLimit(cmdId, tokenId, startFromNeg, limit);
+    } else {
+        int32_t searchTimes = 0;
+        ExecSearchTask(cmdId, tokenId, startFromNeg, searchTimes);
+    }
+}
+
+void McCameraTrackingController::SearchTargetRotateFinish(const std::string &cmdId)
+{
+    HILOGI("SEARCH_TARGET start");
+    if (cmdId != SEARCH_TARGET_TASK_NAME) {
+        return;
+    }
+    std::unique_lock<std::mutex> lock(searchTargetMutex_);
+    searchTargetCv_.notify_all();
+    HILOGI("SEARCH_TARGET end");
+}
+
+void McCameraTrackingController::SearchTargetStop()
+{
+    HILOGI("SEARCH_TARGET start");
+    if (!currentCameraInfo_->searchingTarget) {
+        HILOGW("SEARCH_TARGET search target has stoped.");
+        return;
+    }
+    currentCameraInfo_->searchingTarget = false;
+    if (eventHandler_ != nullptr) {
+        eventHandler_->RemoveTask(SEARCH_TARGET_TASK_NAME);
+    }
+    uint32_t tokenId = currentCameraInfo_->tokenId;
+    HILOGI("SEARCH_TARGET camera info: %{public}s", currentCameraInfo_->ToString().c_str());
+    if (appSettings.find(tokenId) == appSettings.end()) {
+        SetTrackingEnabled(tokenId, true);
+    } else {
+        SetTrackingEnabled(tokenId, appSettings[tokenId]->isTrackingEnabled);
+    }
+    std::string taskId = SEARCH_TARGET_TASK_NAME;
+    std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+    std::map<int32_t, std::shared_ptr<MotionManager>> motionManagers =
+            MechBodyControllerService::GetInstance().motionManagers_;
+    for (const auto &item: motionManagers) {
+        int32_t mechId = item.first;
+        std::shared_ptr<MotionManager> motionManager = item.second;
+        if (motionManager == nullptr) {
+            HILOGE("motionManager not exist. mechId: %{public}d;", mechId);
+            continue;
+        }
+        int32_t result = motionManager->StopRotate(currentCameraInfo_->tokenId, taskId);
+        HILOGI("mech id: %{public}d result code: %{public}d", mechId, result);
+    }
+    HILOGI("SEARCH_TARGET end");
 }
 
 std::shared_ptr<CameraInfo> McCameraTrackingController::GetCurrentCameraInfo() const
@@ -917,6 +1052,96 @@ void McCameraTrackingController::OnConnectChange()
         HILOGI("currentCameraTrackingLayout: %{public}d", currentCameraInfo_->currentCameraTrackingLayout);
     }
     HILOGI("end.");
+}
+
+void McCameraTrackingController::ExecSearchTaskWithLimit(std::string &napiCmdId, uint32_t &tokenId,
+    const bool &startFromNeg, const RotateDegreeLimit &limit)
+{
+    HILOGI("SEARCH_TARGET start. ");
+    auto fun = [this, startFromNeg, limit, tokenId, napiCmdId]() mutable {
+        currentCameraInfo_->searchingTarget = true;
+        std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
+        rotateParam->isRelative = false;
+        rotateParam->duration = ROTATE_TO_START_TIME_USED;
+        rotateParam->degree.pitch = 0;
+        rotateParam->degree.roll = 0;
+        rotateParam->degree.yaw = startFromNeg ? limit.negMax.yaw : limit.posMax.yaw;
+
+        std::string taskId = SEARCH_TARGET_TASK_NAME;
+        {
+            std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+            std::map<int32_t, std::shared_ptr<MotionManager>> motionManagers =
+                    MechBodyControllerService::GetInstance().motionManagers_;
+            for (const auto &item: motionManagers) {
+                int32_t mechId = item.first;
+                std::shared_ptr<MotionManager> motionManager = item.second;
+                if (motionManager == nullptr) {
+                    HILOGE("motionManager not exist. mechId: %{public}d;", mechId);
+                    continue;
+                }
+                int32_t result = motionManager->Rotate(rotateParam, tokenId, taskId);
+                HILOGI("mech id: %{public}d result code: %{public}d", mechId, result);
+            }
+        }
+        std::unique_lock<std::mutex> lock(searchTargetMutex_);
+        searchTargetCv_.wait_for(lock, std::chrono::seconds(SEARCH_TARGET_ROTATE_TO_START_WAIT_TME),
+                                 [this]() mutable {
+                                     return currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0;
+                                 });
+
+        eventHandler_->PostTask([this, napiCmdId, taskId, tokenId, startFromNeg]() mutable {
+            int32_t searchTimes = 0;
+            ExecSearchTask(napiCmdId, tokenId, startFromNeg, searchTimes);
+            }, SEARCH_TARGET_TASK_NAME);
+    };
+
+    if (eventHandler_ != nullptr) {
+        HILOGE("SEARCH_TARGET Post ExecSearchTaskWithLimit");
+        eventHandler_->RemoveTask(SEARCH_TARGET_TASK_NAME);
+        eventHandler_->PostTask(fun, SEARCH_TARGET_TASK_NAME);
+    }
+    HILOGE("SEARCH_TARGET end.");
+}
+
+void McCameraTrackingController::ExecSearchTask(std::string &napiCmdId, uint32_t &tokenId, const bool &startFromNeg,
+    int32_t &searchTimes)
+{
+    HILOGI("SEARCH_TARGET start.");
+    if (eventHandler_ != nullptr) {
+        eventHandler_->RemoveTask(SEARCH_TARGET_TASK_NAME);
+    }
+    std::string taskId = SEARCH_TARGET_TASK_NAME;
+    HILOGI("SEARCH_TARGET current camera info: %{public}s", currentCameraInfo_->ToString().c_str());
+    if ((currentCameraInfo_ == nullptr || currentCameraInfo_->trackingTargetNum == 0) &&
+        searchTimes < SEARCH_TARGET_ROTATE_TIMES) {
+        currentCameraInfo_->searchingTarget = true;
+        std::shared_ptr<RotateBySpeedParam> rotateSpeedParam = std::make_shared<RotateBySpeedParam>();
+        rotateSpeedParam->duration = SEARCH_TARGET_TASK_DURATION;
+        rotateSpeedParam->speed.yawSpeed = startFromNeg ? SEARCH_TARGET_ROTATE_SPEED : -SEARCH_TARGET_ROTATE_SPEED;
+        rotateSpeedParam->speed.rollSpeed = 0;
+        rotateSpeedParam->speed.pitchSpeed = 0;
+        std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+        std::map<int32_t, std::shared_ptr<MotionManager>> motionManagers =
+                MechBodyControllerService::GetInstance().motionManagers_;
+        for (const auto &item: motionManagers) {
+            int32_t mechId = item.first;
+            std::shared_ptr<MotionManager> motionManager = item.second;
+            if (motionManager == nullptr) {
+                HILOGE("motionManager not exist. mechId: %{public}d;", mechId);
+                continue;
+            }
+            int32_t result = motionManager->RotateBySpeed(rotateSpeedParam, tokenId, taskId);
+            HILOGI("mech id: %{public}d result code: %{public}d", mechId, result);
+        }
+        searchTimes++;
+        eventHandler_->PostTask([this, napiCmdId, tokenId, startFromNeg, searchTimes]() mutable {
+            ExecSearchTask(napiCmdId, tokenId, startFromNeg, searchTimes);
+            }, SEARCH_TARGET_TASK_NAME, SEARCH_TARGET_TASK_INTERVAL);
+        return;
+    }
+    SearchTargetStop();
+    MechBodyControllerService::GetInstance().SearchTargetEnd(tokenId, napiCmdId, currentCameraInfo_->trackingTargetNum);
+    HILOGE("SEARCH_TARGET end.");
 }
 
 void MechSessionCallbackImpl::OnFocusTrackingInfo(CameraStandard::FocusTrackingMetaInfo info)

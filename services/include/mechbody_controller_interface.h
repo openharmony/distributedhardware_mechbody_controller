@@ -58,6 +58,8 @@ public:
     virtual int32_t GetRotationAxesStatus(const int32_t &mechId, RotationAxesStatus &axesStatus) = 0;
     virtual int32_t RegisterRotationAxesStatusChangeCallback(const sptr<IRemoteObject> callback) = 0;
     virtual int32_t UnRegisterRotationAxesStatusChangeCallback() = 0;
+    virtual int32_t SearchTarget(std::string &cmdId, const std::shared_ptr<TargetInfo> &targetInfo,
+        const std::shared_ptr<SearchParams> &searchParams) = 0;
 };
 } // namespace MechBodyController
 } // namespace OHOS

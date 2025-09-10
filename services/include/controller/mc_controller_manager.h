@@ -56,6 +56,8 @@ public:
     int32_t OnTrackingEvent(const int32_t &mechId, const TrackingEvent &event);
     int32_t SetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout);
     int32_t GetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayoutb);
+    int32_t SearchTarget(std::string &cmdId, uint32_t &tokenId,
+        const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams);
 
 private:
     std::shared_ptr<IMechConnectListener> listener_ = nullptr;

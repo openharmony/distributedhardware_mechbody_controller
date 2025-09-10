@@ -83,6 +83,12 @@ int32_t McControllerManager::GetTrackingLayout(const uint32_t &tokenId, CameraTr
     return McCameraTrackingController::GetInstance().GetTrackingLayout(cameraTrackingLayout);
 }
 
+int32_t McControllerManager::SearchTarget(std::string &cmdId, uint32_t &tokenId,
+    const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams)
+{
+    return McCameraTrackingController::GetInstance().SearchTarget(cmdId, tokenId, targetInfo, searchParams);
+}
+
 void MechConnectListenerImpl::OnMechConnect(const MechInfo &mechInfo)
 {
     MechBodyControllerService::GetInstance().OnAttachStateChange(AttachmentState::ATTACHED, mechInfo);

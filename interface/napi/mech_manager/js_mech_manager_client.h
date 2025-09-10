@@ -87,6 +87,8 @@ public:
 
     int32_t RotationAxesStatusChangeListenOff();
 
+    int32_t SearchTarget(const std::string &cmdId, const TargetInfo &targetInfo, const SearchParams &searchParams);
+
 private:
     sptr <IRemoteObject> GetDmsProxy();
 

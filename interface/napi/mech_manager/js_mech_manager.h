@@ -68,6 +68,8 @@ public:
 
     static napi_value GetRotationAxesStatus(napi_env env, napi_callback_info info);
 
+    static napi_value SearchTarget(napi_env env, napi_callback_info info);
+
 private:
     static int32_t ExecuteOn(std::string &eventType, CallbackFunctionInfo &callbackFunctionInfo);
     static int32_t ExecuteOnForAttachStateChange(const CallbackFunctionInfo &callbackFunctionInfo);
@@ -110,6 +112,9 @@ private:
     static napi_value CreateRotationLimit(napi_env env, const RotateDegreeLimit &limit);
 
     static napi_value CreateRotationAxesStatus(napi_env env, const RotationAxesStatus &status);
+
+    static bool GetSearchTargetParam(napi_env env, napi_callback_info info,
+        CallbackFunctionInfo &callbackFunctionInfo, TargetInfo &targetInfo, SearchParams &searchParams);
 
     static bool IsSystemApp();
 

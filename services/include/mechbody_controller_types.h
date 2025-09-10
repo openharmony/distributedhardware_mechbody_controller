@@ -591,6 +591,62 @@ struct TrackingFrameParams {
                " }";
     }
 };
+
+struct TargetInfo : public OHOS::Parcelable {
+    TargetType targetType = TargetType::FACE;
+
+    bool Marshalling(OHOS::Parcel &parcel) const override
+    {
+        return parcel.WriteUint32(static_cast<uint32_t>(targetType));
+    }
+
+    static TargetInfo *Unmarshalling(OHOS::Parcel &parcel)
+    {
+        auto obj = new TargetInfo();
+        uint32_t targetType;
+        if (!parcel.ReadUint32(targetType)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->targetType = static_cast<TargetType>(targetType);
+        return obj;
+    }
+
+    std::string ToString() const
+    {
+        return "TargetInfo { targetType=" + std::to_string(static_cast<int>(targetType)) + " }";
+    }
+};
+
+struct SearchParams : public OHOS::Parcelable {
+    SearchDirection direction = SearchDirection::DEFAULT;
+
+    bool Marshalling(OHOS::Parcel &parcel) const override
+    {
+        return parcel.WriteUint32(static_cast<uint32_t>(direction));
+    }
+
+    static SearchParams *Unmarshalling(OHOS::Parcel &parcel)
+    {
+        auto obj = new SearchParams();
+        uint32_t direction;
+        if (!parcel.ReadUint32(direction)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->direction = static_cast<SearchDirection>(direction);
+        return obj;
+    }
+
+    std::string ToString() const
+    {
+        return "SearchParams { direction=" + std::to_string(static_cast<int>(direction)) + " }";
+    }
+};
+
+struct SearchResult : public OHOS::Parcelable {
+    int32_t targetsNum = 0;
+};
 }  // namespace MechBodyController
 }  // namespace OHOS
 #endif  // MECHBODY_CONTROLLER_MECHBODY_CONTROLLER_TYPES_H

@@ -42,6 +42,8 @@ namespace {
     const std::string TRACKING_EVENT = "trackingStateChange";
     const std::string ROTATE_AXIS_STATUS_CHANGE_EVENT = "rotationAxesStatusChange";
     constexpr int32_t LAYOUT_MAX = 3;
+    constexpr int32_t THIRD = 2;
+    constexpr int32_t THREE = 3;
 }
 
 std::mutex MechManager::attachStateChangeStubMutex_;
@@ -1320,6 +1322,86 @@ napi_value MechManager::GetRotationAxesStatus(napi_env env, napi_callback_info i
     return CreateRotationAxesStatus(env, axesStatus);
 }
 
+napi_value MechManager::SearchTarget(napi_env env, napi_callback_info info)
+{
+    if (!IsSystemApp()) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+        return nullptr;
+    }
+    CallbackFunctionInfo callbackFunctionInfo;
+    TargetInfo targetInfo;
+    SearchParams searchParams;
+    if (!GetSearchTargetParam(env, info, callbackFunctionInfo, targetInfo, searchParams)) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "create param failed.");
+        return nullptr;
+    }
+    std::string cmdId = GenerateUniqueID();
+    {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().searchTargetCallbackMutex_);
+        JsMechManagerService::GetInstance().searchTargetCallback_.insert(std::make_pair(cmdId, callbackFunctionInfo));
+    }
+
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("InitMechClient or RegisterCmdChannel failed;");
+        JsMechManagerService::GetInstance().searchTargetCallback_.erase(cmdId);
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+
+    int32_t result = mechClient_->SearchTarget(cmdId, targetInfo, searchParams);
+    HILOGI("result: %{public}d;", result);
+    if (result != ERR_OK) {
+        JsMechManagerService::GetInstance().searchTargetCallback_.erase(cmdId);
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    return nullptr;
+}
+
+bool MechManager::GetSearchTargetParam(napi_env env, napi_callback_info info,
+    CallbackFunctionInfo &callbackFunctionInfo, TargetInfo &targetInfo, SearchParams &searchParams)
+{
+    size_t argc = THREE;
+    napi_value args[THREE];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+    if (argc != THREE) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                         "Wrong number of arguments");
+        return false;
+    }
+
+    napi_value targetInfoObj = args[0];
+    napi_value targetTypeValue;
+    int32_t targetType = static_cast<int32_t>(TargetType::FACE);
+    if (napi_get_named_property(env, targetInfoObj, "targetType", &targetTypeValue) == napi_ok) {
+        napi_get_value_int32(env, targetTypeValue, &targetType);
+    }
+
+    napi_value searchParamsObj = args[1];
+    napi_value directionValue;
+    int32_t direction = static_cast<int32_t>(SearchDirection::DEFAULT);
+    if (napi_get_named_property(env, searchParamsObj, "direction", &directionValue) == napi_ok) {
+        napi_get_value_int32(env, directionValue, &direction);
+    }
+
+    napi_valuetype type;
+    napi_typeof(env, args[THIRD], &type);
+    if (type != napi_function) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                         "Three argument must be a function");
+        HILOGE("Three argument must be a function.");
+        return false;
+    }
+    napi_ref callbackRef;
+    napi_create_reference(env, args[THIRD], 1, &callbackRef);
+    callbackFunctionInfo = {env, callbackRef};
+    targetInfo.targetType = static_cast<TargetType>(targetType);
+    searchParams.direction = static_cast<SearchDirection>(direction);
+    return true;
+}
+
 napi_value CreateEnumObject(napi_env env, const std::vector<std::pair<std::string, int32_t>> &pairs)
 {
     napi_value result;
@@ -1502,29 +1584,34 @@ napi_value Init(napi_env env, napi_value exports)
     napi_value cameraTrackingLayoutEnum =
         CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFT", 1}, {"MIDDLE", 2}, {"RIGHT", 3}});
     napi_set_named_property(env, exports, "CameraTrackingLayout", cameraTrackingLayoutEnum);
+    napi_value targetTypeEnum = CreateEnumObject(env, {{"FACE", 0}});
+    napi_set_named_property(env, exports, "TargetType", targetTypeEnum);
+    napi_value searchDirectionEnum = CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFTWARD", 1}, {"RIGHTWARD", 2}});
+    napi_set_named_property(env, exports, "SearchDirectionEnum", searchDirectionEnum);
     napi_value MechManager;
     napi_create_object(env, &MechManager);
     napi_property_descriptor desc[] = {
-            DECLARE_NAPI_FUNCTION("on", MechManager::On),
-            DECLARE_NAPI_FUNCTION("off", MechManager::Off),
+        DECLARE_NAPI_FUNCTION("on", MechManager::On),
+        DECLARE_NAPI_FUNCTION("off", MechManager::Off),
 
-            DECLARE_NAPI_FUNCTION("getAttachedMechDevices", MechManager::GetAttachedDevices),
-            DECLARE_NAPI_FUNCTION("setUserOperation", MechManager::SetUserOperation),
+        DECLARE_NAPI_FUNCTION("getAttachedMechDevices", MechManager::GetAttachedDevices),
+        DECLARE_NAPI_FUNCTION("setUserOperation", MechManager::SetUserOperation),
 
-            DECLARE_NAPI_FUNCTION("setCameraTrackingEnabled", MechManager::SetCameraTrackingEnabled),
-            DECLARE_NAPI_FUNCTION("getCameraTrackingEnabled", MechManager::GetCameraTrackingEnabled),
-            DECLARE_NAPI_FUNCTION("setCameraTrackingLayout", MechManager::SetCameraTrackingLayout),
-            DECLARE_NAPI_FUNCTION("getCameraTrackingLayout", MechManager::GetCameraTrackingLayout),
+        DECLARE_NAPI_FUNCTION("setCameraTrackingEnabled", MechManager::SetCameraTrackingEnabled),
+        DECLARE_NAPI_FUNCTION("getCameraTrackingEnabled", MechManager::GetCameraTrackingEnabled),
+        DECLARE_NAPI_FUNCTION("setCameraTrackingLayout", MechManager::SetCameraTrackingLayout),
+        DECLARE_NAPI_FUNCTION("getCameraTrackingLayout", MechManager::GetCameraTrackingLayout),
 
-            DECLARE_NAPI_FUNCTION("rotate", MechManager::Rotate),
-            DECLARE_NAPI_FUNCTION("rotateToEulerAngles", MechManager::RotateToEulerAngles),
-            DECLARE_NAPI_FUNCTION("getMaxRotationTime", MechManager::GetMaxRotationTime),
-            DECLARE_NAPI_FUNCTION("getMaxRotationSpeed", MechManager::GetMaxRotationSpeed),
-            DECLARE_NAPI_FUNCTION("rotateBySpeed", MechManager::RotateBySpeed),
-            DECLARE_NAPI_FUNCTION("stopMoving", MechManager::StopMoving),
-            DECLARE_NAPI_FUNCTION("getCurrentAngles", MechManager::GetCurrentAngles),
-            DECLARE_NAPI_FUNCTION("getRotationLimits", MechManager::GetRotationLimits),
-            DECLARE_NAPI_FUNCTION("getRotationAxesStatus", MechManager::GetRotationAxesStatus),
+        DECLARE_NAPI_FUNCTION("rotate", MechManager::Rotate),
+        DECLARE_NAPI_FUNCTION("rotateToEulerAngles", MechManager::RotateToEulerAngles),
+        DECLARE_NAPI_FUNCTION("getMaxRotationTime", MechManager::GetMaxRotationTime),
+        DECLARE_NAPI_FUNCTION("getMaxRotationSpeed", MechManager::GetMaxRotationSpeed),
+        DECLARE_NAPI_FUNCTION("rotateBySpeed", MechManager::RotateBySpeed),
+        DECLARE_NAPI_FUNCTION("stopMoving", MechManager::StopMoving),
+        DECLARE_NAPI_FUNCTION("getCurrentAngles", MechManager::GetCurrentAngles),
+        DECLARE_NAPI_FUNCTION("getRotationLimits", MechManager::GetRotationLimits),
+        DECLARE_NAPI_FUNCTION("getRotationAxesStatus", MechManager::GetRotationAxesStatus),
+        DECLARE_NAPI_FUNCTION("searchTarget", MechManager::SearchTarget),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;

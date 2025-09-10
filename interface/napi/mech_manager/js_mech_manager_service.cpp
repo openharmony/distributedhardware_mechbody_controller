@@ -205,5 +205,38 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
     return ERR_OK;
 }
 
+int32_t JsMechManagerService::SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result)
+{
+    if (searchTargetCallback_.find(cmdId) == searchTargetCallback_.end()) {
+        HILOGE("searchTarget Callback is nullptr, cmdId: %{public}s", cmdId.c_str());
+        return ERR_OK;
+    }
+    CallbackFunctionInfo callbackFunctionInfo = searchTargetCallback_[cmdId];
+    auto task = [callbackFunctionInfo, targetsNum]() {
+        napi_handle_scope scope;
+        napi_open_handle_scope(callbackFunctionInfo.env, &scope);
+
+        napi_value jsEvent;
+        napi_create_object(callbackFunctionInfo.env, &jsEvent);
+
+        napi_value targetsNumJs;
+        napi_create_int32(callbackFunctionInfo.env, targetsNum, &targetsNumJs);
+        napi_set_named_property(callbackFunctionInfo.env, jsEvent, "targetsNum", targetsNumJs);
+
+        napi_value callback;
+        napi_get_reference_value(callbackFunctionInfo.env, callbackFunctionInfo.callbackRef, &callback);
+
+        napi_value global;
+        napi_get_global(callbackFunctionInfo.env, &global);
+
+        napi_value result;
+        napi_call_function(callbackFunctionInfo.env, global, callback, 1, &jsEvent, &result);
+
+        napi_close_handle_scope(callbackFunctionInfo.env, scope);
+    };
+    napi_send_event(callbackFunctionInfo.env, task, napi_eprio_high);
+
+    return ERR_OK;
+}
 } // namespace MechManager
 } // namespace OHOS

@@ -700,6 +700,37 @@ int32_t MechClient::RotationAxesStatusChangeListenOff()
     return reply.ReadInt32();
 }
 
+int32_t MechClient::SearchTarget(const std::string &cmdId, const TargetInfo &targetInfo,
+    const SearchParams &searchParams)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteString(cmdId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteParcelable(&targetInfo)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteParcelable(&searchParams)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::SEARCH_TARGET),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    return reply.ReadInt32();
+}
+
 sptr <IRemoteObject> MechClient::GetDmsProxy()
 {
     auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();

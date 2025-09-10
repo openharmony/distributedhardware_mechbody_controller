@@ -274,6 +274,7 @@ int32_t MechConnectManager::SetMechanicGattState(std::string &mac, bool state)
     }
     return MECH_INFO_NOT_FOUND;
 }
+
 int32_t MechConnectManager::GetMechanicGattState(std::string &mac, bool &state)
 {
     std::lock_guard<std::mutex> autoLock(mechInfosMutex_);

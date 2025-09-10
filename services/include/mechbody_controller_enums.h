@@ -156,6 +156,16 @@ enum class MechTrackingStatus : uint8_t {
     MECH_TK_ENABLE_NO_TARGET = 1,
     MECH_TK_ENABLE_WITH_TARGET = 2,
 };
+
+enum class TargetType : uint32_t {
+    FACE = 0,
+};
+
+enum class SearchDirection : uint32_t {
+    DEFAULT = 0,
+    LEFTWARD = 1,
+    RIGHTWARD = 2,
+};
 }  // namespace MechBodyController
 }  // namespace OHOS
 #endif  // MECHBODY_CONTROLLER_MECHBODY_CONTROLLER_ENUMS_H
