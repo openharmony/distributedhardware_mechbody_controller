@@ -84,6 +84,8 @@ public:
     int32_t RotatePromiseFulfillment(const std::string &cmdId,
         const int32_t &result);
 
+    int32_t SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result);
+
 public:
     std::mutex attachStateChangeCallbackMutex_;
     std::set<CallbackFunctionInfo> attachStateChangeCallback_;
@@ -93,6 +95,8 @@ public:
     std::set<CallbackFunctionInfo> rotateAxisStatusChangeCallback;
     std::mutex promiseParamsMutex_;
     std::map<std::string, std::shared_ptr<RotatePrimiseFulfillmentParam>> promiseParams_;
+    std::mutex searchTargetCallbackMutex_;
+    std::map<std::string, CallbackFunctionInfo> searchTargetCallback_;
 };
 } // namespace MechManager
 } // namespace OHOS

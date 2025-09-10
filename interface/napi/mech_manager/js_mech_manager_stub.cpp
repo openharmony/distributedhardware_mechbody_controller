@@ -94,6 +94,15 @@ int32_t JsMechManagerStub::RotatePromiseFulfillment(MessageParcel &data,
     return JsMechManagerService::GetInstance().RotatePromiseFulfillment(cmdId, result);
 }
 
+int32_t JsMechManagerStub::SearchTargetCallback(MessageParcel &data,
+    MessageParcel &reply)
+{
+    std::string cmdId = data.ReadString();
+    int32_t targetsNum = data.ReadInt32();
+    int32_t result = data.ReadInt32();
+    return JsMechManagerService::GetInstance().SearchTargetCallback(cmdId, targetsNum, result);
+}
+
 void JsMechManagerStub::InitMechManagerFunc()
 {
     mechManagerFuncMap_[IMechBodyControllerCode::ATTACH_STATE_CHANGE_CALLBACK] =
@@ -102,6 +111,7 @@ void JsMechManagerStub::InitMechManagerFunc()
     mechManagerFuncMap_[IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_CALLBACK] =
         &JsMechManagerStub::RotationAxesStatusChangeCallback;
     mechManagerFuncMap_[IMechBodyControllerCode::ROTATE_CALLBACK] = &JsMechManagerStub::RotatePromiseFulfillment;
+    mechManagerFuncMap_[IMechBodyControllerCode::SEARCH_TARGET_CALLBACK] = &JsMechManagerStub::SearchTargetCallback;
 }
 
 JsMechManagerStub::JsMechManagerStub()

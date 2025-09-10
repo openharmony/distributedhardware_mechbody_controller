@@ -279,6 +279,148 @@ HWTEST_F(McCameraTrackingControllerTest, UpdateMotionsWithTrackingData_002, Test
 }
 
 /**
+ * @tc.name  : SearchTarget_001
+ * @tc.number: SearchTarget_001
+ * @tc.desc  : Testing SearchTarget function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, SearchTarget_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest SearchTarget_001 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    int32_t mechId = 100;
+    std::string cmdId = "mockNapiCmdId";
+    uint32_t tokenId = 1;
+    std::shared_ptr<TargetInfo> targetInfo = std::make_shared<TargetInfo>();
+    std::shared_ptr<SearchParams> searchParams = std::make_shared<SearchParams>();
+
+    MechBodyControllerService::GetInstance().motionManagers_.clear();
+    int32_t result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
+    EXPECT_EQ(result, NO_DEVICE_CONNECTED);
+
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = nullptr;
+    result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
+    EXPECT_EQ(result, NO_DEVICE_CONNECTED);
+
+    std::shared_ptr<MotionManager> motionMgr =
+            std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 1;
+    result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
+    EXPECT_EQ(result, ERR_OK);
+
+    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 0;
+    result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
+    EXPECT_EQ(result, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest SearchTarget_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SearchTargetRotateFinish_001
+ * @tc.number: SearchTargetRotateFinish_001
+ * @tc.desc  : Testing SearchTargetRotateFinish function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, SearchTargetRotateFinish_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest SearchTargetRotateFinish_001 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    std::string cmdId = "mockNapiCmdId";
+
+    EXPECT_NO_FATAL_FAILURE(
+            mcCameraTrackingController.SearchTargetRotateFinish(cmdId));
+
+    cmdId = "searchTargetTaskName";
+
+    EXPECT_NO_FATAL_FAILURE(
+            mcCameraTrackingController.SearchTargetRotateFinish(cmdId));
+
+    DTEST_LOG << "McCameraTrackingControllerTest SearchTargetRotateFinish_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SearchTargetStop_001
+ * @tc.number: SearchTargetStop_001
+ * @tc.desc  : Testing SearchTargetStop function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, SearchTargetStop_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest SearchTargetStop_001 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    int32_t mechId = 100;
+    int32_t mechId1 = 101;
+
+    std::shared_ptr<MotionManager> motionMgr =
+            std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+    MechBodyControllerService::GetInstance().motionManagers_[mechId1] = nullptr;
+
+    EXPECT_NO_FATAL_FAILURE(mcCameraTrackingController.SearchTargetStop());
+
+    DTEST_LOG << "McCameraTrackingControllerTest SearchTargetStop_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : ExecSearchTask_001
+ * @tc.number: ExecSearchTask_001
+ * @tc.desc  : Testing ExecSearchTask function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, ExecSearchTask_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest ExecSearchTask_001 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    std::string cmdId = "mockNapiCmdId";
+    int32_t mechId = 100;
+    int32_t mechId1 = 101;
+    uint32_t tokenId = 1;
+    std::shared_ptr<SearchParams> searchParams = std::make_shared<SearchParams>();
+    bool startFromNeg = true;
+    int32_t searchTimes = 39;
+
+    std::shared_ptr<MotionManager> motionMgr =
+            std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+    MechBodyControllerService::GetInstance().motionManagers_[mechId1] = nullptr;
+
+    EXPECT_NO_FATAL_FAILURE(
+            mcCameraTrackingController.ExecSearchTask(cmdId, tokenId, startFromNeg, searchTimes));
+
+    DTEST_LOG << "McCameraTrackingControllerTest ExecSearchTask_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : ExecSearchTaskWithLimit_001
+ * @tc.number: ExecSearchTaskWithLimit_001
+ * @tc.desc  : Testing ExecSearchTaskWithLimit function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, ExecSearchTaskWithLimit_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest ExecSearchTaskWithLimit_001 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    std::string cmdId = "mockNapiCmdId";
+    int32_t mechId = 100;
+    int32_t mechId1 = 101;
+    uint32_t tokenId = 1;
+    std::shared_ptr<SearchParams> searchParams = std::make_shared<SearchParams>();
+    bool startFromNeg = true;
+    RotateDegreeLimit limit;
+
+    std::shared_ptr<MotionManager> motionMgr =
+            std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+    MechBodyControllerService::GetInstance().motionManagers_[mechId1] = nullptr;
+
+    EXPECT_NO_FATAL_FAILURE(
+            mcCameraTrackingController.ExecSearchTaskWithLimit(cmdId, tokenId, startFromNeg, limit));
+
+    DTEST_LOG << "McCameraTrackingControllerTest ExecSearchTaskWithLimit_001 end" << std::endl;
+}
+
+/**
  * @tc.name  : RegisterTrackingEventCallback_001
  * @tc.number: RegisterTrackingEventCallback_001
  * @tc.desc  : Testing RegisterTrackingEventCallback function.

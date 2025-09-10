@@ -56,6 +56,8 @@ public:
 
     int32_t RotatePromiseFulfillment(MessageParcel &data, MessageParcel &reply) override;
 
+    int32_t SearchTargetCallback(MessageParcel &data, MessageParcel &reply) override;
+
 private:
     void InitMechManagerFunc();
 

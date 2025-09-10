@@ -63,6 +63,8 @@ struct CameraInfo {
     int32_t equivalentFocus = 24;
     bool isRecording = false;
     bool currentTrackingEnable = true;
+    uint64_t trackingTargetNum = 0;
+    bool searchingTarget = false;
     CameraTrackingLayout currentCameraTrackingLayout = CameraTrackingLayout::DEFAULT;
     CameraType cameraType = CameraType::BACK;
     int32_t focusMode = 1;
@@ -86,8 +88,9 @@ struct CameraInfo {
                ", equivalentFocus=" + std::to_string(equivalentFocus) +
                ", isRecording=" + std::to_string(isRecording) +
                ", currentTrackingEnable=" + std::to_string(currentTrackingEnable) +
-               ", currentCameraTrackingLayout=" + std::to_string(static_cast<int>(currentCameraTrackingLayout)) +
-               ", cameraType=" + std::to_string(static_cast<int>(cameraType)) +
+               ", trackingTargetNum=" + std::to_string(trackingTargetNum) +
+               ", currentCameraTrackingLayout=" + std::to_string(static_cast<int32_t>(currentCameraTrackingLayout)) +
+               ", cameraType=" + std::to_string(static_cast<int32_t>(cameraType)) +
                ", focusMode=" + std::to_string(focusMode) +
                ", sessionMode=" + std::to_string(sessionMode) +
                ", videoStabilizationMode=" + std::to_string(videoStabilizationMode) +
@@ -124,12 +127,18 @@ public:
     int32_t OnZoomInfoChange(int32_t sessionid, const CameraStandard::ZoomInfo& zoomInfo);
     int32_t OnSessionStatusChange(int32_t sessionid, bool status);
     int32_t OnFocusTracking(CameraStandard::FocusTrackingMetaInfo &info);
-    int32_t SetTrackingEnabled(const uint32_t &tokenId, bool &isEnabled);
+    int32_t SetTrackingEnabled(const uint32_t &tokenId, bool isEnabled);
     int32_t GetTrackingEnabled(const uint32_t &tokenId, bool &isEnabled);
     int32_t RegisterTrackingEventCallback(const uint32_t &tokenId, sptr<IRemoteObject> callback);
     int32_t UnRegisterTrackingEventCallback(const uint32_t &tokenId);
     int32_t OnTrackingEvent(const int32_t &mechId, const TrackingEvent &event);
     int32_t SetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout);
+    int32_t SetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout);
+    int32_t GetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout);
+    int32_t SearchTarget(std::string &cmdId, uint32_t &tokenId,
+        const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams);
+    void SearchTargetRotateFinish(const std::string &cmdId);
+    void SearchTargetStop();
     int32_t GetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout);
     std::shared_ptr<CameraInfo> GetCurrentCameraInfo() const;
     void OnConnectChange();
@@ -154,6 +163,14 @@ private:
     void UnRegisterTrackingListener();
     void RegisterSensorListener();
     void UnRegisterSensorListener();
+    float ParseLayout(CameraTrackingLayout &cameraTrackingLayout);
+    float ParseReverseLayout(CameraTrackingLayout &cameraTrackingLayout);
+    void ExecSearchTaskWithLimit(std::string &napiCmdId, uint32_t &tokenId,
+        const bool &startFromNeg, const RotateDegreeLimit &limit);
+    void ExecSearchTask(std::string &napiCmdId, uint32_t &tokenId, const bool &startFromNeg,
+        int32_t &searchTimes);
+    void RunSearchTarget(std::string &cmdId, uint32_t &tokenId, const std::shared_ptr<SearchParams> &searchParams,
+        const RotateDegreeLimit &limit, const std::shared_ptr<EulerAngles> &currentPosition);
     void AdjustROI(ROI &roi, CameraStandard::Rect &rect, CameraType cameraType, MobileRotation sensorRotation);
     void AdjustYOffset(ROI &roi, CameraType cameraType, CameraTrackingLayout trackingLayout);
     void AdjustXOffset(ROI &roi, CameraType cameraType, CameraTrackingLayout trackingLayout);
@@ -175,6 +192,9 @@ private:
     std::shared_ptr<TrackingFrameParams> lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
 
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
+
+    std::mutex searchTargetMutex_;
+    std::condition_variable searchTargetCv_;
 };
 } // namespace MechBodyController
 } // namespace OHOS

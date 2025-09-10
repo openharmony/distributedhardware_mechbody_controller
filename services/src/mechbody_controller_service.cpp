@@ -457,6 +457,8 @@ int32_t MechBodyControllerService::NotifyOperationResult(const uint32_t &tokenId
     const ExecResult &result)
 {
     HILOGI("start, result: %{public}d;", result);
+    McCameraTrackingController::GetInstance().SearchTargetRotateFinish(cmdId);
+
     MessageParcel data;
     if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
         HILOGE("Write interface token failed");
@@ -854,6 +856,59 @@ int32_t MechBodyControllerService::OnRotationAxesStatusChange(const int32_t &mec
             data, reply, option);
         HILOGI("notify tracking event to tokenId: %{public}s; axesStatus: %{public}s", GetAnonymUint32(tokenId).c_str(),
             error == ERR_NONE ? "success" : "failed");
+    }
+    return ERR_OK;
+}
+
+int32_t MechBodyControllerService::SearchTarget(std::string &cmdId,
+    const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!IsSystemApp()) {
+        HILOGE("current app is not system app.");
+        return PERMISSION_DENIED;
+    }
+    if (targetInfo == nullptr || searchParams == nullptr) {
+        HILOGE("SEARCH_TARGET search param is nullptr");
+        return INVALID_PARAMETERS_ERR;
+    }
+    HILOGI("start, tokenId: %{public}s; cmdId: %{public}s; targetInfo: %{public}s; searchParams: %{public}s",
+        GetAnonymUint32(tokenId).c_str(), cmdId.c_str(),
+        targetInfo->ToString().c_str(), searchParams->ToString().c_str());
+    int32_t result = McControllerManager::GetInstance().SearchTarget(cmdId, tokenId, targetInfo, searchParams);
+    HILOGI("end. execute result: %{public}d.", result);
+    return result;
+}
+
+int32_t MechBodyControllerService::SearchTargetEnd(const uint32_t &tokenId,
+    const std::string &cmdId, const int32_t &targetNum)
+{
+    HILOGI("start, cmdId: %{public}s; targetNum: %{public}d", cmdId.c_str(), targetNum);
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        HILOGE("Write interface token failed");
+        return SEND_CALLBACK_INFO_FAILED;
+    }
+    if (!data.WriteString(cmdId)) {
+        HILOGE("Write cmdId failed");
+        return SEND_CALLBACK_INFO_FAILED;
+    }
+    if (!data.WriteInt32(targetNum)) {
+        HILOGE("Write targetNum failed");
+        return SEND_CALLBACK_INFO_FAILED;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    {
+        std::lock_guard<std::mutex> lock(cmdChannelMutex_);
+        sptr<IRemoteObject> callback =  cmdChannels_[tokenId];
+        if (callback == nullptr) {
+            HILOGI("command channel is nullptr for tokenId: %{public}s", GetAnonymUint32(tokenId).c_str());
+            return NAPI_SEND_DATA_FAIL;
+        }
+        int32_t error = callback->SendRequest(static_cast<uint32_t>(IMechBodyControllerCode::SEARCH_TARGET_CALLBACK),
+            data, reply, option);
+        HILOGI("Send callback data %{public}s", error == ERR_NONE ? "success" : "failed");
     }
     return ERR_OK;
 }

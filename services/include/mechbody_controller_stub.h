@@ -56,8 +56,7 @@ private:
     int32_t GetRotationAxesStatusInner(MessageParcel &data, MessageParcel &reply);
     int32_t RotationAxesStatusChangeListenOnInner(MessageParcel &data, MessageParcel &reply);
     int32_t RotationAxesStatusChangeListenOffInner(MessageParcel &data, MessageParcel &reply);
-
-    int32_t Test(MessageParcel &data, MessageParcel &reply);
+    int32_t SearchTargetInner(MessageParcel &data, MessageParcel &reply);
 
 private:
     using MechBodyControllerFunc = int32_t(MechBodyControllerStub::*)(MessageParcel& data, MessageParcel& reply);

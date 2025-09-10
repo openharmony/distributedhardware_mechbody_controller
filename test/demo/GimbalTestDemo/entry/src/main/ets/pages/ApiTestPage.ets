@@ -224,7 +224,7 @@ struct ApiTestPage {
               .onClick(() => {
                 try {
                   logger.info('注册跟踪事件监听');
-                  mechanicManager.on("trackingStateChange", (result: mechanicManager.TrackingEventInfo) => {
+                  mechanicManager.on("trackingEvent", (result: mechanicManager.TrackingEventInfo) => {
                     logger.info('注册跟踪事件监听:result  ' + JSON.stringify(result));
                     prompt.showToast({
                       message: '注册跟踪事件监听成功',
@@ -243,7 +243,7 @@ struct ApiTestPage {
               .onClick(() => {
                 try {
                   logger.info('去注册跟踪事件监听');
-                  mechanicManager.off("trackingStateChange", (result: mechanicManager.TrackingEventInfo) => {
+                  mechanicManager.off("trackingEvent", (result: mechanicManager.TrackingEventInfo) => {
                     logger.info('result: ' + JSON.stringify(result));
                     prompt.showToast({
                       message: '去注册跟踪事件监听成功',
@@ -652,7 +652,57 @@ struct ApiTestPage {
               }
             }).margin({
             top: 5
-          })
+          });
+
+          Button('找人')
+          .onClick(() => {
+            try {
+              logger.info('找人启动');
+              let targetInfo : mechanicManager.TargetInfo = {
+                targetType: 0
+              }
+              let searchParam : mechanicManager.SearchParams = {
+                direction: 0
+              }
+              mechanicManager.searchTarget(targetInfo, searchParam, (result) => {
+                logger.info('result: ' + JSON.stringify(result));
+                prompt.showToast({
+                  message: `找人完成：result.status = ${JSON.stringify(result)}`,
+                  duration: 2000
+                });
+              });
+              logger.info('找人启动成功');
+            } catch (e) {
+              logger.error('找人启动失败, code: ' + e.code + ' message: ' + e.message);
+            }
+          }).margin({
+          top: 5
+        });
+
+          Button('找人')
+          .onClick(() => {
+            try {
+              logger.info('找人启动');
+              let targetInfo : mechanicManager.TargetInfo = {
+                targetType: 0
+              }
+              let searchParam : mechanicManager.SearchParams = {
+                direction: 0
+              }
+              mechanicManager.searchTarget(targetInfo, searchParam, (result) => {
+                logger.info('result: ' + JSON.stringify(result));
+                prompt.showToast({
+                  message: `找人完成：result.status = ${JSON.stringify(result)}`,
+                  duration: 2000
+                });
+              });
+              logger.info('找人启动成功');
+            } catch (e) {
+              logger.error('找人启动失败, code: ' + e.code + ' message: ' + e.message);
+            }
+          }).margin({
+          top: 5
+        });
 
         }
         .width('100%')

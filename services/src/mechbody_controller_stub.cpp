@@ -83,6 +83,8 @@ void MechBodyControllerStub::InitFuncsInner()
             &MechBodyControllerStub::RotationAxesStatusChangeListenOnInner;
     funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_LISTEN_OFF)] =
             &MechBodyControllerStub::RotationAxesStatusChangeListenOffInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::SEARCH_TARGET)] =
+            &MechBodyControllerStub::SearchTargetInner;
 }
 
 int32_t MechBodyControllerStub::OnRemoteRequest(
@@ -355,6 +357,17 @@ int32_t MechBodyControllerStub::RotationAxesStatusChangeListenOnInner(MessagePar
 int32_t MechBodyControllerStub::RotationAxesStatusChangeListenOffInner(MessageParcel &data, MessageParcel &reply)
 {
     int32_t result = MechBodyControllerService::GetInstance().UnRegisterRotationAxesStatusChangeCallback();
+    bool writeResult = reply.WriteInt32(result);
+    HILOGI("%{public}d", writeResult);
+    return result;
+}
+
+int32_t MechBodyControllerStub::SearchTargetInner(MessageParcel &data, MessageParcel &reply)
+{
+    std::string cmdId = data.ReadString();
+    std::shared_ptr<TargetInfo> targetInfo(data.ReadParcelable<TargetInfo>());
+    std::shared_ptr<SearchParams> searchParams(data.ReadParcelable<SearchParams>());
+    int32_t result = MechBodyControllerService::GetInstance().SearchTarget(cmdId, targetInfo, searchParams);
     bool writeResult = reply.WriteInt32(result);
     HILOGI("%{public}d", writeResult);
     return result;

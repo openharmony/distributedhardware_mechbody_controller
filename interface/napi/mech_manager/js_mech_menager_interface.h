@@ -33,6 +33,8 @@ public:
     virtual int32_t RotationAxesStatusChangeCallback(MessageParcel &data, MessageParcel &reply) = 0;
 
     virtual int32_t RotatePromiseFulfillment(MessageParcel &data, MessageParcel &reply) = 0;
+
+    virtual int32_t SearchTargetCallback(MessageParcel &data, MessageParcel &reply) = 0;
 };
 } // namespace MechBodyController
 } // namespace OHOS

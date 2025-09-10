@@ -679,13 +679,13 @@ int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
         return INVALID_PARAMETERS_ERR;
     }
     MechNapiCommandCallbackInfo callbackInfo = {tokenId, napiCmdId};
-    HandelRotateParam(rotateParam, callbackInfo.willLimitChange);
-    RotateParam param = *rotateParam;
     if (rotateParam->isRelative) {
         HILOGI("Rotate isRelative.");
+        HandelRotateParam(rotateParam, callbackInfo.willLimitChange);
         std::unique_lock <std::mutex> lock(deviceStatusMutex_);
-        AbsolutelyEulerAnglesJudgingLimitLocked(param.degree);
+        AbsolutelyEulerAnglesJudgingLimitLocked(rotateParam->degree);
     }
+    RotateParam param = *rotateParam;
     uint8_t taskId = CreateResponseTaskId();
     param.taskId = taskId;
     std::shared_ptr<CommandBase> rotationCmd = factory.CreateSetMechRotationCmd(param);
