@@ -814,6 +814,13 @@ void McCameraTrackingController::AdjustROI(ROI &roi, CameraStandard::Rect &rect,
             roi.y = NUM_1 - rect.topLeftY - roi.height / NUM_2;
         }
     }
+    HILOGI("Before the offset, roi.x: %{public}f; roi.y: %{public}f", roi.x, roi.y);
+ 
+    if (currentCameraInfo_->currentCameraTrackingLayout == CameraTrackingLayout::DEFAULT ||
+        currentCameraInfo_->currentCameraTrackingLayout == CameraTrackingLayout::MIDDLE) {
+        HILOGI("current TrackingLayout is: %{public}d", currentCameraInfo_->currentCameraTrackingLayout);
+        return;
+    }
     
     if (sensorRotation == MobileRotation::UP || sensorRotation == MobileRotation::DOWN) {
         AdjustYOffset(roi, cameraType, currentCameraInfo_->currentCameraTrackingLayout);
