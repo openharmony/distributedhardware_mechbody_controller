@@ -108,6 +108,9 @@ void McCameraTrackingController::UnInit()
     std::lock_guard<std::mutex> lock(cameraTrackingControllerInitMutex_);
     UnRegisterTrackingListener();
     UnRegisterSensorListener();
+    if (eventHandler_ != nullptr) {
+        eventHandler_->RemoveTask(SEND_TRACKING_LAYOUT_TASK_NAME);
+    }
     HILOGI("end");
 }
 
