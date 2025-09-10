@@ -98,8 +98,8 @@ enum class Operation : int32_t {
 };
 
 enum class TrackingEvent : int32_t {
-    CAMERA_TRACKING_USER_DISABLED = 0,
-    CAMERA_TRACKING_USER_ENABLED = 1,
+    CAMERA_TRACKING_USER_ENABLED = 0,
+    CAMERA_TRACKING_USER_DISABLED = 1,
     CAMERA_TRACKING_LAYOUT_CHANGED = 2
 };
 
