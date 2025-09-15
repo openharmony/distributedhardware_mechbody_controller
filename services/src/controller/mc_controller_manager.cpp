@@ -75,7 +75,7 @@ int32_t McControllerManager::OnTrackingEvent(const int32_t &mechId, const Tracki
 int32_t McControllerManager::SetTrackingLayout(const uint32_t &tokenId,
     CameraTrackingLayout &cameraTrackingLayout)
 {
-    return McCameraTrackingController::GetInstance().SetTrackingLayout(cameraTrackingLayout);
+    return McCameraTrackingController::GetInstance().SetTrackingLayout(tokenId, cameraTrackingLayout);
 }
 
 int32_t McControllerManager::GetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout)
