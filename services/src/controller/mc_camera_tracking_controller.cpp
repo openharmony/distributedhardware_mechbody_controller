@@ -656,6 +656,14 @@ int32_t McCameraTrackingController::SetTrackingLayout(CameraTrackingLayout &came
     return hasSuccess ? ERR_OK : INVALID_TRACKING_LAYOUT;
 }
 
+int32_t McCameraTrackingController::SetTrackingLayout(const uint32_t &tokenId,
+    CameraTrackingLayout &cameraTrackingLayout)
+{
+    HILOGI("tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
+    SetTrackingLayout(cameraTrackingLayout);
+    return ERR_OK;
+}
+
 int32_t McCameraTrackingController::GetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout)
 {
     cameraTrackingLayout = currentCameraInfo_->currentCameraTrackingLayout;

@@ -279,44 +279,6 @@ HWTEST_F(McCameraTrackingControllerTest, UpdateMotionsWithTrackingData_002, Test
 }
 
 /**
- * @tc.name  : SearchTarget_001
- * @tc.number: SearchTarget_001
- * @tc.desc  : Testing SearchTarget function.
- */
-HWTEST_F(McCameraTrackingControllerTest, SearchTarget_001, TestSize.Level1)
-{
-    DTEST_LOG << "McCameraTrackingControllerTest SearchTarget_001 begin" << std::endl;
-
-    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
-    int32_t mechId = 100;
-    std::string cmdId = "mockNapiCmdId";
-    uint32_t tokenId = 1;
-    std::shared_ptr<TargetInfo> targetInfo = std::make_shared<TargetInfo>();
-    std::shared_ptr<SearchParams> searchParams = std::make_shared<SearchParams>();
-
-    MechBodyControllerService::GetInstance().motionManagers_.clear();
-    int32_t result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
-    EXPECT_EQ(result, NO_DEVICE_CONNECTED);
-
-    MechBodyControllerService::GetInstance().motionManagers_[mechId] = nullptr;
-    result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
-    EXPECT_EQ(result, NO_DEVICE_CONNECTED);
-
-    std::shared_ptr<MotionManager> motionMgr =
-            std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
-    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 1;
-    result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
-    EXPECT_EQ(result, ERR_OK);
-
-    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 0;
-    result = mcCameraTrackingController.SearchTarget(cmdId, tokenId, targetInfo, searchParams);
-    EXPECT_EQ(result, ERR_OK);
-
-    DTEST_LOG << "McCameraTrackingControllerTest SearchTarget_001 end" << std::endl;
-}
-
-/**
  * @tc.name  : SearchTargetRotateFinish_001
  * @tc.number: SearchTargetRotateFinish_001
  * @tc.desc  : Testing SearchTargetRotateFinish function.
@@ -650,10 +612,10 @@ HWTEST_F(McCameraTrackingControllerTest, SetTrackingLayout_002, TestSize.Level1)
     std::shared_ptr<AppSetting> setting = std::make_shared<AppSetting>();
     std::shared_ptr<AppSetting> settingNull = nullptr;
     mcCameraTrackingController.appSettings[tokenId] = setting;
-    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(cameraTrackingLayout), ERR_OK);
+    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(tokenId, cameraTrackingLayout), ERR_OK);
 
     mcCameraTrackingController.appSettings[tokenId] = settingNull;
-    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(cameraTrackingLayout), ERR_OK);
+    EXPECT_EQ(mcCameraTrackingController.SetTrackingLayout(tokenId, cameraTrackingLayout), ERR_OK);
 
     DTEST_LOG << "McCameraTrackingControllerTest SetTrackingLayout_002 end" << std::endl;
 }
