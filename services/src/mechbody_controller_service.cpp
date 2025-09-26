@@ -32,6 +32,7 @@ namespace MechBodyController {
 namespace {
     const std::string TAG = "MechBodyControllerService";
     const std::string PERMISSION_NAME = "ohos.permission.CONNECT_MECHANIC_HARDWARE";
+    const std::string START_REASON_RESTART = "restart";
 }
 
 MechBodyControllerService& MechBodyControllerService::GetInstance()
@@ -52,10 +53,11 @@ MechBodyControllerService::~MechBodyControllerService()
     HILOGI("~MechBodyControllerService.");
 }
 
-void MechBodyControllerService::OnStart()
+void MechBodyControllerService::OnStart(const SystemAbilityOnDemandReason &startReason)
 {
     // LCOV_EXCL_START
-    HILOGI("MechBodyControllerService start.");
+    HILOGI("MechBodyControllerService start.reason %{public}s, reasonId_:%{public}d",
+        startReason.GetName().c_str(), startReason.GetId());
     bool res = Publish(this);
     if (!res) {
         HILOGE("MechBodyControllerService start failed.");
@@ -67,6 +69,10 @@ void MechBodyControllerService::OnStart()
         sendAdapter_->RegisterBluetoothListener();
     }
     BleSendManager::GetInstance().Init();
+    if (startReason.GetName() == START_REASON_RESTART) {
+        BleSendManager::GetInstance().CleanOldAssetsForMechbodyStart();
+        BleSendManager::GetInstance().DelayedUnloadSystemAbility();
+    }
 
     HILOGI("MechBodyControllerService start end.");
     // LCOV_EXCL_STOP
@@ -257,6 +263,14 @@ int32_t MechBodyControllerService::OnDeviceDisconnected(int32_t mechId)
         it->second = nullptr;
         motionManagers_.erase(it);
     }
+    return ERR_OK;
+}
+
+int32_t MechBodyControllerService::CleanMotionManagers()
+{
+    HILOGI("Clean motionManagers");
+    std::lock_guard<std::mutex> lock(motionManagersMutex);
+    motionManagers_.clear();
     return ERR_OK;
 }
 
@@ -869,7 +883,7 @@ int32_t MechBodyControllerService::SearchTarget(std::string &cmdId,
         return PERMISSION_DENIED;
     }
     if (targetInfo == nullptr || searchParams == nullptr) {
-        HILOGE("SEARCH_TARGET search param is nullptr");
+        HILOGE("search param is nullptr");
         return INVALID_PARAMETERS_ERR;
     }
     HILOGI("start, tokenId: %{public}s; cmdId: %{public}s; targetInfo: %{public}s; searchParams: %{public}s",

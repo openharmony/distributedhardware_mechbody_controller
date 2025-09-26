@@ -490,7 +490,8 @@ void RotationAxesStatusChangeListenOffInnerFuzzTest(std::shared_ptr<MechBodyCont
 }
 
 void RotateToEulerAnglesInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-    const uint8_t *data, size_t size)
+    const uint8_t *data,
+    size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_BY_DEGREE);
     MessageParcel datas;

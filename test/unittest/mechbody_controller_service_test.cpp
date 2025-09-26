@@ -87,7 +87,10 @@ HWTEST_F(MechBodyControllerServiceTest, OnStart_001, TestSize.Level1)
     DTEST_LOG << "MechBodyControllerServiceTest OnStart_001 begin" << std::endl;
 
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.OnStart();
+    SystemAbilityOnDemandReason reason;
+    reason.reasonId_ = OnDemandReasonId::INTERFACE_CALL;
+    reason.reasonName_= "test";
+    mechBodyControllerService.OnStart(reason);
     EXPECT_NE(mechBodyControllerService.sendAdapter_, nullptr);
     DTEST_LOG << "MechBodyControllerServiceTest OnStart_001 end" << std::endl;
 }

@@ -23,6 +23,7 @@ namespace {
     const std::string TAG = "SetMechRotationBySpeedCmd";
     constexpr uint8_t CMD_SET_ROTATE_BY_SPEED_CONTROL = 0b10000000;
     constexpr uint8_t CMD_SET_ROTATE_BY_SPEED_CONTROL_EXTEND = 0x1;
+    constexpr uint8_t NEG_LIMITED = 2;
 }
 
 SetMechRotationBySpeedCmd::SetMechRotationBySpeedCmd(const RotateBySpeedParam& params)
@@ -69,6 +70,38 @@ void SetMechRotationBySpeedCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> 
     CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_2, result_), "read result_");
     HILOGI("response code: %{public}u", result_);
 
+    uint8_t limitInfo = 0;
+    CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_3, limitInfo), "read limit info");
+    HILOGI("limitInfo : %{public}u", limitInfo);
+ 
+    uint8_t yawLimit = (limitInfo >> BIT_OFFSET_6) & BIT_3;
+    uint8_t rollLimit = (limitInfo >> BIT_OFFSET_4) & BIT_3;
+    uint8_t pitchLimit = (limitInfo >> BIT_OFFSET_2) & BIT_3;
+
+    if (yawLimit == 0) {
+        status_.yawLimited = RotationAxisLimited::NOT_LIMITED;
+    } else if (yawLimit == 1) {
+        status_.yawLimited = RotationAxisLimited::POS_LIMITED;
+    } else if (yawLimit == NEG_LIMITED) {
+        status_.yawLimited = RotationAxisLimited::NEG_LIMITED;
+    }
+
+    if (rollLimit == 0) {
+        status_.rollLimited = RotationAxisLimited::NOT_LIMITED;
+    } else if (rollLimit == 1) {
+        status_.rollLimited = RotationAxisLimited::POS_LIMITED;
+    } else if (rollLimit == NEG_LIMITED) {
+        status_.rollLimited = RotationAxisLimited::NEG_LIMITED;
+    }
+
+    if (pitchLimit == 0) {
+        status_.pitchLimited = RotationAxisLimited::NOT_LIMITED;
+    } else if (pitchLimit == 1) {
+        status_.pitchLimited = RotationAxisLimited::POS_LIMITED;
+    } else if (pitchLimit == NEG_LIMITED) {
+        status_.pitchLimited = RotationAxisLimited::NEG_LIMITED;
+    }
+
     if (responseCb_) {
         HILOGI("trigger response callback.");
         responseCb_();
@@ -78,6 +111,11 @@ void SetMechRotationBySpeedCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> 
 const RotateBySpeedParam& SetMechRotationBySpeedCmd::GetParams() const
 {
     return params_;
+}
+
+const RotationAxesStatus& SetMechRotationBySpeedCmd::GetRotationAxesStatus() const
+{
+    return status_;
 }
 
 uint8_t SetMechRotationBySpeedCmd::GetResult() const

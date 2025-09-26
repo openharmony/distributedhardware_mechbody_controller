@@ -37,6 +37,7 @@ constexpr size_t BIT_OFFSET_1 = 1;
 constexpr size_t BIT_OFFSET_2 = 2;
 constexpr size_t BIT_OFFSET_3 = 3;
 constexpr size_t BIT_OFFSET_4 = 4;
+constexpr size_t BIT_OFFSET_6 = 6;
 constexpr size_t BIT_OFFSET_7 = 7;
 constexpr size_t BIT_OFFSET_8 = 8;
 constexpr size_t BIT_OFFSET_10 = 10;
@@ -67,10 +68,10 @@ enum class CameraType : uint8_t {
 };
 
 enum class ConfidenceLevel : uint8_t {
+    LOST = 0x00,
     HIGH = 0x01,
     MEDIUM = 0x02,
-    LOW = 0x03,
-    LOST = 0x04
+    LOW = 0x03
 };
 
 enum class CameraKeyEvent : int32_t {

@@ -233,8 +233,8 @@ enum {
     MECH_DISCONNECT_FAILED,
 
     /**
-     * Result(96469016) for Set racking enabl failed.
-     */
+    * Result(96469016) for Set racking enabl failed.
+    */
     SET_TRACKING_ENABLE_FAILED,
 
     /**
@@ -251,6 +251,11 @@ enum {
      * Result(96469019) for get current position failed.
      */
     GET_CURRENT_POSITION_FAILED,
+
+    /**
+    * Result(96469020) for device has disconnected.
+    */
+    MECH_HAS_DISCONNECTED,
 };
 
 enum MechNapiErrorCode {

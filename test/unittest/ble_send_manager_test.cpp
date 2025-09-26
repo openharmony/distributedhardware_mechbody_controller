@@ -325,6 +325,7 @@ HWTEST_F(BleSendManagerTest, UnRegisterTransportSendAdapter_002, TestSize.Level1
  * @tc.number: UnRegisterTransportSendAdapter_003
  * @tc.desc  : UnRegisterTransportSendAdapter when the listener is found.
  */
+
 HWTEST_F(BleSendManagerTest, UnRegisterTransportSendAdapter_003, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest UnRegisterTransportSendAdapter_003 begin" << std::endl;
@@ -341,6 +342,7 @@ HWTEST_F(BleSendManagerTest, UnRegisterTransportSendAdapter_003, TestSize.Level1
  * @tc.number: UnRegisterTransportSendAdapter_004
  * @tc.desc  : UnRegisterTransportSendAdapter when bleReceviceListeners_ is null.
  */
+
 HWTEST_F(BleSendManagerTest, UnRegisterTransportSendAdapter_004, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest UnRegisterTransportSendAdapter_004 begin" << std::endl;
@@ -355,6 +357,7 @@ HWTEST_F(BleSendManagerTest, UnRegisterTransportSendAdapter_004, TestSize.Level1
  * @tc.number: OnGattReady_001
  * @tc.desc  : OnGattReady when it is called.
  */
+
 HWTEST_F(BleSendManagerTest, OnGattReady_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest OnGattReady_001 begin" << std::endl;
@@ -368,6 +371,7 @@ HWTEST_F(BleSendManagerTest, OnGattReady_001, TestSize.Level1)
  * @tc.number: MechbodyGattcDisconnect_001
  * @tc.desc  : Test MechbodyGattcDisconnect function.
  */
+
 HWTEST_F(BleSendManagerTest, MechbodyGattcDisconnect_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest MechbodyGattcDisconnect_001 begin" << std::endl;
@@ -390,6 +394,7 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcDisconnect_001, TestSize.Level1)
  * @tc.number: MechbodyGattcWriteCharacteristic_001
  * @tc.desc  : MechbodyGattcWriteCharacteristic when data is nullptr.
  */
+
 HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest MechbodyGattcWriteCharacteristic_001 begin" << std::endl;
@@ -405,6 +410,7 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_001, TestSize.Leve
  * @tc.number: MechbodyGattcWriteCharacteristic_002
  * @tc.desc  : MechbodyGattcWriteCharacteristic when gattClient_ is nullptr.
  */
+
 HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_002, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest MechbodyGattcWriteCharacteristic_002 begin" << std::endl;
@@ -421,6 +427,7 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_002, TestSize.Leve
  * @tc.number: MechbodyGattcWriteCharacteristic_003
  * @tc.desc  : MechbodyGattcWriteCharacteristic when gattClient_ is not nullptr.
  */
+
 HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_003, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest MechbodyGattcWriteCharacteristic_003 begin" << std::endl;
@@ -455,6 +462,7 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_004, TestSize.Leve
  * @tc.number: SendData_001
  * @tc.desc  : SendData when data is nullptr.
  */
+
 HWTEST_F(BleSendManagerTest, SendData_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest SendData_001 begin" << std::endl;
@@ -470,6 +478,7 @@ HWTEST_F(BleSendManagerTest, SendData_001, TestSize.Level1)
  * @tc.number: SendData_002
  * @tc.desc  : SendData when dataLen is less than BUF_MIN_LEN.
  */
+
 HWTEST_F(BleSendManagerTest, SendData_002, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest SendData_002 begin" << std::endl;
@@ -485,6 +494,7 @@ HWTEST_F(BleSendManagerTest, SendData_002, TestSize.Level1)
  * @tc.number: SendData_003
  * @tc.desc  : SendData when dataLen is less than BUF_MIN_LEN.
  */
+
 HWTEST_F(BleSendManagerTest, SendData_003, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest SendData_003 begin" << std::endl;
@@ -500,6 +510,7 @@ HWTEST_F(BleSendManagerTest, SendData_003, TestSize.Level1)
  * @tc.number: OnScanCallback_001
  * @tc.desc  : SendData when dataLen is less than BUF_MIN_LEN.
  */
+
 HWTEST_F(BleSendManagerTest, OnScanCallback_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest OnScanCallback_001 begin" << std::endl;
@@ -514,6 +525,7 @@ HWTEST_F(BleSendManagerTest, OnScanCallback_001, TestSize.Level1)
  * @tc.number: OnConnectionStateChanged_001
  * @tc.desc  : Test OnConnectionStateChanged function.
  */
+
 HWTEST_F(BleSendManagerTest, OnConnectionStateChanged_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest OnConnectionStateChanged_001 begin" << std::endl;
@@ -540,6 +552,7 @@ HWTEST_F(BleSendManagerTest, OnConnectionStateChanged_001, TestSize.Level1)
  * @tc.number: OnServicesDiscovered_001
  * @tc.desc  : Test OnServicesDiscovered function.
  */
+
 HWTEST_F(BleSendManagerTest, OnServicesDiscovered_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest OnServicesDiscovered_001 begin" << std::endl;
@@ -564,6 +577,7 @@ HWTEST_F(BleSendManagerTest, OnServicesDiscovered_001, TestSize.Level1)
  * @tc.number: OnCharacteristicWriteResult_001
  * @tc.desc  : Test OnCharacteristicWriteResult function.
  */
+
 HWTEST_F(BleSendManagerTest, OnCharacteristicWriteResult_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest OnCharacteristicWriteResult_001 begin" << std::endl;
@@ -585,6 +599,7 @@ HWTEST_F(BleSendManagerTest, OnCharacteristicWriteResult_001, TestSize.Level1)
  * @tc.number: MechbodyGattcConnect_001
  * @tc.desc  : Test MechbodyGattcConnect function.
  */
+
 HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest MechbodyGattcConnect_001 begin" << std::endl;
@@ -596,30 +611,11 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_001, TestSize.Level1)
 }
 
 /**
- * @tc.name  : MechbodyGattcConnect_002
- * @tc.number: MechbodyGattcConnect_002
- * @tc.desc  : Test MechbodyGattcConnect function.
-*/
-HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_002, TestSize.Level1)
-{
-    DTEST_LOG << "BleSendManagerTest MechbodyGattcConnect_002 begin" << std::endl;
-    std::string mac = "123456789";
-    std::string deviceName = "deviceName";
-    bleSendManager_.bleGattClientCallBack_ = std::make_shared<BleGattClientCallback>();
-    int ret = bleSendManager_.MechbodyGattcConnect(mac, deviceName);
-    EXPECT_EQ(ret, MECHBODY_GATT_CONNECT_FAILED);
-
-    MechInfo mechInfo;
-    ret = bleSendManager_.MechbodyGattcConnect(mac, deviceName);
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "BleSendManagerTest MechbodyGattcConnect_002 end" << std::endl;
-}
-
-/**
  * @tc.name  : UnInit_001
  * @tc.number: UnInit_001
  * @tc.desc  : Test UnInit function.
  */
+
 HWTEST_F(BleSendManagerTest, UnInit_001, TestSize.Level1)
 {
     DTEST_LOG << "BleSendManagerTest UnInit_001 begin" << std::endl;

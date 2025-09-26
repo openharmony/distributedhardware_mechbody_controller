@@ -40,20 +40,21 @@ namespace MechBodyController {
 namespace {
 const std::string TAG = "BleSendManager";
 const std::string TARGET_DEVICE_NAME = "TARGET_DEVICE_NAME";
+const std::string DEVICE_NAME_SUFFIX = "-mechanic";
 constexpr long SCAN_REPORT_DELAY_MILLIS = 3 * 1000;
 constexpr size_t NOTIFY_DATA_MAX_SIZE = 1024 * 1024;
 constexpr int32_t MECH_SAID = 8550;
 constexpr int32_t BUF_MIN_LEN = 8;
 constexpr int32_t BUF_MAX_LEN = 251;
-constexpr int32_t WAIT_TIME = 60;
+constexpr int32_t ABILITY_UNLOAD_WAIT_TIME = 60000; // ms
+std::string g_abilityUnloadTaskName = "abilityUnloadTaskName";
 constexpr int32_t ERROR_NO_LISTENERS = -10001;
 constexpr int32_t ERROR_INVALID_PARAMETER = -10002;
 constexpr int32_t MECHBODY_GATT_INVALID_PARAM = -10003;
 constexpr int32_t ERROR_SIZE_TOO_LARGE = -10004;
 constexpr int32_t MECHBODY_GATT_CONNECT_FAILED = -10005;
-constexpr int32_t WAIT_TIME_TEN = 10;
-std::atomic<bool> g_isUnloadScheduled = false;
-std::unique_ptr<std::thread> delayThread;
+static constexpr int32_t BLUETOOTH_SERVICE_SERVICE_SA_ID = 1130;
+constexpr int32_t CONNECT_TIMEOUT_SECOND = 10;
 
 UUID SERVICE_UUID = UUID::FromString("15f1e600-a277-43fc-a484-dd39ef8a9100"); // GATT Service uuid
 UUID MECHBODY_CHARACTERISTIC_WRITE_UUID = UUID::FromString("15f1e602-a277-43fc-a484-dd39ef8a9100"); // write uuid
@@ -76,61 +77,6 @@ BleGattClientCallback::BleGattClientCallback()
 {}
 BleGattClientCallback::~BleGattClientCallback()
 {}
-
-void UnloadSystemAbility()
-{
-    HILOGI("start");
-    auto sam = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (sam == nullptr) {
-        HILOGE("GetSystemAbilityManager return null.");
-        return;
-    }
-    int32_t ret = sam->UnloadSystemAbility(MECH_SAID);
-    if (ret != ERR_OK) {
-        HILOGE("UnLoadSystemAbility mechbody sa failed.");
-        return;
-    }
-    HILOGI("end");
-}
-
-void DelayedUnloadSystemAbility(std::chrono::seconds delay)
-{
-    HILOGI("start");
-    if (g_isUnloadScheduled) {
-        HILOGI("already Unload Scheduled. isUnloadScheduled = %{public}d", g_isUnloadScheduled.load());
-        return;
-    }
-    if (delayThread != nullptr) {
-        HILOGI("Thread is empty.");
-        return;
-    }
-    delayThread = std::make_unique<std::thread>([delay]() {
-        std::this_thread::sleep_for(delay);
-        if (g_isUnloadScheduled) {
-            HILOGI(" will Unload SystemAbility, isUnloadScheduled = %{public}d",
-                g_isUnloadScheduled.load());
-            UnloadSystemAbility();
-        }
-    });
-    g_isUnloadScheduled = true;
-    HILOGI("end");
-}
-
-void CancelDelayedUnload()
-{
-    HILOGI("start");
-    if (!g_isUnloadScheduled) {
-        HILOGI("No Unload Scheduled.");
-        return;
-    }
-    g_isUnloadScheduled = false;
-    HILOGI("isUnloadScheduled = %{public}d", g_isUnloadScheduled.load());
-    if (delayThread && delayThread->joinable()) {
-        HILOGI("delayThread is join. isUnloadScheduled = %{public}d", g_isUnloadScheduled.load());
-        delayThread->detach();
-    }
-    HILOGI("end. isUnloadScheduled = %{public}d", g_isUnloadScheduled.load());
-}
 
 void BleGattClientCallback::OnConnectionStateChanged(int connectionState, int ret)
 {
@@ -249,14 +195,93 @@ void BleSendManager::Init()
             Bluetooth::HidHost::GetProfile()->RegisterObserver(observer_);
             HILOGI("MECHBODY_EXEC_CONNECT hid RegisterObserver registed");
         }
+        if (remoteDeviceObserver_ == nullptr) {
+            remoteDeviceObserver_ = std::make_shared<RemoteDeviceObserver>();
+            Bluetooth::BluetoothHost::GetDefaultHost().RegisterRemoteDeviceObserver(remoteDeviceObserver_);
+            HILOGI("MECHBODY_EXEC_CONNECT host RegisterRemoteDeviceObserver registed");
+        }
         if (hostObserver_ == nullptr) {
             hostObserver_ = std::make_shared<HostObserver>();
-            Bluetooth::BluetoothHost::GetDefaultHost().RegisterRemoteDeviceObserver(hostObserver_);
-            HILOGI("MECHBODY_EXEC_CONNECT host RegisterObserver registed");
+            Bluetooth::BluetoothHost::GetDefaultHost().RegisterObserver(hostObserver_);
+            HILOGI("MECHBODY_EXEC_CONNECT host RegisterHostObserver registed");
         }
     }
     auto runner = AppExecFwk::EventRunner::Create("BleSenderManager");
     eventHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
+
+    auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgrProxy == nullptr) {
+        return;
+    }
+    if (bluetoothServiceStatusChangeListener_ == nullptr) {
+        bluetoothServiceStatusChangeListener_ = new BluetoothServiceStatusChangeListener();
+        int32_t ret = samgrProxy->SubscribeSystemAbility(
+            BLUETOOTH_SERVICE_SERVICE_SA_ID, bluetoothServiceStatusChangeListener_);
+        if (ret != ERR_OK) {
+            HILOGE("SubscribeSystemAbility failed, ret:%d", ret);
+        }
+        HILOGE("SubscribeSystemAbility success, ret:%d", ret);
+    }
+}
+
+void BleSendManager::CleanOldAssetsForMechbodyStart()
+{
+    HILOGI("MECH_CLEAN_CONN_MAIN clean connect start");
+    std::vector<int> status;
+    status.push_back(static_cast<int>(Bluetooth::BTConnectState::CONNECTED));
+    std::vector<Bluetooth::BluetoothRemoteDevice> devices;
+    Bluetooth::HidHost::GetProfile()->GetDevicesByStates(status, devices);
+    HILOGI("MECH_CLEAN_CONN_MAIN current connected device num: %{public}zu", devices.size());
+    for (Bluetooth::BluetoothRemoteDevice item: devices) {
+        std::string deviceName = item.GetDeviceName();
+        HILOGI("MECH_CLEAN_CONN_MAIN clean connect for device name: %{public}s",
+               GetAnonymStr(deviceName).c_str());
+        if (deviceName.find(DEVICE_NAME_SUFFIX) == std::string::npos) {
+            HILOGW("MECH_CLEAN_CONN_MAIN is not covered by this service.");
+            continue;
+        }
+        std::string mac = item.GetDeviceAddr();
+        MechInfo mechInfo;
+        mechInfo.mac = mac;
+        mechInfo.mechName = deviceName;
+        mechInfo.gattCoonectState = true;
+        MechConnectManager::GetInstance().AddMechInfo(mechInfo);
+        MechbodyDisConnectForMechbotyStart(mechInfo);
+    }
+    HILOGI("MECH_CLEAN_CONN_MAIN clean connect end");
+}
+
+void BleSendManager::CleanAllLocalInfo()
+{
+    HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN exec clean local info task start");
+    auto connFunc = [this]() mutable {
+        if (!HasBluetoothServiceStoped()) {
+            HILOGW("MECH_CLEAN_LOCAL_INFO_MAIN bluetooth service has not stopped");
+            return;
+        }
+        std::set<MechInfo> mechinfos = MechConnectManager::GetInstance().GetMechInfos();
+        HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN start remove all pair, mechinfos size: %{public}zu",
+               mechinfos.size());
+        for (MechInfo item: mechinfos) {
+            Bluetooth::BluetoothRemoteDevice remoteDevice =
+                    Bluetooth::BluetoothRemoteDevice(item.mac, Bluetooth::BT_TRANSPORT_BLE);
+            int32_t res = Bluetooth::BluetoothHost::GetDefaultHost().RemovePair(remoteDevice);
+            HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN RemovePair mac:%{public}s; result: %{public}d,",
+                   GetAnonymStr(item.mac).c_str(), res);
+        }
+        MechConnectManager::GetInstance().CleanMechInfo();
+        HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN clean mech info end");
+        MechBodyControllerService::GetInstance().CleanMotionManagers();
+        HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN clean motion managers end");
+        BleSendManager::GetInstance().SetBluetoothServiceStoped(false);
+        HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN update bluetooth stop status to false end");
+    };
+
+    if (eventHandler_ != nullptr) {
+        HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN post clean local info task");
+        eventHandler_->PostTask(connFunc);
+    }
+    HILOGI("MECH_CLEAN_LOCAL_INFO_MAIN exec clean local info task end");
 }
 
 void BleSendManager::UnInit()
@@ -269,6 +294,37 @@ void BleSendManager::UnInit()
         gattClient_.reset();
         gattClient_ = nullptr;
     }
+}
+
+void BleSendManager::DelayedUnloadSystemAbility()
+{
+    HILOGI("start");
+    if (eventHandler_ == nullptr) {
+        HILOGE("eventHandler_ is nullptr can not post unload ability task.");
+        return;
+    }
+    eventHandler_->PostTask([]() {
+            auto sam = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+            if (sam == nullptr) {
+                HILOGE("GetSystemAbilityManager return null.");
+                return;
+            }
+            int32_t ret = sam->UnloadSystemAbility(MECH_SAID);
+            if (ret != ERR_OK) {
+                HILOGE("UnLoadSystemAbility mechbody sa failed.");
+            }
+        }, g_abilityUnloadTaskName, ABILITY_UNLOAD_WAIT_TIME);
+    HILOGI("end");
+}
+
+void BleSendManager::CancelDelayedUnload()
+{
+    HILOGI("start");
+    if (eventHandler_ != nullptr) {
+        HILOGI("MECHBODY_EXEC_CONNECT remove ability unload task");
+        eventHandler_->RemoveTask(g_abilityUnloadTaskName);
+    }
+    HILOGI("end.");
 }
 
 void BleSendManager::OnConnectionStateChanged(int connectionState, int ret, MechInfo &mechInfo)
@@ -311,7 +367,7 @@ void BleSendManager::OnPairStateChanged(int pairState, int cause, MechInfo &mech
         HILOGI("MECHBODY_EXEC_CONNECT Set Device Alias start.");
         Bluetooth::BluetoothRemoteDevice remoteDevice =
             Bluetooth::BluetoothRemoteDevice(mechInfo.mac, Bluetooth::BT_TRANSPORT_BLE);
-        std::string showName = mechInfo.mechName + "-mechanic";
+        std::string showName = mechInfo.mechName + DEVICE_NAME_SUFFIX;
         int32_t res = remoteDevice.SetDeviceAlias(showName);
         HILOGI("MECHBODY_EXEC_CONNECT SetDeviceAlias end. result: %{public}d", res);
 
@@ -516,27 +572,18 @@ int32_t BleSendManager::MechbodyConnect(std::string mac, std::string deviceName)
             HILOGE("MECHBODY_EXEC_CONNECT mech has connected: %{public}s", GetAnonymStr(mechInfo.mac).c_str());
             return;
         }
-        int32_t gattRet = ERR_OK;
+
         do {
-            gattRet = MechbodyGattcConnect(mechInfo.mac, mechInfo.mechName);
+            int32_t gattRet = MechbodyGattcConnect(mechInfo.mac, mechInfo.mechName);
+            HILOGE("MECHBODY_EXEC_CONNECT gatt connect result: %{public}d", gattRet);
             if (gattRet != ERR_OK) {
-                HILOGE("MECHBODY_EXEC_CONNECT gatt connect failed mechInfo: %{public}s", mechInfo.ToString().c_str());
+                MechbodyDisConnectSync(mechInfo);
                 break;
             }
-            int32_t ret = MechbodyPair(mechInfo.mac, mechInfo.mechName);
-            if (ret != ERR_OK) {
-                HILOGE("MECHBODY_EXEC_CONNECT make pair failed mechInfo: %{public}s", mechInfo.ToString().c_str());
-            }
-            ret = MechbodyHidConnect(mechInfo.mac, mechInfo.mechName);
-            if (ret != ERR_OK) {
-                HILOGE("MECHBODY_EXEC_CONNECT hid connect failed mechInfo: %{public}s", mechInfo.ToString().c_str());
-            }
+            int32_t pairRet = MechbodyPair(mechInfo.mac, mechInfo.mechName);
+            int32_t hidRet = MechbodyHidConnect(mechInfo.mac, mechInfo.mechName);
+                HILOGE("MECHBODY_EXEC_CONNECT pair result: %{public}d; hid result: %{public}d", pairRet, hidRet);
         } while (false);
-
-        if (gattRet != ERR_OK) {
-            HILOGI("MECHBODY_EXEC_CONNECT async connect rollback, mechInfo: %{public}s", mechInfo.ToString().c_str());
-            MechbodyDisConnectSync(mechInfo);
-        }
         HILOGI("MECHBODY_EXEC_CONNECT async connect end, mech info for: %{public}s", mechInfo.ToString().c_str());
     };
 
@@ -564,7 +611,7 @@ int32_t BleSendManager::MechbodyGattcConnect(std::string mac, std::string device
     }
 
     std::unique_lock<std::mutex> lock(gattMutex_);
-    if (!gattCv_.wait_for(lock, std::chrono::seconds(WAIT_TIME_TEN),
+    if (!gattCv_.wait_for(lock, std::chrono::seconds(CONNECT_TIMEOUT_SECOND),
                           [this, mac]() mutable {
                               bool gattState = false;
                               MechConnectManager::GetInstance().GetMechanicGattState(mac, gattState);
@@ -585,14 +632,16 @@ int32_t BleSendManager::MechbodyPair(std::string &mac, std::string &deviceName)
             Bluetooth::BluetoothRemoteDevice(mac, Bluetooth::BT_TRANSPORT_BLE);
     int32_t res = device.StartCrediblePair();
     HILOGI("MECHBODY_EXEC_CONNECT end. CrediblePair result: %{public}d", res);
-
+    if (res != OHOS_BT_STATUS_SUCCESS) {
+        return MECH_CONNECT_FAILED;
+    }
     std::unique_lock<std::mutex> lock(pairMutex_);
-    if (!pairCv_.wait_for(lock, std::chrono::seconds(WAIT_TIME_TEN),
-                          [this, mac]()mutable {
-                              bool pairState = false;
-                              MechConnectManager::GetInstance().GetMechanicPairState(mac, pairState);
-                              return pairState;
-                          })) {
+    if (!pairCv_.wait_for(lock, std::chrono::seconds(CONNECT_TIMEOUT_SECOND),
+        [this, mac]()mutable {
+            bool pairState = false;
+            MechConnectManager::GetInstance().GetMechanicPairState(mac, pairState);
+            return pairState;
+        })) {
         HILOGE("MECHBODY_EXEC_CONNECT wait for pair timeout");
         return MECHBODY_GATT_CONNECT_FAILED;
     }
@@ -607,13 +656,17 @@ int32_t BleSendManager::MechbodyHidConnect(std::string &mac, std::string &device
         GetAnonymStr(mac).c_str(), GetAnonymStr(deviceName).c_str());
     Bluetooth::BluetoothRemoteDevice remoteDevice = Bluetooth::BluetoothRemoteDevice(mac);
     int32_t res = Bluetooth::HidHost::GetProfile()->Connect(remoteDevice);
+    HILOGI("MECHBODY_EXEC_CONNECT exec connect result: %{public}d;", res);
+    if (res != OHOS_BT_STATUS_SUCCESS) {
+        return MECH_CONNECT_FAILED;
+    }
     std::unique_lock<std::mutex> lock(hidMutex_);
-    if (!pairCv_.wait_for(lock, std::chrono::seconds(WAIT_TIME_TEN),
-                          [this, mac]()mutable {
-                              bool hidState = false;
-                              MechConnectManager::GetInstance().GetMechanicHidState(mac, hidState);
-                              return hidState;
-                          })) {
+    if (!hidCv_.wait_for(lock, std::chrono::seconds(CONNECT_TIMEOUT_SECOND),
+        [this, mac]()mutable {
+            bool hidState = false;
+            MechConnectManager::GetInstance().GetMechanicHidState(mac, hidState);
+            return hidState;
+        })) {
         HILOGE("MECHBODY_EXEC_CONNECT wait for hid timeout");
         return MECHBODY_GATT_CONNECT_FAILED;
     }
@@ -660,11 +713,17 @@ int32_t BleSendManager::MechbodyDisConnectSync(MechInfo &mechInfo)
         HILOGE("MECHBODY_EXEC_DISCONNECT hid disconnect failed for mechInfo: %{public}s",
             mechInfo.ToString().c_str());
     }
+    HILOGI("MECHBODY_EXEC_CONNECT RemovePair start.");
+    Bluetooth::BluetoothRemoteDevice remoteDevice =
+            Bluetooth::BluetoothRemoteDevice(mechInfo.mac, Bluetooth::BT_TRANSPORT_BLE);
+    int32_t res = Bluetooth::BluetoothHost::GetDefaultHost().RemovePair(remoteDevice);
+    HILOGI("MECHBODY_EXEC_CONNECT RemovePair end, result: %{public}d", res);
     ret = MechbodyGattcDisconnect(mechInfo);
     if (ret != ERR_OK) {
         HILOGE("MECHBODY_EXEC_DISCONNECT gatt disconnect failed for mechInfo: %{public}s",
             mechInfo.ToString().c_str());
     }
+    OnGattDisconnect(mechInfo);
     HILOGI("MECHBODY_EXEC_DISCONNECT end, mech info for: %{public}s", mechInfo.ToString().c_str());
     return ret;
 }
@@ -672,8 +731,7 @@ int32_t BleSendManager::MechbodyDisConnectSync(MechInfo &mechInfo)
 void BleSendManager::OnGattDisconnect(MechInfo &mechInfo)
 {
     MechConnectManager::GetInstance().NotifyMechDisconnect(mechInfo);
-    DelayedUnloadSystemAbility(std::chrono::seconds(WAIT_TIME));
-
+    DelayedUnloadSystemAbility();
     HILOGI("destruct bleGattClientCallBack_ start");
     if (gattClient_ != nullptr) {
         if (gattClient_->Close() != 0) {
@@ -703,10 +761,9 @@ int32_t BleSendManager::MechbodyGattcDisconnect(MechInfo mechInfo)
         HILOGE("MECHBODY_EXEC_DISCONNECT BleGattcDisconnect error, status: %{public}d", status);
         return MECHBODY_GATT_INVALID_PARAM;
     }
-    HILOGI("MECHBODY_EXEC_DISCONNECT OnGattDisconnect will enter.");
 
     std::unique_lock<std::mutex> lock(gattDisconnMutex_);
-    if (!gattDisconnCv_.wait_for(lock, std::chrono::seconds(WAIT_TIME_TEN),
+    if (!gattDisconnCv_.wait_for(lock, std::chrono::seconds(CONNECT_TIMEOUT_SECOND),
         [this, mechInfo]() mutable {
             bool gattState = true;
             MechConnectManager::GetInstance().GetMechanicGattState(mechInfo.mac, gattState);
@@ -715,7 +772,6 @@ int32_t BleSendManager::MechbodyGattcDisconnect(MechInfo mechInfo)
         HILOGE("MECHBODY_EXEC_DISCONNECT wait for gatt connect timeout");
         return MECHBODY_GATT_CONNECT_FAILED;
     }
-    OnGattDisconnect(mechInfo);
     HILOGI("MECHBODY_EXEC_DISCONNECT disconnect end mechInfo: %{public}s", mechInfo.ToString().c_str());
     return status;
 }
@@ -727,9 +783,11 @@ int32_t BleSendManager::MechbodyHidDisconnect(MechInfo &mechInfo)
             Bluetooth::BluetoothRemoteDevice(mechInfo.mac, Bluetooth::BT_TRANSPORT_BLE);
     int32_t res = Bluetooth::HidHost::GetProfile()->Disconnect(remoteDevice);
     HILOGI("MECHBODY_EXEC_DISCONNECT end. hid Disconnect result: %{public}d;", res);
-
+    if (res != OHOS_BT_STATUS_SUCCESS) {
+        return MECH_DISCONNECT_FAILED;
+    }
     std::unique_lock<std::mutex> lock(hidDisconnMutex_);
-    if (!hidDisconnCv_.wait_for(lock, std::chrono::seconds(WAIT_TIME_TEN),
+    if (!hidDisconnCv_.wait_for(lock, std::chrono::seconds(CONNECT_TIMEOUT_SECOND),
         [this, mechInfo]() mutable {
             bool hidState = true;
             MechConnectManager::GetInstance().GetMechanicHidState(mechInfo.mac, hidState);
@@ -739,11 +797,132 @@ int32_t BleSendManager::MechbodyHidDisconnect(MechInfo &mechInfo)
         return ERR_OK;
     }
     HILOGI("MECHBODY_EXEC_DISCONNECT disconnect end mechInfo: %{public}s", mechInfo.ToString().c_str());
-    HILOGI("MECHBODY_EXEC_CONNECT RemovePair start.");
-    res = Bluetooth::BluetoothHost::GetDefaultHost().RemovePair(remoteDevice);
-    HILOGI("MECHBODY_EXEC_CONNECT RemovePair end, result: %{public}d", res);
     return ERR_OK;
 }
+
+int32_t BleSendManager::MechbodyDisConnectForMechbotyStart(MechInfo &mechInfo)
+{
+    HILOGI("MECH_CLEAN_CONN_MAIN exec disconnect tsak start, mech info: %{public}s", mechInfo.ToString().c_str());
+    auto connFunc = [this, mechInfo]() mutable {
+        HILOGI("MECH_CLEAN_CONN_MAIN All disconnect start for mech info: %{public}s;",
+               mechInfo.ToString().c_str());
+        if (MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo) != ERR_OK) {
+            HILOGE("MECH_CLEAN_CONN_MAIN Can not find mech info for amc: %{public}s",
+                GetAnonymStr(mechInfo.mac).c_str());
+            return;
+        }
+        MechbodyDisConnectSyncForMechbotyStart(mechInfo);
+        HILOGI("MECH_CLEAN_CONN_MAIN All disconnect end, mech info: %{public}s;",
+               mechInfo.ToString().c_str());
+        HILOGI("MECH_CLEAN_CONN_MAIN clean mech Info by mac start, mech info: %{public}s;",
+               mechInfo.ToString().c_str());
+        MechConnectManager::GetInstance().RemoveMechInfoByMac(mechInfo.mac);
+        HILOGI("MECH_CLEAN_CONN_MAIN clean mech Info by mac end, mech info: %{public}s;",
+               mechInfo.ToString().c_str());
+    };
+
+    if (eventHandler_ != nullptr) {
+        HILOGI("MECH_CLEAN_CONN_MAIN post disconnect task for mech info: %{public}s;", mechInfo.ToString().c_str());
+        eventHandler_->PostTask(connFunc);
+    }
+    HILOGI("MECH_CLEAN_CONN_MAIN exec disconnect task end, mech info: %{public}s", mechInfo.ToString().c_str());
+    return ERR_OK;
+}
+
+int32_t BleSendManager::MechbodyDisConnectSyncForMechbotyStart(MechInfo &mechInfo)
+{
+    int32_t ret = MechbodyHidDisconnectForMechbotyStart(mechInfo);
+    HILOGI("MECH_CLEAN_CONN_MAIN hid disconnect result: %{public}d; for mechInfo: %{public}s",
+           ret, mechInfo.ToString().c_str());
+    ret = MechbodyGattcDisconnectForMechbotyStart(mechInfo);
+    HILOGI("MECH_CLEAN_CONN_MAIN gatt disconnect result: %{public}d; for mechInfo: %{public}s",
+           ret, mechInfo.ToString().c_str());
+    return ret;
+}
+
+int32_t BleSendManager::MechbodyGattcDisconnectForMechbotyStart(MechInfo mechInfo)
+{
+    HILOGI("MECH_CLEAN_CONN_GATT exec disconnect start for mechInfo: %{public}s,", mechInfo.ToString().c_str());
+    if (MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo) != ERR_OK) {
+        HILOGE("MECH_CLEAN_CONN_GATT mech info not exist for mac: %{public}s; device name: %{public}s;",
+               GetAnonymStr(mechInfo.mac).c_str(), GetAnonymStr(mechInfo.mechName).c_str());
+        return MECH_INFO_NOT_FOUND;
+    }
+    if (gattClient_ == nullptr) {
+        HILOGE("MECH_CLEAN_CONN_GATT gattClient is nullptr for mech info: %{public}s;", mechInfo.ToString().c_str());
+        return MECH_HAS_DISCONNECTED;
+    }
+    int result = gattClient_->Disconnect();
+    HILOGI("MECH_CLEAN_CONN_GATT Gatt Disconnect exec result: %{public}d; mech info: %{public}s",
+           result, mechInfo.ToString().c_str());
+    if (result != OHOS_BT_STATUS_SUCCESS) {
+        HILOGE("MECH_CLEAN_CONN_GATT Gatt Disconnect error, status: %{public}d; mech info: %{public}s",
+               result, mechInfo.ToString().c_str());
+        return MECH_DISCONNECT_FAILED;
+    }
+    std::unique_lock<std::mutex> lock(gattDisconnMutex_);
+    if (!gattDisconnCv_.wait_for(lock, std::chrono::seconds(CONNECT_TIMEOUT_SECOND),
+        [mechInfo]() mutable {
+            bool gattState = true;
+            MechConnectManager::GetInstance().GetMechanicGattState(mechInfo.mac, gattState);
+            return !gattState;
+        })) {
+        MechConnectManager::GetInstance().SetMechanicGattState(mechInfo.mac, false);
+        HILOGE("MECH_CLEAN_CONN_GATT wait for gatt disconnect timeout, mech info: %{public}s",
+               mechInfo.ToString().c_str());
+        return MECH_DISCONNECT_FAILED;
+    }
+    HILOGI("MECH_CLEAN_CONN_GATT exec disconnect end for mechInfo: %{public}s,", mechInfo.ToString().c_str());
+    return ERR_OK;
+}
+
+int32_t BleSendManager::MechbodyHidDisconnectForMechbotyStart(MechInfo &mechInfo)
+{
+    HILOGI("MECH_CLEAN_CONN_HID exec disconnect start for mechInfo: %{public}s,", mechInfo.ToString().c_str());
+    if (MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo) != ERR_OK) {
+        HILOGE("MECH_CLEAN_CONN_HID mech info not exist for mac: %{public}s; device name: %{public}s;",
+               GetAnonymStr(mechInfo.mac).c_str(), GetAnonymStr(mechInfo.mechName).c_str());
+        return MECH_INFO_NOT_FOUND;
+    }
+    Bluetooth::BluetoothRemoteDevice remoteDevice =
+            Bluetooth::BluetoothRemoteDevice(mechInfo.mac, Bluetooth::BT_TRANSPORT_BLE);
+    int32_t res = Bluetooth::HidHost::GetProfile()->Disconnect(remoteDevice);
+    HILOGI("MECH_CLEAN_CONN_HID hid Disconnect exec result: %{public}d; mech info: %{public}s",
+           res, mechInfo.ToString().c_str());
+    if (res != OHOS_BT_STATUS_SUCCESS) {
+        HILOGE("MECH_CLEAN_CONN_HID hid Disconnect error, status: %{public}d; mech info: %{public}s",
+               res, mechInfo.ToString().c_str());
+        return MECH_DISCONNECT_FAILED;
+    }
+    std::unique_lock<std::mutex> lock(hidDisconnMutex_);
+    if (!hidDisconnCv_.wait_for(lock, std::chrono::seconds(CONNECT_TIMEOUT_SECOND),
+                                [mechInfo]() mutable {
+                                    bool hidState = true;
+                                    MechConnectManager::GetInstance().GetMechanicHidState(mechInfo.mac, hidState);
+                                    return !hidState;
+                                })) {
+        HILOGE("MECH_CLEAN_CONN_HID wait for hid disconnect timeout,  mech info: %{public}s",
+               mechInfo.ToString().c_str());
+        return ERR_OK;
+    }
+
+    res = Bluetooth::BluetoothHost::GetDefaultHost().RemovePair(remoteDevice);
+    HILOGI("MECH_CLEAN_CONN_HID RemovePair end, result: %{public}d", res);
+    MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo);
+    HILOGI("MECH_CLEAN_CONN_HID exec disconnect end for mechInfo: %{public}s,", mechInfo.ToString().c_str());
+    return ERR_OK;
+}
+
+void BleSendManager::SetBluetoothServiceStoped(bool status)
+{
+    bluetoothServiceStoped.store(status);
+}
+
+bool BleSendManager::HasBluetoothServiceStoped()
+{
+    return bluetoothServiceStoped.load();
+}
+
 
 int32_t BleSendManager::MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t dataLen)
 {
@@ -792,11 +971,12 @@ void BleCentralManagerCallbackImpl::OnScanCallback(const Bluetooth::BleScanResul
     HILOGI("ble impl OnScanCallback end");
 }
 
-void HostObserver::OnAclStateChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+void RemoteDeviceObserver::OnAclStateChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
     int state, unsigned int reason)
 {}
 
-void HostObserver::OnPairStatusChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device, int status, int cause)
+void RemoteDeviceObserver::OnPairStatusChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+    int status, int cause)
 {
     std::string address = device.GetDeviceAddr();
     HILOGI("MECHBODY_EXEC_DISCONNECT address: %{public}s;", GetAnonymStr(address).c_str());
@@ -809,33 +989,66 @@ void HostObserver::OnPairStatusChanged(const OHOS::Bluetooth::BluetoothRemoteDev
     BleSendManager::GetInstance().OnPairStateChanged(status, cause, mechInfo);
 }
 
-void HostObserver::OnRemoteUuidChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+void RemoteDeviceObserver::OnRemoteUuidChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
     const std::vector<Bluetooth::ParcelUuid> &uuids)
 {}
 
-void HostObserver::OnRemoteNameChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+void RemoteDeviceObserver::OnRemoteNameChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
     const std::string &deviceName)
 {}
 
-void HostObserver::OnRemoteAliasChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device, const std::string &alias)
+void RemoteDeviceObserver::OnRemoteAliasChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+    const std::string &alias)
 {}
 
-void HostObserver::OnRemoteCodChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+void RemoteDeviceObserver::OnRemoteCodChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
     const OHOS::Bluetooth::BluetoothDeviceClass &cod)
 {}
 
-void HostObserver::OnRemoteBatteryLevelChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device, int batteryLevel)
+void RemoteDeviceObserver::OnRemoteBatteryLevelChanged(
+    const OHOS::Bluetooth::BluetoothRemoteDevice &device, int batteryLevel)
 {}
 
-void HostObserver::OnReadRemoteRssiEvent(const OHOS::Bluetooth::BluetoothRemoteDevice &device, int rssi, int status)
+void RemoteDeviceObserver::OnReadRemoteRssiEvent(
+    const OHOS::Bluetooth::BluetoothRemoteDevice &device, int rssi, int status)
 {}
 
-void HostObserver::OnRemoteBatteryChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
+void RemoteDeviceObserver::OnRemoteBatteryChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
     const OHOS::Bluetooth::DeviceBatteryInfo &batteryInfo)
 {}
 
-void HostObserver::OnRemoteDeviceCommonInfoReport(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
-    const std::vector<uint8_t> &value)
+void RemoteDeviceObserver::OnRemoteDeviceCommonInfoReport(
+    const OHOS::Bluetooth::BluetoothRemoteDevice &device, const std::vector<uint8_t> &value)
+{}
+
+void HostObserver::OnStateChanged(const int transport, const int status)
+{
+    HILOGI("MECH_CONN_BT_STATE transport: %{public}d; status: %{public}d;", transport, status);
+    if (status == static_cast<int>(BTStateID::STATE_TURN_ON)) {
+        BleSendManager::GetInstance().CleanAllLocalInfo();
+    }
+}
+
+void HostObserver::OnDiscoveryStateChanged(int status)
+{}
+
+void HostObserver::OnDiscoveryResult(
+    const Bluetooth::BluetoothRemoteDevice &device, int rssi, const std::string deviceName, int deviceClass)
+{}
+
+void HostObserver::OnPairRequested(const Bluetooth::BluetoothRemoteDevice &device)
+{}
+
+void HostObserver::OnPairConfirmed(const Bluetooth::BluetoothRemoteDevice &device, int reqType, int number)
+{}
+
+void HostObserver::OnScanModeChanged(int mode)
+{}
+
+void HostObserver::OnDeviceNameChanged(const std::string &deviceName)
+{}
+
+void HostObserver::OnDeviceAddrChanged(const std::string &address)
 {}
 
 void HidObserver::OnConnectionStateChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device, int state, int cause)
@@ -851,5 +1064,21 @@ void HidObserver::OnConnectionStateChanged(const OHOS::Bluetooth::BluetoothRemot
     BleSendManager::GetInstance().OnHidStateChanged(state, cause, mechInfo);
 }
 
+void BluetoothServiceStatusChangeListener::OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
+{
+    if (systemAbilityId != BLUETOOTH_SERVICE_SERVICE_SA_ID) {
+        return;
+    }
+    HILOGI("bluetooth service SA:%{public}d added", systemAbilityId);
+}
+
+void BluetoothServiceStatusChangeListener::OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
+{
+    if (systemAbilityId != BLUETOOTH_SERVICE_SERVICE_SA_ID) {
+        return;
+    }
+    HILOGI("bluetooth service SA:%{public}d removed", systemAbilityId);
+    BleSendManager::GetInstance().SetBluetoothServiceStoped(true);
+}
 } // namespace MechBodyController
 } // namespace OHOS

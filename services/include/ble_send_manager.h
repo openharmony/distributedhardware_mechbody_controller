@@ -35,6 +35,7 @@
 #include "bluetooth_def.h"
 #include "bluetooth_host.h"
 #include "bluetooth_errorcode.h"
+#include "system_ability_status_change_stub.h"
 #include "mechbody_controller_log.h"
 #include "mechbody_controller_types.h"
 
@@ -73,11 +74,10 @@ private:
     std::string mac;
 };
 
-class HostObserver : public OHOS::Bluetooth::BluetoothRemoteDeviceObserver {
-    const std::string TAG = "HostObserver";
+class RemoteDeviceObserver : public OHOS::Bluetooth::BluetoothRemoteDeviceObserver {
 public:
 
-    ~HostObserver() = default;
+    ~RemoteDeviceObserver() = default;
 
     void OnAclStateChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device,
         int state, unsigned int reason) override;
@@ -110,10 +110,39 @@ public:
         const std::vector<uint8_t> &value) override;
 };
 
+class HostObserver : public OHOS::Bluetooth::BluetoothHostObserver {
+public:
+    ~HostObserver() = default;
+
+    void OnStateChanged(const int transport, const int status) override;
+
+    void OnDiscoveryStateChanged(int status) override;
+
+    void OnDiscoveryResult(
+        const Bluetooth::BluetoothRemoteDevice &device, int rssi,
+        const std::string deviceName, int deviceClass) override;
+
+    void OnPairRequested(const Bluetooth::BluetoothRemoteDevice &device) override;
+
+    void OnPairConfirmed(const Bluetooth::BluetoothRemoteDevice &device, int reqType, int number) override;
+
+    void OnScanModeChanged(int mode) override;
+
+    void OnDeviceNameChanged(const std::string &deviceName) override;
+
+    void OnDeviceAddrChanged(const std::string &address) override;
+};
+
 class HidObserver : public OHOS::Bluetooth::HidHostObserver {
-    const std::string TAG = "HidObserver";
 public:
     void OnConnectionStateChanged(const OHOS::Bluetooth::BluetoothRemoteDevice &device, int state, int cause) override;
+};
+
+class BluetoothServiceStatusChangeListener : public SystemAbilityStatusChangeStub {
+public:
+    void OnAddSystemAbility(int32_t systemAbilityId, const std::string& deviceId) override;
+
+    void OnRemoveSystemAbility(int32_t systemAbilityId, const std::string& deviceId) override;
 };
 
 class BleSendManager {
@@ -131,7 +160,11 @@ public:
 
     void Init();
     void StartEvent();
+    void CleanOldAssetsForMechbodyStart();
+    void CleanAllLocalInfo();
     void UnInit();
+    void DelayedUnloadSystemAbility();
+    void CancelDelayedUnload();
 
     void OnScanCallback(const Bluetooth::BleScanResult &result);
 
@@ -148,11 +181,18 @@ public:
     int32_t MechbodyConnect(std::string mac, std::string deviceName);
     int32_t MechbodyGattcConnect(std::string mac, std::string deviceName);
     int32_t MechbodyPair(std::string &mac, std::string &deviceName);
+    int32_t MechbodyHidConnect(std::string &mac, std::string &deviceName);
     int32_t MechbodyDisConnect(MechInfo &mechInfo);
     int32_t MechbodyDisConnectSync(MechInfo &mechInfo);
-    int32_t MechbodyHidConnect(std::string &mac, std::string &deviceName);
     int32_t MechbodyGattcDisconnect(MechInfo mechInfo);
     int32_t MechbodyHidDisconnect(MechInfo &mechInfo);
+    int32_t MechbodyDisConnectForMechbotyStart(MechInfo &mechInfo);
+    int32_t MechbodyDisConnectSyncForMechbotyStart(MechInfo &mechInfo);
+    int32_t MechbodyGattcDisconnectForMechbotyStart(MechInfo mechInfo);
+    int32_t MechbodyHidDisconnectForMechbotyStart(MechInfo &mechInfo);
+
+    void SetBluetoothServiceStoped(bool status);
+    bool HasBluetoothServiceStoped();
 
 public:
     bool isGattReady_ = false;
@@ -184,8 +224,11 @@ private:
 
     std::mutex observerRegisterMutex_;
     std::shared_ptr<HidObserver> observer_ = nullptr;
+    std::shared_ptr<RemoteDeviceObserver> remoteDeviceObserver_ = nullptr;
     std::shared_ptr<HostObserver> hostObserver_ = nullptr;
+    std::atomic<bool> bluetoothServiceStoped = false;
 
+    sptr<BluetoothServiceStatusChangeListener> bluetoothServiceStatusChangeListener_;
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
 
     std::mutex gattMutex_;

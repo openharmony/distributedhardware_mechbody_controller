@@ -175,10 +175,10 @@ HWTEST_F(MechConnectManagerTest, GetMechBasicInfo_002, TestSize.Level3)
     DTEST_LOG << "MechConnectManagerTest GetMechBasicInfo_002 begin" << std::endl;
     const std::shared_ptr<IMechConnectListener> listener = nullptr;
     MechInfo mechInfo;
-    int32_t ret = MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
+    MechConnectManager::GetInstance().mechInfos_.insert(mechInfo);
 
     int32_t mechId = 0;
-    ret = MechConnectManager::GetInstance().GetMechBasicInfo(mechId, mechInfo);
+    int32_t ret = MechConnectManager::GetInstance().GetMechBasicInfo(mechId, mechInfo);
     EXPECT_EQ(ret, true);
     DTEST_LOG << "MechConnectManagerTest GetMechBasicInfo_002 end" << std::endl;
 }
@@ -192,10 +192,10 @@ HWTEST_F(MechConnectManagerTest, GetConnectMechList_001, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest GetConnectMechList_001 begin" << std::endl;
     MechInfo mechInfo;
-    int32_t ret = MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
+    MechConnectManager::GetInstance().mechInfos_.insert(mechInfo);
 
     std::set<MechInfo> mechInfos;
-    ret = MechConnectManager::GetInstance().GetConnectMechList(mechInfos);
+    int32_t ret = MechConnectManager::GetInstance().GetConnectMechList(mechInfos);
     EXPECT_EQ(ret, true);
     DTEST_LOG << "MechConnectManagerTest GetConnectMechList_001 end" << std::endl;
 }
