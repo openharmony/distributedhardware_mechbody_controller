@@ -38,6 +38,7 @@ public:
 
     int32_t OnDeviceConnected(int32_t mechId) override;
     int32_t OnDeviceDisconnected(int32_t mechId) override;
+    int32_t CleanMotionManagers();
 
     int32_t RegisterAttachStateChangeCallback(const sptr<IRemoteObject> callback) override;
     int32_t UnRegisterAttachStateChangeCallback() override;
@@ -71,14 +72,14 @@ public:
     int32_t UnRegisterRotationAxesStatusChangeCallback() override;
     int32_t OnRotationAxesStatusChange(const int32_t &mechId, const RotationAxesStatus &axesStatus);
     int32_t SearchTarget(std::string &cmdId, const std::shared_ptr<TargetInfo> &targetInfo,
-        const std::shared_ptr<SearchParams> &searchParams) override;
+                         const std::shared_ptr<SearchParams> &searchParams) override;
     int32_t SearchTargetEnd(const uint32_t &tokenId, const std::string &cmdId, const int32_t &targetNum);
 
 private:
     bool IsSystemApp();
 
 protected:
-    void OnStart() override;
+    void OnStart(const SystemAbilityOnDemandReason &startReason) override;
     void OnStop() override;
 
 public:

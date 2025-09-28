@@ -348,7 +348,7 @@ HWTEST_F(McCameraTrackingControllerTest, ExecSearchTask_001, TestSize.Level1)
     MechBodyControllerService::GetInstance().motionManagers_[mechId1] = nullptr;
 
     EXPECT_NO_FATAL_FAILURE(
-            mcCameraTrackingController.ExecSearchTask(cmdId, tokenId, startFromNeg, searchTimes));
+        mcCameraTrackingController.ExecSearchTask(cmdId, tokenId, startFromNeg, searchTimes));
 
     DTEST_LOG << "McCameraTrackingControllerTest ExecSearchTask_001 end" << std::endl;
 }

@@ -442,7 +442,7 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     deviceStatus_->rotateSpeedLimit.speedMax.pitchSpeed = DEGREE_CIRCLED_MIN;
 
     std::shared_ptr<GetMechCapabilityInfoCmd> limitCmd = factory
-        .CreateGetMechCapabilityInfoCmd();
+            .CreateGetMechCapabilityInfoCmd();
     CHECK_POINTER_RETURN(limitCmd, "CapabilityInfoCmd is empty.");
     auto limitCallback = [this, limitCmd]() {
         auto rawParams = limitCmd->GetParams();
@@ -476,6 +476,7 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     eventCon_.wait(lock, [this] {
         return eventHandler_ != nullptr;
     });
+
     startTrackingChecker_ = true;
     trackingCheckerThread_ = std::make_unique<std::thread>(&MotionManager::TrackingChecker, this);
     HILOGI("MotionManager end.");
@@ -850,10 +851,23 @@ int32_t MotionManager::RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateS
     }
     CHECK_POINTER_RETURN_VALUE(rotateSpeedParam, INVALID_PARAMETERS_ERR, "rotateSpeedParam");
     MechNapiCommandCallbackInfo callbackInfo = {tokenId, napiCmdId};
-    HandelRotateSpeedParam(rotateSpeedParam, callbackInfo.willLimitChange);
     std::shared_ptr<CommandBase> rotationBySpeedCmd =
             factory.CreateSetMechRotationBySpeedCmd(*rotateSpeedParam);
     CHECK_POINTER_RETURN_VALUE(rotationBySpeedCmd, INVALID_PARAMETERS_ERR, "RotationBySpeedCmd is empty.");
+    auto rotateBySpeedCallback = [rotationBySpeedCmd, this]() {
+        RotationAxesStatus limitInfo = static_cast<SetMechRotationBySpeedCmd*>(rotationBySpeedCmd.get())
+            ->GetRotationAxesStatus();
+        HILOGI("Rotate By Speed callback. limit info: %{public}s", limitInfo.ToString().c_str());
+        if (limitInfo.IsChange(this->deviceStatus_->rotationAxesStatus)) {
+            HILOGI("Rotate By Speed callback. Notify limited");
+            MechBodyControllerService::GetInstance().OnRotationAxesStatusChange(this->mechId_, limitInfo);
+            std::unique_lock <std::mutex> lock(deviceStatusMutex_);
+            this->deviceStatus_->rotationAxesStatus.yawLimited = limitInfo.yawLimited;
+            this->deviceStatus_->rotationAxesStatus.rollLimited = limitInfo.rollLimited;
+            this->deviceStatus_->rotationAxesStatus.pitchLimited = limitInfo.pitchLimited;
+        }
+    };
+    rotationBySpeedCmd->SetResponseCallback(rotateBySpeedCallback);
     sendAdapter_->SendCommand(rotationBySpeedCmd);
 
     auto func = [this, &callbackInfo]() {
@@ -1115,6 +1129,7 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     if (deviceStatus_->isEnabled) {
         HILOGI("Start tracking.");
         UpdateTrackingTime();
+
         std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory
                 .CreateSetMechCameraTrackingFrameCmd(*trackingFrameParams);
         CHECK_POINTER_RETURN_VALUE(cameraTrackingFrameCmd, INVALID_PARAMETERS_ERR, "CameraTrackingFrameCmd is empty.");

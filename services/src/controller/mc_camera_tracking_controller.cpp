@@ -32,10 +32,6 @@ namespace {
     constexpr int32_t NUM_1 = 1;
     constexpr int32_t NUM_2 = 2;
 
-    constexpr int32_t CONFIDENCE_LEVEL_LOST_END = 100;
-    constexpr int32_t CONFIDENCE_LEVEL_LOW_END = 400;
-    constexpr int32_t CONFIDENCE_LEVEL_MIDDEL_END = 700;
-
     constexpr int VALID_INCLINATION_ANGLE_THRESHOLD_COEFFICIENT = 3;
     constexpr int32_t POSTURE_INTERVAL = 100000000; // 100ms
     constexpr int32_t MOBILE_ROTATION_CHECK_UP_BEGIN = 330;
@@ -69,7 +65,6 @@ namespace {
     const std::string SEND_CAMERA_INFO_TASK_NAME = "sendCameraInfoTaskName";
     constexpr int32_t SEND_CAMERA_INFO_TASK_DELAY = 500;
 
-    constexpr float SHORT_CUT = 9.0f / 12.0f;
     constexpr float OHOS_CAMERA_VIDEO_STABILIZATION_HIGH_CUT = 0.6f;
     constexpr float OHOS_CAMERA_VIDEO_STABILIZATION_AUTO_CUT = 0.8f;
     static const std::set<int32_t> VIDEO_STABILIZATION_WHITELIST = {
@@ -88,7 +83,7 @@ namespace {
     constexpr float SEARCH_TARGET_ROTATE_TIMES =
             6.28 / (SEARCH_TARGET_ROTATE_SPEED * SEARCH_TARGET_TASK_DURATION / 1000 /
             SEARCH_TARGET_TASK_DURATION * SEARCH_TARGET_TASK_INTERVAL);
-            
+
     const std::string SEND_TRACKING_LAYOUT_TASK_NAME = "send_tracking_layout_task";
     constexpr int32_t SET_TRACKING_LAYOUT_TASK_DELAY  = 500 * 3;
     constexpr float OFFSET_VALUE = 0.2f;
@@ -197,6 +192,33 @@ int32_t McCameraTrackingController::ComputeFov()
     }
     float sensorWidthCut = 0.0f;
     float sensorHighCut = 0.0f;
+    SensorCutForVideoMode(sensorWidthCut, sensorHighCut);
+    auto focus = static_cast<float >(currentCameraInfo_->equivalentFocus);
+    float fovA = DOUBLE *
+        std::round(RadToDegree(std::atan(sensorWidthCut / (DOUBLE * focus * currentCameraInfo_->zoomFactor))));
+    float fovABasic = DOUBLE * std::round(RadToDegree(std::atan(sensorWidthCut / (DOUBLE * focus))));
+    float fovB = DOUBLE *
+        std::round(RadToDegree(std::atan(sensorHighCut / (DOUBLE * focus * currentCameraInfo_->zoomFactor))));
+    float fovBBasic = DOUBLE * std::round(RadToDegree(std::atan(sensorHighCut / (DOUBLE * focus))));
+    float shortSide = (fovA < fovB) ? fovA : fovB;
+    float shortSideBasic = (fovA < fovB) ? fovABasic : fovBBasic;
+    float longSide = (fovA < fovB) ? fovB : fovA;
+    float longSideBasic = (fovA < fovB) ? fovBBasic : fovABasic;
+    if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
+        currentCameraInfo_->fovH = static_cast<uint8_t>(shortSide);
+        currentCameraInfo_->fovV = static_cast<uint8_t>(longSide);
+    } else {
+        currentCameraInfo_->fovH = static_cast<uint8_t>(longSide);
+        currentCameraInfo_->fovV = static_cast<uint8_t>(shortSide);
+    }
+    currentCameraInfo_->fovHBasic = static_cast<uint8_t>(shortSideBasic);
+    currentCameraInfo_->fovVBasic = static_cast<uint8_t>(longSideBasic);
+    HILOGI("current camera info: %{public}s", currentCameraInfo_->ToString().c_str());
+    return ERR_OK;
+}
+
+void McCameraTrackingController::SensorCutForVideoMode(float &sensorWidthCut, float &sensorHighCut)
+{
     float sensorRatio = currentCameraInfo_->sensorHeight != 0 ?
         currentCameraInfo_->sensorWidth / currentCameraInfo_->sensorHeight : 0;
     float viewRatio = currentCameraInfo_->height > 0 ?
@@ -209,56 +231,18 @@ int32_t McCameraTrackingController::ComputeFov()
         sensorWidthCut = currentCameraInfo_->sensorWidth;
         sensorHighCut = currentCameraInfo_->sensorWidth / (viewRatio > 0 ? viewRatio : 1);
     }
-
-    auto focus = static_cast<float>(currentCameraInfo_->equivalentFocus);
-    float fovA = DOUBLE *
-        std::round(RadToDegree(std::atan(sensorWidthCut / (DOUBLE * focus * currentCameraInfo_->zoomFactor))));
-    float fovABasic = DOUBLE * std::round(RadToDegree(std::atan(sensorWidthCut / (DOUBLE * focus))));
-    float fovB = DOUBLE *
-        std::round(RadToDegree(std::atan(sensorHighCut / (DOUBLE * focus * currentCameraInfo_->zoomFactor))));
-    float fovBBasic = DOUBLE * std::round(RadToDegree(std::atan(sensorHighCut / (DOUBLE * focus))));
-    float shortSide = (fovA < fovB) ? fovA : fovB;
-    float shortSideBasic = (fovA < fovB) ? fovABasic : fovBBasic;
-    float longSide = (fovA < fovB) ? fovB : fovA;
-    float longSideBasic = (fovA < fovB) ? fovBBasic : fovABasic;
-    FovCutForVideoMode(shortSide, shortSideBasic, longSide, longSideBasic);
-    if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
-        currentCameraInfo_->fovH = static_cast<uint8_t>(shortSide);
-        currentCameraInfo_->fovHBasic = static_cast<uint8_t>(shortSideBasic);
-        currentCameraInfo_->fovV = static_cast<uint8_t>(longSide);
-        currentCameraInfo_->fovVBasic = static_cast<uint8_t>(longSideBasic);
-    } else {
-        currentCameraInfo_->fovH = static_cast<uint8_t>(longSide);
-        currentCameraInfo_->fovHBasic = static_cast<uint8_t>(longSideBasic);
-        currentCameraInfo_->fovV = static_cast<uint8_t>(shortSide);
-        currentCameraInfo_->fovVBasic = static_cast<uint8_t>(shortSideBasic);
-    }
-    return ERR_OK;
-}
-
-void McCameraTrackingController::FovCutForVideoMode(float &shortSide, float &shortSideBasic,
-    float &longSide, float &longSideBasic)
-{
-    HILOGI("fov before cut, short side: %{public}f; long side: %{public}f; videoStabilizationMode: %{public}d;"
-           " sessionMode: %{public}d",
-           shortSide, longSide, currentCameraInfo_->videoStabilizationMode, currentCameraInfo_->sessionMode);
     if (VIDEO_STABILIZATION_WHITELIST.find(currentCameraInfo_->sessionMode) != VIDEO_STABILIZATION_WHITELIST.end()) {
         if (currentCameraInfo_->videoStabilizationMode ==
             static_cast<int32_t>(CameraVideoStabilizationMode::OHOS_CAMERA_VIDEO_STABILIZATION_AUTO)) {
-            shortSide *= SHORT_CUT * OHOS_CAMERA_VIDEO_STABILIZATION_AUTO_CUT;
-            shortSideBasic *= SHORT_CUT * OHOS_CAMERA_VIDEO_STABILIZATION_AUTO_CUT;
-            longSide *= OHOS_CAMERA_VIDEO_STABILIZATION_AUTO_CUT;
-            longSideBasic *= OHOS_CAMERA_VIDEO_STABILIZATION_AUTO_CUT;
+            sensorWidthCut *= OHOS_CAMERA_VIDEO_STABILIZATION_AUTO_CUT;
+            sensorHighCut *= OHOS_CAMERA_VIDEO_STABILIZATION_AUTO_CUT;
         }
         if (currentCameraInfo_->videoStabilizationMode ==
             static_cast<int32_t>(CameraVideoStabilizationMode::OHOS_CAMERA_VIDEO_STABILIZATION_HIGH)) {
-            shortSide *= SHORT_CUT * OHOS_CAMERA_VIDEO_STABILIZATION_HIGH_CUT;
-            shortSideBasic *= SHORT_CUT * OHOS_CAMERA_VIDEO_STABILIZATION_HIGH_CUT;
-            longSide *= OHOS_CAMERA_VIDEO_STABILIZATION_HIGH_CUT;
-            longSideBasic *= OHOS_CAMERA_VIDEO_STABILIZATION_HIGH_CUT;
+            sensorWidthCut *= OHOS_CAMERA_VIDEO_STABILIZATION_HIGH_CUT;
+            sensorHighCut *= OHOS_CAMERA_VIDEO_STABILIZATION_HIGH_CUT;
         }
     }
-    HILOGI("fov after cut, short side: %{public}f; long side: %{public}f;", shortSide, longSide);
 }
 
 int32_t McCameraTrackingController::OnSessionStatusChange(int32_t sessionid, bool status)
@@ -285,8 +269,9 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
     HILOGI("start");
     if (eventHandler_ != nullptr) {
         eventHandler_->RemoveTask(SEND_CAMERA_INFO_TASK_NAME);
-        eventHandler_->PostTask([]() { McCameraTrackingController::GetInstance().UpdateMotionManagers(); },
-            SEND_CAMERA_INFO_TASK_NAME, SEND_CAMERA_INFO_TASK_DELAY);
+        eventHandler_->PostTask([]() {
+                McCameraTrackingController::GetInstance().UpdateMotionManagers();
+            }, SEND_CAMERA_INFO_TASK_NAME, SEND_CAMERA_INFO_TASK_DELAY);
     }
     const auto& motionManagers = MechBodyControllerService::GetInstance().motionManagers_;
     CameraInfoParams cameraInfoParams;
@@ -374,18 +359,6 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = info.GetDetectedObjects();
     if (GetTrackingTarget(trackingRegion, detectedObjects, info.GetTrackingObjectId(), targetObject) ==
         ERR_OK) {
-        int32_t confidence = targetObject->GetConfidence();
-        if (confidence > CONFIDENCE_LEVEL_MIDDEL_END) {
-            trackingFrameParams->confidence = ConfidenceLevel::HIGH;
-        } else if (confidence > CONFIDENCE_LEVEL_LOW_END) {
-            trackingFrameParams->confidence = ConfidenceLevel::MEDIUM;
-        } else if (confidence > CONFIDENCE_LEVEL_LOST_END) {
-            trackingFrameParams->confidence = ConfidenceLevel::LOW;
-        } else {
-            trackingFrameParams->confidence = ConfidenceLevel::LOST;
-        }
-
-        trackingFrameParams->timeDelay = 0;
         trackingFrameParams->timeStamp = static_cast<uint64_t>(targetObject->GetTimestamp());
         trackingFrameParams->targetId = targetObject->GetObjectId();
         CameraStandard::MetadataObjectType objectType = targetObject->GetType();
@@ -396,9 +369,9 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
 
     currentCameraInfo_->trackingTargetNum = detectedObjects.size();
     if (currentCameraInfo_->searchingTarget && currentCameraInfo_->trackingTargetNum > 0) {
-        HILOGI("Stop searching, camera info: %{public}s", currentCameraInfo_->ToString().c_str());
+        HILOGE("Stop searching, camera info: %{public}s", currentCameraInfo_->ToString().c_str());
         eventHandler_->PostTask([this]() {
-            SearchTargetStop();
+                SearchTargetStop();
             }, SEARCH_TARGET_TASK_NAME);
     }
     lastTrackingFrame_ = trackingFrameParams;
@@ -493,7 +466,7 @@ void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> 
     }
     trackingFrameParams->roi.width = rect.width - rect.topLeftX;
     trackingFrameParams->roi.height = rect.height - rect.topLeftY;
-    
+
     AdjustROI(trackingFrameParams->roi, rect, currentCameraInfo_->cameraType, sensorRotation_);
     HILOGI("roi info, roi.x: %{public}f; roi.y: %{public}f", trackingFrameParams->roi.x, trackingFrameParams->roi.y);
 }
@@ -609,7 +582,7 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
         CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
         int32_t error = callback->SendRequest(
             static_cast<uint32_t>(IMechBodyControllerCode::TRACKING_EVENT_CALLBACK), data, reply, option);
-        HILOGI("notify tracking event to tokenId: %{public}s; result: %{public}s", GetAnonymUint32(tokenId).c_str(),
+        HILOGI("notify tracking event to tokenId: %{public}u; result: %{public}s", tokenId,
             error == ERR_NONE ? "success" : "failed");
     }
     return ERR_OK;
@@ -723,13 +696,13 @@ void McCameraTrackingController::RunSearchTarget(std::string &cmdId, uint32_t &t
     const std::shared_ptr<EulerAngles> &currentPosition)
 {
     float toLeft = std::min(std::abs(limit.negMax.yaw - (currentPosition->yaw - PI - PI)),
-                            std::abs(limit.negMax.yaw - currentPosition->yaw));
+        std::abs(limit.negMax.yaw - currentPosition->yaw));
     float toRight = std::min(std::abs(limit.posMax.yaw - (currentPosition->yaw + PI + PI)),
-                             std::abs(limit.posMax.yaw - currentPosition->yaw));
+        std::abs(limit.posMax.yaw - currentPosition->yaw));
     bool startFromNeg = (searchParams->direction == SearchDirection::DEFAULT && toLeft < toRight) ||
-                        searchParams->direction == SearchDirection::RIGHTWARD;
+        searchParams->direction == SearchDirection::RIGHTWARD;
     HILOGI("SEARCH_TARGET current position: %{public}s; limit: %{public}s; start search from: %{public}s",
-           currentPosition->ToString().c_str(), limit.ToString().c_str(), startFromNeg ? "NEG" : "POS");
+        currentPosition->ToString().c_str(), limit.ToString().c_str(), startFromNeg ? "NEG" : "POS");
     if (limit.negMax.yaw > ROTATE_LIMITED_MIN || limit.posMax.yaw < ROTATE_LIMITED_MAX) {
         HILOGI("SEARCH_TARGET device has limited position, start from: %{public}s", startFromNeg ? "NEG" : "POS");
         ExecSearchTaskWithLimit(cmdId, tokenId, startFromNeg, limit);
@@ -754,7 +727,7 @@ void McCameraTrackingController::SearchTargetStop()
 {
     HILOGI("SEARCH_TARGET start");
     if (!currentCameraInfo_->searchingTarget) {
-        HILOGW("SEARCH_TARGET search target has stoped.");
+        HILOGI("SEARCH_TARGET search target has stoped.");
         return;
     }
     currentCameraInfo_->searchingTarget = false;
@@ -892,7 +865,7 @@ void McCameraTrackingController::RegisterTrackingListener()
     if (err != ERR_OK) {
         HILOGE("GetLocalAccountId passing param invalid or return error!, err : %{public}d", err);
     }
-    HILOGI("Create MechSession. user id: %{public}s", GetAnonymInt32(userId).c_str());
+    HILOGI("Create MechSession. user id: %{public}d", userId);
     sptr<CameraStandard::CameraManager> cameraManager = CameraStandard::CameraManager::GetInstance();
     if (cameraManager == nullptr) {
         HILOGE("CameraManager is nullptr.");
@@ -967,7 +940,7 @@ void McCameraTrackingController::AdjustROI(ROI &roi, CameraStandard::Rect &rect,
         }
     }
     HILOGI("Before the offset, roi.x: %{public}f; roi.y: %{public}f", roi.x, roi.y);
- 
+
     if (currentCameraInfo_->currentCameraTrackingLayout == CameraTrackingLayout::DEFAULT ||
         currentCameraInfo_->currentCameraTrackingLayout == CameraTrackingLayout::MIDDLE) {
         HILOGI("current TrackingLayout is: %{public}d", currentCameraInfo_->currentCameraTrackingLayout);

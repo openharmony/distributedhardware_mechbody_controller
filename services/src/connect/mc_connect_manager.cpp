@@ -248,6 +248,36 @@ int32_t MechConnectManager::AddMechInfo(MechInfo &mechInfo)
     return ERR_OK;
 }
 
+int32_t MechConnectManager::RemoveMechInfoByMac(std::string &mac)
+{
+    {
+        HILOGI("MECHBODY_EXEC_CONNECT mac: %{public}s", GetAnonymStr(mac).c_str());
+        std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+        for (auto it = mechInfos_.begin(); it != mechInfos_.end();) {
+            if (it->mac == mac) {
+                it = mechInfos_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    return ERR_OK;
+}
+
+int32_t MechConnectManager::CleanMechInfo()
+{
+    {
+        HILOGI("MECHBODY_EXEC_CONNECT clean mech info");
+        std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+        mechInfos_.clear();
+    }
+    return ERR_OK;
+}
+
+const std::set<MechInfo> &MechConnectManager::GetMechInfos() const
+{
+    return mechInfos_;
+}
 
 int32_t MechConnectManager::GetMechInfo(std::string &mac, MechInfo &mechInfo)
 {

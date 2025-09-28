@@ -654,55 +654,31 @@ struct ApiTestPage {
             top: 5
           });
 
-          Button('找人')
-          .onClick(() => {
-            try {
-              logger.info('找人启动');
-              let targetInfo : mechanicManager.TargetInfo = {
-                targetType: 0
-              }
-              let searchParam : mechanicManager.SearchParams = {
-                direction: 0
-              }
-              mechanicManager.searchTarget(targetInfo, searchParam, (result) => {
-                logger.info('result: ' + JSON.stringify(result));
-                prompt.showToast({
-                  message: `找人完成：result.status = ${JSON.stringify(result)}`,
-                  duration: 2000
-                });
-              });
-              logger.info('找人启动成功');
-            } catch (e) {
-              logger.error('找人启动失败, code: ' + e.code + ' message: ' + e.message);
-            }
-          }).margin({
-          top: 5
-        });
 
           Button('找人')
-          .onClick(() => {
-            try {
-              logger.info('找人启动');
-              let targetInfo : mechanicManager.TargetInfo = {
-                targetType: 0
-              }
-              let searchParam : mechanicManager.SearchParams = {
-                direction: 0
-              }
-              mechanicManager.searchTarget(targetInfo, searchParam, (result) => {
-                logger.info('result: ' + JSON.stringify(result));
-                prompt.showToast({
-                  message: `找人完成：result.status = ${JSON.stringify(result)}`,
-                  duration: 2000
+            .onClick(() => {
+              try {
+                logger.info('找人启动');
+                let targetInfo : mechanicManager.TargetInfo = {
+                  targetType: 0
+                }
+                let searchParam : mechanicManager.SearchParams = {
+                  direction: 0
+                }
+                mechanicManager.searchTarget(targetInfo, searchParam, (result) => {
+                  logger.info('result: ' + JSON.stringify(result));
+                  prompt.showToast({
+                    message: `找人完成：result.status = ${JSON.stringify(result)}`,
+                    duration: 2000
+                  });
                 });
-              });
-              logger.info('找人启动成功');
-            } catch (e) {
-              logger.error('找人启动失败, code: ' + e.code + ' message: ' + e.message);
-            }
-          }).margin({
-          top: 5
-        });
+                logger.info('找人启动成功');
+              } catch (e) {
+                logger.error('找人启动失败, code: ' + e.code + ' message: ' + e.message);
+              }
+            }).margin({
+            top: 5
+          });
 
         }
         .width('100%')

@@ -115,7 +115,7 @@ int32_t MechBodyControllerStub::AttachStateChangeListenOnInner(MessageParcel &da
 
     int32_t result = MechBodyControllerService::GetInstance().RegisterAttachStateChangeCallback(callback);
     bool writeResult = reply.WriteInt32(result);
-    HILOGI("%{public}d", writeResult);
+    HILOGI("writeResult = %{public}d", writeResult);
     return result;
 }
 

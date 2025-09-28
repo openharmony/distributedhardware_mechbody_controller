@@ -445,6 +445,12 @@ public:
                (rollLimited != other.rollLimited) || (pitchLimited != other.pitchLimited);
     }
 
+    bool IsChange(const RotationAxesStatus &other) const
+    {
+        return !((yawLimited == other.yawLimited) && (rollLimited == other.rollLimited)
+            && (pitchLimited == other.pitchLimited));
+    }
+
     std::string ToString() const
     {
         auto limitToString = [](RotationAxisLimited limit) {

@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace MechBodyController {
+
     const std::u16string MECH_SERVICE_IPC_TOKEN = u"ohos.mechservice.accessToken";
     static constexpr int32_t MECH_SERVICE_SA_ID = 8550;
 

@@ -89,8 +89,8 @@ struct CameraInfo {
                ", isRecording=" + std::to_string(isRecording) +
                ", currentTrackingEnable=" + std::to_string(currentTrackingEnable) +
                ", trackingTargetNum=" + std::to_string(trackingTargetNum) +
-               ", currentCameraTrackingLayout=" + std::to_string(static_cast<int32_t>(currentCameraTrackingLayout)) +
-               ", cameraType=" + std::to_string(static_cast<int32_t>(cameraType)) +
+               ", currentCameraTrackingLayout=" + std::to_string(static_cast<int>(currentCameraTrackingLayout)) +
+               ", cameraType=" + std::to_string(static_cast<int>(cameraType)) +
                ", focusMode=" + std::to_string(focusMode) +
                ", sessionMode=" + std::to_string(sessionMode) +
                ", videoStabilizationMode=" + std::to_string(videoStabilizationMode) +
@@ -133,6 +133,7 @@ public:
     int32_t UnRegisterTrackingEventCallback(const uint32_t &tokenId);
     int32_t OnTrackingEvent(const int32_t &mechId, const TrackingEvent &event);
     int32_t SetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout);
+
     int32_t SetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout);
     int32_t SearchTarget(std::string &cmdId, uint32_t &tokenId,
         const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams);
@@ -144,7 +145,7 @@ public:
 
 private:
     int32_t ComputeFov();
-    void FovCutForVideoMode(float &shortSide, float &shortSideBasic, float &longSide, float &longSideBasic);
+    void SensorCutForVideoMode(float &sensorWidthCut, float &sensorHighCut);
     bool IsCurrentFocus();
     int32_t UpdateMotionManagers();
     std::shared_ptr<TrackingFrameParams> BuildTrackingParams(CameraStandard::FocusTrackingMetaInfo &info);

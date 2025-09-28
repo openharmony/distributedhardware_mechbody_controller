@@ -36,10 +36,12 @@ public:
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
     const RotateBySpeedParam& GetParams() const;
+    const RotationAxesStatus& GetRotationAxesStatus() const;
     uint8_t GetResult() const;
 
 private:
     RotateBySpeedParam params_;
+    RotationAxesStatus status_;
     uint8_t result_ = 0;
 };
 
