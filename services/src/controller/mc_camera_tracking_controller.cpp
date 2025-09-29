@@ -118,6 +118,7 @@ void McCameraTrackingController::UnInit()
     UnRegisterTrackingListener();
     UnRegisterSensorListener();
     if (eventHandler_ != nullptr) {
+        eventHandler_->RemoveTask(SEND_CAMERA_INFO_TASK_NAME);
         eventHandler_->RemoveTask(SEND_TRACKING_LAYOUT_TASK_NAME);
     }
     HILOGI("end");
