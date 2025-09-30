@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef MECHBODYCONTROLLERSERVICE_FUZZER_H
-#define MECHBODYCONTROLLERSERVICE_FUZZER_H
+#ifndef MECHBODYCONTROLLERSERVICEONE_FUZZER_H
+#define MECHBODYCONTROLLERSERVICEONE_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "mechbodycontrollerservice_fuzzer"
+#define FUZZ_PROJECT_NAME "mechbodycontrollerserviceone_fuzzer"
 
 #endif

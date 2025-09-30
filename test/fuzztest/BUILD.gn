@@ -16,8 +16,15 @@ group("fuzztest") {
   testonly = true
 
   deps = [
-    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanager_fuzzer:BleSendManagerFuzzTest",
-    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservice_fuzzer:MechBodyControllerServiceFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanagerone_fuzzer:BleSendManagerOneFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanagertwo_fuzzer:BleSendManagerTwoFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanagerthree_fuzzer:BleSendManagerThreeFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerserviceone_fuzzer:MechBodyControllerServiceOneFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicetwo_fuzzer:MechBodyControllerServiceTwoFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicethree_fuzzer:MechBodyControllerServiceThreeFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicefour_fuzzer:MechBodyControllerServiceFourFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicefive_fuzzer:MechBodyControllerServiceFiveFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicethree_fuzzer:MechBodyControllerServiceThreeFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstub_fuzzer:MechBodyControllerStubFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerutils_fuzzer:MechBodyControllerUtilsFuzzTest",
   ]

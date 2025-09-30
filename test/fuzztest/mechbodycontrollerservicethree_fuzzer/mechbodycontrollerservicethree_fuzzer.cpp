@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "mechbodycontrollerservice_fuzzer.h"
+#include "mechbodycontrollerservicethree_fuzzer.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -38,169 +38,6 @@ using namespace OHOS::MechBodyController;
 bool Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(uint64_t tokenId)
 {
     return true;
-}
-
-void UnRegisterAttachStateChangeCallbackFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint32_t tokenId = fdp.ConsumeIntegral<uint32_t>();
-    const sptr<OHOS::IRemoteObject> callback;
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.listener_ = std::shared_ptr<IMechConnectListener>();
-    mechBodyControllerService.deviceAttachCallback_[tokenId] = callback;
-    mechBodyControllerService.UnRegisterAttachStateChangeCallback();
-}
-
-void OnAttachStateChangeFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    std::string mechName = fdp.ConsumeRandomLengthString();
-    uint32_t tokenId = fdp.ConsumeIntegral<uint32_t>();
-    uint32_t enumIdx = fdp.ConsumeIntegral<uint32_t>() % 2;
-    AttachmentState attachmentState = static_cast<AttachmentState>(enumIdx);
-    AttachmentState state = static_cast<AttachmentState>(enumIdx);
-    const sptr<OHOS::IRemoteObject> callback;
-    MechInfo mechInfo;
-    mechInfo.mechName = mechName;
-    mechInfo.state = state;
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.deviceAttachCallback_[tokenId] = callback;
-    mechBodyControllerService.OnAttachStateChange(attachmentState, mechInfo);
-}
-
-void OnDeviceConnectedFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    int32_t mechId = fdp.ConsumeIntegral<int32_t>();
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.OnDeviceConnected(mechId);
-}
-
-void GetAttachedDevicesFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    std::set<MechInfo> mechInfos;
-    MechInfo mechInfo;
-    FuzzedDataProvider fdp(data, size);
-    std::string macHash = fdp.ConsumeRandomLengthString();
-    std::string mechName = fdp.ConsumeRandomLengthString();
-    mechInfo.mechName = mechName;
-    mechInfos.insert(mechInfo);
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.GetAttachedDevices(mechInfos);
-}
-
-void SetTrackingEnabledFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    bool isEnabled = fdp.ConsumeIntegral<bool>();
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.SetTrackingEnabled(isEnabled);
-}
-
-void GetTrackingEnabledFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    bool isEnabled = fdp.ConsumeIntegral<bool>();
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.GetTrackingEnabled(isEnabled);
-}
-
-void SetTrackingLayoutFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint32_t enumIdx = fdp.ConsumeIntegral<uint32_t>() % 4;
-    CameraTrackingLayout cameraTrackingLayout = static_cast<CameraTrackingLayout>(enumIdx);
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.SetTrackingLayout(cameraTrackingLayout);
-}
-
-void GetTrackingLayoutFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint32_t enumIdx = fdp.ConsumeIntegral<uint32_t>() % 4;
-    CameraTrackingLayout cameraTrackingLayout = static_cast<CameraTrackingLayout>(enumIdx);
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.GetTrackingLayout(cameraTrackingLayout);
-}
-
-void RotateByDegreeFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint32_t duration = fdp.ConsumeIntegral<uint32_t>();
-    float yaw = fdp.ConsumeIntegral<uint32_t>();
-    float roll = fdp.ConsumeIntegral<uint32_t>();
-    float pitch = fdp.ConsumeIntegral<uint32_t>();
-    RotateByDegreeParam rotateParam;
-    rotateParam.duration = static_cast<int32_t>(duration);
-    rotateParam.degree.yaw = yaw;
-    rotateParam.degree.roll = roll;
-    rotateParam.degree.pitch = pitch;
-    auto rotateByDegreeParam = std::make_shared<RotateByDegreeParam>(rotateParam);
-    uint32_t mechId = fdp.ConsumeIntegral<uint32_t>();
-    std::string cmdId = fdp.ConsumeRandomLengthString();
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.RotateByDegree(mechId, cmdId, rotateByDegreeParam);
-}
-
-void NotifyOperationResultFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint32_t enumIdx = fdp.ConsumeIntegral<uint32_t>() % 4;
-    ExecResult result = static_cast<ExecResult>(enumIdx);
-    uint32_t tokenId = fdp.ConsumeIntegral<uint32_t>();
-    std::string cmdId = fdp.ConsumeRandomLengthString();
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.NotifyOperationResult(tokenId, cmdId, result);
 }
 
 void RotateToEulerAnglesFuzzTest(const uint8_t *data, size_t size)
@@ -421,16 +258,6 @@ void SetUserOperationFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::UnRegisterAttachStateChangeCallbackFuzzTest(data, size);
-    OHOS::OnAttachStateChangeFuzzTest(data, size);
-    OHOS::OnDeviceConnectedFuzzTest(data, size);
-    OHOS::GetAttachedDevicesFuzzTest(data, size);
-    OHOS::SetTrackingEnabledFuzzTest(data, size);
-    OHOS::GetTrackingEnabledFuzzTest(data, size);
-    OHOS::SetTrackingLayoutFuzzTest(data, size);
-    OHOS::GetTrackingLayoutFuzzTest(data, size);
-    OHOS::RotateByDegreeFuzzTest(data, size);
-    OHOS::NotifyOperationResultFuzzTest(data, size);
     OHOS::RotateToEulerAnglesFuzzTest(data, size);
     OHOS::GetMaxRotationTimeFuzzTest(data, size);
     OHOS::GetMaxRotationSpeedFuzzTest(data, size);
