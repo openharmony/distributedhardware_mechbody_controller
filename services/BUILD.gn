@@ -43,6 +43,7 @@ ohos_shared_library("mechbody_service") {
     "src/mechbody_controller_stub.cpp",
     "src/mechbody_controller_utils.cpp",
     "src/motion/mc_motion_manager.cpp",
+    "src/transport/command/mc_action_gimbal_feature_control_cmd.cpp",
     "src/transport/command/mc_command_base.cpp",
     "src/transport/command/mc_command_factory.cpp",
     "src/transport/command/mc_get_mech_camera_tracking_layout_cmd.cpp",
@@ -67,7 +68,6 @@ ohos_shared_library("mechbody_service") {
     "src/transport/mc_protocol_convertor.cpp",
     "src/transport/mc_subscription_center.cpp",
     "src/ble_send_manager.cpp",
-    "src/transport/command/mc_action_gimbal_feature_control_cmd.cpp",
   ]
 
   include_dirs = [
