@@ -124,10 +124,10 @@ std::shared_ptr<RegisterMechTrackingEnableCmd> CommandFactory::CreateRegisterMec
     return std::make_shared<RegisterMechTrackingEnableCmd>();
 }
 
-std::shared_ptr CommandFactory::CreateActionGimbalFeatureControlCmd(
+std::shared_ptr<ActionGimbalFeatureControlCmd> CommandFactory::CreateActionGimbalFeatureControlCmd(
     const ActionControlParams &params)
 {
-    return std::make_shared(params);
+    return std::make_shared<ActionGimbalFeatureControlCmd>(params);
 }
 
 std::shared_ptr<CommandBase> CommandFactory::CreateFromData(std::shared_ptr<MechDataBuffer> data)
