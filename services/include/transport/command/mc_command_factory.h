@@ -73,7 +73,7 @@ public:
     std::shared_ptr<RegisterMechTrackingEnableCmd> CreateRegisterMechTrackingEnableCmd();
 
     std::shared_ptr<CommandBase> CreateFromData(std::shared_ptr<MechDataBuffer> data);
-    std::shared_ptr CreateActionGimbalFeatureControlCmd(
+    std::shared_ptr<ActionGimbalFeatureControlCmd> CreateActionGimbalFeatureControlCmd(
         const ActionControlParams& params);
 
 private:
