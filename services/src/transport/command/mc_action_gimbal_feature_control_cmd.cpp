@@ -34,7 +34,7 @@ ActionGimbalFeatureControlCmd::ActionGimbalFeatureControlCmd(const ActionControl
     retryTimes_ = CMD_PRIORITY_MIDDLE;
 }
 
-std::shared_ptr ActionGimbalFeatureControlCmd::Marshal() const
+std::shared_ptr<MechDataBuffer> ActionGimbalFeatureControlCmd::Marshal() const
 {
     HILOGI("start.");
     auto buffer = std::make_shared(reqSize_ + BIT_OFFSET_2);
