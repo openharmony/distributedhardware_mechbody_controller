@@ -20,7 +20,6 @@ namespace OHOS {
 namespace MechBodyController {
 namespace {
     const std::string TAG = "ActionGimbalFeatureControlCmd";
-    // constexpr uint8_t CMD_CAMERA_TYPE_DEFAULT = 0x02;
 }
 
 ActionGimbalFeatureControlCmd::ActionGimbalFeatureControlCmd(const ActionControlParams &params)
