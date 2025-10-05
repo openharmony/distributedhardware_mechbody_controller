@@ -124,6 +124,12 @@ std::shared_ptr<RegisterMechTrackingEnableCmd> CommandFactory::CreateRegisterMec
     return std::make_shared<RegisterMechTrackingEnableCmd>();
 }
 
+std::shared_ptr CommandFactory::CreateActionGimbalFeatureControlCmd(
+    const ActionControlParams &params)
+{
+    return std::make_shared(params);
+}
+
 std::shared_ptr<CommandBase> CommandFactory::CreateFromData(std::shared_ptr<MechDataBuffer> data)
 {
     if (data->Size() < CREATE_FROM_DATA_MIN_SIZE) {

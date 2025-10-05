@@ -142,6 +142,7 @@ public:
     int32_t GetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout);
     std::shared_ptr<CameraInfo> GetCurrentCameraInfo() const;
     void OnConnectChange();
+    int32_t UpdateActionControl();
 
 private:
     int32_t ComputeFov();

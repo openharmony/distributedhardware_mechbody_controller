@@ -1382,6 +1382,22 @@ void MotionManager::LimitCalculationLocked(EulerAngles& position, RotationAxesSt
     }
 }
 
+int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &actionControlParams)
+{
+    HILOGI("ActionGimbalFeatureControl start.");
+    if (!MechConnectManager::GetInstance().GetMechState(mechId_))
+    {
+        HILOGE("Access is not allowed if the phone is not placed on mech.");
+        return DEVICE_NOT_PLACED_ON_MECH;
+    }
+
+    std::shared_ptr<CommandBase> actionControlCmd = factory.CreateActionGimbalFeatureControlCmd(actionControlParams);
+    CHECK_POINTER_RETURN_VALUE(actionControlCmd, INVALID_PARAMETERS_ERR, "actionControlCmd is empty.");
+    sendAdapter_->SendCommand(actionControlCmd);
+    HILOGI("ActionGimbalFeatureControl end.");
+    return ERR_OK;
+}
+
 MechEventListenerImpl::MechEventListenerImpl(std::shared_ptr<MotionManager> motionManager)
 {
     HILOGI("MechEventListenerImpl called");
