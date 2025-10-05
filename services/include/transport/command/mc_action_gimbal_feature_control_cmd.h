@@ -23,21 +23,21 @@ namespace MechBodyController {
 
 class ActionGimbalFeatureControlCmd : public CommandBase {
 public:
-static constexpr uint8_t CMD_SET = 0x02;
-static constexpr uint8_t CMD_ID = 0x26;
-static constexpr uint16_t REQ_SIZE = 11;
-static constexpr uint16_t RSP_SIZE = 1;
+    static constexpr uint8_t CMD_SET = 0x02;
+    static constexpr uint8_t CMD_ID = 0x26;
+    static constexpr uint16_t REQ_SIZE = 11;
+    static constexpr uint16_t RSP_SIZE = 1;
 
-explicit ActionGimbalFeatureControlCmd(const ActionControlParams& params);
-~ActionGimbalFeatureControlCmd() override = default;
+    explicit ActionGimbalFeatureControlCmd(const ActionControlParams &params);
+    ~ActionGimbalFeatureControlCmd() override = default;
 
-std::shared_ptr<MechDataBuffer> Marshal() const override;
-void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
+    std::shared_ptr<MechDataBuffer> Marshal() const override;
+    void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
-const ActionControlParams& GetParams() const;
+    const ActionControlParams &GetParams() const;
 
 private:
-ActionControlParams params_;
+    ActionControlParams params_;
 };
 
 } // namespace MechBodyController
