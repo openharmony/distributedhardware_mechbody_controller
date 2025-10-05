@@ -159,6 +159,7 @@ int32_t McCameraTrackingController::OnCaptureSessionConfiged(
             SetTrackingEnabled(currentCameraInfo_->tokenId,
                 appSettings[currentCameraInfo_->tokenId]->isTrackingEnabled);
         }
+        SetTrackingLayout(currentCameraInfo_->currentCameraTrackingLayout);
         UpdateActionControl();
     }
     HILOGI("end");
@@ -180,6 +181,7 @@ int32_t McCameraTrackingController::OnZoomInfoChange(int32_t sessionid, const Ca
     }
     if (currentCameraInfo_->tokenId != 0 && ComputeFov() == ERR_OK) {
         UpdateMotionManagers();
+        SetTrackingLayout(currentCameraInfo_->currentCameraTrackingLayout);
         UpdateActionControl();
     }
     HILOGI("end");
@@ -255,6 +257,7 @@ int32_t McCameraTrackingController::OnSessionStatusChange(int32_t sessionid, boo
         return CAMERA_INFO_IS_EMPTY;
     }
     currentCameraInfo_->isCameraOn = status;
+    SetTrackingLayout(currentCameraInfo_->currentCameraTrackingLayout);
     UpdateActionControl();
     HILOGI("end");
     return ERR_OK;
@@ -377,6 +380,9 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
             }, SEARCH_TARGET_TASK_NAME);
     }
     lastTrackingFrame_ = trackingFrameParams;
+    lastTrackingFrame_->timeStamp =
+        std::chrono::time_point_caststd::chrono::milliseconds(std::chrono::system_clock::now())
+            .time_since_epoch().count();
     return trackingFrameParams;
 }
 
@@ -596,7 +602,7 @@ int32_t McCameraTrackingController::UpdateActionControl()
     {
         eventHandler_->RemoveTask(UPDATE_ACTION_CONTROL_TASK_NAME);
         eventHandler_->PostTask(
-            this {
+            [this]() {
                 UpdateActionControl();
             },
             UPDATE_ACTION_CONTROL_TASK_NAME, UPDATE_ACTION_CONTROL_TASK_DELAY);
