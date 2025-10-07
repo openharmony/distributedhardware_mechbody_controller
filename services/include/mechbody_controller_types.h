@@ -654,8 +654,7 @@ struct SearchResult : public OHOS::Parcelable {
     int32_t targetsNum = 0;
 };
 
-struct ActionControlParams
-{
+struct ActionControlParams {
     uint8_t controlReq = 0;
     uint16_t timeOut = 0;
     uint32_t yawControl = 0;
