@@ -1385,8 +1385,7 @@ void MotionManager::LimitCalculationLocked(EulerAngles& position, RotationAxesSt
 int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &actionControlParams)
 {
     HILOGI("ActionGimbalFeatureControl start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_))
-    {
+    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
