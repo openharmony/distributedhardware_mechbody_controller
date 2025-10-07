@@ -40,7 +40,7 @@ ActionGimbalFeatureControlCmd::ActionGimbalFeatureControlCmd(const ActionControl
 std::shared_ptr<MechDataBuffer> ActionGimbalFeatureControlCmd::Marshal() const
 {
     HILOGI("start.");
-    auto buffer = std::make_shared(reqSize_ + BIT_OFFSET_2);
+    auto buffer = std::make_shared<MechDataBuffer>(reqSize_ + BIT_OFFSET_2);
     if (buffer == nullptr) {
         HILOGE("Failed to allocate memory for Marshal buffer");
         return nullptr;
@@ -61,7 +61,7 @@ std::shared_ptr<MechDataBuffer> ActionGimbalFeatureControlCmd::Marshal() const
     return buffer;
 }
 
-void ActionGimbalFeatureControlCmd::TriggerResponse(std::shared_ptr data)
+void ActionGimbalFeatureControlCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> data)
 {
     if (responseCb_) {
         HILOGI("trigger response callback.");
