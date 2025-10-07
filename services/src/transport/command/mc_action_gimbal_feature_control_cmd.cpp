@@ -20,6 +20,9 @@ namespace OHOS {
 namespace MechBodyController {
 namespace {
     const std::string TAG = "ActionGimbalFeatureControlCmd";
+    constexpr int32_t NUM_14 = 14;
+    constexpr int32_t NUM_16 = 16;
+    constexpr int32_t NUM_18 = 18;
 }
 
 ActionGimbalFeatureControlCmd::ActionGimbalFeatureControlCmd(const ActionControlParams &params)
@@ -49,9 +52,9 @@ std::shared_ptr<MechDataBuffer> ActionGimbalFeatureControlCmd::Marshal() const
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint16(params_.timeOut), nullptr, "append timeOut");
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint32(0), nullptr, "append reserved");
     uint32_t joystick = 0;
-    joystick |= (params_.yawControl & 0xFF) << 14;
-    joystick |= (params_.pitchControl & 0xFF) << 16;
-    joystick |= (params_.rollControl & 0xFF) << 18;
+    joystick |= (params_.yawControl & 0xFF) << NUM_14;
+    joystick |= (params_.pitchControl & 0xFF) << NUM_16;
+    joystick |= (params_.rollControl & 0xFF) << NUM_18;
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint32(joystick), nullptr, "append timeDelay");
 
     HILOGI("end.");
