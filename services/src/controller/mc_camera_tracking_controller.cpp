@@ -569,7 +569,14 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
     std::lock_guard<std::mutex> lock(trackingEventCallbackMutex_);
     for (const auto &item: trackingEventCallback_) {
         uint32_t tokenId = item.first;
-        HILOGI("notify tracking event to tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
+        int32_t isTrackingEnableNum = static_cast<int32_t>(event);
+        if (event == TrackingEvent::CAMERA_TRACKING_USER_ENABLED &&
+            appSettings.find(tokenId) != appSettings.end() && !appSettings[tokenId]->isTrackingEnabled) {
+            HILOGE("App tracking enabled setting is false");
+            isTrackingEnableNum = static_cast<int32_t>(TrackingEvent::CAMERA_TRACKING_USER_DISABLED);
+        }
+        HILOGI("notify tracking event to tokenId: %{public}s; isTrackingEnableNum: %{public}d",
+            GetAnonymUint32(tokenId).c_str(), isTrackingEnableNum);
         sptr <IRemoteObject> callback = item.second;
         MessageParcel data;
         if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
@@ -581,7 +588,7 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
             continue;
         }
 
-        if (!data.WriteInt32(static_cast<int32_t>(event))) {
+        if (!data.WriteInt32(isTrackingEnableNum)) {
             HILOGE("Write event failed.");
             continue;
         }
