@@ -65,6 +65,7 @@ int32_t JsMechManagerStub::TrackingEventCallback(MessageParcel &data,
 {
     int32_t mechId = data.ReadInt32();
     int32_t track = data.ReadInt32();
+    HILOGE("mech id: %{public}d; trach num: %{public}d", mechId, track);
     if (track > TRACK_MAX || track < 0) {
         return NAPI_RECV_DATA_FAIL;
     }

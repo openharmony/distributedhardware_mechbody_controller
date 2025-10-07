@@ -319,27 +319,36 @@ int32_t MechBodyControllerService::GetTrackingEnabled(bool &isEnabled)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
+    bool deviceIsEnable = false;
+    {
+        std::lock_guard<std::mutex> lock(motionManagersMutex);
+        if (motionManagers_.empty()) {
+            return DEVICE_NOT_CONNECTED;
+        }
+        for (auto it : motionManagers_) {
+            int32_t mechId = it.first;
+            std::shared_ptr motionManager = it.second;
+            if (motionManager == nullptr) {
+                continue;
+            }
+            bool isEnabledTmp;
+            motionManager->GetMechCameraTrackingEnabled(isEnabledTmp);
+            HILOGI("got device tracking state, mech id: %{public}d; isEnable: %{public}s",
+                   mechId, isEnabledTmp ? "true" : "false");
+            deviceIsEnable |= isEnabledTmp;
+        }
+    }
     int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
     if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
         HILOGI("Has permission.");
-        {
-            std::lock_guard<std::mutex> lock(motionManagersMutex);
-            if (motionManagers_.empty()) {
-                return DEVICE_NOT_CONNECTED;
-            }
-            for (auto it : motionManagers_) {
-                std::shared_ptr<MotionManager> motionManager = it.second;
-                if (motionManager == nullptr) {
-                    return DEVICE_NOT_CONNECTED;
-                }
-                HILOGI("Get main switch.");
-                motionManager->GetMechCameraTrackingEnabled(isEnabled);
-            }
-        }
+        isEnabled = deviceIsEnable;
         return ERR_OK;
     }
-    int32_t getResult = McControllerManager::GetInstance().GetTrackingEnabled(tokenId, isEnabled);
-    HILOGI("end. Get Tracking Enabled result: %{public}d.", getResult);
+    bool appIsEnable = false;
+    int32_t getResult = McControllerManager::GetInstance().GetTrackingEnabled(tokenId, appIsEnable);
+    HILOGI("end. Get Tracking Enabled result: %{public}d. app setting enable: %{public}s",
+        getResult, appIsEnable ? "true" : "false");
+    isEnabled = deviceIsEnable && appIsEnable;
     return getResult;
 }
 
