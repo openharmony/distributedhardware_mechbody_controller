@@ -630,8 +630,7 @@ int32_t McCameraTrackingController::UpdateActionControl()
         {
             int32_t mechId = item.first;
             std::shared_ptr motionManager = item.second;
-            if (motionManager == nullptr)
-            {
+            if (motionManager == nullptr) {
                 HILOGE("MotionManager not exists; mechId: %{public}d", mechId);
                 continue;
             }
