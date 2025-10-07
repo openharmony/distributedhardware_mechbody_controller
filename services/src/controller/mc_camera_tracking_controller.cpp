@@ -596,6 +596,30 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
     return ERR_OK;
 }
 
+bool McCameraTrackingController::IsCurrentTrackingEnabled()
+{
+    bool deviceIsEnable = false;
+    {
+        std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+        if (MechBodyControllerService::GetInstance().motionManagers_.empty()) {
+            return currentCameraInfo_->currentTrackingEnable;
+        }
+        for (auto it : MechBodyControllerService::GetInstance().motionManagers_) {
+            int32_t mechId = it.first;
+            std::shared_ptr<MotionManager> motionManager = it.second;
+            if (motionManager == nullptr) {
+                continue;
+            }
+            bool isEnabledTmp;
+            motionManager->GetMechCameraTrackingEnabled(isEnabledTmp);
+            HILOGI("got device tracking state, mech id: %{public}d; isEnable: %{public}s",
+                   mechId, isEnabledTmp ? "true" : "false");
+            deviceIsEnable |= isEnabledTmp;
+        }
+    }
+    return currentCameraInfo_->currentTrackingEnable && deviceIsEnable;
+}
+
 int32_t McCameraTrackingController::UpdateActionControl()
 {
     if (eventHandler_ != nullptr) {
@@ -615,7 +639,7 @@ int32_t McCameraTrackingController::UpdateActionControl()
     uint64_t currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
         .time_since_epoch().count();
     if (currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0 &&
-        currentTime - lastTrackingFrame_->timeStamp < TRACKING_PARAM_LOST_DELAY) {
+        currentTime - lastTrackingFrame_->timeStamp < TRACKING_PARAM_LOST_DELAY && IsCurrentTrackingEnabled()) {
         actionControlParam.controlReq = 1;
         actionControlParam.yawControl = 1;
         actionControlParam.pitchControl = 1;
