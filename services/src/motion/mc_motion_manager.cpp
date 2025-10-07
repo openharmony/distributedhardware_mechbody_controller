@@ -1160,6 +1160,11 @@ int32_t MotionManager::SetMechCameraTrackingEnabled(bool &isEnabled)
             return ERR_OK;
         }
         deviceStatus_->isEnabled = isEnabled;
+        deviceStatus_->trackingStatus =
+            isEnabled ? MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET : MechTrackingStatus::MECH_TK_DISABLE;
+        std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd =
+            factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
+        sendAdapter_->SendCommand(tkCmd);
         HILOGI("device Status is enable: %{public}s", deviceStatus_->isEnabled ? "true" : "false");
     }
     return ERR_OK;
