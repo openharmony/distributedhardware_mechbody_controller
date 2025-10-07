@@ -381,7 +381,7 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     }
     lastTrackingFrame_ = trackingFrameParams;
     lastTrackingFrame_->timeStamp =
-        std::chrono::time_point_caststd::chrono::milliseconds(std::chrono::system_clock::now())
+        std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
             .time_since_epoch().count();
     return trackingFrameParams;
 }
@@ -613,7 +613,7 @@ int32_t McCameraTrackingController::UpdateActionControl()
     actionControlParam.yawControl = 0;
     actionControlParam.pitchControl = 0;
     actionControlParam.rollControl = 0;
-    uint64_t currentTime = std::chrono::time_point_caststd::chrono::milliseconds(std::chrono::system_clock::now())
+    uint64_t currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
         .time_since_epoch().count();
     if (currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0 &&
         currentTime - lastTrackingFrame_->timeStamp < TRACKING_PARAM_LOST_DELAY)
@@ -625,7 +625,7 @@ int32_t McCameraTrackingController::UpdateActionControl()
     }
     HILOGI("actionControlParam: %{public}s", actionControlParam.ToString().c_str());
     {
-        std::lock_guardstd::mutex lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+        std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
         for (const auto &item : MechBodyControllerService::GetInstance().motionManagers_)
         {
             int32_t mechId = item.first;
