@@ -101,6 +101,7 @@ public:
     void MechButtonEventNotify(const std::shared_ptr<RegisterMechCameraKeyEventCmd> &cmd);
     void MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd);
     void UnRegisterNotifyEvent();
+    int32_t ActionGimbalFeatureControl(const ActionControlParams &actionControlParams);
 
 private:
     void MMIKeyEvent(CameraKeyEvent eventType);

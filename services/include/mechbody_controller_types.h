@@ -653,6 +653,24 @@ struct SearchParams : public OHOS::Parcelable {
 struct SearchResult : public OHOS::Parcelable {
     int32_t targetsNum = 0;
 };
+
+struct ActionControlParams {
+    uint8_t controlReq = 0;
+    uint16_t timeOut = 0;
+    uint32_t yawControl = 0;
+    uint32_t pitchControl = 0;
+    uint32_t rollControl = 0;
+
+    std::string ToString() const
+    {
+        return "ActionControlParams {"
+               "controlReq=" + std::to_string(controlReq) +
+               ", timeOut=" + std::to_string(timeOut) +
+               ", yawControl=" + std::to_string(yawControl) +
+               ", pitchControl=" + std::to_string(pitchControl) +
+               ", rollControl=" + std::to_string(rollControl) + " }";
+    }
+};
 }  // namespace MechBodyController
 }  // namespace OHOS
 #endif  // MECHBODY_CONTROLLER_MECHBODY_CONTROLLER_TYPES_H

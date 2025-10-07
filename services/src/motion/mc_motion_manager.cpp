@@ -1160,6 +1160,11 @@ int32_t MotionManager::SetMechCameraTrackingEnabled(bool &isEnabled)
             return ERR_OK;
         }
         deviceStatus_->isEnabled = isEnabled;
+        deviceStatus_->trackingStatus =
+            isEnabled ? MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET : MechTrackingStatus::MECH_TK_DISABLE;
+        std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd =
+            factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
+        sendAdapter_->SendCommand(tkCmd);
         HILOGI("device Status is enable: %{public}s", deviceStatus_->isEnabled ? "true" : "false");
     }
     return ERR_OK;
@@ -1380,6 +1385,21 @@ void MotionManager::LimitCalculationLocked(EulerAngles& position, RotationAxesSt
     if (callback && deviceStatus_->rotationAxesStatus != status) {
         deviceStatus_->rotationAxesStatus = status;
     }
+}
+
+int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &actionControlParams)
+{
+    HILOGI("ActionGimbalFeatureControl start.");
+    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+        HILOGE("Access is not allowed if the phone is not placed on mech.");
+        return DEVICE_NOT_PLACED_ON_MECH;
+    }
+
+    std::shared_ptr<CommandBase> actionControlCmd = factory.CreateActionGimbalFeatureControlCmd(actionControlParams);
+    CHECK_POINTER_RETURN_VALUE(actionControlCmd, INVALID_PARAMETERS_ERR, "actionControlCmd is empty.");
+    sendAdapter_->SendCommand(actionControlCmd);
+    HILOGI("ActionGimbalFeatureControl end.");
+    return ERR_OK;
 }
 
 MechEventListenerImpl::MechEventListenerImpl(std::shared_ptr<MotionManager> motionManager)
