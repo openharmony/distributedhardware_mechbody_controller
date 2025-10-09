@@ -96,7 +96,7 @@ public:
     std::mutex promiseParamsMutex_;
     std::map<std::string, std::shared_ptr<RotatePrimiseFulfillmentParam>> promiseParams_;
     std::mutex searchTargetCallbackMutex_;
-    std::map<std::string, CallbackFunctionInfo> searchTargetCallback_;
+    std::map<std::string, std::shared_ptr<RotatePrimiseFulfillmentParam>> searchTargetCallback_;
 };
 } // namespace MechManager
 } // namespace OHOS

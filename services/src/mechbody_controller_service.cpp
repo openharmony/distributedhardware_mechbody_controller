@@ -322,9 +322,6 @@ int32_t MechBodyControllerService::GetTrackingEnabled(bool &isEnabled)
     bool deviceIsEnable = false;
     {
         std::lock_guard<std::mutex> lock(motionManagersMutex);
-        if (motionManagers_.empty()) {
-            return DEVICE_NOT_CONNECTED;
-        }
         for (auto it : motionManagers_) {
             int32_t mechId = it.first;
             std::shared_ptr motionManager = it.second;
@@ -883,7 +880,7 @@ int32_t MechBodyControllerService::OnRotationAxesStatusChange(const int32_t &mec
     return ERR_OK;
 }
 
-int32_t MechBodyControllerService::SearchTarget(std::string &cmdId,
+int32_t MechBodyControllerService::SearchTarget(std::string &napiCmdId,
     const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
@@ -896,23 +893,23 @@ int32_t MechBodyControllerService::SearchTarget(std::string &cmdId,
         return INVALID_PARAMETERS_ERR;
     }
     HILOGI("start, tokenId: %{public}s; cmdId: %{public}s; targetInfo: %{public}s; searchParams: %{public}s",
-        GetAnonymUint32(tokenId).c_str(), cmdId.c_str(),
+        GetAnonymUint32(tokenId).c_str(), napiCmdId.c_str(),
         targetInfo->ToString().c_str(), searchParams->ToString().c_str());
-    int32_t result = McControllerManager::GetInstance().SearchTarget(cmdId, tokenId, targetInfo, searchParams);
+    int32_t result = McControllerManager::GetInstance().SearchTarget(napiCmdId, tokenId, targetInfo, searchParams);
     HILOGI("end. execute result: %{public}d.", result);
     return result;
 }
 
 int32_t MechBodyControllerService::SearchTargetEnd(const uint32_t &tokenId,
-    const std::string &cmdId, const int32_t &targetNum)
+    const std::string &napiCmdId, const int32_t &targetNum)
 {
-    HILOGI("start, cmdId: %{public}s; targetNum: %{public}d", cmdId.c_str(), targetNum);
+    HILOGI("start, cmdId: %{public}s; targetNum: %{public}d", napiCmdId.c_str(), targetNum);
     MessageParcel data;
     if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
         HILOGE("Write interface token failed");
         return SEND_CALLBACK_INFO_FAILED;
     }
-    if (!data.WriteString(cmdId)) {
+    if (!data.WriteString(napiCmdId)) {
         HILOGE("Write cmdId failed");
         return SEND_CALLBACK_INFO_FAILED;
     }
@@ -924,14 +921,18 @@ int32_t MechBodyControllerService::SearchTargetEnd(const uint32_t &tokenId,
     MessageOption option;
     {
         std::lock_guard<std::mutex> lock(cmdChannelMutex_);
-        sptr<IRemoteObject> callback =  cmdChannels_[tokenId];
-        if (callback == nullptr) {
-            HILOGI("command channel is nullptr for tokenId: %{public}s", GetAnonymUint32(tokenId).c_str());
-            return NAPI_SEND_DATA_FAIL;
+        for (const auto &item: cmdChannels_) {
+            uint32_t tokenId = item.first;
+            HILOGI("start send callback data to tokenId: %{public}s; ", GetAnonymUint32(tokenId).c_str());
+            sptr <IRemoteObject> callback = item.second;
+            if (callback == nullptr) {
+                HILOGI("command channel is nullptr for tokenId: %{public}s", GetAnonymUint32(tokenId).c_str());
+                continue;
+            }
+            int32_t error = callback->SendRequest(
+                static_cast<uint32_t>(IMechBodyControllerCode::SEARCH_TARGET_CALLBACK), data, reply, option);
+            HILOGI("Send callback data %{public}s", error == ERR_NONE ? "success" : "failed");
         }
-        int32_t error = callback->SendRequest(static_cast<uint32_t>(IMechBodyControllerCode::SEARCH_TARGET_CALLBACK),
-            data, reply, option);
-        HILOGI("Send callback data %{public}s", error == ERR_NONE ? "success" : "failed");
     }
     return ERR_OK;
 }

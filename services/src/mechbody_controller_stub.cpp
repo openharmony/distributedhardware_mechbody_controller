@@ -364,10 +364,10 @@ int32_t MechBodyControllerStub::RotationAxesStatusChangeListenOffInner(MessagePa
 
 int32_t MechBodyControllerStub::SearchTargetInner(MessageParcel &data, MessageParcel &reply)
 {
-    std::string cmdId = data.ReadString();
+    std::string napiCmdId = data.ReadString();
     std::shared_ptr<TargetInfo> targetInfo(data.ReadParcelable<TargetInfo>());
     std::shared_ptr<SearchParams> searchParams(data.ReadParcelable<SearchParams>());
-    int32_t result = MechBodyControllerService::GetInstance().SearchTarget(cmdId, targetInfo, searchParams);
+    int32_t result = MechBodyControllerService::GetInstance().SearchTarget(napiCmdId, targetInfo, searchParams);
     bool writeResult = reply.WriteInt32(result);
     HILOGI("%{public}d", writeResult);
     return result;

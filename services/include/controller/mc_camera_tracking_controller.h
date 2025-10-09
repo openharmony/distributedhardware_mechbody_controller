@@ -65,6 +65,7 @@ struct CameraInfo {
     bool currentTrackingEnable = true;
     uint64_t trackingTargetNum = 0;
     bool searchingTarget = false;
+    std::string searchTargetNapiCmdId = "";
     CameraTrackingLayout currentCameraTrackingLayout = CameraTrackingLayout::DEFAULT;
     CameraType cameraType = CameraType::BACK;
     int32_t focusMode = 1;
@@ -135,7 +136,7 @@ public:
     int32_t SetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout);
 
     int32_t SetTrackingLayout(const uint32_t &tokenId, CameraTrackingLayout &cameraTrackingLayout);
-    int32_t SearchTarget(std::string &cmdId, uint32_t &tokenId,
+    int32_t SearchTarget(std::string &napiCmdId, uint32_t &tokenId,
         const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams);
     void SearchTargetRotateFinish(const std::string &cmdId);
     void SearchTargetStop();
@@ -170,7 +171,7 @@ private:
         const bool &startFromNeg, const RotateDegreeLimit &limit);
     void ExecSearchTask(std::string &napiCmdId, uint32_t &tokenId, const bool &startFromNeg,
         int32_t &searchTimes);
-    void RunSearchTarget(std::string &cmdId, uint32_t &tokenId, const std::shared_ptr<SearchParams> &searchParams,
+    void RunSearchTarget(std::string &napiCmdId, uint32_t &tokenId, const std::shared_ptr<SearchParams> &searchParams,
         const RotateDegreeLimit &limit, const std::shared_ptr<EulerAngles> &currentPosition);
     void AdjustROI(ROI &roi, CameraStandard::Rect &rect, CameraType cameraType, MobileRotation sensorRotation);
     void AdjustYOffset(ROI &roi, CameraType cameraType, CameraTrackingLayout trackingLayout);
