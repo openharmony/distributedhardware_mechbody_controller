@@ -654,5 +654,235 @@ HWTEST_F(McCameraTrackingControllerTest, UnRegisterSensorListener_001, TestSize.
 
     DTEST_LOG << "McCameraTrackingControllerTest UnRegisterSensorListener_001 end" << std::endl;
 }
+
+/**
+ * @tc.name  : AdjustROI_FrontCamera_UP_001
+ * @tc.number: AdjustROI_FrontCamera_UP_001
+ * @tc.desc  : Testing AdjustROI function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustROI_FrontCamera_UP_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustROI_FrontCamera_UP_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi;
+    CameraStandard::Rect rect;
+    CameraType cameraType = CameraType::FRONT;
+    MobileRotation sensorRotation = MobileRotation::UP;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustROI(roi, rect, cameraType, sensorRotation));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustROI_FrontCamera_UP_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustROI_FrontCamera_LEFT_001
+ * @tc.number: AdjustROI_FrontCamera_LEFT_001
+ * @tc.desc  : Testing AdjustROI function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustROI_FrontCamera_LEFT_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustROI_FrontCamera_LEFT_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi;
+    CameraStandard::Rect rect;
+    CameraType cameraType = CameraType::FRONT;
+    MobileRotation sensorRotation = MobileRotation::LEFT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustROI(roi, rect, cameraType, sensorRotation));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustROI_FrontCamera_LEFT_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustYOffset_Front_Right_001
+ * @tc.number: AdjustYOffset_Front_Right_001
+ * @tc.desc  : Testing AdjustYOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Front_Right_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Front_Right_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::FRONT;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::RIGHT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Front_Right_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustYOffset_Front_Left_001
+ * @tc.number: AdjustYOffset_Front_Left_001
+ * @tc.desc  : Testing AdjustYOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Front_Left_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Front_Left_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::FRONT;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::LEFT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Front_Left_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustYOffset_Back_Right_001
+ * @tc.number: AdjustYOffset_Back_Right_001
+ * @tc.desc  : Testing AdjustYOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Back_Right_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Back_Right_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 1.0f, 1.0f};
+    CameraType cameraType = CameraType::BACK;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::RIGHT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Back_Right_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustYOffset_Back_Left_001
+ * @tc.number: AdjustYOffset_Back_Left_001
+ * @tc.desc  : Testing AdjustYOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Back_Left_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Back_Left_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::BACK;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::LEFT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Back_Left_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustXOffset_001
+ * @tc.number: AdjustXOffset_001
+ * @tc.desc  : Testing AdjustXOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::FRONT;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::RIGHT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustXOffset_002
+ * @tc.number: AdjustXOffset_002
+ * @tc.desc  : Testing AdjustXOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_002 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::FRONT;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::LEFT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustXOffset_003
+ * @tc.number: AdjustXOffset_003
+ * @tc.desc  : Testing AdjustXOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_003 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::FRONT;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::DEFAULT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustXOffset_004
+ * @tc.number: AdjustXOffset_004
+ * @tc.desc  : Testing AdjustXOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_004 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::BACK;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::RIGHT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustXOffset_005
+ * @tc.number: AdjustXOffset_005
+ * @tc.desc  : Testing AdjustXOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::BACK;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::LEFT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_005 end" << std::endl;
+}
+
+/**
+ * @tc.name  : AdjustXOffset_006
+ * @tc.number: AdjustXOffset_006
+ * @tc.desc  : Testing AdjustXOffset function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_006, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_006 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
+    CameraType cameraType = CameraType::BACK;
+    CameraTrackingLayout trackingLayout = CameraTrackingLayout::DEFAULT;
+
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, trackingLayout));
+
+    DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_006 end" << std::endl;
+}
 }
 }
