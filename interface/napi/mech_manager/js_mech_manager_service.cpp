@@ -207,34 +207,31 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
 
 int32_t JsMechManagerService::SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result)
 {
+    HILOGI("cmdId: %{public}s; targetCount: %{public}d", cmdId.c_str(), targetsNum);
     if (searchTargetCallback_.find(cmdId) == searchTargetCallback_.end()) {
         HILOGE("searchTarget Callback is nullptr, cmdId: %{public}s", cmdId.c_str());
         return ERR_OK;
     }
-    CallbackFunctionInfo callbackFunctionInfo = searchTargetCallback_[cmdId];
-    auto task = [callbackFunctionInfo, targetsNum]() {
+    std::shared_ptr<RotatePrimiseFulfillmentParam> param = searchTargetCallback_[cmdId];
+    auto task = [cmdId, param, targetsNum]() {
         napi_handle_scope scope;
-        napi_open_handle_scope(callbackFunctionInfo.env, &scope);
+        napi_open_handle_scope(param->env, &scope);
 
         napi_value jsEvent;
-        napi_create_object(callbackFunctionInfo.env, &jsEvent);
+        napi_create_object(param->env, &jsEvent);
 
         napi_value targetsNumJs;
-        napi_create_int32(callbackFunctionInfo.env, targetsNum, &targetsNumJs);
-        napi_set_named_property(callbackFunctionInfo.env, jsEvent, "targetsNum", targetsNumJs);
+        napi_create_int32(param->env, targetsNum, &targetsNumJs);
+        napi_set_named_property(param->env, jsEvent, "targetCount", targetsNumJs);
 
-        napi_value callback;
-        napi_get_reference_value(callbackFunctionInfo.env, callbackFunctionInfo.callbackRef, &callback);
-
-        napi_value global;
-        napi_get_global(callbackFunctionInfo.env, &global);
-
-        napi_value result;
-        napi_call_function(callbackFunctionInfo.env, global, callback, 1, &jsEvent, &result);
-
-        napi_close_handle_scope(callbackFunctionInfo.env, scope);
+        napi_status status = napi_resolve_deferred(param->env, param->deferred, jsEvent);
+        if (status != napi_ok) {
+            HILOGI("Promise Fulfillment failed for cmdId: %{public}s", cmdId.c_str());
+        }
+        JsMechManagerService::GetInstance().searchTargetCallback_.erase(cmdId);
+        napi_close_handle_scope(param->env, scope);
     };
-    napi_send_event(callbackFunctionInfo.env, task, napi_eprio_high);
+    napi_send_event(param->env, task, napi_eprio_high);
 
     return ERR_OK;
 }

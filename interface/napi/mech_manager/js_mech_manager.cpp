@@ -42,8 +42,7 @@ namespace {
     const std::string TRACKING_EVENT = "trackingStateChange";
     const std::string ROTATE_AXIS_STATUS_CHANGE_EVENT = "rotationAxesStatusChange";
     constexpr int32_t LAYOUT_MAX = 3;
-    constexpr int32_t THIRD = 2;
-    constexpr int32_t THREE = 3;
+    constexpr int32_t PARAM_COUNT_TWO = 2;
 }
 
 std::mutex MechManager::attachStateChangeStubMutex_;
@@ -1328,45 +1327,53 @@ napi_value MechManager::SearchTarget(napi_env env, napi_callback_info info)
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
     }
-    CallbackFunctionInfo callbackFunctionInfo;
     TargetInfo targetInfo;
     SearchParams searchParams;
-    if (!GetSearchTargetParam(env, info, callbackFunctionInfo, targetInfo, searchParams)) {
+    if (!GetSearchTargetParam(env, info, targetInfo, searchParams)) {
         napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "create param failed.");
         return nullptr;
     }
-    std::string cmdId = GenerateUniqueID();
+
+    napi_deferred deferred;
+    napi_value promise;
+    napi_create_promise(env, &deferred, &promise);
+    std::shared_ptr<RotatePrimiseFulfillmentParam> searchTargetPromiseParam =
+            std::make_shared<RotatePrimiseFulfillmentParam>();
+    searchTargetPromiseParam->cmdId = GenerateUniqueID();
+    searchTargetPromiseParam->deferred = deferred;
+    searchTargetPromiseParam->env = env;
     {
         std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().searchTargetCallbackMutex_);
-        JsMechManagerService::GetInstance().searchTargetCallback_.insert(std::make_pair(cmdId, callbackFunctionInfo));
+        JsMechManagerService::GetInstance().searchTargetCallback_.insert(
+            std::make_pair(searchTargetPromiseParam->cmdId, searchTargetPromiseParam));
     }
 
     if (!InitMechClient() || !RegisterCmdChannel()) {
         HILOGE("InitMechClient or RegisterCmdChannel failed;");
-        JsMechManagerService::GetInstance().searchTargetCallback_.erase(cmdId);
+        JsMechManagerService::GetInstance().searchTargetCallback_.erase(searchTargetPromiseParam->cmdId);
         napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
         return nullptr;
     }
 
-    int32_t result = mechClient_->SearchTarget(cmdId, targetInfo, searchParams);
+    int32_t result = mechClient_->SearchTarget(searchTargetPromiseParam->cmdId, targetInfo, searchParams);
     HILOGI("result: %{public}d;", result);
     if (result != ERR_OK) {
-        JsMechManagerService::GetInstance().searchTargetCallback_.erase(cmdId);
+        JsMechManagerService::GetInstance().searchTargetCallback_.erase(searchTargetPromiseParam->cmdId);
         napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
         return nullptr;
     }
-    return nullptr;
+    return promise;
 }
 
 bool MechManager::GetSearchTargetParam(napi_env env, napi_callback_info info,
-    CallbackFunctionInfo &callbackFunctionInfo, TargetInfo &targetInfo, SearchParams &searchParams)
+    TargetInfo &targetInfo, SearchParams &searchParams)
 {
-    size_t argc = THREE;
-    napi_value args[THREE];
+    size_t argc = PARAM_COUNT_TWO;
+    napi_value args[PARAM_COUNT_TWO];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc != THREE) {
+    if (argc != PARAM_COUNT_TWO) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
                          "Wrong number of arguments");
         return false;
@@ -1385,18 +1392,6 @@ bool MechManager::GetSearchTargetParam(napi_env env, napi_callback_info info,
     if (napi_get_named_property(env, searchParamsObj, "direction", &directionValue) == napi_ok) {
         napi_get_value_int32(env, directionValue, &direction);
     }
-
-    napi_valuetype type;
-    napi_typeof(env, args[THIRD], &type);
-    if (type != napi_function) {
-        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
-                         "Three argument must be a function");
-        HILOGE("Three argument must be a function.");
-        return false;
-    }
-    napi_ref callbackRef;
-    napi_create_reference(env, args[THIRD], 1, &callbackRef);
-    callbackFunctionInfo = {env, callbackRef};
     targetInfo.targetType = static_cast<TargetType>(targetType);
     searchParams.direction = static_cast<SearchDirection>(direction);
     return true;
@@ -1584,10 +1579,10 @@ napi_value Init(napi_env env, napi_value exports)
     napi_value cameraTrackingLayoutEnum =
         CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFT", 1}, {"MIDDLE", 2}, {"RIGHT", 3}});
     napi_set_named_property(env, exports, "CameraTrackingLayout", cameraTrackingLayoutEnum);
-    napi_value targetTypeEnum = CreateEnumObject(env, {{"FACE", 0}});
+    napi_value targetTypeEnum = CreateEnumObject(env, {{"HUMAN_FACE", 0}});
     napi_set_named_property(env, exports, "TargetType", targetTypeEnum);
     napi_value searchDirectionEnum = CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFTWARD", 1}, {"RIGHTWARD", 2}});
-    napi_set_named_property(env, exports, "SearchDirectionEnum", searchDirectionEnum);
+    napi_set_named_property(env, exports, "SearchDirection", searchDirectionEnum);
     napi_value MechManager;
     napi_create_object(env, &MechManager);
     napi_property_descriptor desc[] = {
