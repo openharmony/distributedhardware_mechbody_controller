@@ -51,6 +51,8 @@ public:
 
     int32_t OnReceive(const uint8_t *data, uint32_t dataLen) override
     {
+        (void)data;
+        (void)dataLen;
         return ERR_OK;
     }
     virtual ~MyBleReceiveListener() {}

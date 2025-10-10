@@ -16,8 +16,6 @@
 
 #include <thread>
 
-#define private public
-#define protected public
 #include <stdexcept>
 #include <iostream>
 
@@ -27,8 +25,6 @@
 #include "mechbody_controller_service.h"
 #include "mc_register_mech_control_result_cmd.h"
 #include "mc_command_base.h"
-#undef private
-#undef protected
 
 using namespace testing;
 using namespace testing::ext;

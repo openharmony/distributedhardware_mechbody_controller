@@ -42,20 +42,13 @@ public:
     JsMechManagerStub();
 
     virtual ~JsMechManagerStub();
-
     void SetDeathRecipient(sptr<IRemoteObject::DeathRecipient> deathRecipient);
-
     int32_t OnRemoteRequest(uint32_t code, MessageParcel &data,
         MessageParcel &reply, MessageOption &option) override;
-
     int32_t AttachStateChangeCallback(MessageParcel &data, MessageParcel &reply) override;
-
     int32_t TrackingEventCallback(MessageParcel &data, MessageParcel &reply) override;
-
     int32_t RotationAxesStatusChangeCallback(MessageParcel &data, MessageParcel &reply) override;
-
     int32_t RotatePromiseFulfillment(MessageParcel &data, MessageParcel &reply) override;
-
     int32_t SearchTargetCallback(MessageParcel &data, MessageParcel &reply) override;
 
 private:
@@ -64,7 +57,6 @@ private:
 private:
     using MechManagerFunc = int32_t(JsMechManagerStub::*)(MessageParcel &data, MessageParcel &reply);
     std::map<IMechBodyControllerCode, MechManagerFunc> mechManagerFuncMap_;
-
     sptr<IRemoteObject::DeathRecipient> deathRecipient_ = nullptr;
 };
 } // namespace MechBodyController

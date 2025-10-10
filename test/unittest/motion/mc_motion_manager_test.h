@@ -48,6 +48,7 @@ public:
     }
     int Dump(int fd, const std::vector<std::u16string> &args) override
     {
+        (void)fd;
         return 0;
     }
     std::u16string GetObjectDescriptor() const

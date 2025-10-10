@@ -28,10 +28,12 @@ JsMechManagerService& JsMechManagerService::GetInstance()
     return *instance;
 }
 
-JsMechManagerService::JsMechManagerService() {
+JsMechManagerService::JsMechManagerService()
+{
 }
 
-JsMechManagerService::~JsMechManagerService() {
+JsMechManagerService::~JsMechManagerService()
+{
     HILOGI("~JsMechManagerService.");
 }
 
@@ -180,7 +182,7 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
 {
     HILOGI("RotatePrimiseFulfillmentParam cmdId: %{public}s", cmdId.c_str());
     std::shared_ptr<RotatePrimiseFulfillmentParam> param = JsMechManagerService::promiseParams_[cmdId];
-    if(param == nullptr){
+    if (param == nullptr) {
         HILOGE("RotatePrimiseFulfillmentParam is nullptr, cmdId: %{public}s", cmdId.c_str());
         return ERR_OK;
     }

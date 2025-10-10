@@ -43,6 +43,14 @@ namespace {
     const std::string ROTATE_AXIS_STATUS_CHANGE_EVENT = "rotationAxesStatusChange";
     constexpr int32_t LAYOUT_MAX = 3;
     constexpr int32_t PARAM_COUNT_TWO = 2;
+    constexpr int32_t THREE = 3;
+    constexpr int32_t EIGHT = 8;
+    constexpr int32_t ELEVEN = 11;
+    constexpr int32_t THIRTEEN = 13;
+    constexpr int32_t FIFTEEN = 15;
+    constexpr int32_t EIGHTEEN = 18;
+    constexpr int32_t TWENTY_THREE = 23;
+    constexpr int32_t THIRTY_TWO = 32;
 }
 
 std::mutex MechManager::attachStateChangeStubMutex_;
@@ -59,10 +67,10 @@ std::shared_ptr<MechClient> MechManager::mechClient_ = std::make_shared<MechClie
 napi_value MechManager::On(napi_env env, napi_callback_info info)
 {
     HILOGI("Start to register the callback function.");
-    size_t argc = 2;
-    napi_value args[2];
+    size_t argc = PARAM_COUNT_TWO;
+    napi_value args[PARAM_COUNT_TWO];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-    if (argc < 2) {
+    if (argc < PARAM_COUNT_TWO) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Wrong number of arguments");
         HILOGE("Wrong number of arguments.");
@@ -193,7 +201,8 @@ int32_t MechManager::ExecuteOnForRotationAxesStatusChange(const CallbackFunction
     return registerResult;
 }
 
-bool MechManager::InitAttachStateChangeStub() {
+bool MechManager::InitAttachStateChangeStub()
+{
     if (attachStateChangeStub_ != nullptr) {
         return true;
     }
@@ -210,7 +219,8 @@ bool MechManager::InitAttachStateChangeStub() {
     }
 }
 
-void MechManager::ProcessOnResultCode(napi_env env, int32_t &result) {
+void MechManager::ProcessOnResultCode(napi_env env, int32_t &result)
+{
     HILOGE("Register the callback function result code: %{public}d ", result);
     if (result == MechNapiErrorCode::PARAMETER_CHECK_FAILED) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
@@ -233,13 +243,14 @@ void MechManager::ProcessOnResultCode(napi_env env, int32_t &result) {
     }
 }
 
-bool MechManager::InitTrackingEventStub(){
-    if(trackingEventStub_ != nullptr){
+bool MechManager::InitTrackingEventStub()
+{
+    if (trackingEventStub_ != nullptr) {
         return true;
     }
     {
         std::lock_guard<std::mutex> lock(trackingEventStubMutex_);
-        if(trackingEventStub_ != nullptr){
+        if (trackingEventStub_ != nullptr) {
             return true;
         }
         sptr<JsMechManagerStub> stub = new JsMechManagerStub();
@@ -250,13 +261,14 @@ bool MechManager::InitTrackingEventStub(){
     }
 }
 
-bool MechManager::InitRotationAxesStatusChangeStub(){
-    if(rotationAxesStatusChangeStub_ != nullptr){
+bool MechManager::InitRotationAxesStatusChangeStub()
+{
+    if (rotationAxesStatusChangeStub_ != nullptr) {
         return true;
     }
     {
         std::lock_guard<std::mutex> lock(rotationAxesStatusChangeMutex_);
-        if(rotationAxesStatusChangeStub_ != nullptr){
+        if (rotationAxesStatusChangeStub_ != nullptr) {
             return true;
         }
         sptr<JsMechManagerStub> stub = new JsMechManagerStub();
@@ -297,7 +309,7 @@ napi_value MechManager::Off(napi_env env, napi_callback_info info)
         return nullptr;
     }
     int32_t result;
-    if (argc == 2) {
+    if (argc == PARAM_COUNT_TWO) {
         napi_typeof(env, args[1], &type);
         if (type != napi_function) {
             napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
@@ -375,7 +387,7 @@ int32_t MechManager::ExecuteOff(std::string &eventType, CallbackFunctionInfo &ca
 int32_t MechManager::ExecuteOffForAttachStateChange(CallbackFunctionInfo &callbackFunctionInfo)
 {
     std::lock_guard<std::mutex> lock(
-            JsMechManagerService::GetInstance().attachStateChangeCallbackMutex_);
+        JsMechManagerService::GetInstance().attachStateChangeCallbackMutex_);
     if (JsMechManagerService::GetInstance().attachStateChangeCallback_.size() == 1 &&
         HasSameCallbackFunction(JsMechManagerService::GetInstance().attachStateChangeCallback_,
                                 callbackFunctionInfo)) {
@@ -398,7 +410,7 @@ int32_t MechManager::ExecuteOffForTrackingEvent(CallbackFunctionInfo &callbackFu
     std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().trackingEventCallbackMutex_);
     if (JsMechManagerService::GetInstance().trackingEventCallback.size() == 1 &&
         HasSameCallbackFunction(JsMechManagerService::GetInstance().trackingEventCallback,
-                                callbackFunctionInfo)) {
+            callbackFunctionInfo)) {
         int32_t unRegisterResult = mechClient_->TrackingEventListenOff();
         if (unRegisterResult == ERR_OK) {
             JsMechManagerService::GetInstance().trackingEventCallback.clear();
@@ -406,7 +418,7 @@ int32_t MechManager::ExecuteOffForTrackingEvent(CallbackFunctionInfo &callbackFu
         return unRegisterResult;
     } else {
         RemoveSameCallbackFunction(JsMechManagerService::GetInstance().trackingEventCallback,
-                                   callbackFunctionInfo);
+            callbackFunctionInfo);
         return ERR_OK;
     }
     return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
@@ -419,7 +431,7 @@ int32_t MechManager::ExecuteOffForRotationAxesStatusChange(CallbackFunctionInfo 
         return PERMISSION_DENIED;
     }
     std::lock_guard<std::mutex> lock(
-            JsMechManagerService::GetInstance().rotateAxisStatusChangeCallbackMutex_);
+        JsMechManagerService::GetInstance().rotateAxisStatusChangeCallbackMutex_);
     if (JsMechManagerService::GetInstance().rotateAxisStatusChangeCallback.size() == 1 &&
         HasSameCallbackFunction(JsMechManagerService::GetInstance().rotateAxisStatusChangeCallback,
                                 callbackFunctionInfo)) {
@@ -527,7 +539,7 @@ napi_value MechManager::SetUserOperation(napi_env env, napi_callback_info info)
     napi_value args[3];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 3) {
+    if (argc < THREE) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Wrong number of arguments");
         HILOGE("Wrong number of arguments.");
@@ -552,9 +564,9 @@ napi_value MechManager::SetUserOperation(napi_env env, napi_callback_info info)
         return nullptr;
     }
     size_t paramLength = 0;
-    napi_get_value_string_utf8(env, args[2], nullptr, 0, &paramLength);
+    napi_get_value_string_utf8(env, args[PARAM_COUNT_TWO], nullptr, 0, &paramLength);
     std::string param(paramLength, '\0');
-    if (napi_get_value_string_utf8(env, args[2], &param[0], paramLength + 1, nullptr) != napi_ok) {
+    if (napi_get_value_string_utf8(env, args[PARAM_COUNT_TWO], &param[0], paramLength + 1, nullptr) != napi_ok) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(), "Invalid param.");
         HILOGE("Invalid param.");
         return nullptr;
@@ -763,23 +775,24 @@ napi_value MechManager::Rotate(napi_env env, napi_callback_info info)
     return promise;
 }
 
-bool MechManager::RegisterCmdChannel(){
-    if(cmdChannel_ != nullptr){
+bool MechManager::RegisterCmdChannel()
+{
+    if (cmdChannel_ != nullptr) {
         return true;
     }
     {
         std::lock_guard<std::mutex> lock(cmdChannelMutex_);
-        if(cmdChannel_ != nullptr){
+        if (cmdChannel_ != nullptr) {
             return true;
         }
-        if(!InitMechClient()) {
+        if (!InitMechClient()) {
             return false;
         }
         sptr<JsMechManagerStub> stub = new JsMechManagerStub();;
         sptr<IRemoteObject::DeathRecipient> deathListener = new CmdChannelDeathListener();
         stub->SetDeathRecipient(deathListener);
         int32_t result = mechClient_->RegisterCmdChannel(stub);
-        if(result == ERR_OK){
+        if (result == ERR_OK) {
             cmdChannel_ = stub;
             return true;
         }
@@ -794,7 +807,7 @@ bool MechManager::GetRotateParam(napi_env env, napi_callback_info info, RotateBy
     napi_value args[3];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 3) {
+    if (argc < THREE) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Wrong number of arguments");
         return false;
@@ -808,7 +821,7 @@ bool MechManager::GetRotateParam(napi_env env, napi_callback_info info, RotateBy
     }
 
     int32_t duration;
-    status = napi_get_value_int32(env, args[2], &duration);
+    status = napi_get_value_int32(env, args[PARAM_COUNT_TWO], &duration);
     if (status != napi_ok) {
         napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "mechId must be a number");
@@ -836,8 +849,6 @@ bool MechManager::GetRotateParam(napi_env env, napi_callback_info info, RotateBy
     }
     return true;
 }
-
-
 
 napi_value MechManager::RotateToEulerAngles(napi_env env, napi_callback_info info)
 {
@@ -867,7 +878,7 @@ napi_value MechManager::RotateToEulerAngles(napi_env env, napi_callback_info inf
         JsMechManagerService::GetInstance().promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
     }
 
-    if(!InitMechClient() || !RegisterCmdChannel()){
+    if (!InitMechClient() || !RegisterCmdChannel()) {
         HILOGE("RegisterCmdChannel failed;");
         napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(),
                          "System exception");
@@ -899,7 +910,7 @@ bool MechManager::GetRotateToEulerAnglesParam(napi_env env, napi_callback_info i
     napi_value args[3];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 3) {
+    if (argc < THREE) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Wrong number of arguments");
         return false;
@@ -913,7 +924,7 @@ bool MechManager::GetRotateToEulerAnglesParam(napi_env env, napi_callback_info i
     }
 
     int32_t duration;
-    status = napi_get_value_int32(env, args[2], &duration);
+    status = napi_get_value_int32(env, args[PARAM_COUNT_TWO], &duration);
     if (status != napi_ok) {
         napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "mechId must be a number");
@@ -1061,7 +1072,7 @@ napi_value MechManager::RotateBySpeed(napi_env env, napi_callback_info info)
     }
     RotateBySpeedParam rotateBySpeedParam;
     int32_t mechId;
-    if(!GetRotateBySpeedParam(env, info, rotateBySpeedParam, mechId)){
+    if (!GetRotateBySpeedParam(env, info, rotateBySpeedParam, mechId)) {
         napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "create param failed.");
         return nullptr;
@@ -1110,7 +1121,7 @@ bool MechManager::GetRotateBySpeedParam(napi_env env, napi_callback_info info,
     napi_value args[3];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 3) {
+    if (argc < THREE) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Wrong number of arguments");
         return false;
@@ -1124,7 +1135,7 @@ bool MechManager::GetRotateBySpeedParam(napi_env env, napi_callback_info info,
     }
 
     double duration;
-    status = napi_get_value_double(env, args[2], &duration);
+    status = napi_get_value_double(env, args[PARAM_COUNT_TWO], &duration);
     if (status != napi_ok) {
         napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "mechId must be a number");
@@ -1266,7 +1277,7 @@ napi_value MechManager::GetRotationLimits(napi_env env, napi_callback_info info)
     }
 
     RotateDegreeLimit rotateDegreeLimit;
-    if(!InitMechClient()){
+    if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
         napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(),
             "System exception");
@@ -1488,19 +1499,20 @@ bool MechManager::IsSystemApp()
 
 bool MechManager::InitMechClient()
 {
-    if(mechClient_ != nullptr){
+    if (mechClient_ != nullptr) {
         return true;
     }
     {
         std::lock_guard<std::mutex> lock(mechClientMutex_);
-        if(mechClient_ == nullptr){
+        if (mechClient_ == nullptr) {
             mechClient_ = std::make_shared<MechClient>();
         }
     }
     return mechClient_ != nullptr;
 }
 
-std::string MechManager::GenerateUniqueID(){
+std::string MechManager::GenerateUniqueID()
+{
     // 获取当前时间戳
     auto now = std::chrono::system_clock::now();
     auto now_c = std::chrono::system_clock::to_time_t(now);
@@ -1509,17 +1521,17 @@ std::string MechManager::GenerateUniqueID(){
     std::mt19937 generator(now_c);
 
     // 生成随机数
-    std::uniform_int_distribution<int> distribution(0, 15);
-    std::uniform_int_distribution<int> distribution2(8, 11);
+    std::uniform_int_distribution<int> distribution(0, FIFTEEN);
+    std::uniform_int_distribution<int> distribution2(EIGHT, ELEVEN);
 
     // 生成UUID
     std::stringstream ss;
     ss << std::hex << std::uppercase;
-    for (int i = 0; i < 32; ++i) {
-        if (i == 8 || i == 13 || i == 18 || i == 23) {
+    for (int i = 0; i < THIRTY_TWO; ++i) {
+        if (i == EIGHT || i == THIRTEEN || i == EIGHTEEN || i == TWENTY_THREE) {
             ss << "-";
         }
-        if (i == 13) {
+        if (i == THIRTEEN) {
             ss << distribution2(generator);
         } else {
             ss << distribution(generator);
@@ -1570,7 +1582,7 @@ napi_value Init(napi_env env, napi_value exports)
     napi_set_named_property(env, exports, "TrackingEvent", trackingEventEnum);
     napi_value resultEnum =
         CreateEnumObject(env, {{"COMPLETED", 0}, {"INTERRUPTED", 1}, {"LIMITED", 2},
-                               {"TIMEOUT",3}, {"SYSTEM_ERROR", 100}});
+                                {"TIMEOUT",3}, {"SYSTEM_ERROR", 100}});
     napi_set_named_property(env, exports, "Result", resultEnum);
     napi_value mechDeviceTypeEnum = CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}});
     napi_set_named_property(env, exports, "MechDeviceType", mechDeviceTypeEnum);
@@ -1613,9 +1625,9 @@ napi_value Init(napi_env env, napi_value exports)
 }
 
 static napi_module mechManagerModule = {
-        .nm_filename = "distributedHardware/libmechanicmanager_napi.so/mechanicmanager.js",
-        .nm_register_func = Init,
-        .nm_modname = "distributedHardware.mechanicManager",
+    .nm_filename = "distributedHardware/libmechanicmanager_napi.so/mechanicmanager.js",
+    .nm_register_func = Init,
+    .nm_modname = "distributedHardware.mechanicManager",
 };
 
 extern "C" __attribute__((constructor)) void MechManagerModuleRegister()
