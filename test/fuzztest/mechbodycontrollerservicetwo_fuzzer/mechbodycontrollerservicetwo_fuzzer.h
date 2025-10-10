@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef BLESENDMANAGER_FUZZER_H
-#define BLESENDMANAGER_FUZZER_H
+#ifndef MECHBODYCONTROLLERSERVICETWO_FUZZER_H
+#define MECHBODYCONTROLLERSERVICETWO_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "blesendmanager_fuzzer"
+#define FUZZ_PROJECT_NAME "mechbodycontrollerservicetwo_fuzzer"
 
 #endif

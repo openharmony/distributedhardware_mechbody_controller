@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "blesendmanager_fuzzer.h"
+#include "blesendmanagerone_fuzzer.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -149,158 +149,6 @@ void OnCharacteristicWriteResultFuzzTest(const uint8_t *data, size_t size)
     }
     bleGattClientCallBack->OnCharacteristicWriteResult(characteristic, ret);
 }
-
-void OnReceiveFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint8_t dataLen = fdp.ConsumeIntegral<uint8_t>();
-    uint8_t dataInput[dataLen];
-    for (uint8_t i = 0; i < dataLen; i++) {
-        dataInput[i] = fdp.ConsumeIntegral<uint8_t>();
-    }
-    uint8_t *dataInputPtr = dataInput;
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.OnReceive(dataInputPtr, size);
-}
-
-void OnGattReadyFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    MechInfo mechInfo;
-    FuzzedDataProvider fdp(data, size);
-    std::string macHash = fdp.ConsumeRandomLengthString();
-    std::string mechName = fdp.ConsumeRandomLengthString();
-    mechInfo.mechName = mechName;
-    bleSendManager.OnGattReady(mechInfo);
-}
-
-void OnScanCallbackFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    BleScanResult result;
-    FuzzedDataProvider fdp(data, size);
-    std::string name = fdp.ConsumeRandomLengthString();
-    result.name_ = name;
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.OnScanCallback(result);
-}
-
-void MechbodyGattcConnectFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    std::string mac = fdp.ConsumeRandomLengthString();
-    std::string deviceName = fdp.ConsumeRandomLengthString();
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.MechbodyGattcConnect(mac, deviceName);
-}
-
-void MechbodyGattcDisconnectFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    std::string address = fdp.ConsumeRandomLengthString();
-    BluetoothRemoteDevice device(address, 1);
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    MechInfo mechInfo;
-    bleSendManager.MechbodyGattcDisconnect(mechInfo);
-    bleSendManager.gattClient_ = std::make_shared<GattClient>(device);
-    bleSendManager.MechbodyGattcDisconnect(mechInfo);
-}
-
-void MechbodyGattcWriteCharacteristicFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint32_t dataLen = fdp.ConsumeIntegral<uint8_t>();
-    uint8_t dataInput[dataLen];
-    for (uint32_t i = 0; i < dataLen; i++) {
-        dataInput[i] = fdp.ConsumeIntegral<uint8_t>();
-    }
-    uint8_t *dataInputPtr = dataInput;
-    std::string address = fdp.ConsumeRandomLengthString();
-    BluetoothRemoteDevice device(address, 1);
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.gattClient_ = std::make_shared<GattClient>(device);
-    bleSendManager.MechbodyGattcWriteCharacteristic(dataInputPtr, dataLen);
-    bleSendManager.MechbodyGattcWriteCharacteristic(nullptr, dataLen);
-}
-
-void SendDataFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    uint32_t dataLen = fdp.ConsumeIntegral<uint8_t>();
-    uint8_t dataInput[dataLen];
-    for (uint32_t i = 0; i < dataLen; i++) {
-        dataInput[i] = fdp.ConsumeIntegral<uint8_t>();
-    }
-    uint8_t *dataInputPtr = dataInput;
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.SendData(dataInputPtr, dataLen);
-    bleSendManager.SendData(nullptr, dataLen);
-}
-
-void OnScanCallbackBleCentralManagerCallbackImplFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    BleScanResult result;
-    FuzzedDataProvider fdp(data, size);
-    std::string name = fdp.ConsumeRandomLengthString();
-    result.name_ = name;
-
-    std::shared_ptr<BleCentralManagerCallbackImpl> bleCentralManagerCallback =
-        std::make_shared<BleCentralManagerCallbackImpl>();
-    bleCentralManagerCallback->OnScanCallback(result);
-}
-
-void OnGattDisconnectFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    MechInfo mechInfo;
-    FuzzedDataProvider fdp(data, size);
-    std::string macHash = fdp.ConsumeRandomLengthString();
-    std::string mechName = fdp.ConsumeRandomLengthString();
-    mechInfo.mechName = mechName;
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.OnGattDisconnect(mechInfo);
-}
 }
 
 /* Fuzzer entry point */
@@ -312,14 +160,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnSetNotifyCharacteristicFuzzTest(data, size);
     OHOS::OnCharacteristicChangedFuzzTest(data, size);
     OHOS::OnCharacteristicWriteResultFuzzTest(data, size);
-    OHOS::OnReceiveFuzzTest(data, size);
-    OHOS::OnGattReadyFuzzTest(data, size);
-    OHOS::OnScanCallbackFuzzTest(data, size);
-    OHOS::MechbodyGattcConnectFuzzTest(data, size);
-    OHOS::MechbodyGattcDisconnectFuzzTest(data, size);
-    OHOS::MechbodyGattcWriteCharacteristicFuzzTest(data, size);
-    OHOS::SendDataFuzzTest(data, size);
-    OHOS::OnScanCallbackBleCentralManagerCallbackImplFuzzTest(data, size);
-    OHOS::OnGattDisconnectFuzzTest(data, size);
     return 0;
 }
