@@ -17,12 +17,12 @@ import("//build/test.gni")
 import(
     "//foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
-ohos_fuzztest("MechBodyControllerStubFuzzTest") {
+ohos_fuzztest("MechBodyControllerStubFiveFuzzTest") {
   module_out_path = "mechbody_controller/"
   mechbody_path =
       "//foundation/distributedhardware/mechbody_controller"
   fuzz_config_file =
-      "${mechbody_path}/test/fuzztest/mechbodycontrollerstub_fuzzer"
+      "${mechbody_path}/test/fuzztest/mechbodycontrollerstubfive_fuzzer"
   include_dirs = [
     "${mechbody_path}/services/include",
     "${mechbody_path}/services/include/connect",
@@ -40,7 +40,7 @@ ohos_fuzztest("MechBodyControllerStubFuzzTest") {
   ]
   sources = [
     "${mechbody_path}/services/src/mechbody_controller_stub.cpp",
-    "${mechbody_path}/test/fuzztest/mechbodycontrollerstub_fuzzer/mechbodycontrollerstub_fuzzer.cpp",
+    "${mechbody_path}/test/fuzztest/mechbodycontrollerstubfive_fuzzer/mechbodycontrollerstubfive_fuzzer.cpp",
   ]
 
   deps = [ "${mechbody_path}/services:mechbody_service" ]
@@ -73,5 +73,5 @@ ohos_fuzztest("MechBodyControllerStubFuzzTest") {
 
 group("fuzztest") {
   testonly = true
-  deps = [ ":MechBodyControllerStubFuzzTest" ]
+  deps = [ ":MechBodyControllerStubFiveFuzzTest" ]
 }

@@ -18,7 +18,11 @@ group("fuzztest") {
   deps = [
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanager_fuzzer:BleSendManagerFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservice_fuzzer:MechBodyControllerServiceFuzzTest",
-    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstub_fuzzer:MechBodyControllerStubFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubone_fuzzer:MechBodyControllerStubOneFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubtwo_fuzzer:MechBodyControllerStubTwoFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubthree_fuzzer:MechBodyControllerStubThreeFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubfour_fuzzer:MechBodyControllerStubFourFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubfive_fuzzer:MechBodyControllerStubFiveFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerutils_fuzzer:MechBodyControllerUtilsFuzzTest",
   ]
 }
