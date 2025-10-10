@@ -24,8 +24,11 @@ group("fuzztest") {
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicethree_fuzzer:MechBodyControllerServiceThreeFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicefour_fuzzer:MechBodyControllerServiceFourFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicefive_fuzzer:MechBodyControllerServiceFiveFuzzTest",
-    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicethree_fuzzer:MechBodyControllerServiceThreeFuzzTest",
-    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstub_fuzzer:MechBodyControllerStubFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubone_fuzzer:MechBodyControllerStubOneFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubtwo_fuzzer:MechBodyControllerStubTwoFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubthree_fuzzer:MechBodyControllerStubThreeFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubfour_fuzzer:MechBodyControllerStubFourFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubfive_fuzzer:MechBodyControllerStubFiveFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerutils_fuzzer:MechBodyControllerUtilsFuzzTest",
   ]
 }

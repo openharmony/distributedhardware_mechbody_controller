@@ -1116,7 +1116,7 @@ void MotionManager::UpdateTrackingTime()
 
 int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<TrackingFrameParams> trackingFrameParams)
 {
-    HILOGI("SetCameraTrackingEnabled start.");
+    HILOGI("SetMechCameraTrackingFrame start.");
     if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
@@ -1126,17 +1126,19 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     auto cameraTrackingFrameCallback = [this]() {
     };
 
-    if (deviceStatus_->isEnabled) {
-        HILOGI("Start tracking.");
-        UpdateTrackingTime();
-
-        std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory
-                .CreateSetMechCameraTrackingFrameCmd(*trackingFrameParams);
-        CHECK_POINTER_RETURN_VALUE(cameraTrackingFrameCmd, INVALID_PARAMETERS_ERR, "CameraTrackingFrameCmd is empty.");
-        cameraTrackingFrameCmd->SetResponseCallback(cameraTrackingFrameCallback);
-        cameraTrackingFrameCmd->SetTimeoutCallback(SetTimeout);
-        sendAdapter_->SendCommand(cameraTrackingFrameCmd);
+    if (!deviceStatus_->isEnabled) {
+        HILOGE("device tracking is not enabled");
+        return ERR_OK;
     }
+    HILOGI("Start tracking.");
+    UpdateTrackingTime();
+
+    std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory
+            .CreateSetMechCameraTrackingFrameCmd(*trackingFrameParams);
+    CHECK_POINTER_RETURN_VALUE(cameraTrackingFrameCmd, INVALID_PARAMETERS_ERR, "CameraTrackingFrameCmd is empty.");
+    cameraTrackingFrameCmd->SetResponseCallback(cameraTrackingFrameCallback);
+    cameraTrackingFrameCmd->SetTimeoutCallback(SetTimeout);
+    sendAdapter_->SendCommand(cameraTrackingFrameCmd);
     return ERR_OK;
 }
 
@@ -1160,8 +1162,15 @@ int32_t MotionManager::SetMechCameraTrackingEnabled(bool &isEnabled)
             return ERR_OK;
         }
         deviceStatus_->isEnabled = isEnabled;
+        deviceStatus_->trackingStatus =
+            isEnabled ? MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET : MechTrackingStatus::MECH_TK_DISABLE;
+        std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd =
+            factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
+        sendAdapter_->SendCommand(tkCmd);
         HILOGI("device Status is enable: %{public}s", deviceStatus_->isEnabled ? "true" : "false");
     }
+    McControllerManager::GetInstance().OnTrackingEvent(mechId_,
+        isEnabled ? TrackingEvent::CAMERA_TRACKING_USER_ENABLED : TrackingEvent::CAMERA_TRACKING_USER_DISABLED);
     return ERR_OK;
 }
 
@@ -1380,6 +1389,21 @@ void MotionManager::LimitCalculationLocked(EulerAngles& position, RotationAxesSt
     if (callback && deviceStatus_->rotationAxesStatus != status) {
         deviceStatus_->rotationAxesStatus = status;
     }
+}
+
+int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &actionControlParams)
+{
+    HILOGI("ActionGimbalFeatureControl start.");
+    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+        HILOGE("Access is not allowed if the phone is not placed on mech.");
+        return DEVICE_NOT_PLACED_ON_MECH;
+    }
+
+    std::shared_ptr<CommandBase> actionControlCmd = factory.CreateActionGimbalFeatureControlCmd(actionControlParams);
+    CHECK_POINTER_RETURN_VALUE(actionControlCmd, INVALID_PARAMETERS_ERR, "actionControlCmd is empty.");
+    sendAdapter_->SendCommand(actionControlCmd);
+    HILOGI("ActionGimbalFeatureControl end.");
+    return ERR_OK;
 }
 
 MechEventListenerImpl::MechEventListenerImpl(std::shared_ptr<MotionManager> motionManager)

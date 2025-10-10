@@ -114,7 +114,7 @@ private:
     static napi_value CreateRotationAxesStatus(napi_env env, const RotationAxesStatus &status);
 
     static bool GetSearchTargetParam(napi_env env, napi_callback_info info,
-        CallbackFunctionInfo &callbackFunctionInfo, TargetInfo &targetInfo, SearchParams &searchParams);
+        TargetInfo &targetInfo, SearchParams &searchParams);
 
     static bool IsSystemApp();
 

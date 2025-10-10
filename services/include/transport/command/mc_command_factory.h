@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <vector>
+#include "mc_action_gimbal_feature_control_cmd.h"
 #include "mc_command_base.h"
 #include "mc_data_buffer.h"
 #include "mc_get_mech_camera_tracking_layout_cmd.h"
@@ -72,6 +73,9 @@ public:
     std::shared_ptr<RegisterMechTrackingEnableCmd> CreateRegisterMechTrackingEnableCmd();
 
     std::shared_ptr<CommandBase> CreateFromData(std::shared_ptr<MechDataBuffer> data);
+    std::shared_ptr<ActionGimbalFeatureControlCmd> CreateActionGimbalFeatureControlCmd(
+        const ActionControlParams& params);
+
 private:
     template<typename CmdT>
     std::shared_ptr<CommandBase> CreateAndUnmarshal(std::shared_ptr<MechDataBuffer> data)
