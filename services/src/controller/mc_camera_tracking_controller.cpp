@@ -897,35 +897,11 @@ void McCameraTrackingController::ConvertObjectType(CameraStandard::MetadataObjec
     uint8_t &mechObjectType)
 {
     switch (cameraObjectType) {
-        case CameraStandard::MetadataObjectType::INVALID :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
-            break;
         case CameraStandard::MetadataObjectType::FACE :
             mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
             break;
         case CameraStandard::MetadataObjectType::HUMAN_BODY :
             mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
-            break;
-        case CameraStandard::MetadataObjectType::CAT_FACE :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
-            break;
-        case CameraStandard::MetadataObjectType::CAT_BODY :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
-            break;
-        case CameraStandard::MetadataObjectType::DOG_FACE :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
-            break;
-        case CameraStandard::MetadataObjectType::DOG_BODY :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
-            break;
-        case CameraStandard::MetadataObjectType::SALIENT_DETECTION :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
-            break;
-        case CameraStandard::MetadataObjectType::BAR_CODE_DETECTION :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
-            break;
-        case CameraStandard::MetadataObjectType::BASE_FACE_DETECTION :
-            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
             break;
         default:
             mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
