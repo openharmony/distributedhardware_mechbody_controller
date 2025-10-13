@@ -14,12 +14,8 @@
  */
 
 #include "mc_subcription_center_test.h"
-#define private public
-#define protected public
 #include "mc_motion_manager.h"
 #include "mc_command_factory.h"
-#undef private
-#undef protected
 
 #include "../test_log.h"
 

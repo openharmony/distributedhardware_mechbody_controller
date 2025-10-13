@@ -136,7 +136,7 @@ HWTEST_F(McCameraTrackingControllerTest, UpdateROI_001, TestSize.Level1)
 
     McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
     std::shared_ptr<TrackingFrameParams> trackingFrameParams = std::make_shared<TrackingFrameParams>();
-    std::shared_ptr<TrackingFrameParams> trackingFrameParamsNull = nullptr; 
+    std::shared_ptr<TrackingFrameParams> trackingFrameParamsNull = nullptr;
     CameraStandard::Rect rect;
     mcCameraTrackingController.currentCameraInfo_->cameraType = CameraType::FRONT;
     mcCameraTrackingController.sensorRotation_ = MobileRotation::UP;

@@ -59,11 +59,16 @@ mech_external_deps = [
 mech_public_deps = [ "${mechbody_path}/services:mechbody_service" ]
 
 ohos_unittest("mc_montion_manager_test") {
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
   visibility = [ ":*" ]
 
   module_out_path = mechbody_module_output_path
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -84,12 +89,16 @@ ohos_unittest("mc_montion_manager_test") {
 }
 
 ohos_unittest("mc_transport_command_test") {
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
   visibility = [ ":*" ]
 
   module_out_path = mechbody_module_output_path
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -117,9 +126,13 @@ ohos_unittest("ble_send_manager_test") {
 
   module_out_path = mechbody_module_output_path
 
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -144,9 +157,13 @@ ohos_unittest("connect_manager_test") {
 
   module_out_path = mechbody_module_output_path
 
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -174,9 +191,13 @@ ohos_unittest("mc_send_manager_test") {
 
   module_out_path = mechbody_module_output_path
 
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -201,9 +222,13 @@ ohos_unittest("mc_subcription_center_test") {
 
   module_out_path = mechbody_module_output_path
 
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -224,12 +249,16 @@ ohos_unittest("mc_subcription_center_test") {
 }
 
 ohos_unittest("mc_command_test") {
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
   visibility = [ ":*" ]
 
   module_out_path = mechbody_module_output_path
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -254,9 +283,13 @@ ohos_unittest("mechbody_controller_stub_test") {
 
   module_out_path = mechbody_module_output_path
 
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -281,9 +314,13 @@ ohos_unittest("mechbody_controller_service_test") {
 
   module_out_path = mechbody_module_output_path
 
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -308,9 +345,13 @@ ohos_unittest("mc_camera_tracking_controller_test") {
 
   module_out_path = mechbody_module_output_path
 
-  cflags = [ "-Dprivate=public" ]
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   sanitize = {
+    blocklist = "./cfi_blocklist.txt"
     cfi = true
     cfi_cross_dso = true
     debug = false

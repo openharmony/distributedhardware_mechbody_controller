@@ -40,7 +40,7 @@ int32_t MechClient::AttachStateChangeListenOn(sptr<JsMechManagerStub> callback)
         if (samgrProxy == nullptr) {
             return MECH_GET_SAMGR_EXCEPTION;
         }
-        if(systemAbilityStatusChangeListener_ == nullptr){
+        if (systemAbilityStatusChangeListener_ == nullptr) {
             systemAbilityStatusChangeListener_ = new SystemAbilityStatusChangeListener();
             int32_t ret = samgrProxy->SubscribeSystemAbility(MECH_SERVICE_SA_ID, systemAbilityStatusChangeListener_);
             if (ret != ERR_OK) {
@@ -61,8 +61,8 @@ int32_t MechClient::AttachStateChangeListenOn(sptr<JsMechManagerStub> callback)
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -82,8 +82,8 @@ int32_t MechClient::AttachStateChangeListenOff()
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_OFF),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_OFF),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -103,8 +103,8 @@ int32_t MechClient::GetAttachedDevices(std::vector<std::shared_ptr<MechInfo>> &a
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_ATTACHED_DEVICES),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_ATTACHED_DEVICES),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -145,7 +145,7 @@ int32_t MechClient::SetUserOperation(
     }
     {
         std::lock_guard<std::mutex> lock(systemAbilityStatusChangeListenerMutex_);
-        if(systemAbilityStatusChangeListener_ == nullptr){
+        if (systemAbilityStatusChangeListener_ == nullptr) {
             systemAbilityStatusChangeListener_ = new SystemAbilityStatusChangeListener();
             int32_t ret = samgrProxy->SubscribeSystemAbility(MECH_SERVICE_SA_ID, systemAbilityStatusChangeListener_);
             if (ret != ERR_OK) {
@@ -207,8 +207,8 @@ int32_t MechClient::SetCameraTrackingEnabled(const bool &isEnabled)
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::SET_CAMERA_TRACKING_ENABLED),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::SET_CAMERA_TRACKING_ENABLED),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -230,8 +230,8 @@ int32_t MechClient::GetCameraTrackingEnabled(bool &isEnabled)
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_CAMERA_TRACKING_ENABLED),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_CAMERA_TRACKING_ENABLED),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -260,8 +260,8 @@ int32_t MechClient::TrackingEventListenOn(sptr<JsMechManagerStub> callback)
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::TRACKING_EVENT_LISTEN_ON),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::TRACKING_EVENT_LISTEN_ON),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -282,8 +282,8 @@ int32_t MechClient::TrackingEventListenOff()
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::TRACKING_EVENT_LISTEN_OFF),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::TRACKING_EVENT_LISTEN_OFF),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -307,8 +307,8 @@ int32_t MechClient::SetCameraTrackingLayout(CameraTrackingLayout &cameraTracking
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::SET_CAMERA_TRACKING_LAYOUT),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::SET_CAMERA_TRACKING_LAYOUT),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -329,8 +329,8 @@ int32_t MechClient::GetCameraTrackingLayout(CameraTrackingLayout &cameraTracking
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_CAMERA_TRACKING_LAYOUT),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_CAMERA_TRACKING_LAYOUT),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -359,8 +359,8 @@ int32_t MechClient::RegisterCmdChannel(sptr<JsMechManagerStub> stub)
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::REGISTER_CMD_CHANNEL),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::REGISTER_CMD_CHANNEL),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -392,8 +392,8 @@ int32_t MechClient::Rotate(const int32_t &mechId, const std::string &cmdId,
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ROTATE_BY_DEGREE),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ROTATE_BY_DEGREE),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -423,8 +423,8 @@ int32_t MechClient::RotateToEulerAngles(const int32_t &mechId, const std::string
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ROTATE_TO_EULER_ANGLES),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ROTATE_TO_EULER_ANGLES),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -447,8 +447,8 @@ int32_t MechClient::GetMaxRotationTime(const int32_t &mechId, TimeLimit &timeLim
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_MAX_ROTATION_TIME),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_MAX_ROTATION_TIME),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -477,8 +477,8 @@ int32_t MechClient::GetMaxRotationSpeed(const int32_t &mechId, RotateSpeedLimit 
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_MAX_ROTATION_SPEED),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_MAX_ROTATION_SPEED),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -490,7 +490,7 @@ int32_t MechClient::GetMaxRotationSpeed(const int32_t &mechId, RotateSpeedLimit 
             return result;
         }
         rotateSpeedLimit = *speedLimit;
-    }
+}
     return result;
 }
 
@@ -517,8 +517,8 @@ int32_t MechClient::RotateBySpeed(const int32_t &mechId, const std::string &cmdI
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ROTATE_BY_SPEED),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ROTATE_BY_SPEED),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -545,8 +545,8 @@ int32_t MechClient::StopMoving(const int32_t &mechId, const std::string &cmdId)
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::STOP_MOVING),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::STOP_MOVING),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -569,8 +569,8 @@ int32_t MechClient::GetRotationAngles(const int32_t &mechId, EulerAngles &eulerA
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_ROTATION_ANGLES),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_ROTATION_ANGLES),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -602,8 +602,8 @@ int32_t MechClient::GetRotationDegreeLimits(const int32_t &mechId, RotateDegreeL
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_ROTATION_DEGREE_LIMITS),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_ROTATION_DEGREE_LIMITS),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -635,8 +635,8 @@ int32_t MechClient::GetRotationAxesStatus(const int32_t &mechId, RotationAxesSta
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::GET_ROTATION_AXES_STATUS),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::GET_ROTATION_AXES_STATUS),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -669,8 +669,8 @@ int32_t MechClient::RotationAxesStatusChangeListenOn(sptr<JsMechManagerStub> cal
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_LISTEN_ON),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_LISTEN_ON),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -691,8 +691,8 @@ int32_t MechClient::RotationAxesStatusChangeListenOff()
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_LISTEN_OFF),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_LISTEN_OFF),
+        data, reply, option);
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
@@ -776,8 +776,8 @@ void SystemAbilityStatusChangeListener::OnAddSystemAbility(int32_t systemAbility
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
-            static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON),
-            data, reply, option);
+        static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON),
+        data, reply, option);
     if (error != ERR_NONE) {
         return;
     }
@@ -795,7 +795,8 @@ void SystemAbilityStatusChangeListener::OnRemoveSystemAbility(int32_t systemAbil
     HILOGI("MechService SA:%{public}d removed", systemAbilityId);
 }
 
-void SystemAbilityStatusChangeListener::SetCallback(const sptr <JsMechManagerStub> &callback) {
+void SystemAbilityStatusChangeListener::SetCallback(const sptr <JsMechManagerStub> &callback)
+{
     callback_ = callback;
 }
 
@@ -813,7 +814,7 @@ void MechBodyServiceLoadCallback::OnLoadSystemAbilitySuccess(int32_t systemAbili
         return;
     }
     std::shared_ptr<MechClient> mechClient = client.lock();
-    if(mechClient == nullptr){
+    if (mechClient == nullptr) {
         return;
     }
     mechClient->SendUserOperation(operation, mac, param);
@@ -827,7 +828,7 @@ void MechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbilityI
         return;
     }
     std::shared_ptr<MechClient> mechClient = client.lock();
-    if(mechClient == nullptr){
+    if (mechClient == nullptr) {
         return;
     }
 }

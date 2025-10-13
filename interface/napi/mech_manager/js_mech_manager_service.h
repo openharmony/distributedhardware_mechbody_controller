@@ -45,7 +45,8 @@ struct CallbackFunctionInfo {
     napi_env env;
     napi_ref callbackRef;
 
-    bool operator<(const CallbackFunctionInfo &other) const {
+    bool operator<(const CallbackFunctionInfo &other) const
+    {
         napi_value storedCallback;
         napi_get_reference_value(env, callbackRef, &storedCallback);
 

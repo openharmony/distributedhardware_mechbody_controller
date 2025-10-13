@@ -137,27 +137,22 @@ private:
     class AttachStateChangeStubDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
-
     };
 
     class TrackingEventStubDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
-
     };
 
     class RotationAxesStatusChangeStubDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
-
     };
 
     class CmdChannelDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
-
     };
-
 };
 
 napi_value Init(napi_env env, napi_value exports);

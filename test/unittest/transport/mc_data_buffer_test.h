@@ -18,11 +18,7 @@
 
 #include "gtest/gtest.h"
 
-#define private public
-#define protected public
 #include "mc_data_buffer.h"
-#undef private
-#undef protected
 
 namespace OHOS {
 namespace MechBodyController {
