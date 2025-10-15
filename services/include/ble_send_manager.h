@@ -241,6 +241,8 @@ private:
     std::condition_variable gattDisconnCv_;
     std::mutex hidDisconnMutex_;
     std::condition_variable hidDisconnCv_;
+    std::mutex initMutex_;
+    std::condition_variable initCv_;
 };
 
 class BleCentralManagerCallbackImpl : public Bluetooth::BleCentralManagerCallback {

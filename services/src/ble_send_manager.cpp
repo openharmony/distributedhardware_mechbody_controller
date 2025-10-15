@@ -55,6 +55,7 @@ constexpr int32_t ERROR_SIZE_TOO_LARGE = -10004;
 constexpr int32_t MECHBODY_GATT_CONNECT_FAILED = -10005;
 static constexpr int32_t BLUETOOTH_SERVICE_SERVICE_SA_ID = 1130;
 constexpr int32_t CONNECT_TIMEOUT_SECOND = 10;
+constexpr int32_t INIT_TIMEOUT_SECOND = 3;
 
 UUID SERVICE_UUID = UUID::FromString("15f1e600-a277-43fc-a484-dd39ef8a9100"); // GATT Service uuid
 UUID MECHBODY_CHARACTERISTIC_WRITE_UUID = UUID::FromString("15f1e602-a277-43fc-a484-dd39ef8a9100"); // write uuid
@@ -222,6 +223,8 @@ void BleSendManager::Init()
         }
         HILOGE("SubscribeSystemAbility success, ret:%d", ret);
     }
+    std::unique_lock<std::mutex> lock(initMutex_);
+    initCv_.notify_all();
 }
 
 void BleSendManager::CleanOldAssetsForMechbodyStart()
@@ -582,14 +585,21 @@ int32_t BleSendManager::MechbodyConnect(std::string mac, std::string deviceName)
             }
             int32_t pairRet = MechbodyPair(mechInfo.mac, mechInfo.mechName);
             int32_t hidRet = MechbodyHidConnect(mechInfo.mac, mechInfo.mechName);
-                HILOGE("MECHBODY_EXEC_CONNECT pair result: %{public}d; hid result: %{public}d", pairRet, hidRet);
+            HILOGE("MECHBODY_EXEC_CONNECT pair result: %{public}d; hid result: %{public}d", pairRet, hidRet);
         } while (false);
         HILOGI("MECHBODY_EXEC_CONNECT async connect end, mech info for: %{public}s", mechInfo.ToString().c_str());
     };
 
-    if (eventHandler_ != nullptr) {
-        eventHandler_->PostTask(connFunc);
+    if (eventHandler_ == nullptr) {
+        HILOGI("MECHBODY_EXEC_CONNECT eventHandler_ is nullptr.");
+        std::unique_lock<std::mutex> lock(initMutex_);
+        if (!initCv_.wait_for(lock, std::chrono::seconds(INIT_TIMEOUT_SECOND),
+            [this]() { return eventHandler_ != nullptr; })) {
+            HILOGE("MECHBODY_EXEC_CONNECT wait for blemanager init timeout.");
+            return MECH_CONNECT_FAILED;
+        }
     }
+    eventHandler_->PostTask(connFunc);
     HILOGI("MECHBODY_EXEC_CONNECT end");
     return ERR_OK;
 }
