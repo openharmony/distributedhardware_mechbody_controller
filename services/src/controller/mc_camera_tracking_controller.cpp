@@ -159,7 +159,6 @@ int32_t McCameraTrackingController::OnCaptureSessionConfiged(
             SetTrackingEnabled(currentCameraInfo_->tokenId,
                 appSettings[currentCameraInfo_->tokenId]->isTrackingEnabled);
         }
-        SetTrackingLayout(currentCameraInfo_->currentCameraTrackingLayout);
         UpdateActionControl();
     }
     HILOGI("end");
@@ -181,7 +180,6 @@ int32_t McCameraTrackingController::OnZoomInfoChange(int32_t sessionid, const Ca
     }
     if (currentCameraInfo_->tokenId != 0 && ComputeFov() == ERR_OK) {
         UpdateMotionManagers();
-        SetTrackingLayout(currentCameraInfo_->currentCameraTrackingLayout);
         UpdateActionControl();
     }
     HILOGI("end");
@@ -257,7 +255,6 @@ int32_t McCameraTrackingController::OnSessionStatusChange(int32_t sessionid, boo
         return CAMERA_INFO_IS_EMPTY;
     }
     currentCameraInfo_->isCameraOn = status;
-    SetTrackingLayout(currentCameraInfo_->currentCameraTrackingLayout);
     UpdateActionControl();
     HILOGI("end");
     return ERR_OK;
@@ -372,12 +369,20 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
         UpdateROI(trackingFrameParams, targetRect);
     }
 
+    uint64_t lastTrackingTargetNum = currentCameraInfo_->trackingTargetNum;
     currentCameraInfo_->trackingTargetNum = detectedObjects.size();
     if (currentCameraInfo_->searchingTarget && currentCameraInfo_->trackingTargetNum > 0) {
         HILOGE("Stop searching, camera info: %{public}s", currentCameraInfo_->ToString().c_str());
         eventHandler_->PostTask([this]() {
                 SearchTargetStop();
             }, SEARCH_TARGET_TASK_NAME);
+    }
+    uint64_t currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
+            .time_since_epoch().count();
+    if ((lastTrackingTargetNum == 0 && currentCameraInfo_->trackingTargetNum > 0) ||
+        (currentTime - lastTrackingFrame_->timeStamp >= TRACKING_PARAM_LOST_DELAY &&
+         currentCameraInfo_->trackingTargetNum > 0)) {
+        UpdateActionControl();
     }
     lastTrackingFrame_ = trackingFrameParams;
     lastTrackingFrame_->timeStamp =
@@ -704,7 +709,7 @@ int32_t McCameraTrackingController::SetTrackingLayout(const uint32_t &tokenId,
     CameraTrackingLayout &cameraTrackingLayout)
 {
     HILOGI("tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
-    SetTrackingLayout(cameraTrackingLayout);
+    currentCameraInfo_->currentCameraTrackingLayout = cameraTrackingLayout;
     return ERR_OK;
 }
 
@@ -854,7 +859,6 @@ void McCameraTrackingController::SensorCallback(SensorEvent* event)
             HILOGE("currentCameraInfo is nullptr;");
             return;
         }
-        McCameraTrackingController::GetInstance().SetTrackingLayout(currentCameraInfo->currentCameraTrackingLayout);
         if (currentCameraInfo->tokenId != 0 &&
             McCameraTrackingController::GetInstance().ComputeFov() == ERR_OK) {
             McCameraTrackingController::GetInstance().UpdateMotionManagers();
