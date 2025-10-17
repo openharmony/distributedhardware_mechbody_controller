@@ -860,11 +860,12 @@ int32_t MotionManager::RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateS
         HILOGI("Rotate By Speed callback. limit info: %{public}s", limitInfo.ToString().c_str());
         if (limitInfo.IsChange(this->deviceStatus_->rotationAxesStatus)) {
             HILOGI("Rotate By Speed callback. Notify limited");
-            MechBodyControllerService::GetInstance().OnRotationAxesStatusChange(this->mechId_, limitInfo);
             std::unique_lock <std::mutex> lock(deviceStatusMutex_);
             this->deviceStatus_->rotationAxesStatus.yawLimited = limitInfo.yawLimited;
             this->deviceStatus_->rotationAxesStatus.rollLimited = limitInfo.rollLimited;
             this->deviceStatus_->rotationAxesStatus.pitchLimited = limitInfo.pitchLimited;
+            MechBodyControllerService::GetInstance().OnRotationAxesStatusChange(this->mechId_,
+                this->deviceStatus_->rotationAxesStatus);
         }
     };
     rotationBySpeedCmd->SetResponseCallback(rotateBySpeedCallback);
