@@ -45,6 +45,7 @@ public:
     int32_t ReadUint64(size_t offset, uint64_t& outValue);
     int32_t ReadFloat(size_t offset, float& outValue);
     int32_t ReadInt16(size_t offset, int16_t& outValue);
+    int32_t ReadString(size_t offset, char *outValue, size_t length);
 
 private:
     static const uint32_t MECH_MAX_BUFFER_SIZE = 80 * 1024 * 1024;

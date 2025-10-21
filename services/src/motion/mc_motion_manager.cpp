@@ -441,6 +441,8 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     deviceStatus_->rotateSpeedLimit.speedMax.rollSpeed = DEGREE_CIRCLED_MIN;
     deviceStatus_->rotateSpeedLimit.speedMax.pitchSpeed = DEGREE_CIRCLED_MIN;
 
+    GetMechRealName();
+
     std::shared_ptr<GetMechCapabilityInfoCmd> limitCmd = factory
             .CreateGetMechCapabilityInfoCmd();
     CHECK_POINTER_RETURN(limitCmd, "CapabilityInfoCmd is empty.");
@@ -518,6 +520,23 @@ void MotionManager::ProcessTrackingStatus()
     if (sendAdapter_ != nullptr) {
         sendAdapter_->SendCommand(tkCmd);
     }
+}
+
+void MotionManager::GetMechRealName()
+{
+    HILOGI("start");
+    std::shared_ptr<GetMechRealNameCmd> realNameCmd = factory.CreateGetMechRealNameCmd();
+    CHECK_POINTER_RETURN(realNameCmd, "RealNameCmd is empty.");
+    auto nameCallback = [this, realNameCmd]() {
+        deviceRealName_ = realNameCmd->GetParams();
+        HILOGI("device callback real name: %{public}s", GetAnonymStr(deviceRealName_).c_str());
+    };
+
+    realNameCmd->SetResponseCallback(nameCallback);
+    realNameCmd->SetTimeoutCallback(SetTimeout);
+    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    sendAdapter_->SendCommand(realNameCmd);
+    HILOGI("end");
 }
 
 void MotionManager::FormatLimit(RotateDegreeLimit &params)
@@ -1405,6 +1424,11 @@ int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &act
     sendAdapter_->SendCommand(actionControlCmd);
     HILOGI("ActionGimbalFeatureControl end.");
     return ERR_OK;
+}
+
+const std::string &MotionManager::GetDeviceRealName() const
+{
+    return deviceRealName_;
 }
 
 MechEventListenerImpl::MechEventListenerImpl(std::shared_ptr<MotionManager> motionManager)

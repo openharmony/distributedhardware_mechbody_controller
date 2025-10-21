@@ -23,6 +23,7 @@
 #include "mc_data_buffer.h"
 #include "mc_get_mech_camera_tracking_layout_cmd.h"
 #include "mc_get_mech_capability_info_cmd.h"
+#include "mc_get_mech_real_name_cmd.h"
 #include "mc_register_mech_camera_key_event_cmd.h"
 #include "mc_register_mech_control_result_cmd.h"
 #include "mc_register_mech_position_info_cmd.h"
@@ -47,6 +48,7 @@ class CommandFactory {
 public:
     std::shared_ptr<GetMechCameraTrackingLayoutCmd> CreateGetMechCameraTrackingLayoutCmd();
     std::shared_ptr<GetMechCapabilityInfoCmd> CreateGetMechCapabilityInfoCmd();
+    std::shared_ptr<GetMechRealNameCmd> CreateGetMechRealNameCmd();
     std::shared_ptr<SetMechCameraInfoCmd> CreateSetMechCameraInfoCmd(
         const CameraInfoParams& params);
     std::shared_ptr<SetMechCameraTrackingEnableCmd> CreateSetMechCameraTrackingEnableCmd(

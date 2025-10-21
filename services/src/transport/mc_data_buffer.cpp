@@ -214,5 +214,16 @@ int32_t MechDataBuffer::ReadInt16(size_t offset, int16_t& outValue)
     }
     return ERR_OK;
 }
+
+int32_t MechDataBuffer::ReadString(size_t offset, char *outValue, size_t length)
+{
+    if (data_ == nullptr || rangeOffset_ + offset + length > rangeLength_) {
+        return INVALID_PARAMETERS_ERR;
+    }
+    if (memcpy_s(outValue, length, Data() + offset, length) != 0) {
+        return INVALID_PARAMETERS_ERR;
+    }
+    return ERR_OK;
+}
 }  // namespace MechBodyController
 }  // namespace OHOS

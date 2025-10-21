@@ -102,6 +102,7 @@ public:
     void MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd);
     void UnRegisterNotifyEvent();
     int32_t ActionGimbalFeatureControl(const ActionControlParams &actionControlParams);
+    const std::string &GetDeviceRealName() const;
 
 private:
     void MMIKeyEvent(CameraKeyEvent eventType);
@@ -129,6 +130,7 @@ private:
         float yawResult);
     void TrackingChecker();
     void ProcessTrackingStatus();
+    void GetMechRealName();
     void UpdateTrackingTime();
 
 private:
@@ -161,6 +163,8 @@ private:
     std::chrono::steady_clock::time_point lastTrackingFrameTime_;
     std::unique_ptr<std::thread> trackingCheckerThread_;
     std::atomic<bool> startTrackingChecker_;
+
+    std::string deviceRealName_;
 };
 
 class MechEventListenerImpl : public IMechEventListener {

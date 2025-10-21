@@ -194,6 +194,9 @@ public:
     void SetBluetoothServiceStoped(bool status);
     bool HasBluetoothServiceStoped();
 
+    void GetRealName(MechInfo &mechInfo);
+    void NotifyGetRealName();
+
 public:
     bool isGattReady_ = false;
     std::mutex isGattReadyMtx_;
@@ -243,6 +246,8 @@ private:
     std::condition_variable hidDisconnCv_;
     std::mutex initMutex_;
     std::condition_variable initCv_;
+    std::mutex getRealNameMutex_;
+    std::condition_variable getRealNameCv_;
 };
 
 class BleCentralManagerCallbackImpl : public Bluetooth::BleCentralManagerCallback {
