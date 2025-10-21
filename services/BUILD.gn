@@ -48,6 +48,7 @@ ohos_shared_library("mechbody_service") {
     "src/transport/command/mc_command_factory.cpp",
     "src/transport/command/mc_get_mech_camera_tracking_layout_cmd.cpp",
     "src/transport/command/mc_get_mech_capability_info_cmd.cpp",
+    "src/transport/command/mc_get_mech_real_name_cmd.cpp",
     "src/transport/command/mc_register_mech_camera_key_event_cmd.cpp",
     "src/transport/command/mc_register_mech_control_result_cmd.cpp",
     "src/transport/command/mc_register_mech_position_info_cmd.cpp",

@@ -56,6 +56,7 @@ constexpr int32_t MECHBODY_GATT_CONNECT_FAILED = -10005;
 static constexpr int32_t BLUETOOTH_SERVICE_SERVICE_SA_ID = 1130;
 constexpr int32_t CONNECT_TIMEOUT_SECOND = 10;
 constexpr int32_t INIT_TIMEOUT_SECOND = 3;
+constexpr int32_t GET_REAL_NAME_TIMEOUT_SECOND = 2;
 
 UUID SERVICE_UUID = UUID::FromString("15f1e600-a277-43fc-a484-dd39ef8a9100"); // GATT Service uuid
 UUID MECHBODY_CHARACTERISTIC_WRITE_UUID = UUID::FromString("15f1e602-a277-43fc-a484-dd39ef8a9100"); // write uuid
@@ -370,6 +371,8 @@ void BleSendManager::OnPairStateChanged(int pairState, int cause, MechInfo &mech
         HILOGI("MECHBODY_EXEC_CONNECT Set Device Alias start.");
         Bluetooth::BluetoothRemoteDevice remoteDevice =
             Bluetooth::BluetoothRemoteDevice(mechInfo.mac, Bluetooth::BT_TRANSPORT_BLE);
+        GetRealName(mechInfo);
+        MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo);
         std::string showName = mechInfo.mechName + DEVICE_NAME_SUFFIX;
         int32_t res = remoteDevice.SetDeviceAlias(showName);
         HILOGI("MECHBODY_EXEC_CONNECT SetDeviceAlias end. result: %{public}d", res);
@@ -378,6 +381,35 @@ void BleSendManager::OnPairStateChanged(int pairState, int cause, MechInfo &mech
         MechConnectManager::GetInstance().SetMechanicPairState(mechInfo.mac, true);
         pairCv_.notify_all();
     }
+}
+
+void BleSendManager::GetRealName(MechInfo &mechInfo)
+{
+    std::unique_lock<std::mutex> lockRealName(getRealNameMutex_);
+    auto func = [mechInfo]() {
+        std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+        if (MechBodyControllerService::GetInstance().motionManagers_.find(mechInfo.mechId) !=
+            MechBodyControllerService::GetInstance().motionManagers_.end()) {
+            std::string deviceRealName =
+                    MechBodyControllerService::GetInstance().motionManagers_[mechInfo.mechId]->GetDeviceRealName();
+            if (!deviceRealName.empty()) {
+                MechConnectManager::GetInstance().SetRealMechName(mechInfo.mechId, deviceRealName);
+                return true;
+            }
+        }
+        return false;
+    };
+    if (!getRealNameCv_.wait_for(lockRealName, std::chrono::seconds(GET_REAL_NAME_TIMEOUT_SECOND), func)) {
+        HILOGE("MECHBODY_EXEC_CONNECT wait for get real name timeout");
+    }
+}
+
+void BleSendManager::NotifyGetRealName()
+{
+    HILOGI(" start");
+    std::unique_lock<std::mutex> lock(getRealNameMutex_);
+    getRealNameCv_.notify_all();
+    HILOGI(" end");
 }
 
 void BleSendManager::OnHidStateChanged(int hidState, int cause, MechInfo &mechInfo)

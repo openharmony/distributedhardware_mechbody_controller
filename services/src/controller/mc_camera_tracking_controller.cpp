@@ -158,6 +158,8 @@ int32_t McCameraTrackingController::OnCaptureSessionConfiged(
             HILOGI("The application settings trackingEnable is not empty.");
             SetTrackingEnabled(currentCameraInfo_->tokenId,
                 appSettings[currentCameraInfo_->tokenId]->isTrackingEnabled);
+        } else {
+            SetTrackingEnabled(currentCameraInfo_->tokenId, true);
         }
         UpdateActionControl();
     }
@@ -572,6 +574,13 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
     HILOGI("start notify tracking event, mechId: %{public}d; event: %{public}d", mechId,
            static_cast<int32_t>(event));
     std::lock_guard<std::mutex> lock(trackingEventCallbackMutex_);
+    if (event == TrackingEvent::CAMERA_TRACKING_USER_ENABLED) {
+        HILOGI("tracking is enable, init camera session and sensor");
+        Init();
+    } else {
+        HILOGI("tracking is enable, un init camera session and sensor");
+        UnInit();
+    }
     for (const auto &item: trackingEventCallback_) {
         uint32_t tokenId = item.first;
         int32_t isTrackingEnableNum = static_cast<int32_t>(event);
@@ -914,6 +923,11 @@ void McCameraTrackingController::ConvertObjectType(CameraStandard::MetadataObjec
 
 void McCameraTrackingController::RegisterTrackingListener()
 {
+    HILOGI("start");
+    if (pMechSession != nullptr) {
+        HILOGE("MechSession has registered.");
+        return;
+    }
     int userId = INVALID_USER_ID;
     ErrCode err = AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
     if (err != ERR_OK) {
@@ -934,22 +948,28 @@ void McCameraTrackingController::RegisterTrackingListener()
         pMechSession->EnableMechDelivery(true);
         std::shared_ptr<MechSessionCallbackImpl> mechSessionCallback = std::make_shared<MechSessionCallbackImpl>();
         pMechSession->SetCallback(mechSessionCallback);
-        return;
     }
+    HILOGI("end");
 }
 
 void McCameraTrackingController::UnRegisterTrackingListener()
 {
+    HILOGI("start");
     if (pMechSession == nullptr) {
         return;
     }
     pMechSession->EnableMechDelivery(false);
     pMechSession->Release();
     pMechSession = nullptr;
+    HILOGI("end");
 }
 
 void McCameraTrackingController::RegisterSensorListener()
 {
+    HILOGI("start");
+    if (user.callback != nullptr) {
+        return;
+    }
     user.callback = McCameraTrackingController::SensorCallback;
     int32_t subscribeRet = SubscribeSensor(SENSOR_TYPE_ID_GRAVITY, &user);
     HILOGI("RegisterSensorCallback, subscribeRet: %{public}d", subscribeRet);
@@ -957,11 +977,12 @@ void McCameraTrackingController::RegisterSensorListener()
     HILOGI("RegisterSensorCallback, setBatchRet: %{public}d", setBatchRet);
     int32_t activateRet = ActivateSensor(SENSOR_TYPE_ID_GRAVITY, &user);
     HILOGI("RegisterSensorCallback, activateRet: %{public}d", activateRet);
-    HILOGI("success");
+    HILOGI("end");
 }
 
 void McCameraTrackingController::UnRegisterSensorListener()
 {
+    HILOGI("start");
     if (user.callback == nullptr) {
         return;
     }
@@ -970,7 +991,7 @@ void McCameraTrackingController::UnRegisterSensorListener()
     int32_t subscribeRet = UnsubscribeSensor(SENSOR_TYPE_ID_GRAVITY, &user);
     HILOGI("UnRegisterSensorCallback, subscribeRet: %{public}d", subscribeRet);
     user.callback = nullptr;
-    HILOGI("success");
+    HILOGI("end");
 }
 
 void McCameraTrackingController::AdjustROI(ROI &roi, CameraStandard::Rect &rect, CameraType cameraType,

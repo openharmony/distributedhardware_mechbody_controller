@@ -34,6 +34,11 @@ std::shared_ptr<GetMechCapabilityInfoCmd> CommandFactory::CreateGetMechCapabilit
     return std::make_shared<GetMechCapabilityInfoCmd>();
 }
 
+std::shared_ptr<GetMechRealNameCmd> CommandFactory::CreateGetMechRealNameCmd()
+{
+    return std::make_shared<GetMechRealNameCmd>();
+}
+
 std::shared_ptr<SetMechCameraInfoCmd> CommandFactory::CreateSetMechCameraInfoCmd(
     const CameraInfoParams& params)
 {

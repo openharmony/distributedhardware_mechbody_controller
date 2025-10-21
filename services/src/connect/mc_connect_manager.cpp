@@ -292,6 +292,23 @@ int32_t MechConnectManager::GetMechInfo(std::string &mac, MechInfo &mechInfo)
     return MECH_INFO_NOT_FOUND;
 }
 
+void MechConnectManager::SetRealMechName(int32_t mechId, std::string &name)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    if (name.empty()) {
+        return;
+    }
+    auto it = std::find_if(mechInfos_.begin(), mechInfos_.end(),
+                           [mechId](const MechInfo &info) { return info.mechId == mechId; });
+    if (it != mechInfos_.end()) {
+        MechInfo newInfo = *it;
+        newInfo.mechName = name;
+        mechInfos_.erase(it);
+        mechInfos_.insert(newInfo);
+        HILOGI("set real name: %{public}s", newInfo.mechName.c_str());
+    }
+}
+
 int32_t MechConnectManager::SetMechanicGattState(std::string &mac, bool state)
 {
     std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
