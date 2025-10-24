@@ -375,6 +375,7 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     currentCameraInfo_->trackingTargetNum = detectedObjects.size();
     if (currentCameraInfo_->searchingTarget && currentCameraInfo_->trackingTargetNum > 0) {
         HILOGE("Stop searching, camera info: %{public}s", currentCameraInfo_->ToString().c_str());
+        SearchTargetRotateFinish(SEARCH_TARGET_TASK_NAME);
         eventHandler_->PostTask([this]() {
                 SearchTargetStop();
             }, SEARCH_TARGET_TASK_NAME);
