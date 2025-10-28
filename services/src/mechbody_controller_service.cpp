@@ -685,22 +685,25 @@ int32_t MechBodyControllerService::StopMoving(const int32_t &mechId, std::string
     }
     HILOGI("start, tokenId: %{public}s; mechId: %{public}d; cmdId: %{public}s",
         GetAnonymUint32(tokenId).c_str(), mechId, cmdId.c_str());
-
-    std::lock_guard<std::mutex> lock(motionManagersMutex);
-    if (motionManagers_.empty()) {
-        return DEVICE_NOT_CONNECTED;
+    McControllerManager::GetInstance().SearchTargetStop();
+    int32_t result = ERR_OK;
+    {
+        std::lock_guard<std::mutex> lock(motionManagersMutex);
+        if (motionManagers_.empty()) {
+            return DEVICE_NOT_CONNECTED;
+        }
+        auto it = motionManagers_.find(mechId);
+        if (it == motionManagers_.end()) {
+            return DEVICE_NOT_CONNECTED;
+        }
+        std::shared_ptr<MotionManager> motionManager = it->second;
+        if (motionManager == nullptr) {
+            HILOGE("motionManager not exist. tokenId: %{public}s; mechId: %{public}d",
+                   GetAnonymUint32(tokenId).c_str(), mechId);
+            return DEVICE_NOT_CONNECTED;
+        }
+        result = motionManager->StopRotate(tokenId, cmdId);
     }
-    auto it = motionManagers_.find(mechId);
-    if (it == motionManagers_.end()) {
-        return DEVICE_NOT_CONNECTED;
-    }
-    std::shared_ptr<MotionManager> motionManager = it->second;
-    if (motionManager == nullptr) {
-        HILOGE("motionManager not exist. tokenId: %{public}s; mechId: %{public}d",
-            GetAnonymUint32(tokenId).c_str(), mechId);
-        return DEVICE_NOT_CONNECTED;
-    }
-    int32_t result = motionManager->StopRotate(tokenId, cmdId);
     HILOGI("end. execute result: %{public}d.", result);
     return result;
 }

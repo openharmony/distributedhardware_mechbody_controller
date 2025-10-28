@@ -89,6 +89,12 @@ int32_t McControllerManager::SearchTarget(std::string &napiCmdId, uint32_t &toke
     return McCameraTrackingController::GetInstance().SearchTarget(napiCmdId, tokenId, targetInfo, searchParams);
 }
 
+int32_t McControllerManager::SearchTargetStop()
+{
+    McCameraTrackingController::GetInstance().SearchTargetStop();
+    return ERR_OK;
+}
+
 void MechConnectListenerImpl::OnMechConnect(const MechInfo &mechInfo)
 {
     MechBodyControllerService::GetInstance().OnAttachStateChange(AttachmentState::ATTACHED, mechInfo);

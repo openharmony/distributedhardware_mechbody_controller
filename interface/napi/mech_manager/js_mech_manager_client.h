@@ -29,13 +29,35 @@ namespace MechBodyController {
 
 class SystemAbilityStatusChangeListener : public SystemAbilityStatusChangeStub {
 public:
-    void SetCallback(const sptr <JsMechManagerStub> &callback);
+
+    void SetAttachStateCallback(const sptr<JsMechManagerStub> &attachStateCallback);
+
+    void SetTrackingEventCallback(const sptr<OHOS::MechBodyController::JsMechManagerStub> &trackingEventCallback);
+
+    void SetCmdChannel(const sptr<JsMechManagerStub> &cmdChannel);
+
+    void SetRotationAxesStatusCallback(const sptr<JsMechManagerStub> &rotationAxesStatusCallback);
+
+    int32_t SendAttachStateChangeListenOn(sptr<JsMechManagerStub> callback);
+
+    int32_t SendTrackingEventListenOn(sptr<JsMechManagerStub> callback);
+
+    int32_t SendRegisterCmdChannel(sptr<JsMechManagerStub> stub);
+
+    int32_t SendRotationAxesStatusChangeListenOn(sptr<JsMechManagerStub> callback);
 
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string& deviceId) override;
 
     void OnRemoveSystemAbility(int32_t systemAbilityId, const std::string& deviceId) override;
+
+private:
+    sptr <IRemoteObject> GetDmsProxy();
+
 public:
-    sptr<JsMechManagerStub> callback_;
+    sptr<JsMechManagerStub> attachStateCallback_;
+    sptr<JsMechManagerStub> trackingEventCallback_;
+    sptr<JsMechManagerStub> cmdChannel_;
+    sptr<JsMechManagerStub> rotationAxesStatusCallback_;
 };
 
 class MechClient : public std::enable_shared_from_this<MechClient>  {
@@ -91,6 +113,8 @@ public:
 
 private:
     sptr <IRemoteObject> GetDmsProxy();
+
+    int32_t SubscribeMechAbility();
 
 private:
     std::condition_variable producerCon_;
