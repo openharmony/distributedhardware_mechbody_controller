@@ -35,38 +35,20 @@ int32_t MechClient::AttachStateChangeListenOn(sptr<JsMechManagerStub> callback)
 {
     sptr <IRemoteObject> remote = GetDmsProxy();
     if (remote == nullptr) {
-        std::lock_guard<std::mutex> lock(systemAbilityStatusChangeListenerMutex_);
-        auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-        if (samgrProxy == nullptr) {
+        if (SubscribeMechAbility() != ERR_OK) {
             return MECH_GET_SAMGR_EXCEPTION;
         }
-        if (systemAbilityStatusChangeListener_ == nullptr) {
-            systemAbilityStatusChangeListener_ = new SystemAbilityStatusChangeListener();
-            int32_t ret = samgrProxy->SubscribeSystemAbility(MECH_SERVICE_SA_ID, systemAbilityStatusChangeListener_);
-            if (ret != ERR_OK) {
-                HILOGE("SubscribeSystemAbility failed, ret:%d", ret);
-            }
-        }
-        systemAbilityStatusChangeListener_->SetCallback(callback);
+        systemAbilityStatusChangeListener_->SetAttachStateCallback(callback);
         return ERR_OK;
     }
-    MessageParcel data;
-    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
-        return NAPI_SEND_DATA_FAIL;
+    if (systemAbilityStatusChangeListener_ == nullptr) {
+        if (SubscribeMechAbility() != ERR_OK) {
+            return MECH_GET_SAMGR_EXCEPTION;
+        }
+        systemAbilityStatusChangeListener_->SetAttachStateCallback(callback);
     }
-    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
-    if (!data.WriteRemoteObject(callback->AsObject())) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    MessageParcel reply;
-    MessageOption option;
-    int32_t error = remote->SendRequest(
-        static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON),
-        data, reply, option);
-    if (error != ERR_NONE) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    return reply.ReadInt32();
+    systemAbilityStatusChangeListener_->SendAttachStateChangeListenOn(callback);
+    return ERR_OK;
 }
 
 int32_t MechClient::AttachStateChangeListenOff()
@@ -143,16 +125,7 @@ int32_t MechClient::SetUserOperation(
         HILOGE("LoadSystemAbility fail, code: %{public}d", executeStartResult);
         return START_MECH_BODY_SERVICE_FAILED;
     }
-    {
-        std::lock_guard<std::mutex> lock(systemAbilityStatusChangeListenerMutex_);
-        if (systemAbilityStatusChangeListener_ == nullptr) {
-            systemAbilityStatusChangeListener_ = new SystemAbilityStatusChangeListener();
-            int32_t ret = samgrProxy->SubscribeSystemAbility(MECH_SERVICE_SA_ID, systemAbilityStatusChangeListener_);
-            if (ret != ERR_OK) {
-                HILOGE("SubscribeSystemAbility failed, ret:%{public}d", ret);
-            }
-        }
-    }
+    SubscribeMechAbility();
 
     HILOGI("Mech body service start success.");
     return ERR_OK;
@@ -246,27 +219,12 @@ int32_t MechClient::GetCameraTrackingEnabled(bool &isEnabled)
 int32_t MechClient::TrackingEventListenOn(sptr<JsMechManagerStub> callback)
 {
     sptr <IRemoteObject> remote = GetDmsProxy();
-    if (remote == nullptr) {
+    if (remote == nullptr || SubscribeMechAbility() != ERR_OK) {
         return MECH_GET_SAMGR_EXCEPTION;
     }
-    MessageParcel data;
-    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
-    if (!data.WriteRemoteObject(callback->AsObject())) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    MessageParcel reply;
-    MessageOption option;
-    int32_t error = remote->SendRequest(
-        static_cast<int32_t>(IMechBodyControllerCode::TRACKING_EVENT_LISTEN_ON),
-        data, reply, option);
-    if (error != ERR_NONE) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-
-    return reply.ReadInt32();
+    systemAbilityStatusChangeListener_->SetTrackingEventCallback(callback);
+    systemAbilityStatusChangeListener_->SendTrackingEventListenOn(callback);
+    return ERR_OK;
 }
 
 int32_t MechClient::TrackingEventListenOff()
@@ -345,26 +303,12 @@ int32_t MechClient::GetCameraTrackingLayout(CameraTrackingLayout &cameraTracking
 int32_t MechClient::RegisterCmdChannel(sptr<JsMechManagerStub> stub)
 {
     sptr<IRemoteObject> remote = GetDmsProxy();
-    if (remote == nullptr) {
+    if (remote == nullptr || SubscribeMechAbility() != ERR_OK) {
         return MECH_GET_SAMGR_EXCEPTION;
     }
-    MessageParcel data;
-    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    CHECK_POINTER_RETURN_VALUE(stub, INVALID_PARAMETERS_ERR, "stub");
-    if (!data.WriteRemoteObject(stub->AsObject())) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    MessageParcel reply;
-    MessageOption option;
-    int32_t error = remote->SendRequest(
-        static_cast<int32_t>(IMechBodyControllerCode::REGISTER_CMD_CHANNEL),
-        data, reply, option);
-    if (error != ERR_NONE) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    return reply.ReadInt32();
+    systemAbilityStatusChangeListener_->SetCmdChannel(stub);
+    systemAbilityStatusChangeListener_->SendRegisterCmdChannel(stub);
+    return ERR_OK;
 }
 
 
@@ -655,27 +599,12 @@ int32_t MechClient::GetRotationAxesStatus(const int32_t &mechId, RotationAxesSta
 int32_t MechClient::RotationAxesStatusChangeListenOn(sptr<JsMechManagerStub> callback)
 {
     sptr <IRemoteObject> remote = GetDmsProxy();
-    if (remote == nullptr) {
+    if (remote == nullptr || SubscribeMechAbility() != ERR_OK) {
         return MECH_GET_SAMGR_EXCEPTION;
     }
-    MessageParcel data;
-    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
-    if (!data.WriteRemoteObject(callback->AsObject())) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-    MessageParcel reply;
-    MessageOption option;
-    int32_t error = remote->SendRequest(
-        static_cast<int32_t>(IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_LISTEN_ON),
-        data, reply, option);
-    if (error != ERR_NONE) {
-        return NAPI_SEND_DATA_FAIL;
-    }
-
-    return reply.ReadInt32();
+    systemAbilityStatusChangeListener_->SetRotationAxesStatusCallback(callback);
+    systemAbilityStatusChangeListener_->SendRotationAxesStatusChangeListenOn(callback);
+    return ERR_OK;
 }
 
 int32_t MechClient::RotationAxesStatusChangeListenOff()
@@ -746,6 +675,24 @@ sptr <IRemoteObject> MechClient::GetDmsProxy()
     return nullptr;
 }
 
+int32_t MechClient::SubscribeMechAbility()
+{
+    std::lock_guard<std::mutex> lock(systemAbilityStatusChangeListenerMutex_);
+    auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgrProxy == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    if (systemAbilityStatusChangeListener_ == nullptr) {
+        systemAbilityStatusChangeListener_ = new SystemAbilityStatusChangeListener();
+        int32_t ret = samgrProxy->SubscribeSystemAbility(MECH_SERVICE_SA_ID, systemAbilityStatusChangeListener_);
+        if (ret != ERR_OK) {
+            HILOGE("SubscribeSystemAbility failed, ret:%d", ret);
+            return MECH_GET_SAMGR_EXCEPTION;
+        }
+    }
+    return ERR_OK;
+}
+
 void SystemAbilityStatusChangeListener::OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
 {
     if (systemAbilityId != MECH_SERVICE_SA_ID) {
@@ -753,35 +700,25 @@ void SystemAbilityStatusChangeListener::OnAddSystemAbility(int32_t systemAbility
         return;
     }
     HILOGI("MechService SA:%{public}d added", systemAbilityId);
-    auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (samgrProxy == nullptr) {
-        HILOGE("get samanager proxy failed;");
-        return;
+    if (attachStateCallback_ != nullptr) {
+        int32_t result = SendAttachStateChangeListenOn(attachStateCallback_);
+        HILOGI("SendAttachStateChangeListenOn result: %{public}d", result);
     }
 
-    sptr <IRemoteObject> remote = samgrProxy->CheckSystemAbility(MECH_SERVICE_SA_ID);
-    if (remote == nullptr) {
-        HILOGE("get mech body proxy failed;");
-        return;
+    if (trackingEventCallback_ != nullptr) {
+        int32_t result = SendTrackingEventListenOn(trackingEventCallback_);
+        HILOGI("SendTrackingEventListenOn result: %{public}d", result);
     }
 
-    MessageParcel data;
-    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
-        return;
+    if (cmdChannel_ != nullptr) {
+        int32_t result = SendRegisterCmdChannel(cmdChannel_);
+        HILOGI("SendRegisterCmdChannel result: %{public}d", result);
     }
-    CHECK_POINTER_RETURN(callback_, "callback_");
-    if (!data.WriteRemoteObject(callback_->AsObject())) {
-        return;
+
+    if (rotationAxesStatusCallback_ != nullptr) {
+        int32_t result = SendRotationAxesStatusChangeListenOn(rotationAxesStatusCallback_);
+        HILOGI("SendRotationAxesStatusChangeListenOn result: %{public}d", result);
     }
-    MessageParcel reply;
-    MessageOption option;
-    int32_t error = remote->SendRequest(
-        static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON),
-        data, reply, option);
-    if (error != ERR_NONE) {
-        return;
-    }
-    HILOGI("AttachStateChangeListenOn result: %{public}d", reply.ReadInt32());
 }
 
 void SystemAbilityStatusChangeListener::OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
@@ -795,9 +732,142 @@ void SystemAbilityStatusChangeListener::OnRemoveSystemAbility(int32_t systemAbil
     HILOGI("MechService SA:%{public}d removed", systemAbilityId);
 }
 
-void SystemAbilityStatusChangeListener::SetCallback(const sptr <JsMechManagerStub> &callback)
+void SystemAbilityStatusChangeListener::SetAttachStateCallback(const sptr<JsMechManagerStub> &attachStateCallback)
 {
-    callback_ = callback;
+    attachStateCallback_ = attachStateCallback;
+}
+
+void SystemAbilityStatusChangeListener::SetTrackingEventCallback(
+    const sptr<OHOS::MechBodyController::JsMechManagerStub> &trackingEventCallback)
+{
+    trackingEventCallback_ = trackingEventCallback;
+}
+
+void SystemAbilityStatusChangeListener::SetCmdChannel(const sptr<JsMechManagerStub> &cmdChannel)
+{
+    cmdChannel_ = cmdChannel;
+}
+
+void SystemAbilityStatusChangeListener::SetRotationAxesStatusCallback(
+    const sptr<JsMechManagerStub> &rotationAxesStatusCallback)
+{
+    rotationAxesStatusCallback_ = rotationAxesStatusCallback;
+}
+
+int32_t SystemAbilityStatusChangeListener::SendAttachStateChangeListenOn(sptr<JsMechManagerStub> callback)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
+    if (!data.WriteRemoteObject(callback->AsObject())) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    return reply.ReadInt32();
+}
+
+int32_t SystemAbilityStatusChangeListener::SendTrackingEventListenOn(sptr<JsMechManagerStub> callback)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
+    if (!data.WriteRemoteObject(callback->AsObject())) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::TRACKING_EVENT_LISTEN_ON),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+
+    return reply.ReadInt32();
+}
+
+int32_t SystemAbilityStatusChangeListener::SendRegisterCmdChannel(sptr<JsMechManagerStub> stub)
+{
+    sptr<IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    CHECK_POINTER_RETURN_VALUE(stub, INVALID_PARAMETERS_ERR, "stub");
+    if (!data.WriteRemoteObject(stub->AsObject())) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::REGISTER_CMD_CHANNEL),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    return reply.ReadInt32();
+}
+
+int32_t SystemAbilityStatusChangeListener::SendRotationAxesStatusChangeListenOn(sptr<JsMechManagerStub> callback)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
+    if (!data.WriteRemoteObject(callback->AsObject())) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::ROTATION_AXES_STATUS_CHANGE_LISTEN_ON),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+
+    return reply.ReadInt32();
+}
+
+sptr <IRemoteObject> SystemAbilityStatusChangeListener::GetDmsProxy()
+{
+    auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgrProxy == nullptr) {
+        return nullptr;
+    }
+
+    sptr <IRemoteObject> proxy = samgrProxy->CheckSystemAbility(MECH_SERVICE_SA_ID);
+    if (proxy != nullptr) {
+        return proxy;
+    }
+    return nullptr;
 }
 
 void MechBodyServiceLoadCallback::OnLoadSystemAbilitySuccess(int32_t systemAbilityId,

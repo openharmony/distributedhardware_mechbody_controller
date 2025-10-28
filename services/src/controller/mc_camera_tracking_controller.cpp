@@ -257,6 +257,9 @@ int32_t McCameraTrackingController::OnSessionStatusChange(int32_t sessionid, boo
         return CAMERA_INFO_IS_EMPTY;
     }
     currentCameraInfo_->isCameraOn = status;
+    if (!status) {
+        currentCameraInfo_->trackingTargetNum = 0;
+    }
     UpdateActionControl();
     HILOGI("end");
     return ERR_OK;
