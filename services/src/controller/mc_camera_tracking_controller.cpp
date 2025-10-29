@@ -391,9 +391,9 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
         UpdateActionControl();
     }
     lastTrackingFrame_ = trackingFrameParams;
-    lastTrackingFrame_->timeStamp =
-        std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
-            .time_since_epoch().count();
+    lastTrackingFrame_->timeStamp = static_cast<uint64_t>
+        (std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
+            .time_since_epoch().count());
     return trackingFrameParams;
 }
 
@@ -661,8 +661,9 @@ int32_t McCameraTrackingController::UpdateActionControl()
     actionControlParam.yawControl = 0;
     actionControlParam.pitchControl = 0;
     actionControlParam.rollControl = 0;
-    uint64_t currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
-        .time_since_epoch().count();
+    uint64_t currentTime = static_cast<uint64_t>
+        (std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
+            .time_since_epoch().count());
     if (currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0 &&
         currentTime - lastTrackingFrame_->timeStamp < TRACKING_PARAM_LOST_DELAY && IsCurrentTrackingEnabled()) {
         actionControlParam.controlReq = 1;
