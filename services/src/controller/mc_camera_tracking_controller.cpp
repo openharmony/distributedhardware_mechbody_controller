@@ -383,8 +383,8 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
                 SearchTargetStop();
             }, SEARCH_TARGET_TASK_NAME);
     }
-    uint64_t currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
-            .time_since_epoch().count();
+    uint64_t currentTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now()).time_since_epoch().count());
     if ((lastTrackingTargetNum == 0 && currentCameraInfo_->trackingTargetNum > 0) ||
         (currentTime - lastTrackingFrame_->timeStamp >= TRACKING_PARAM_LOST_DELAY &&
          currentCameraInfo_->trackingTargetNum > 0)) {
