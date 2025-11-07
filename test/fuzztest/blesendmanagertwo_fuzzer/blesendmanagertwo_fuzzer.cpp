@@ -89,20 +89,6 @@ void OnScanCallbackFuzzTest(const uint8_t *data, size_t size)
     bleSendManager.OnScanCallback(result);
 }
 
-void MechbodyGattcConnectFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    std::string mac = fdp.ConsumeRandomLengthString();
-    std::string deviceName = fdp.ConsumeRandomLengthString();
-
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.MechbodyGattcConnect(mac, deviceName);
-}
-
 void MechbodyGattcDisconnectFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
@@ -128,7 +114,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnReceiveFuzzTest(data, size);
     OHOS::OnGattReadyFuzzTest(data, size);
     OHOS::OnScanCallbackFuzzTest(data, size);
-    OHOS::MechbodyGattcConnectFuzzTest(data, size);
     OHOS::MechbodyGattcDisconnectFuzzTest(data, size);
     return 0;
 }

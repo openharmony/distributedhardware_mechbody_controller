@@ -113,6 +113,20 @@ void OnGattDisconnectFuzzTest(const uint8_t *data, size_t size)
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
     bleSendManager.OnGattDisconnect(mechInfo);
 }
+
+void MechbodyGattcConnectFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    std::string mac = fdp.ConsumeRandomLengthString();
+    std::string deviceName = fdp.ConsumeRandomLengthString();
+
+    BleSendManager& bleSendManager = BleSendManager::GetInstance();
+    bleSendManager.MechbodyGattcConnect(mac, deviceName);
+}
 }
 
 /* Fuzzer entry point */
@@ -123,5 +137,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::SendDataFuzzTest(data, size);
     OHOS::OnScanCallbackBleCentralManagerCallbackImplFuzzTest(data, size);
     OHOS::OnGattDisconnectFuzzTest(data, size);
+    OHOS::MechbodyGattcConnectFuzzTest(data, size);
     return 0;
 }
