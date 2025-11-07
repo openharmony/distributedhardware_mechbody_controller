@@ -44,7 +44,11 @@ int32_t JsMechManagerService::AttachStateChangeCallback(const AttachmentState &a
     for (const auto &item: attachStateChangeCallback_) {
         auto task = [item, attachmentState, mechInfo]() {
             napi_handle_scope scope;
-            napi_open_handle_scope(item.env, &scope);
+            napi_status res = napi_open_handle_scope(item.env, &scope);
+            if (res != napi_ok || scope == nullptr) {
+                HILOGE("open handle scope failed!");
+                return;
+            }
 
             napi_value jsEvent;
             napi_create_object(item.env, &jsEvent);
@@ -90,7 +94,11 @@ int32_t JsMechManagerService::TrackingEventCallback(const int32_t &mechId,
     for (const auto &item: trackingEventCallback) {
         auto task = [item, mechId, trackingEvent]() {
             napi_handle_scope scope;
-            napi_open_handle_scope(item.env, &scope);
+            napi_status res = napi_open_handle_scope(item.env, &scope);
+            if (res != napi_ok || scope == nullptr) {
+                HILOGE("open handle scope failed!");
+                return;
+            }
 
             napi_value jsEvent;
             napi_create_object(item.env, &jsEvent);
@@ -128,7 +136,11 @@ int32_t JsMechManagerService::RotationAxesStatusChangeCallback(const int32_t &me
     for (const auto &item: rotateAxisStatusChangeCallback) {
         auto task = [item, mechId, rotationAxesStatus]() {
             napi_handle_scope scope;
-            napi_open_handle_scope(item.env, &scope);
+            napi_status res = napi_open_handle_scope(item.env, &scope);
+            if (res != napi_ok || scope == nullptr) {
+                HILOGE("open handle scope failed!");
+                return;
+            }
 
             napi_value jsEvent;
             napi_create_object(item.env, &jsEvent);
@@ -188,7 +200,11 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
     }
     auto task = [cmdId, param, result]() {
         napi_handle_scope scope;
-        napi_open_handle_scope(param->env, &scope);
+        napi_status res = napi_open_handle_scope(param->env, &scope);
+        if (res != napi_ok || scope == nullptr) {
+            HILOGE("open handle scope failed!");
+            return;
+        }
 
         // 创建 JavaScript 返回值
         napi_value jsResult;
@@ -217,7 +233,11 @@ int32_t JsMechManagerService::SearchTargetCallback(std::string &cmdId, const int
     std::shared_ptr<RotatePrimiseFulfillmentParam> param = searchTargetCallback_[cmdId];
     auto task = [cmdId, param, targetsNum]() {
         napi_handle_scope scope;
-        napi_open_handle_scope(param->env, &scope);
+        napi_status res = napi_open_handle_scope(param->env, &scope);
+        if (res != napi_ok || scope == nullptr) {
+            HILOGE("open handle scope failed!");
+            return;
+        }
 
         napi_value jsEvent;
         napi_create_object(param->env, &jsEvent);
