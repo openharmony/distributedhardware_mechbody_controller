@@ -78,13 +78,13 @@ bool RegisterMechCameraKeyEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer> da
 
         status = (controlByte >> BIT_OFFSET_10) & CMD_3_BIT;
         if (status == CMD_KEY_STATE_SINGLE_CLICK) {
-            event_ = CameraKeyEvent::ZOOM_IN;
+            event_ = CameraKeyEvent::ZOOM_OUT;
             break;
         }
 
         status = (controlByte >> BIT_OFFSET_7) & CMD_3_BIT;
         if (status == CMD_KEY_STATE_SINGLE_CLICK) {
-            event_ = CameraKeyEvent::ZOOM_OUT;
+            event_ = CameraKeyEvent::ZOOM_IN;
             break;
         }
 
