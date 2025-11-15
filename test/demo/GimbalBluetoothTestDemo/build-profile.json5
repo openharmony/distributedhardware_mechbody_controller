@@ -1,26 +1,26 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 {
   "app": {
-    "signingConfigs": [
-      {
-        "name": "default",
-        "type": "HarmonyOS",
-        "material": {
-          "certpath": "C:\\Users\\dengxiaoyu\\.ohos\\config\\default_GimbalBluetoothTestDemo_EmBpH5xSz4jNw-iA2Y-qp4I7Sg_QYHWpJYdqaN9r3fw=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001B34254486B16EA67DC6BB3E87F0EBC9A8487D175EE91B18D246B486C95F83C3E1DED25C4C6AC0E0",
-          "profile": "C:\\Users\\dengxiaoyu\\.ohos\\config\\default_GimbalBluetoothTestDemo_EmBpH5xSz4jNw-iA2Y-qp4I7Sg_QYHWpJYdqaN9r3fw=.p7b",
-          "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\dengxiaoyu\\.ohos\\config\\default_GimbalBluetoothTestDemo_EmBpH5xSz4jNw-iA2Y-qp4I7Sg_QYHWpJYdqaN9r3fw=.p12",
-          "storePassword": "0000001B5CE32122423860D0A258FA8F1970DCB7CEA8CF1BA84AC8A90DB513F2FEE8D7C609BAB867FD6125"
-        }
-      }
-    ],
+    "signingConfigs": [],
     "products": [
       {
         "name": "default",
         "signingConfig": "default",
         "compatibleSdkVersion": "5.0.1(13)",
-        "runtimeOS": "HarmonyOS",
+        "runtimeOS": "OpenHarmony",
         "buildOption": {
           "strictMode": {
             "caseSensitiveCheck": true,

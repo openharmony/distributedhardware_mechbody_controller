@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import ble from '@ohos.bluetooth.ble';
 import { BusinessError } from '@ohos.base';
 import List from '@ohos.util.List';
@@ -159,8 +173,16 @@ export class BleScanManager {
   }
 
   parseManufactureData(curPos: number, advDataLength: number, advData: Uint8Array) {
-    let manufactureId = advData[curPos + 1] << 8 + advData[curPos];
-    let tmp = advData.slice(curPos + 2, advDataLength - 2);
+    if (curPos + 1 >= advData.length) {
+      logger.error(TAG + 'Invalid manufacturer data length');
+      return;
+    }
+    let manufactureId = (advData[curPos + 1] << 8) | advData[curPos];
+    if (curPos + 2 > advDataLength) {
+      logger.error(TAG + 'Invalid manufacturer data length 2');
+      return;
+    }
+    let tmp = advData.slice(curPos + 2, curPos + advDataLength);
     this.manufactureSpecificDatas?.set(manufactureId, tmp);
   }
 
