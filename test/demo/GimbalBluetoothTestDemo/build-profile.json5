@@ -1,0 +1,55 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\dengxiaoyu\\.ohos\\config\\default_GimbalBluetoothTestDemo_EmBpH5xSz4jNw-iA2Y-qp4I7Sg_QYHWpJYdqaN9r3fw=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B34254486B16EA67DC6BB3E87F0EBC9A8487D175EE91B18D246B486C95F83C3E1DED25C4C6AC0E0",
+          "profile": "C:\\Users\\dengxiaoyu\\.ohos\\config\\default_GimbalBluetoothTestDemo_EmBpH5xSz4jNw-iA2Y-qp4I7Sg_QYHWpJYdqaN9r3fw=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\dengxiaoyu\\.ohos\\config\\default_GimbalBluetoothTestDemo_EmBpH5xSz4jNw-iA2Y-qp4I7Sg_QYHWpJYdqaN9r3fw=.p12",
+          "storePassword": "0000001B5CE32122423860D0A258FA8F1970DCB7CEA8CF1BA84AC8A90DB513F2FEE8D7C609BAB867FD6125"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.1(13)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
