@@ -65,6 +65,9 @@ Note:If the text contains special characters, please escape them according to th
                 <filteritem type="filepath" name="figures/mechanic-architecture.png" desc="pictures for README"/>
                 <filteritem type="filepath" name="figures/mechanic-architecture-zh.png" desc="pictures for README"/>
                 <filteritem type="filepath" name="test/demo/GimbalBluetoothTestDemo/AppScope/resources/base/media/app_icon.png" desc="pictures for ble test demo"/>
+                <filteritem type="filepath" name="test/demo/GimbalBluetoothTestDemo/entry/src/main/resources/base/media/background.png" desc="pictures for ble test demo"/>
+                <filteritem type="filepath" name="test/demo/GimbalBluetoothTestDemo/entry/src/main/resources/base/media/foreground.png" desc="pictures for ble test demo"/>
+                <filteritem type="filepath" name="test/demo/GimbalBluetoothTestDemo/entry/src/main/resources/base/media/startIcon.png" desc="pictures for ble test demo"/>
             </filefilter>
         </filefilterlist>
     </oatconfig>
