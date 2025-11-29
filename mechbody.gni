@@ -13,4 +13,5 @@
 
 declare_args() {
   mechbody_controller_feature_product = true
+  mechbody_controller_extended = false
 }

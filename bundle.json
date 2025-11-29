@@ -18,7 +18,8 @@
       ],
       "adapted_system_type": [ "standard" ],
       "features" : [
-        "mechbody_controller_feature_product"
+        "mechbody_controller_feature_product",
+        "mechbody_controller_extended"
       ],
       "rom": "950KB",
       "ram": "11000KB",

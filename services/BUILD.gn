@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
 ohos_shared_library("mechbody_service") {
   branch_protector_ret = "pac_ret"
@@ -69,6 +70,7 @@ ohos_shared_library("mechbody_service") {
     "src/transport/mc_protocol_convertor.cpp",
     "src/transport/mc_subscription_center.cpp",
     "src/ble_send_manager.cpp",
+    "src/utils/load_mechbody_adapter.cpp",
   ]
 
   include_dirs = [
@@ -78,8 +80,15 @@ ohos_shared_library("mechbody_service") {
     "include/motion",
     "include/transport",
     "include/transport/command",
+    "include/utils",
     "//foundation/distributedhardware/mechbody_controller/interface/inner_api",
   ]
+
+  defines = []
+
+  if (mechbody_controller_extended) {
+    defines += [ "MECHBODY_CONTROLLER_EXTENDED" ]
+  }
 
   ldflags = [
     "-Wl,-z,relro",
