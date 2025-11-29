@@ -256,6 +256,21 @@ enum {
     * Result(96469020) for device has disconnected.
     */
     MECH_HAS_DISCONNECTED,
+
+    /**
+    * Result(96469021) for invalid tracking target.
+    */
+    INVALID_TRACKING_TARGET,
+
+    /**
+    * Result(96469022) for load adapter so failed.
+    */
+    LOAD_MECH_ADAPTER_SO_ERROR,
+
+    /**
+    * Result(96469023) for load adapter function failed.
+    */
+    LOAD_MECH_ADAPTER_FUNCTION_ERROR,
 };
 
 enum MechNapiErrorCode {

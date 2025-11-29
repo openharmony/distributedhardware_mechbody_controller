@@ -16,6 +16,7 @@
 #include <cmath>
 #include <memory>
 #include <valarray>
+#include "load_mechbody_adapter.h"
 #include "mc_camera_tracking_controller.h"
 #include "mechbody_controller_service.h"
 #include "mc_controller_ipc_death_listener.h"
@@ -109,6 +110,9 @@ void McCameraTrackingController::Init()
     std::lock_guard<std::mutex> lock(cameraTrackingControllerInitMutex_);
     RegisterTrackingListener();
     RegisterSensorListener();
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    MechbodyAdapterUtils::InitTrackingCore();
+#endif
     HILOGI("end");
 }
 
@@ -122,6 +126,9 @@ void McCameraTrackingController::UnInit()
         eventHandler_->RemoveTask(SEND_CAMERA_INFO_TASK_NAME);
         eventHandler_->RemoveTask(UPDATE_ACTION_CONTROL_TASK_NAME);
     }
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    MechbodyAdapterUtils::Clear();
+#endif
     HILOGI("end");
 }
 
@@ -337,12 +344,25 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
         return ERR_OK;
     }
     HILOGI("tracking param: %{public}s", trackingParams->ToString().c_str());
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    int32_t objId = info.GetTrackingObjectId();
+    int32_t res = MechbodyAdapterUtils::RunTrackingCore(trackingParams->roi.x, trackingParams->roi.y,
+        trackingParams->roi.width, trackingParams->roi.height,
+        [this, trackingParams, objId](float resultX, float resultY) mutable {
+            trackingParams->roi.x = resultX;
+            trackingParams->roi.y = resultY;
+            HILOGI("tracking param after: %{public}s", trackingParams->ToString().c_str());
+            UpdateMotionsWithTrackingData(trackingParams, objId)
+        });
+    return res;
+#else
     if (trackingParams->roi.width <= TRACKING_LOST_CHECK ||
         trackingParams->roi.height <= TRACKING_LOST_CHECK) {
         HILOGW("tracking rect lost, width or height is zero.");
         return ERR_OK;
     }
     return UpdateMotionsWithTrackingData(trackingParams, info.GetTrackingObjectId());
+#endif
 }
 
 std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingParams(
