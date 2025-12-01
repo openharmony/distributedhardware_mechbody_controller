@@ -352,7 +352,7 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
             trackingParams->roi.x = resultX;
             trackingParams->roi.y = resultY;
             HILOGI("tracking param after: %{public}s", trackingParams->ToString().c_str());
-            UpdateMotionsWithTrackingData(trackingParams, objId)
+            UpdateMotionsWithTrackingData(trackingParams, objId);
         });
     return res;
 #else
