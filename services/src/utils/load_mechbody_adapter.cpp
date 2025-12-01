@@ -32,7 +32,7 @@ int32_t MechbodyAdapterUtils::InitTrackingCore()
 {
     HILOGI("start load mechbody adapter.");
     std::lock_guard<std::mutex> lock(mechAdapterMutex_);
-#if (defined(__aarch__) || defined(__x86_64__))
+#if (defined(__aarch64__) || defined(__x86_64__))
     char resolvedPath[100] = "/system/lib64/libmech_adapter.z.so";
 #else
     char resolvedPath[100] = "/system/lib/libmech_adapter.z.so";
