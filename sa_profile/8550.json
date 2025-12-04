@@ -6,7 +6,8 @@
             "libpath": "libmechbody_service.z.so",
             "run-on-create": false,
             "auto-restart": true,
-            "distributed": false
+            "distributed": false,
+            "min_hdi_proxy_version": []
         }
     ]
 }
