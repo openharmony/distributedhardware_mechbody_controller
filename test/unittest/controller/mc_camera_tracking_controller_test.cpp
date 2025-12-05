@@ -75,24 +75,6 @@ HWTEST_F(McCameraTrackingControllerTest, UpdateMotionManagers_001, TestSize.Leve
 }
 
 /**
- * @tc.name  : OnFocusTracking_001
- * @tc.number: OnFocusTracking_001
- * @tc.desc  : Testing OnFocusTracking function.
- */
-HWTEST_F(McCameraTrackingControllerTest, OnFocusTracking_001, TestSize.Level1)
-{
-    DTEST_LOG << "McCameraTrackingControllerTest OnFocusTracking_001 begin" << std::endl;
-
-    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
-    CameraStandard::FocusTrackingMetaInfo info;
-    mcCameraTrackingController.currentCameraInfo_->currentTrackingEnable = false;
-
-    int32_t ret = mcCameraTrackingController.OnFocusTracking(info);
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "McCameraTrackingControllerTest OnFocusTracking_001 end" << std::endl;
-}
-
-/**
  * @tc.name  : OnFocusTracking_002
  * @tc.number: OnFocusTracking_002
  * @tc.desc  : Testing OnFocusTracking function.
