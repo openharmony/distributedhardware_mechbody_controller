@@ -150,6 +150,13 @@ int32_t McCameraTrackingController::OnCaptureSessionConfiged(
             break;
         }
     }
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    if (currentCameraInfo_->cameraType != (captureSessionInfo.position == REAR_MOUNTED_LENS
+        ? CameraType::BACK : CameraType::FRONT)) {
+        HILOGI("Back or Rront change.");
+        MechbodyAdapterUtils::ResetTrackingCore();
+    }
+#endif
     currentCameraInfo_->sessionMode = captureSessionInfo.sessionMode;
     currentCameraInfo_->isRecording =
         captureSessionInfo.sessionMode == static_cast<int32_t>(CameraStandard::SceneMode::VIDEO);
@@ -266,6 +273,9 @@ int32_t McCameraTrackingController::OnSessionStatusChange(int32_t sessionid, boo
     currentCameraInfo_->isCameraOn = status;
     if (!status) {
         currentCameraInfo_->trackingTargetNum = 0;
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+        MechbodyAdapterUtils::ResetTrackingCore();
+#endif
     }
     UpdateActionControl();
     HILOGI("end");

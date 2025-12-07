@@ -25,18 +25,24 @@ namespace MechBodyController {
 using PushXYFn = std::function<void(float x, float y)>;
 typedef void (*InitTrackingCore)();
 typedef int32_t (*RunTrackingCore)(float, float, float, float, const PushXYFn&);
+typedef void (*ResetTrackingCore)();
 
 class MechbodyAdapterUtils {
 public:
     static int32_t InitTrackingCore();
     static int32_t RunTrackingCore(float x, float y, float width, float height, const PushXYFn& push);
+    static int32_t ResetTrackingCore();
     static void Clear();
+
+private:
+    static int32_t LoadFunction();
 
 private:
     static std::mutex mechAdapterMutex_;
     static void* mechAdapterHandle_;
     static OHOS::MechBodyController::InitTrackingCore initFunc_;
     static OHOS::MechBodyController::RunTrackingCore runFunc_;
+    static OHOS::MechBodyController::ResetTrackingCore resetFunc_;
 };
 } // namespace MechBodyController
 } // namespace OHOS
