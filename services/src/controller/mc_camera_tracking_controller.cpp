@@ -608,13 +608,6 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
     HILOGI("start notify tracking event, mechId: %{public}d; event: %{public}d", mechId,
            static_cast<int32_t>(event));
     std::lock_guard<std::mutex> lock(trackingEventCallbackMutex_);
-    if (event == TrackingEvent::CAMERA_TRACKING_USER_ENABLED) {
-        HILOGI("tracking is enable, init camera session and sensor");
-        Init();
-    } else {
-        HILOGI("tracking is enable, un init camera session and sensor");
-        UnInit();
-    }
     for (const auto &item: trackingEventCallback_) {
         uint32_t tokenId = item.first;
         int32_t isTrackingEnableNum = static_cast<int32_t>(event);
