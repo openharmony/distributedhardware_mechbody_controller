@@ -981,7 +981,7 @@ int32_t BleSendManager::MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t
     GattCharacteristic wrCharacteristic = GattCharacteristic(MECHBODY_CHARACTERISTIC_WRITE_UUID,
         handle_, permissions_, properties_);
     wrCharacteristic.SetValue(data, dataLen);
-    wrCharacteristic.SetWriteType(GattCharacteristic::WriteType::DEFAULT);
+    wrCharacteristic.SetWriteType(GattCharacteristic::WriteType::NO_RESPONSE);
     HILOGI("Mech writeC");
     result = gattClient_->WriteCharacteristic(wrCharacteristic);
     HILOGI("Mech writeC, result = %{public}d handle: %{public}d dataLen: %{public}d \n", \
