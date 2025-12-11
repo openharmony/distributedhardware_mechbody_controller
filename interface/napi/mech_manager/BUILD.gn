@@ -38,6 +38,9 @@ ohos_shared_library("mechanicmanager_napi") {
   ]
 
   cflags = []
+  if (mechbody_controller_feature_L1) {
+    cflags += [ "-DMECHBODY_CONTROLLER_L1" ]
+  }
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }

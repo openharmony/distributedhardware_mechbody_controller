@@ -71,6 +71,8 @@ public:
     static napi_value SearchTarget(napi_env env, napi_callback_info info);
 
 private:
+    static int32_t CheckControlL1(napi_env env);
+    static int32_t CheckDeviceL1(napi_env env);
     static int32_t ExecuteOn(std::string &eventType, CallbackFunctionInfo &callbackFunctionInfo);
     static int32_t ExecuteOnForAttachStateChange(const CallbackFunctionInfo &callbackFunctionInfo);
     static int32_t ExecuteOnForTrackingEvent(const CallbackFunctionInfo &callbackFunctionInfo);
@@ -90,6 +92,8 @@ private:
     static void ProcessOffResultCode(napi_env env, int32_t &result);
 
     static napi_value MechInfoToNapiObject(napi_env env, const std::shared_ptr<MechInfo> &info);
+
+    static bool PreCheck(napi_env env);
 
     static bool RegisterCmdChannel();
 
