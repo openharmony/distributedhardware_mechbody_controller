@@ -80,9 +80,9 @@ int32_t MechConnectManager::NotifyMechDisconnect(const MechInfo& mechInfo)
         auto it = mechInfos_.find(mechInfo);
         if (it != mechInfos_.end()) {
             mechInfos_.erase(it);
-            MechBodyControllerService::GetInstance().OnDeviceDisconnected(mechInfo.mechId);
         }
     }
+    MechBodyControllerService::GetInstance().OnDeviceDisconnected(mechInfo.mechId);
     auto offlineNotifyTask = [this, mechInfo]() {
         std::lock_guard<std::mutex> autoLock(listenerSetMutex_);
         for (auto& listener : listenerSet_) {
