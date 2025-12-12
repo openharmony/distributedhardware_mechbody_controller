@@ -12,6 +12,7 @@
 # limitations under the License.
 
 declare_args() {
+  mechbody_controller_feature_L1 = false
   mechbody_controller_feature_product = true
   mechbody_controller_extended = false
 }

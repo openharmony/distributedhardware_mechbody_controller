@@ -18,6 +18,7 @@
       ],
       "adapted_system_type": [ "standard" ],
       "features" : [
+        "mechbody_controller_feature_L1",
         "mechbody_controller_feature_product",
         "mechbody_controller_extended"
       ],

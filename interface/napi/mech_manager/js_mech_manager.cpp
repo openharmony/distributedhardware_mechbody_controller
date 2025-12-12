@@ -66,6 +66,9 @@ std::shared_ptr<MechClient> MechManager::mechClient_ = std::make_shared<MechClie
 
 napi_value MechManager::On(napi_env env, napi_callback_info info)
 {
+    if (CheckControlL1(env)) {
+        return nullptr;
+    }
     HILOGI("Start to register the callback function.");
     size_t argc = PARAM_COUNT_TWO;
     napi_value args[PARAM_COUNT_TWO];
@@ -110,6 +113,28 @@ napi_value MechManager::On(napi_env env, napi_callback_info info)
     int32_t result = ExecuteOn(eventType, callbackFunctionInfo);
     ProcessOnResultCode(env, result);
     return nullptr;
+}
+
+int32_t MechManager::CheckControlL1(napi_env env)
+{
+#ifdef MECHBODY_CONTROLLER_L1
+    HILOGI("Device not support.");
+    napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+    return static_cast<int32_t>(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY);
+#else
+    return 0;
+#endif
+}
+
+int32_t MechManager::CheckDeviceL1(napi_env env)
+{
+#ifdef MECHBODY_CONTROLLER_L1
+    HILOGI("Device not support.");
+    napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
+    return static_cast<int32_t>(MechNapiErrorCode::DEVICE_NOT_CONNECTED);
+#else
+    return 0;
+#endif
 }
 
 int32_t MechManager::ExecuteOn(std::string &eventType, CallbackFunctionInfo &callbackFunctionInfo)
@@ -281,6 +306,9 @@ bool MechManager::InitRotationAxesStatusChangeStub()
 
 napi_value MechManager::Off(napi_env env, napi_callback_info info)
 {
+    if (CheckControlL1(env)) {
+        return nullptr;
+    }
     HILOGI("Start to unregister the callback function.");
     size_t argc = 2;
     napi_value args[2];
@@ -485,6 +513,9 @@ void MechManager::ProcessOffResultCode(napi_env env, int32_t &result)
 
 napi_value MechManager::GetAttachedDevices(napi_env env, napi_callback_info info)
 {
+    if (CheckControlL1(env)) {
+        return nullptr;
+    }
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
         napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(),
@@ -531,8 +562,7 @@ napi_value MechManager::MechInfoToNapiObject(napi_env env, const std::shared_ptr
 
 napi_value MechManager::SetUserOperation(napi_env env, napi_callback_info info)
 {
-    if (!IsSystemApp()) {
-        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+    if (!PreCheck(env)) {
         return nullptr;
     }
     size_t argc = 3;
@@ -585,8 +615,23 @@ napi_value MechManager::SetUserOperation(napi_env env, napi_callback_info info)
     return nullptr;
 }
 
+bool MechManager::PreCheck(napi_env env)
+{
+    if (CheckControlL1(env)) {
+        return false;
+    }
+    if (!IsSystemApp()) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+        return false;
+    }
+    return true;
+}
+
 napi_value MechManager::SetCameraTrackingEnabled(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     size_t argc = 1;
     napi_value args[1];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -631,6 +676,9 @@ napi_value MechManager::SetCameraTrackingEnabled(napi_env env, napi_callback_inf
 
 napi_value MechManager::GetCameraTrackingEnabled(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     bool isEnabled;
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
@@ -654,6 +702,9 @@ napi_value MechManager::GetCameraTrackingEnabled(napi_env env, napi_callback_inf
 
 napi_value MechManager::SetCameraTrackingLayout(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -705,6 +756,9 @@ napi_value MechManager::SetCameraTrackingLayout(napi_env env, napi_callback_info
 
 napi_value MechManager::GetCameraTrackingLayout(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     CameraTrackingLayout layout;
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
@@ -729,6 +783,9 @@ napi_value MechManager::GetCameraTrackingLayout(napi_env env, napi_callback_info
 
 napi_value MechManager::Rotate(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     HILOGI("start");
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
@@ -852,8 +909,7 @@ bool MechManager::GetRotateParam(napi_env env, napi_callback_info info, RotateBy
 
 napi_value MechManager::RotateToEulerAngles(napi_env env, napi_callback_info info)
 {
-    if (!IsSystemApp()) {
-        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+    if (!PreCheck(env)) {
         return nullptr;
     }
     RotateToEulerAnglesParam rotateToEulerAnglesParam;
@@ -955,6 +1011,9 @@ bool MechManager::GetRotateToEulerAnglesParam(napi_env env, napi_callback_info i
 
 napi_value MechManager::GetMaxRotationTime(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -999,6 +1058,9 @@ napi_value MechManager::GetMaxRotationTime(napi_env env, napi_callback_info info
 
 napi_value MechManager::GetMaxRotationSpeed(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -1066,6 +1128,9 @@ napi_value MechManager::RotateSpeedToNapi(napi_env env, const RotateSpeed &speed
 
 napi_value MechManager::RotateBySpeed(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -1166,6 +1231,9 @@ bool MechManager::GetRotateBySpeedParam(napi_env env, napi_callback_info info,
 
 napi_value MechManager::StopMoving(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -1215,6 +1283,9 @@ napi_value MechManager::StopMoving(napi_env env, napi_callback_info info)
 
 napi_value MechManager::GetCurrentAngles(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -1254,6 +1325,9 @@ napi_value MechManager::GetCurrentAngles(napi_env env, napi_callback_info info)
 
 napi_value MechManager::GetRotationLimits(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -1295,6 +1369,9 @@ napi_value MechManager::GetRotationLimits(napi_env env, napi_callback_info info)
 
 napi_value MechManager::GetRotationAxesStatus(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
@@ -1334,6 +1411,9 @@ napi_value MechManager::GetRotationAxesStatus(napi_env env, napi_callback_info i
 
 napi_value MechManager::SearchTarget(napi_env env, napi_callback_info info)
 {
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
     if (!IsSystemApp()) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
