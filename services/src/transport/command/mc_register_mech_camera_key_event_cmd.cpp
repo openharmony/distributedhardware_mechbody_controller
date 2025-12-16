@@ -61,7 +61,12 @@ bool RegisterMechCameraKeyEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer> da
         return false;
     }
 
-    size_t offset = BIT_OFFSET_4 + BIT_OFFSET_2;
+    size_t offset = BIT_OFFSET_2;
+    CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, stickX_), false, "read stickX 1-2");
+    offset += BIT_OFFSET_2;
+    CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, stickY_), false, "read stickY 3-4");
+    offset += BIT_OFFSET_2;
+
     uint8_t status = 0;
     uint16_t controlByte = 0;
     do {
@@ -125,6 +130,16 @@ CameraKeyEvent RegisterMechCameraKeyEventCmd::GetEvent() const
 uint8_t RegisterMechCameraKeyEventCmd::GetResult() const
 {
     return result_;
+}
+
+int16_t RegisterMechCameraKeyEventCmd::GetStickX() const
+{
+    return stickX_;
+}
+
+int16_t RegisterMechCameraKeyEventCmd::GetStickY() const
+{
+    return stickY_;
 }
 } // namespace MechBodyController
 } // namespace OHOS
