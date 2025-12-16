@@ -173,6 +173,7 @@ void MotionManager::MechButtonEventNotify(const std::shared_ptr<RegisterMechCame
             HILOGW("ButtonEvent undefined action");
             break;
     }
+    McCameraTrackingController::GetInstance().SetStickOffset(cmd->GetStickX(), cmd->GetStickY());
 }
 
 void MotionManager::MechParamNotify(const std::shared_ptr<RegisterMechStateInfoCmd> &cmd)

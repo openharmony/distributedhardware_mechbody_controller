@@ -37,10 +37,14 @@ public:
 
     CameraKeyEvent GetEvent() const;
     uint8_t GetResult() const;
+    int16_t GetStickX() const;
+    int16_t GetStickY() const;
 
 private:
     CameraKeyEvent event_ = CameraKeyEvent::INVALID;
     uint8_t result_ = 0;
+    int16_t stickX_ = 0;
+    int16_t stickY_ = 0;
 };
 
 } // namespace MechBodyController

@@ -15,6 +15,8 @@
 
 #ifndef MC_CAMERA_TRACKING_CONTROLLER_H
 #define MC_CAMERA_TRACKING_CONTROLLER_H
+
+#include <atomic>
 #include <map>
 #include "mechbody_controller_ipc_interface_code.h"
 #include "mechbody_controller_log.h"
@@ -144,6 +146,7 @@ public:
     std::shared_ptr<CameraInfo> GetCurrentCameraInfo() const;
     void OnConnectChange();
     int32_t UpdateActionControl();
+    int32_t SetStickOffset(const int16_t &stickX, const int16_t &stickY);
 
 private:
     int32_t ComputeFov();
@@ -174,8 +177,9 @@ private:
     void RunSearchTarget(std::string &napiCmdId, uint32_t &tokenId, const std::shared_ptr<SearchParams> &searchParams,
         const RotateDegreeLimit &limit, const std::shared_ptr<EulerAngles> &currentPosition);
     void AdjustROI(ROI &roi, CameraStandard::Rect &rect, CameraType cameraType, MobileRotation sensorRotation);
-    void AdjustYOffset(ROI &roi, CameraType cameraType, CameraTrackingLayout trackingLayout);
-    void AdjustXOffset(ROI &roi, CameraType cameraType, CameraTrackingLayout trackingLayout);
+    void AdjustOffset(std::shared_ptr<TrackingFrameParams> &trackingParams, CameraType cameraType);
+    void AdjustYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
+    void AdjustXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
     bool IsCurrentTrackingEnabled();
 
 public:
@@ -198,6 +202,9 @@ private:
 
     std::mutex searchTargetMutex_;
     std::condition_variable searchTargetCv_;
+
+    float vertical_ = 0.0f;
+    float horizontal_ = 0.0f;
 };
 } // namespace MechBodyController
 } // namespace OHOS
