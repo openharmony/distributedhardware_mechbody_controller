@@ -346,20 +346,17 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
     HILOGI("Tracking mode: %{public}d; "
            "Tracking region: [x: %{public}f, y: %{public}f, width: %{public}f, height: %{public}f]; "
            "Tracking object ID: %{public}d",
-           info.GetTrackingMode(),
-           info.GetTrackingRegion().topLeftX, info.GetTrackingRegion().topLeftY,
-           info.GetTrackingRegion().width, info.GetTrackingRegion().height,
-           info.GetTrackingObjectId());
+           info.GetTrackingMode(), info.GetTrackingRegion().topLeftX, info.GetTrackingRegion().topLeftY,
+           info.GetTrackingRegion().width, info.GetTrackingRegion().height, info.GetTrackingObjectId());
+    if (info.GetDetectedObjects().size() <= 0) {
+        return ERR_OK;
+    }
 
     std::ostringstream oss;
     for (const auto& obj : info.GetDetectedObjects()) {
-        oss << "Detected object ID: " << obj->GetObjectId()
-            << ", Type: " << static_cast<int>(obj->GetType())
-            << ", BBox: ["
-            << obj->GetBoundingBox().topLeftX << ", "
-            << obj->GetBoundingBox().topLeftY << ", "
-            << obj->GetBoundingBox().width << ", "
-            << obj->GetBoundingBox().height << "]"
+        oss << "Detected object ID: " << obj->GetObjectId() << ", Type: " << static_cast<int>(obj->GetType())
+            << ", BBox: [" << obj->GetBoundingBox().topLeftX << ", " << obj->GetBoundingBox().topLeftY << ", "
+            << obj->GetBoundingBox().width << ", " << obj->GetBoundingBox().height << "]"
             << ", Confidence: " << obj->GetConfidence();
     }
     HILOGI("tracking object info: %{public}s", oss.str().c_str());
