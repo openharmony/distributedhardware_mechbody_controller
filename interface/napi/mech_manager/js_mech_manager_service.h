@@ -52,7 +52,7 @@ struct CallbackFunctionInfo {
         napi_get_reference_value(env, callbackRef, &storedCallback);
 
         napi_value compareCallback;
-        napi_get_reference_value(other.env, other.callbackRef, &compareCallback);
+        napi_get_reference_value(env, other.callbackRef, &compareCallback);
 
         bool isSame = false;
         napi_strict_equals(env, storedCallback, compareCallback, &isSame);
