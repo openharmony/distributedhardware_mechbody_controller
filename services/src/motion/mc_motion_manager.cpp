@@ -439,8 +439,8 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     deviceStatus_->rotateSpeedLimit.speedMin.rollSpeed = DEGREE_CIRCLED_MIN;
     deviceStatus_->rotateSpeedLimit.speedMin.pitchSpeed = DEGREE_CIRCLED_MIN;
     deviceStatus_->rotateSpeedLimit.speedMax.yawSpeed = DEGREE_CIRCLED_MAX;
-    deviceStatus_->rotateSpeedLimit.speedMax.rollSpeed = DEGREE_CIRCLED_MIN;
-    deviceStatus_->rotateSpeedLimit.speedMax.pitchSpeed = DEGREE_CIRCLED_MIN;
+    deviceStatus_->rotateSpeedLimit.speedMax.rollSpeed = DEGREE_CIRCLED_MAX;
+    deviceStatus_->rotateSpeedLimit.speedMax.pitchSpeed = DEGREE_CIRCLED_MAX;
 
     GetMechRealName();
 

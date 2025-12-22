@@ -103,10 +103,6 @@ int32_t JsMechManagerService::TrackingEventCallback(const int32_t &mechId,
             napi_value jsEvent;
             napi_create_object(item.env, &jsEvent);
 
-            napi_value jsMechId;
-            napi_create_int32(item.env, mechId, &jsMechId);
-            napi_set_named_property(item.env, jsEvent, "mechId", jsMechId);
-
             napi_value jsTrackingEvent;
             napi_create_int32(item.env, static_cast<int32_t>(trackingEvent), &jsTrackingEvent);
             napi_set_named_property(item.env, jsEvent, "event", jsTrackingEvent);
@@ -208,7 +204,11 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
 
         // 创建 JavaScript 返回值
         napi_value jsResult;
-        napi_create_int32(param->env, result, &jsResult);
+        if (param->isReturnVoid) {
+            napi_get_undefined(param->env, &jsResult);
+        } else {
+            napi_create_int32(param->env, result, &jsResult);
+        }
 
         // 解析 Promise
         napi_status status = napi_resolve_deferred(param->env, param->deferred, jsResult);
