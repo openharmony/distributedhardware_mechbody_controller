@@ -39,6 +39,7 @@ struct RotatePrimiseFulfillmentParam {
     std::string cmdId;
     napi_env env;
     napi_deferred deferred;
+    bool isReturnVoid = false;
 };
 
 struct CallbackFunctionInfo {

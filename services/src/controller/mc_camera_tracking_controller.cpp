@@ -790,6 +790,7 @@ int32_t McCameraTrackingController::SetTrackingLayout(const uint32_t &tokenId,
     horizontal_ = cameraTrackingLayout == CameraTrackingLayout::RIGHT ? -OFFSET_VALUE
         : (cameraTrackingLayout == CameraTrackingLayout::LEFT ? OFFSET_VALUE : 0.0f);
     vertical_ = 0.0f;
+    OnTrackingEvent(0, TrackingEvent::CAMERA_TRACKING_LAYOUT_CHANGED);
     HILOGI("SetTrackingLayout horizontal_: %{public}f vertical_: %{public}f.", horizontal_, vertical_);
     return ERR_OK;
 }

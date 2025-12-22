@@ -1052,7 +1052,7 @@ napi_value MechManager::GetMaxRotationTime(napi_env env, napi_callback_info info
     }
     HILOGE("time limit query success, min: %{public}f; max: %{public}f;", timeLimit.min, timeLimit.max);
     napi_value getSpeedControlMaxTimeResult;
-    napi_create_double(env, timeLimit.max, &getSpeedControlMaxTimeResult);
+    napi_create_int32(env, static_cast<int32_t>(timeLimit.max), &getSpeedControlMaxTimeResult);
     return getSpeedControlMaxTimeResult;
 }
 
@@ -1098,10 +1098,15 @@ napi_value MechManager::GetMaxRotationSpeed(napi_env env, napi_callback_info inf
 
     napi_value getRotateSpeedLimitResult;
     napi_create_object(env, &getRotateSpeedLimitResult);
-    napi_value speedMax = RotateSpeedToNapi(env, rotateSpeedLimit.speedMax);
-    napi_set_named_property(env, getRotateSpeedLimitResult, "speedMax", speedMax);
-    napi_value speedMin = RotateSpeedToNapi(env, rotateSpeedLimit.speedMin);
-    napi_set_named_property(env, getRotateSpeedLimitResult, "speedMin", speedMin);
+    napi_value yawSpeed;
+    napi_create_double(env, rotateSpeedLimit.speedMax.yawSpeed, &yawSpeed);
+    napi_set_named_property(env, getRotateSpeedLimitResult, "yawSpeed", yawSpeed);
+    napi_value rollSpeed;
+    napi_create_double(env, rotateSpeedLimit.speedMax.rollSpeed, &rollSpeed);
+    napi_set_named_property(env, getRotateSpeedLimitResult, "rollSpeed", rollSpeed);
+    napi_value pitchSpeed;
+    napi_create_double(env, rotateSpeedLimit.speedMax.pitchSpeed, &pitchSpeed);
+    napi_set_named_property(env, getRotateSpeedLimitResult, "pitchSpeed", pitchSpeed);
 
     return getRotateSpeedLimitResult;
 }
@@ -1261,6 +1266,7 @@ napi_value MechManager::StopMoving(napi_env env, napi_callback_info info)
     rotatePromiseParam->cmdId = GenerateUniqueID();
     rotatePromiseParam->deferred = deferred;
     rotatePromiseParam->env = env;
+    rotatePromiseParam->isReturnVoid = true;
     {
         std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
         JsMechManagerService::GetInstance().promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
@@ -1527,11 +1533,29 @@ napi_value MechManager::CreateRotationLimit(napi_env env, const RotateDegreeLimi
     napi_value obj;
     napi_create_object(env, &obj);
 
-    napi_value negMax = CreateEulerAngles(env, limit.negMax);
-    napi_set_named_property(env, obj, "negMax", negMax);
+    napi_value negativeYawMax;
+    napi_create_double(env, limit.negMax.yaw, &negativeYawMax);
+    napi_set_named_property(env, obj, "negativeYawMax", negativeYawMax);
 
-    napi_value posMax = CreateEulerAngles(env, limit.posMax);
-    napi_set_named_property(env, obj, "posMax", posMax);
+    napi_value negativeRollMax;
+    napi_create_double(env, limit.negMax.roll, &negativeRollMax);
+    napi_set_named_property(env, obj, "negativeRollMax", negativeRollMax);
+
+    napi_value negativePitchMax;
+    napi_create_double(env, limit.negMax.pitch, &negativePitchMax);
+    napi_set_named_property(env, obj, "negativePitchMax", negativePitchMax);
+
+    napi_value positiveYawMax;
+    napi_create_double(env, limit.posMax.yaw, &positiveYawMax);
+    napi_set_named_property(env, obj, "positiveYawMax", positiveYawMax);
+
+    napi_value positiveRollMax;
+    napi_create_double(env, limit.posMax.roll, &positiveRollMax);
+    napi_set_named_property(env, obj, "positiveRollMax", positiveRollMax);
+
+    napi_value positivePitchMax;
+    napi_create_double(env, limit.posMax.pitch, &positivePitchMax);
+    napi_set_named_property(env, obj, "positivePitchMax", positivePitchMax);
 
     return obj;
 }
