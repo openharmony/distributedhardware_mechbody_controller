@@ -1,0 +1,203 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@!namespace("@ohos.distributedHardware.mechanicManager", "mechanicManager")
+
+@!sts_inject("""
+static { loadLibraryWithPermissionCheck("mechanic_manager_ani.z", "@ohos.distributedHardware.mechanicManager") }
+""")
+
+struct MechInfo {
+    mechId: i32;
+    mechDeviceType: MechDeviceType;
+    mechName: String;
+}
+
+struct RotationAngles {
+    yaw: Optional<f64>;
+    roll: Optional<f64>;
+    pitch: Optional<f64>;
+}
+
+struct EulerAngles {
+    yaw: Optional<f64>;
+    roll: Optional<f64>;
+    pitch: Optional<f64>;
+}
+
+struct RotationSpeed {
+    yawSpeed: Optional<f64>;
+    rollSpeed: Optional<f64>;
+    pitchSpeed: Optional<f64>;
+}
+
+struct RotationLimits {
+    negativeYawMax: f64;
+    positiveYawMax: f64;
+    negativeRollMax: f64;
+    positiveRollMax: f64;
+    negativePitchMax: f64;
+    positivePitchMax: f64;
+}
+
+struct RotationAxesStatus {
+    yawEnabled: bool;
+    rollEnabled: bool;
+    pitchEnabled: bool;
+    yawLimited: Optional<RotationAxisLimited>;
+    rollLimited:  Optional<RotationAxisLimited>;
+    pitchLimited:  Optional<RotationAxisLimited>;
+}
+
+enum RotationAxisLimited : i32 {
+    NOT_LIMITED = 0,
+    NEGATIVE_LIMITED = 1,
+    POSITIVE_LIMITED = 2
+}
+
+struct RotationAxesStateChangeInfo {
+    mechId: i32;
+    status: RotationAxesStatus;
+}
+
+struct TrackingEventInfo {
+    event: TrackingEvent;
+}
+
+struct AttachStateChangeInfo {
+    state: AttachState;
+    mechInfo: MechInfo;
+}
+
+struct TargetInfo {
+    targetType: TargetType;
+}
+
+struct SearchParams {
+    direction: SearchDirection;
+}
+
+struct SearchResult {
+    targetCount: i32;
+}
+enum Operation : i32 {
+    CONNECT = 0,
+    DISCONNECT = 1
+}
+
+enum TrackingEvent : i32 {
+    CAMERA_TRACKING_USER_ENABLED = 0,
+    CAMERA_TRACKING_USER_DISABLED = 1,
+    CAMERA_TRACKING_LAYOUT_CHANGED = 2
+}
+
+enum Result : i32 {
+    COMPLETED = 0,
+    INTERRUPTED = 1,
+    LIMITED = 2,
+    TIMEOUT = 3,
+    SYSTEM_ERROR = 100
+}
+
+enum MechDeviceType : i32 {
+    GIMBAL_DEVICE = 0
+}
+
+enum AttachState : i32 {
+    ATTACHED = 0,
+    DETACHED = 1
+}
+
+enum CameraTrackingLayout : i32 {
+    DEFAULT = 0,
+    LEFT = 1,
+    MIDDLE = 2,
+    RIGHT = 3
+}
+
+enum TargetType : i32 {
+    HUMAN_FACE = 0
+}
+
+enum SearchDirection : i32 {
+    DEFAULT = 0,
+    LEFTWARD = 1,
+    RIGHTWARD = 2
+}
+
+@rename("onAttachStateChange")
+function OnAttachStateChangeInner(callback: (data: AttachStateChangeInfo) => void): void;
+@rename("offAttachStateChange")
+function OffAttachStateChangeInner(callback: Optional<(data: AttachStateChangeInfo) => void>): void;
+
+@rename("getAttachedMechDevices")
+function GetAttachedMechDevicesInner(): Array<MechInfo>;
+
+@rename("setUserOperation")
+function SetUserOperationInner(operation: Operation, mac: String, params: String): void;
+
+@rename("setCameraTrackingEnabled")
+function SetCameraTrackingEnabledInner(isEnabled: bool): void;
+
+@rename("getCameraTrackingEnabled")
+function GetCameraTrackingEnabledInner(): bool;
+
+@rename("onTrackingStateChange")
+function OnTrackingStateChangeInner(callback: (info: TrackingEventInfo) => void): void;
+
+@rename("offTrackingStateChange")
+function OffTrackingStateChangeInner(callback: Optional<(info: TrackingEventInfo) => void>): void;
+
+@rename("setCameraTrackingLayout")
+function SetCameraTrackingLayoutInner(trackingLayout: CameraTrackingLayout): void;
+
+@rename("getCameraTrackingLayout")
+function GetCameraTrackingLayoutInner(): CameraTrackingLayout;
+
+@rename("rotate")
+function RotateInner(mechId: i32, angles: RotationAngles, duration: i32): @sts_type("Promise<Result>") Opaque;
+
+@rename("rotateToEulerAngles")
+function RotateToEulerAnglesInner(mechId: i32, angles: EulerAngles, duration: i32): @sts_type("Promise<Result>") Opaque;
+
+@rename("getMaxRotationTime")
+function GetMaxRotationTimeInner(mechId: i32): i32;
+
+@rename("getMaxRotationSpeed")
+function GetMaxRotationSpeedInner(mechId: i32): RotationSpeed;
+
+@rename("rotateBySpeed")
+function RotateBySpeedInner(mechId: i32, speed: RotationSpeed, duration: i32): @sts_type("Promise<Result>") Opaque;
+
+@rename("stopMoving")
+function StopMovingInner(mechId: i32): @sts_type("Promise<void>") Opaque;
+
+@rename("getCurrentAngles")
+function GetCurrentAnglesInner(mechId: i32): EulerAngles;
+
+@rename("getRotationLimits")
+function GetRotationLimitsInner(mechId: i32): RotationLimits;
+
+@rename("getRotationAxesStatus")
+function GetRotationAxesStatusInner(mechId: i32): RotationAxesStatus;
+
+@rename("onRotationAxesStatusChange")
+function OnRotationAxesStatusChangeInner(callback: (info :RotationAxesStateChangeInfo) => void): void;
+
+@rename("offRotationAxesStatusChange")
+function OffRotationAxesStatusChangeInner(callback: Optional<(info :RotationAxesStateChangeInfo) => void>): void;
+
+@rename("searchTarget")
+function SearchTargetInner(target: TargetInfo, params: SearchParams):  @sts_type("Promise<SearchResult>") Opaque;
