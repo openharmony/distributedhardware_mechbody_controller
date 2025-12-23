@@ -81,7 +81,7 @@ void AniMechManager::ProcessOnResultCode(int32_t &result)
 void AniMechManager::OnAttachStateChange(const AttachStateCBTaihe &callback)
 {
     HILOGI("Start to register the callback function.");
-    if(CheckControlL1()) {
+    if (CheckControlL1()) {
         return;
     }
     int32_t result = ExecuteOnForAttachStateChange(callback);
@@ -91,7 +91,7 @@ void AniMechManager::OnAttachStateChange(const AttachStateCBTaihe &callback)
 void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callback)
 {
     HILOGI("Start to unregister the callback function.");
-    if(CheckControlL1()) {
+    if (CheckControlL1()) {
         return;
     }
     int32_t result = ExecuteOffForAttachStateChange(!callback.has_value(), callback.value());
@@ -101,7 +101,7 @@ void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachSta
 ::taihe::array<MechInfoTaihe> AniMechManager::GetAttachedDevices()
 {
     std::vector<MechInfoTaihe> vecMechInfos;
-    if(CheckControlL1()) {
+    if (CheckControlL1()) {
         return ::taihe::array<MechInfoTaihe>(vecMechInfos);
     }
     if (!InitMechClient()) {
@@ -198,7 +198,7 @@ void AniMechManager::GetCameraTrackingEnabled(bool &isEnabled)
 void AniMechManager::OnTrackingStateChange(const TrackingEventCBTaihe &callback)
 {
     HILOGI("Start to register the callback function.");
-    if(CheckControlL1()) {
+    if (CheckControlL1()) {
         return;
     }
     int32_t result = ExecuteOnForTrackingEvent(callback);
@@ -208,7 +208,7 @@ void AniMechManager::OnTrackingStateChange(const TrackingEventCBTaihe &callback)
 void AniMechManager::OffTrackingStateChange(const::taihe::optional_view<TrackingEventCBTaihe> &callback)
 {
     HILOGI("Start to unregister the callback function.");
-    if(CheckControlL1()) {
+    if (CheckControlL1()) {
         return;
     }
     int32_t result = ExecuteOffForTrackingEvent(!callback.has_value(), callback.value());
@@ -602,7 +602,7 @@ void AniMechManager::GetRotationAxesStatus(int32_t mechId, RotationAxesStatusTai
 void AniMechManager::OnRotationAxesStatusChange(const RotationAxesCBTaihe &callback)
 {
     HILOGI("Start to register the callback function.");
-    if(CheckControlL1()) {
+    if (CheckControlL1()) {
         return;
     }
     int32_t result = ExecuteOnForRotationAxesStatusChange(callback);
@@ -612,7 +612,7 @@ void AniMechManager::OnRotationAxesStatusChange(const RotationAxesCBTaihe &callb
 void AniMechManager::OffRotationAxesStatusChange(const ::taihe::optional_view<RotationAxesCBTaihe> &callback)
 {
     HILOGI("Start to unregister the callback function.");
-    if(CheckControlL1()) {
+    if (CheckControlL1()) {
         return;
     }
     int32_t result = ExecuteOffForRotationAxesStatusChange(!callback.has_value(), callback.value());
@@ -1280,8 +1280,8 @@ int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
             ResultTaihePromise(etsEnv, param->deferred, result);
         }
         {
-         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-         promiseParams_.erase(param->cmdId);
+            std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+            promiseParams_.erase(param->cmdId);
         }
         if ((aniResult = etsVm->DetachCurrentThread()) != ANI_OK) {
             HILOGE("DetachCurrentThread error!");
