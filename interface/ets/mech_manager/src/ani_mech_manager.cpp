@@ -81,6 +81,9 @@ void AniMechManager::ProcessOnResultCode(int32_t &result)
 void AniMechManager::OnAttachStateChange(const AttachStateCBTaihe &callback)
 {
     HILOGI("Start to register the callback function.");
+    if(CheckControlL1()) {
+        return;
+    }
     int32_t result = ExecuteOnForAttachStateChange(callback);
     ProcessOnResultCode(result);
 }
@@ -88,6 +91,9 @@ void AniMechManager::OnAttachStateChange(const AttachStateCBTaihe &callback)
 void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callback)
 {
     HILOGI("Start to unregister the callback function.");
+    if(CheckControlL1()) {
+        return;
+    }
     int32_t result = ExecuteOffForAttachStateChange(!callback.has_value(), callback.value());
     ProcessOffResultCode(result);
 }
@@ -95,6 +101,9 @@ void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachSta
 ::taihe::array<MechInfoTaihe> AniMechManager::GetAttachedDevices()
 {
     std::vector<MechInfoTaihe> vecMechInfos;
+    if(CheckControlL1()) {
+        return ::taihe::array<MechInfoTaihe>(vecMechInfos);
+    }
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
@@ -122,8 +131,7 @@ void AniMechManager::SetUserOperation(const OperationTaihe &operation,
     const std::string &mac, const std::string &params)
 {
     HILOGD("SetUserOperation enter");
-    if (!IsSystemApp()) {
-        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+    if (!PreCheck()) {
         return;
     }
     if (!InitMechClient()) {
@@ -141,6 +149,9 @@ void AniMechManager::SetUserOperation(const OperationTaihe &operation,
 
 void AniMechManager::SetCameraTrackingEnabled(bool isEnabled)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
@@ -163,6 +174,9 @@ void AniMechManager::SetCameraTrackingEnabled(bool isEnabled)
 
 void AniMechManager::GetCameraTrackingEnabled(bool &isEnabled)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
@@ -184,6 +198,9 @@ void AniMechManager::GetCameraTrackingEnabled(bool &isEnabled)
 void AniMechManager::OnTrackingStateChange(const TrackingEventCBTaihe &callback)
 {
     HILOGI("Start to register the callback function.");
+    if(CheckControlL1()) {
+        return;
+    }
     int32_t result = ExecuteOnForTrackingEvent(callback);
     ProcessOnResultCode(result);
 }
@@ -191,6 +208,9 @@ void AniMechManager::OnTrackingStateChange(const TrackingEventCBTaihe &callback)
 void AniMechManager::OffTrackingStateChange(const::taihe::optional_view<TrackingEventCBTaihe> &callback)
 {
     HILOGI("Start to unregister the callback function.");
+    if(CheckControlL1()) {
+        return;
+    }
     int32_t result = ExecuteOffForTrackingEvent(!callback.has_value(), callback.value());
     ProcessOffResultCode(result);
 }
@@ -198,6 +218,9 @@ void AniMechManager::OffTrackingStateChange(const::taihe::optional_view<Tracking
 void AniMechManager::GetMaxRotationTime(int32_t mechId, int32_t &maxTime)
 {
     maxTime = 0;
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -221,11 +244,13 @@ void AniMechManager::GetMaxRotationTime(int32_t mechId, int32_t &maxTime)
 
 void AniMechManager::GetMaxRotationSpeed(int32_t mechId, RotationSpeedTaihe &speed)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
     }
-
     RotateSpeedLimit rotateSpeedLimit;
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
@@ -244,6 +269,9 @@ void AniMechManager::GetMaxRotationSpeed(int32_t mechId, RotationSpeedTaihe &spe
 
 void AniMechManager::SetCameraTrackingLayout(const CameraTrackingLayoutTaihe &layout)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -277,6 +305,9 @@ void AniMechManager::SetCameraTrackingLayout(const CameraTrackingLayoutTaihe &la
 
 void AniMechManager::GetCameraTrackingLayout(CameraTrackingLayoutTaihe &layout)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
@@ -331,6 +362,9 @@ void AniMechManager::Rotate(int32_t mechId,
 {
     HILOGI("start");
     promise = 0;
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -374,8 +408,7 @@ void AniMechManager::RotateToEulerAngles(int32_t mechId,
     EulerAnglesTaihe const& angles, int32_t duration, uintptr_t &promise)
 {
     HILOGI("start");
-    if (!IsSystemApp()) {
-        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+    if (!PreCheck()) {
         return;
     }
     RotateToEulerAnglesParam rotateToEulerAnglesParam;
@@ -417,6 +450,9 @@ void AniMechManager::RotateBySpeed(
     int32_t mechId, const RotationSpeedTaihe &speed, int32_t duration, uintptr_t &promise)
 {
     HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -459,6 +495,9 @@ void AniMechManager::RotateBySpeed(
 void AniMechManager::StopMoving(int32_t mechId, uintptr_t &promise)
 {
     promise = 0;
+     if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -487,6 +526,9 @@ void AniMechManager::StopMoving(int32_t mechId, uintptr_t &promise)
 
 void AniMechManager::GetCurrentAngles(int32_t mechId, EulerAnglesTaihe &out)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -510,6 +552,9 @@ void AniMechManager::GetCurrentAngles(int32_t mechId, EulerAnglesTaihe &out)
 
 void AniMechManager::GetRotationLimits(int32_t mechId, RotationLimitsTaihe &limits)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -532,6 +577,9 @@ void AniMechManager::GetRotationLimits(int32_t mechId, RotationLimitsTaihe &limi
 
 void AniMechManager::GetRotationAxesStatus(int32_t mechId, RotationAxesStatusTaihe &out)
 {
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -554,6 +602,9 @@ void AniMechManager::GetRotationAxesStatus(int32_t mechId, RotationAxesStatusTai
 void AniMechManager::OnRotationAxesStatusChange(const RotationAxesCBTaihe &callback)
 {
     HILOGI("Start to register the callback function.");
+    if(CheckControlL1()) {
+        return;
+    }
     int32_t result = ExecuteOnForRotationAxesStatusChange(callback);
     ProcessOnResultCode(result);
 }
@@ -561,6 +612,9 @@ void AniMechManager::OnRotationAxesStatusChange(const RotationAxesCBTaihe &callb
 void AniMechManager::OffRotationAxesStatusChange(const ::taihe::optional_view<RotationAxesCBTaihe> &callback)
 {
     HILOGI("Start to unregister the callback function.");
+    if(CheckControlL1()) {
+        return;
+    }
     int32_t result = ExecuteOffForRotationAxesStatusChange(!callback.has_value(), callback.value());
     ProcessOffResultCode(result);
 }
@@ -568,6 +622,9 @@ void AniMechManager::OffRotationAxesStatusChange(const ::taihe::optional_view<Ro
 void AniMechManager::SearchTarget(const TargetInfoTaihe &target, const SearchParamsTaihe &params, uintptr_t &promise)
 {
     promise = 0;
+    if (CheckDeviceL1()) {
+        return;
+    }
     if (!IsSystemApp()) {
         ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
         return;
@@ -951,6 +1008,40 @@ bool AniMechManager::AniSendEvent(std::function<void()> task)
     return true;
 }
 
+int32_t AniMechManager::CheckControlL1()
+{
+#ifdef MECHBODY_CONTROLLER_L1
+    HILOGI("Device not support.");
+    ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+    return static_cast<int32_t>(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY);
+#else
+    return 0;
+#endif
+}
+
+int32_t AniMechManager::CheckDeviceL1()
+{
+#ifdef MECHBODY_CONTROLLER_L1
+    HILOGI("Device not support.");
+    ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
+    return static_cast<int32_t>(MechNapiErrorCode::DEVICE_NOT_CONNECTED);
+#else
+    return 0;
+#endif
+}
+
+bool AniMechManager::PreCheck()
+{
+    if (CheckControlL1()) {
+        return false;
+    }
+    if (!IsSystemApp()) {
+        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+        return false;
+    }
+    return true;
+}
+
 bool AniMechManager::RegisterCmdChannel()
 {
     if (cmdChannel_ != nullptr) {
@@ -1188,16 +1279,16 @@ int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
         } else {
             ResultTaihePromise(etsEnv, param->deferred, result);
         }
+        {
+         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+         promiseParams_.erase(param->cmdId);
+        }
         if ((aniResult = etsVm->DetachCurrentThread()) != ANI_OK) {
             HILOGE("DetachCurrentThread error!");
             return;
         }
-        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        promiseParams_.erase(param->cmdId);
     };
-    if (!AniSendEvent(task)) {
-        HILOGE("AniSendEvent error!");
-    }
+    task();
     return ERR_OK;
 }
 
@@ -1229,16 +1320,16 @@ int32_t AniMechManager::SearchTargetCallback(std::string &cmdId, const int32_t &
             return;
         }
         SearchResultTaihePromise(etsEnv, param->deferred, targetsNum);
+        {
+            std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
+            searchTargetPromiseParam_.erase(param->cmdId);
+        }
         if ((aniResult = etsVm->DetachCurrentThread()) != ANI_OK) {
             HILOGE("DetachCurrentThread error!");
             return;
         }
-        std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
-        searchTargetPromiseParam_.erase(param->cmdId);
     };
-    if (!AniSendEvent(task)) {
-        HILOGE("AniSendEvent error!");
-    }
+    task();
     HILOGI("end");
     return ERR_OK;
 }

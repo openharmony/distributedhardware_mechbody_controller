@@ -150,6 +150,9 @@ private:
     void RotationAxesStatusToAni(const RotationAxesStatus &axesStatus, RotationAxesStatusTaihe &out);
     void RotationLimitsToAni(const RotateDegreeLimit &limit, RotationLimitsTaihe &out);
     bool AniSendEvent(std::function<void()> task);
+    int32_t CheckControlL1();
+    int32_t CheckDeviceL1();
+    bool PreCheck();
 private:
     std::mutex attachStateChangeStubMutex_;
     sptr<AniMechManagerStub> attachStateChangeStub_ { nullptr };
