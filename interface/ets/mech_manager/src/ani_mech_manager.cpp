@@ -495,7 +495,7 @@ void AniMechManager::RotateBySpeed(
 void AniMechManager::StopMoving(int32_t mechId, uintptr_t &promise)
 {
     promise = 0;
-     if (CheckDeviceL1()) {
+    if (CheckDeviceL1()) {
         return;
     }
     if (!IsSystemApp()) {
