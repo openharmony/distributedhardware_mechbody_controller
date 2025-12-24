@@ -238,7 +238,6 @@ void AniMechManager::GetMaxRotationTime(int32_t mechId, int32_t &maxTime)
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
-    // ztw 需要确定返回值类型
     maxTime = static_cast<int32_t>(timeLimit.max);
 }
 
@@ -263,7 +262,6 @@ void AniMechManager::GetMaxRotationSpeed(int32_t mechId, RotationSpeedTaihe &spe
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
-    // ztw 和1.1返回不一致
     RotateSpeedToAni(rotateSpeedLimit.speedMax, speed);
 }
 
@@ -828,7 +826,7 @@ int32_t AniMechManager::ExecuteOffForAttachStateChange(bool isNull, const Attach
     }
     auto it = std::find(attachStateChangeCallback_.begin(), attachStateChangeCallback_.end(), callback);
     if (it == attachStateChangeCallback_.end()) {
-        HILOGI("Cancel all registrations");
+        HILOGI("No found callback info.");
         return ERR_OK;
     }
     attachStateChangeCallback_.erase(it);
@@ -836,7 +834,7 @@ int32_t AniMechManager::ExecuteOffForAttachStateChange(bool isNull, const Attach
         mechClient_->AttachStateChangeListenOff();
         return ERR_OK;
     }
-    return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    return ERR_OK;
 }
 
 int32_t AniMechManager::ExecuteOffForTrackingEvent(bool isNull, const TrackingEventCBTaihe &callback)
@@ -855,7 +853,7 @@ int32_t AniMechManager::ExecuteOffForTrackingEvent(bool isNull, const TrackingEv
     }
     auto it = std::find(trackingEventCallback_.begin(), trackingEventCallback_.end(), callback);
     if (it == trackingEventCallback_.end()) {
-        HILOGI("Cancel all registrations");
+        HILOGI("No found callback info.");
         return ERR_OK;
     }
     trackingEventCallback_.erase(it);
@@ -863,7 +861,7 @@ int32_t AniMechManager::ExecuteOffForTrackingEvent(bool isNull, const TrackingEv
         mechClient_->TrackingEventListenOff();
         return ERR_OK;
     }
-    return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    return ERR_OK;
 }
 
 int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(bool isNull, const RotationAxesCBTaihe &callback)
@@ -885,7 +883,7 @@ int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(bool isNull, const
     }
     auto it = std::find(rotateAxisStatusChangeCallback_.begin(), rotateAxisStatusChangeCallback_.end(), callback);
     if (it == rotateAxisStatusChangeCallback_.end()) {
-        HILOGI("Cancel all registrations");
+        HILOGI("No found callback info.");
         return ERR_OK;
     }
     rotateAxisStatusChangeCallback_.erase(it);
@@ -893,18 +891,18 @@ int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(bool isNull, const
         mechClient_->RotationAxesStatusChangeListenOff();
         return ERR_OK;
     }
-    return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    return ERR_OK;
 }
 
 void AniMechManager::ProcessOffResultCode(int32_t &result)
 {
     HILOGE("UnRegister the callback function result code: %{public}d ", result);
     if (result == MechNapiErrorCode::PARAMETER_CHECK_FAILED) {
-        ::taihe::set_business_error(PARAMETER_CHECK_FAILED, "Invalid event type.");
+        ::taihe::set_business_error(MechNapiErrorCode::PARAMETER_CHECK_FAILED, "Invalid event type.");
         return;
     }
     if (result != ERR_OK) {
-        ::taihe::set_business_error(SYSTEM_WORK_ABNORMALLY, "System exception");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
 }
@@ -1255,12 +1253,20 @@ int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
     const int32_t &result)
 {
     HILOGI("AniRotatePrimiseFulfillmentParam cmdId: %{public}s", cmdId.c_str());
-    std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-    auto param = promiseParams_[cmdId];
-    if (param == nullptr) {
-        HILOGI("param is nullptr, cmdId: %{public}s", cmdId.c_str());
-        return ERR_OK;
+    std::shared_ptr<AniRotatePrimiseFulfillmentParam> param = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        auto it = promiseParams_.find(cmdId);
+        if (it == promiseParams_.end()) {
+            HILOGI("Not found, cmdId: %{public}s", cmdId.c_str());
+        }
+        param = it->second;
+        if (param == nullptr) {
+            HILOGI("param is nullptr, cmdId: %{public}s", cmdId.c_str());
+            return ERR_OK;
+        }
     }
+   
     auto task = [this, param, result]() {
         if (param == nullptr || param->vm == nullptr) {
             HILOGE("param or etsVm is null!");
@@ -1279,33 +1285,37 @@ int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
         } else {
             ResultTaihePromise(etsEnv, param->deferred, result);
         }
-        {
-            std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-            promiseParams_.erase(param->cmdId);
-        }
         if ((aniResult = etsVm->DetachCurrentThread()) != ANI_OK) {
             HILOGE("DetachCurrentThread error!");
             return;
         }
     };
     task();
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(param->cmdId);
+    }
     return ERR_OK;
 }
 
 int32_t AniMechManager::SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result)
 {
     HILOGI("cmdId: %{public}s; targetCount: %{public}d", cmdId.c_str(), targetsNum);
-    std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
-    auto it = searchTargetPromiseParam_.find(cmdId);
-    if (it == searchTargetPromiseParam_.end()) {
-        HILOGE("searchTarget Callback is nullptr, cmdId: %{public}s", cmdId.c_str());
-        return ERR_OK;
+    std::shared_ptr<AniRotatePrimiseFulfillmentParam> param = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
+        auto it = searchTargetPromiseParam_.find(cmdId);
+        if (it == searchTargetPromiseParam_.end()) {
+            HILOGE("searchTarget Callback is nullptr, cmdId: %{public}s", cmdId.c_str());
+            return ERR_OK;
+        }
+        param = it->second;
+        if (param == nullptr) {
+            HILOGI("param is nullptr, cmdId: %{public}s", cmdId.c_str());
+            return ERR_OK;
+        }
     }
-    std::shared_ptr<AniRotatePrimiseFulfillmentParam> param = it->second;
-    if (param == nullptr) {
-        HILOGI("param is nullptr, cmdId: %{public}s", cmdId.c_str());
-        return ERR_OK;
-    }
+    
     auto task = [this, param, targetsNum]() {
         if (param == nullptr || param->vm == nullptr) {
             HILOGE("param or etsVm is null!");
@@ -1320,16 +1330,16 @@ int32_t AniMechManager::SearchTargetCallback(std::string &cmdId, const int32_t &
             return;
         }
         SearchResultTaihePromise(etsEnv, param->deferred, targetsNum);
-        {
-            std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
-            searchTargetPromiseParam_.erase(param->cmdId);
-        }
         if ((aniResult = etsVm->DetachCurrentThread()) != ANI_OK) {
             HILOGE("DetachCurrentThread error!");
             return;
         }
     };
     task();
+    {
+        std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
+        searchTargetPromiseParam_.erase(param->cmdId);
+    }
     HILOGI("end");
     return ERR_OK;
 }

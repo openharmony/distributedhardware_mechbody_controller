@@ -15,13 +15,15 @@
 
 
 #include "ani_mech_manager.h"
+#include "mechbody_controller_log.h"
 
 using namespace OHOS::MechBodyController;
 namespace {
-// To be implemented.
+const std::string TAG = "AniMechManagerImpl";
 
-void OnAttachStateChangeInner(::taihe::callback_view<ACH_STATE_CHANGE_INFO_CB> callback)
+void OnAttachStateChangeInner(::taihe::callback_view<void(AttachStateChangeInfoTaihe const&)> callback)
 {
+    HILOGD("begin!");
     AniMechManager::GetInstance().OnAttachStateChange(callback);
 }
 
@@ -54,8 +56,9 @@ bool GetCameraTrackingEnabledInner()
     return isEnabled;
 }
 
-void OnTrackingStateChangeInner(::taihe::callback_view<TRACKING_EVENT_INFO_CB> callback)
+void OnTrackingStateChangeInner(::taihe::callback_view<void(TrackingEventInfoTaihe const&)> callback)
 {
+    HILOGD("begin!");
     AniMechManager::GetInstance().OnTrackingStateChange(callback);
 }
 
@@ -139,8 +142,9 @@ RotationAxesStatusTaihe GetRotationAxesStatusInner(int32_t mechId)
     return result;
 }
 
-void OnRotationAxesStatusChangeInner(::taihe::callback_view<ROT_AXES_STATE_CHANGE_INFO_CB> callback)
+void OnRotationAxesStatusChangeInner(::taihe::callback_view<void(RotationAxesStateChangeInfoTaihe const&)> callback)
 {
+    HILOGD("begin!");
     AniMechManager::GetInstance().OnRotationAxesStatusChange(callback);
 }
 
