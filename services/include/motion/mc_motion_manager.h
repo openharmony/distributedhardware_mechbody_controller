@@ -103,6 +103,7 @@ public:
     void UnRegisterNotifyEvent();
     int32_t ActionGimbalFeatureControl(const ActionControlParams &actionControlParams);
     const std::string &GetDeviceRealName() const;
+    const std::string &TryGetDeviceRealNameSync(uint32_t timeoutMs);
 
 private:
     void MMIKeyEvent(CameraKeyEvent eventType);
@@ -132,6 +133,7 @@ private:
     void ProcessTrackingStatus();
     void GetMechRealName();
     void UpdateTrackingTime();
+    void SetDeviceRealName(const std::string &deviceRealName);
 
 private:
     std::shared_ptr<DeviceStatus> deviceStatus_;
@@ -164,6 +166,8 @@ private:
     std::unique_ptr<std::thread> trackingCheckerThread_;
     std::atomic<bool> startTrackingChecker_;
 
+    std::condition_variable deviceRealNameVisitCon_;
+    std::mutex deviceRealNameVisitMutex_;
     std::string deviceRealName_;
 };
 

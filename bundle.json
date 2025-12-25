@@ -45,7 +45,8 @@
           "input",
           "window_manager",
           "sensor",
-          "os_account"
+          "os_account",
+          "hisysevent"
         ],
         "third_party": []
       },

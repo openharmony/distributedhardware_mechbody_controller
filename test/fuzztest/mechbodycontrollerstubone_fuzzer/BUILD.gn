@@ -25,6 +25,7 @@ ohos_fuzztest("MechBodyControllerStubOneFuzzTest") {
       "${mechbody_path}/test/fuzztest/mechbodycontrollerstubone_fuzzer"
   include_dirs = [
     "${mechbody_path}/services/include",
+    "${mechbody_path}/services/include/dotReport",
     "${mechbody_path}/services/include/connect",
     "${mechbody_path}/services/include/controller",
     "${mechbody_path}/services/include/motion",
@@ -68,6 +69,7 @@ ohos_fuzztest("MechBodyControllerStubOneFuzzTest") {
     "selinux_adapter:librestorecon",
     "sensor:sensor_interface_native",
     "window_manager:libdm_lite",
+    "hisysevent:libhisysevent",
   ]
 }
 

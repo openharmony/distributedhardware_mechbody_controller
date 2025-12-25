@@ -26,6 +26,11 @@
 #include "mc_controller_ipc_death_listener.h"
 #include "mechbody_controller_ipc_interface_code.h"
 #include "tokenid_kit.h"
+#include "ipc_skeleton.h"
+#include "hisysevent_utils.h"
+
+using namespace OHOS::Security;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace MechBodyController {
@@ -286,11 +291,59 @@ int32_t MechBodyControllerService::GetAttachedDevices(std::set<MechInfo> &mechIn
     return ERR_OK;
 }
 
+std::string MechBodyControllerService::GetAppNameByTokenId(uint32_t tokenId)
+{
+    int getTokenInfoRes;
+    std::string processName;
+    AccessToken::ATokenTypeEnum tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    if (tokenType != ATokenTypeEnum::TOKEN_NATIVE) {
+        AccessToken::HapTokenInfo callingTokenInfo;
+        getTokenInfoRes = AccessTokenKit::GetHapTokenInfo(tokenId, callingTokenInfo);
+        processName = callingTokenInfo.bundleName;
+    } else {
+        AccessToken::NativeTokenInfo callingTokenInfo;
+        getTokenInfoRes = AccessTokenKit::GetNativeTokenInfo(tokenId, callingTokenInfo);
+        processName = callingTokenInfo.processName;
+    }
+    HILOGI("get processname: %{public}d, %{public}d, %{public}s.", static_cast<int>(tokenType),
+        getTokenInfoRes, processName.c_str());
+    return processName;
+}
+
+void MechBodyControllerService::JudgeDeviceEnableSwitchAndReportFocustrackingStartEvent(uint32_t tokenId)
+{
+    bool isTrackingEnabledDevice = false;
+    MechBodyControllerService::GetInstance().GetTrackingEnabledDevice(isTrackingEnabledDevice);
+    if (isTrackingEnabledDevice) {
+        std::string processName = MechBodyControllerService::GetAppNameByTokenId(tokenId);
+        HisyseventUtils::DotReportFocustrackingStartEvent(processName);
+    } else {
+        HILOGW("isTrackingEnabledDevice is false, not report, tokenId: %{public}s.",
+            GetAnonymUint32(tokenId).c_str());
+    }
+}
+
+void MechBodyControllerService::JudgeAppEnableSwitchAndReportFocustrackingStartEvent(uint32_t tokenId)
+{
+    bool isEnabledApp = false;
+    McControllerManager::GetInstance().GetTrackingEnabled(tokenId, isEnabledApp);
+    if (isEnabledApp) {
+        std::string processName = MechBodyControllerService::GetAppNameByTokenId(tokenId);
+        HisyseventUtils::DotReportFocustrackingStartEvent(processName);
+    } else {
+        HILOGW("isTrackingEnabledApp is false, not report, tokenId: %{public}s.",
+            GetAnonymUint32(tokenId).c_str());
+    }
+}
+
 int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+
     HILOGI("start, tokenId: %{public}s; isEnabled: %{public}s;",
-        GetAnonymUint32(tokenId).c_str(), isEnabled ? "true" : "false");
+        GetAnonymUint32(tokenId).c_str(),
+        isEnabled ? "true" : "false");
+
     int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
     if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
         HILOGI("Has permission.");
@@ -305,14 +358,43 @@ int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled)
                     return DEVICE_NOT_CONNECTED;
                 }
                 HILOGI("Set main switch.");
+                // set device enable flag
                 motionManager->SetMechCameraTrackingEnabled(isEnabled);
             }
+        }
+        if (isEnabled) {
+            JudgeAppEnableSwitchAndReportFocustrackingStartEvent(tokenId);
         }
         return ERR_OK;
     }
     int32_t setResult = McControllerManager::GetInstance().SetTrackingEnabled(tokenId, isEnabled);
     HILOGI("end. Set Tracking Enabled result: %{public}d.", setResult);
+    if (isEnabled) {
+        JudgeDeviceEnableSwitchAndReportFocustrackingStartEvent(tokenId);
+    }
     return setResult;
+}
+
+int32_t MechBodyControllerService::GetTrackingEnabledDevice(bool &isEnabled)
+{
+    bool deviceIsEnable = false;
+    {
+        std::lock_guard<std::mutex> lock(motionManagersMutex);
+        for (auto it : motionManagers_) {
+            int32_t mechId = it.first;
+            std::shared_ptr motionManager = it.second;
+            if (motionManager == nullptr) {
+                continue;
+            }
+            bool isEnabledTmp;
+            motionManager->GetMechCameraTrackingEnabled(isEnabledTmp);
+            HILOGI("got device tracking state, mech id: %{public}d; isEnable: %{public}s",
+                   mechId, isEnabledTmp ? "true" : "false");
+            deviceIsEnable |= isEnabledTmp;
+        }
+    }
+    isEnabled = deviceIsEnable;
+    return ERR_OK;
 }
 
 int32_t MechBodyControllerService::GetTrackingEnabled(bool &isEnabled)
