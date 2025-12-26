@@ -64,8 +64,8 @@ namespace {
     constexpr float MIDDLE_MIN = 0.45f;
     constexpr float FACE_OFFSET = 0.1f;
     constexpr int16_t STICK_BASE = 300;
-    constexpr float UP_LIMIT = 1.2f;
-    constexpr float DOWN_LIMIT = -0.2f;
+    constexpr float UP_LIMIT = 1.0f;
+    constexpr float DOWN_LIMIT = 0.0f;
     constexpr float UP_HORIZONTAL = 0.2f;
     constexpr float DOWN_HORIZONTAL = -0.2f;
     static const std::set<int32_t> FOCUS_MODE_WHITELIST = { 1 };
@@ -103,6 +103,12 @@ namespace {
     constexpr float OFFSET_VALUE = 0.2f;
     constexpr int32_t ACTION_CONTROL_TIMEOUT = 2000;
     constexpr int32_t TRACKING_PARAM_LOST_DELAY = 200; // ms
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    const std::string PREDICTION_TASK_NAME = "PredictionTaskName";
+    constexpr int32_t PREDICTION_TASK_DELAY = 100; // ms
+    int32_t g_predictionIgnoredFrame = 0;
+    constexpr int32_t PREDICTION_IGNORED_FRAME_MAX = 8;
+#endif
 }
 
 McCameraTrackingController& McCameraTrackingController::GetInstance()
@@ -367,22 +373,17 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
 
 int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackingMetaInfo &info)
 {
-    HILOGI("OnFocusTracking.");
-    HILOGI("Tracking mode: %{public}d; "
-           "Tracking region: [x: %{public}f, y: %{public}f, width: %{public}f, height: %{public}f]; "
-           "Tracking object ID: %{public}d",
+    HILOGI("Tracking mode: %{public}d; Tracking region: [x: %{public}f, y: %{public}f, width: %{public}f,"
+           " height: %{public}f];  Tracking object ID: %{public}d",
            info.GetTrackingMode(), info.GetTrackingRegion().topLeftX, info.GetTrackingRegion().topLeftY,
            info.GetTrackingRegion().width, info.GetTrackingRegion().height, info.GetTrackingObjectId());
-    if (info.GetDetectedObjects().size() <= 0) {
-        return ERR_OK;
-    }
 
     std::ostringstream oss;
     for (const auto& obj : info.GetDetectedObjects()) {
         oss << "Detected object ID: " << obj->GetObjectId() << ", Type: " << static_cast<int>(obj->GetType())
             << ", BBox: [" << obj->GetBoundingBox().topLeftX << ", " << obj->GetBoundingBox().topLeftY << ", "
-            << obj->GetBoundingBox().width << ", " << obj->GetBoundingBox().height << "]"
-            << ", Confidence: " << obj->GetConfidence();
+            << obj->GetBoundingBox().width << ", " << obj->GetBoundingBox().height << "]" << ", Confidence: "
+            << obj->GetConfidence();
     }
     HILOGI("tracking object info: %{public}s", oss.str().c_str());
 
@@ -393,19 +394,26 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
     }
     HILOGI("tracking param: %{public}s", trackingParams->ToString().c_str());
 #ifdef MECHBODY_CONTROLLER_EXTENDED
-    int32_t res = MechbodyAdapterUtils::RunTrackingCore(trackingParams->roi.x, trackingParams->roi.y,
-        trackingParams->roi.width, trackingParams->roi.height,
-        [this, trackingParams, info](float resultX, float resultY) mutable {
-            trackingParams->roi.x = resultX;
-            trackingParams->roi.y = resultY;
-            HILOGI("tracking param after: %{public}s", trackingParams->ToString().c_str());
-            if (trackingParams->roi.width > TRACKING_LOST_CHECK || trackingParams->roi.height > TRACKING_LOST_CHECK) {
-                AdjustOffset(trackingParams, this->currentCameraInfo_->cameraType);
-                HILOGI("tracking param offset: %{public}s", trackingParams->ToString().c_str());
+    int32_t objectId = info.GetTrackingObjectId();
+    if (trackingParams->roi.x > 0 || trackingParams->roi.y > 0) {
+        g_predictionIgnoredFrame = 0;
+        HILOGI("DoPrediction now with invalid data.");
+        return DoPrediction(trackingParams, objectId);
+    } else {
+        if (eventHandler_ != nullptr) {
+            eventHandler_->RemoveTask(PREDICTION_TASK_NAME);
+            g_predictionIgnoredFrame ++;
+            if (g_predictionIgnoredFrame > PREDICTION_IGNORED_FRAME_MAX) {
+                HILOGI("DoPrediction now with invalid data.");
+                return DoPrediction(trackingParams, objectId);
             }
-            UpdateMotionsWithTrackingData(trackingParams, info.GetTrackingObjectId());
-        });
-    return res;
+            HILOGI("DoPrediction now with invalid data delay.");
+            eventHandler_->PostTask([this, trackingParams, objectId] () mutable {
+                    DoPrediction(trackingParams, objectId);
+                }, PREDICTION_TASK_NAME, PREDICTION_TASK_DELAY);
+        }
+        return ERR_OK;
+    }
 #else
     if (trackingParams->roi.width <= TRACKING_LOST_CHECK || trackingParams->roi.height <= TRACKING_LOST_CHECK) {
         HILOGW("tracking rect lost, width or height is zero.");
@@ -413,6 +421,29 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
     }
     AdjustOffset(trackingParams, currentCameraInfo_->cameraType);
     return UpdateMotionsWithTrackingData(trackingParams, info.GetTrackingObjectId());
+#endif
+}
+
+int32_t McCameraTrackingController::DoPrediction(std::shared_ptr<TrackingFrameParams> &trackingParams,
+    int32_t &objectId)
+{
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    HILOGI("Start RunTrackingCore.");
+    int32_t res = MechbodyAdapterUtils::RunTrackingCore(trackingParams->roi.x, trackingParams->roi.y,
+        trackingParams->roi.width, trackingParams->roi.height,
+        [this, trackingParams, objectId](float resultX, float resultY) mutable {
+            trackingParams->roi.x = resultX;
+            trackingParams->roi.y = resultY;
+            HILOGI("tracking param after: %{public}s", trackingParams->ToString().c_str());
+            if (trackingParams->roi.width > TRACKING_LOST_CHECK || trackingParams->roi.height > TRACKING_LOST_CHECK) {
+                AdjustOffset(trackingParams, this->currentCameraInfo_->cameraType);
+                HILOGI("tracking param offset: %{public}s", trackingParams->ToString().c_str());
+            }
+            UpdateMotionsWithTrackingData(trackingParams, objectId);
+        });
+    return res;
+#else
+    return ERR_OK;
 #endif
 }
 
@@ -1131,14 +1162,12 @@ void McCameraTrackingController::AdjustOffset(std::shared_ptr<TrackingFrameParam
     } else if (sensorRotation_ == MobileRotation::LEFT || sensorRotation_ == MobileRotation::RIGHT) {
         AdjustXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace);
     }
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
 }
 
 void McCameraTrackingController::AdjustYOffset(ROI &roi, CameraType cameraType,
     float &offsetX, float &offsetY, bool &isFace)
 {
-    if (std::abs(offsetX) <= TRACKING_LOST_CHECK && std::abs(offsetY) <= TRACKING_LOST_CHECK) {
-        return;
-    }
     HILOGI("start offset before ROI: %{public}s", roi.ToString().c_str());
     float yOffset = offsetY;
     float xOffset = -offsetX;
@@ -1158,42 +1187,28 @@ void McCameraTrackingController::AdjustYOffset(ROI &roi, CameraType cameraType,
     roi.y = MIDDLE_VALUE_HORIZONTAL + yOffset;
 
     float middleValueVertical = MIDDLE_VALUE_HORIZONTAL;
-    if (isFace) {
-        middleValueVertical -= FACE_OFFSET;
-        xOffset += FACE_OFFSET;
-    }
     float virtualCenterX = middleValueVertical + xOffset;
     if (roi.x > virtualCenterX) {
         xOffset = (roi.x - virtualCenterX) / (UP_LIMIT - virtualCenterX) * (1 - middleValueVertical);
     } else if (roi.x < virtualCenterX) {
         xOffset = (roi.x - virtualCenterX) / (virtualCenterX - DOWN_LIMIT) * (1 - middleValueVertical);
     }
+    if (isFace) {
+        xOffset += FACE_OFFSET;
+    }
     xOffset = xOffset > UP_HORIZONTAL ? UP_HORIZONTAL : (xOffset < DOWN_HORIZONTAL ? DOWN_HORIZONTAL : xOffset);
-    roi.x = middleValueVertical + xOffset;
+    roi.x = MIDDLE_VALUE_HORIZONTAL + xOffset;
     HILOGI("start offset after ROI: %{public}s", roi.ToString().c_str());
 }
 
 void McCameraTrackingController::AdjustXOffset(ROI &roi, CameraType cameraType,
     float &offsetX, float &offsetY, bool &isFace)
 {
-    if (std::abs(offsetX) <= TRACKING_LOST_CHECK && std::abs(offsetY) <= TRACKING_LOST_CHECK) {
-        return;
-    }
     HILOGI("start offset before ROI: %{public}s", roi.ToString().c_str());
     float yOffset = offsetX;
     float xOffset = offsetY;
 
     float middleValueVertical = MIDDLE_VALUE_HORIZONTAL;
-    if (isFace) {
-        if (cameraType == CameraType::FRONT) {
-            middleValueVertical += FACE_OFFSET;
-            yOffset += FACE_OFFSET;
-        } else if (cameraType == CameraType::BACK) {
-            middleValueVertical -= FACE_OFFSET;
-            yOffset -= FACE_OFFSET;
-        }
-    }
-
     float virtualCenterY = 0.0f;
     if (cameraType == CameraType::FRONT) {
         virtualCenterY = middleValueVertical - yOffset;
@@ -1205,8 +1220,15 @@ void McCameraTrackingController::AdjustXOffset(ROI &roi, CameraType cameraType,
     } else if (roi.y < virtualCenterY) {
         yOffset = (roi.y - virtualCenterY) / (virtualCenterY - DOWN_LIMIT) * (1 - middleValueVertical);
     }
+    if (isFace) {
+        if (cameraType == CameraType::FRONT) {
+            yOffset -= FACE_OFFSET;
+        } else if (cameraType == CameraType::BACK) {
+            yOffset += FACE_OFFSET;
+        }
+    }
     yOffset = yOffset > UP_HORIZONTAL ? UP_HORIZONTAL : (yOffset < DOWN_HORIZONTAL ? DOWN_HORIZONTAL : yOffset);
-    roi.y = middleValueVertical + yOffset;
+    roi.y = MIDDLE_VALUE_HORIZONTAL + yOffset;
     
     float virtualCenterX = MIDDLE_VALUE_HORIZONTAL + xOffset;
     if (roi.x > virtualCenterX) {

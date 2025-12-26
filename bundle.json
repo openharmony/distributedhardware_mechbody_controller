@@ -46,13 +46,15 @@
           "window_manager",
           "sensor",
           "os_account",
-          "hisysevent"
+          "hisysevent",
+          "runtime_core"
         ],
         "third_party": []
       },
       "build": {
         "sub_component": [
           "//foundation/distributedhardware/mechbody_controller/services:mechbody_service",
+          "//foundation/distributedhardware/mechbody_controller/interface/ets/mech_manager:mechanic_manager_group_ani",
           "//foundation/distributedhardware/mechbody_controller/interface/napi/mech_manager:mechanicmanager_napi",
           "//foundation/distributedhardware/mechbody_controller/etc/init:etc",
           "//foundation/distributedhardware/mechbody_controller/sa_profile:mechbody_sa_profile"
