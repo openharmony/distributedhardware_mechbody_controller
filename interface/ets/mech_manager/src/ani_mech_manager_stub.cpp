@@ -33,18 +33,21 @@ int32_t AniMechManagerStub::OnRemoteRequest(uint32_t code,
     MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     auto funcIter = mechManagerFuncMap_.find(static_cast<IMechBodyControllerCode>(code));
-    if (funcIter != mechManagerFuncMap_.end()) {
-        MechManagerFunc func = funcIter->second;
-        std::u16string token = data.ReadInterfaceToken();
-        if (token != MECH_SERVICE_IPC_TOKEN) {
-            return IPC_TOKEN_DOES_NOT_MATCH;
-        }
-        if (func != nullptr) {
-            return (this->*func)(data, reply);
-        }
+    if (funcIter == mechManagerFuncMap_.end()) {
+        HILOGE("OnRemoteRequest received unknown code: %{public}u", code);
+        return IPC_STUB_UNKNOW_TRANS_ERR;
     }
 
-    return NO_MATCHING_SERVICE_IMPL;
+    MechManagerFunc func = funcIter->second;
+    if (func != nullptr) {
+        HILOGE("Handler for code %{public}u is null", code);
+        return ERR_NULL_OBJECT;
+    }
+    std::u16string token = data.ReadInterfaceToken();
+    if (token != MECH_SERVICE_IPC_TOKEN) {
+        return IPC_TOKEN_DOES_NOT_MATCH;
+    }
+    return (this->*func)(data, reply);
 }
 
 int32_t AniMechManagerStub::AttachStateChangeCallback(MessageParcel &data,

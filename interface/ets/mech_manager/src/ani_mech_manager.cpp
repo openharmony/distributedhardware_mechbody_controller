@@ -1267,7 +1267,7 @@ int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
             return ERR_OK;
         }
     }
-   
+
     auto task = [this, param, result]() {
         if (param == nullptr || param->vm == nullptr) {
             HILOGE("param or etsVm is null!");
