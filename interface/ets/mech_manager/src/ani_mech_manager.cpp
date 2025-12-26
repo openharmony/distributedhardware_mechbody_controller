@@ -1259,6 +1259,7 @@ int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
         auto it = promiseParams_.find(cmdId);
         if (it == promiseParams_.end()) {
             HILOGI("Not found, cmdId: %{public}s", cmdId.c_str());
+            return ERR_OK;
         }
         param = it->second;
         if (param == nullptr) {
