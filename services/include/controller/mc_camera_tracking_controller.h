@@ -152,6 +152,7 @@ private:
     int32_t ComputeFov();
     void SensorCutForVideoMode(float &sensorWidthCut, float &sensorHighCut);
     bool IsCurrentFocus();
+    int32_t DoPrediction(std::shared_ptr<TrackingFrameParams> &trackingParams, int32_t &objectId);
     int32_t UpdateMotionManagers();
     std::shared_ptr<TrackingFrameParams> BuildTrackingParams(CameraStandard::FocusTrackingMetaInfo &info);
     int32_t GetTrackingTarget(CameraStandard::Rect &trackingRegion,
