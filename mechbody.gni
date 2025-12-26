@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+mechbody_controller_path =
+    "//foundation/distributedhardware/mechbody_controller"
+
 declare_args() {
   mechbody_controller_feature_L1 = false
   mechbody_controller_feature_product = true
