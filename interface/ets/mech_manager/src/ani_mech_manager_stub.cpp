@@ -35,13 +35,13 @@ int32_t AniMechManagerStub::OnRemoteRequest(uint32_t code,
     auto funcIter = mechManagerFuncMap_.find(static_cast<IMechBodyControllerCode>(code));
     if (funcIter == mechManagerFuncMap_.end()) {
         HILOGE("OnRemoteRequest received unknown code: %{public}u", code);
-        return IPC_STUB_UNKNOW_TRANS_ERR;
+        return NO_MATCHING_SERVICE_IMPL;
     }
 
     MechManagerFunc func = funcIter->second;
     if (func == nullptr) {
         HILOGE("Handler for code %{public}u is null", code);
-        return ERR_NULL_OBJECT;
+        return NO_MATCHING_SERVICE_IMPL;
     }
     std::u16string token = data.ReadInterfaceToken();
     if (token != MECH_SERVICE_IPC_TOKEN) {
