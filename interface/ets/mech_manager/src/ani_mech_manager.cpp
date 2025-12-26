@@ -94,6 +94,10 @@ void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachSta
     if (CheckControlL1()) {
         return;
     }
+    if (callback == nullptr) {
+        ::taihe::set_business_error(MechNapiErrorCode::PARAMETER_CHECK_FAILED, "Invalid event type.");
+        return;
+    }
     int32_t result = ExecuteOffForAttachStateChange(!callback.has_value(), callback.value());
     ProcessOffResultCode(result);
 }
@@ -209,6 +213,10 @@ void AniMechManager::OffTrackingStateChange(const::taihe::optional_view<Tracking
 {
     HILOGI("Start to unregister the callback function.");
     if (CheckControlL1()) {
+        return;
+    }
+    if (callback == nullptr) {
+        ::taihe::set_business_error(MechNapiErrorCode::PARAMETER_CHECK_FAILED, "Invalid event type.");
         return;
     }
     int32_t result = ExecuteOffForTrackingEvent(!callback.has_value(), callback.value());
@@ -352,7 +360,7 @@ void AniMechManager::RotationLimitsToAni(const RotateDegreeLimit &limit, Rotatio
     out.negativePitchMax = limit.negMax.pitch;
     out.positiveYawMax = limit.posMax.yaw;
     out.positiveRollMax = limit.posMax.roll;
-    out.positivePitchMax = limit.posMax.yaw;
+    out.positivePitchMax = limit.posMax.pitch;
 }
 
 void AniMechManager::Rotate(int32_t mechId,
@@ -611,6 +619,10 @@ void AniMechManager::OffRotationAxesStatusChange(const ::taihe::optional_view<Ro
 {
     HILOGI("Start to unregister the callback function.");
     if (CheckControlL1()) {
+        return;
+    }
+    if (callback == nullptr) {
+        ::taihe::set_business_error(MechNapiErrorCode::PARAMETER_CHECK_FAILED, "Invalid event type.");
         return;
     }
     int32_t result = ExecuteOffForRotationAxesStatusChange(!callback.has_value(), callback.value());
