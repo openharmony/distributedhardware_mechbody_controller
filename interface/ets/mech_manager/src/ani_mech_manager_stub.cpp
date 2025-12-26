@@ -39,7 +39,7 @@ int32_t AniMechManagerStub::OnRemoteRequest(uint32_t code,
     }
 
     MechManagerFunc func = funcIter->second;
-    if (func != nullptr) {
+    if (func == nullptr) {
         HILOGE("Handler for code %{public}u is null", code);
         return ERR_NULL_OBJECT;
     }
