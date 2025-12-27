@@ -94,11 +94,7 @@ void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachSta
     if (CheckControlL1()) {
         return;
     }
-    if (callback == nullptr) {
-        ::taihe::set_business_error(MechNapiErrorCode::PARAMETER_CHECK_FAILED, "Invalid event type.");
-        return;
-    }
-    int32_t result = ExecuteOffForAttachStateChange(!callback.has_value(), callback.value());
+    int32_t result = ExecuteOffForAttachStateChange(callback);
     ProcessOffResultCode(result);
 }
 
@@ -215,11 +211,7 @@ void AniMechManager::OffTrackingStateChange(const::taihe::optional_view<Tracking
     if (CheckControlL1()) {
         return;
     }
-    if (callback == nullptr) {
-        ::taihe::set_business_error(MechNapiErrorCode::PARAMETER_CHECK_FAILED, "Invalid event type.");
-        return;
-    }
-    int32_t result = ExecuteOffForTrackingEvent(!callback.has_value(), callback.value());
+    int32_t result = ExecuteOffForTrackingEvent(callback);
     ProcessOffResultCode(result);
 }
 
@@ -621,11 +613,7 @@ void AniMechManager::OffRotationAxesStatusChange(const ::taihe::optional_view<Ro
     if (CheckControlL1()) {
         return;
     }
-    if (callback == nullptr) {
-        ::taihe::set_business_error(MechNapiErrorCode::PARAMETER_CHECK_FAILED, "Invalid event type.");
-        return;
-    }
-    int32_t result = ExecuteOffForRotationAxesStatusChange(!callback.has_value(), callback.value());
+    int32_t result = ExecuteOffForRotationAxesStatusChange(callback);
     ProcessOffResultCode(result);
 }
 
@@ -823,20 +811,20 @@ bool AniMechManager::InitRotationAxesStatusChangeStub()
     }
 }
 
-int32_t AniMechManager::ExecuteOffForAttachStateChange(bool isNull, const AttachStateCBTaihe &callback)
+int32_t AniMechManager::ExecuteOffForAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callback)
 {
     if (!InitMechClient()) {
         HILOGE("Init Mech Client failed.");
         return MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY;
     }
     std::lock_guard<std::mutex> lock(attachStateChangeCallbackMutex_);
-    if (isNull) {
+    if (!callback.has_value()) {
         HILOGI("Cancel all registrations");
         mechClient_->AttachStateChangeListenOff();
         attachStateChangeCallback_.clear();
         return ERR_OK;
     }
-    auto it = std::find(attachStateChangeCallback_.begin(), attachStateChangeCallback_.end(), callback);
+    auto it = std::find(attachStateChangeCallback_.begin(), attachStateChangeCallback_.end(), callback.value());
     if (it == attachStateChangeCallback_.end()) {
         HILOGI("No found callback info.");
         return ERR_OK;
@@ -849,7 +837,7 @@ int32_t AniMechManager::ExecuteOffForAttachStateChange(bool isNull, const Attach
     return ERR_OK;
 }
 
-int32_t AniMechManager::ExecuteOffForTrackingEvent(bool isNull, const TrackingEventCBTaihe &callback)
+int32_t AniMechManager::ExecuteOffForTrackingEvent(const ::taihe::optional_view<TrackingEventCBTaihe> &callback)
 {
     HILOGE("TRACKING_EVENT");
     if (!InitMechClient()) {
@@ -857,13 +845,13 @@ int32_t AniMechManager::ExecuteOffForTrackingEvent(bool isNull, const TrackingEv
         return MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY;
     }
     std::lock_guard<std::mutex> lock(trackingEventCallbackMutex_);
-    if (isNull) {
+    if (!callback.has_value()) {
         HILOGI("Cancel all registrations");
         mechClient_->TrackingEventListenOff();
         trackingEventCallback_.clear();
         return ERR_OK;
     }
-    auto it = std::find(trackingEventCallback_.begin(), trackingEventCallback_.end(), callback);
+    auto it = std::find(trackingEventCallback_.begin(), trackingEventCallback_.end(), callback.value());
     if (it == trackingEventCallback_.end()) {
         HILOGI("No found callback info.");
         return ERR_OK;
@@ -876,7 +864,8 @@ int32_t AniMechManager::ExecuteOffForTrackingEvent(bool isNull, const TrackingEv
     return ERR_OK;
 }
 
-int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(bool isNull, const RotationAxesCBTaihe &callback)
+int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(
+    const ::taihe::optional_view<RotationAxesCBTaihe> &callback)
 {
     HILOGE("ROTATE_AXIS_STATUS_CHANGE_EVENT");
     if (!InitMechClient()) {
@@ -887,13 +876,14 @@ int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(bool isNull, const
         return PERMISSION_DENIED;
     }
     std::lock_guard<std::mutex> lock(rotateAxisStatusChangeCallbackMutex_);
-    if (isNull) {
+    if (!callback.has_value()) {
         HILOGI("Cancel all registrations");
         mechClient_->RotationAxesStatusChangeListenOff();
         rotateAxisStatusChangeCallback_.clear();
         return ERR_OK;
     }
-    auto it = std::find(rotateAxisStatusChangeCallback_.begin(), rotateAxisStatusChangeCallback_.end(), callback);
+    auto it = std::find(rotateAxisStatusChangeCallback_.begin(), rotateAxisStatusChangeCallback_.end(),
+        callback.value());
     if (it == rotateAxisStatusChangeCallback_.end()) {
         HILOGI("No found callback info.");
         return ERR_OK;

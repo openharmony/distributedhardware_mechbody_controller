@@ -122,11 +122,11 @@ public:
     void SearchTarget(const TargetInfoTaihe &target, const SearchParamsTaihe &params, uintptr_t &promise);
 private:
     int32_t ExecuteOnForAttachStateChange(const AttachStateCBTaihe &callback);
-    int32_t ExecuteOffForAttachStateChange(bool isNull, const AttachStateCBTaihe &callback);
+    int32_t ExecuteOffForAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callbck);
     int32_t ExecuteOnForTrackingEvent(const TrackingEventCBTaihe &callback);
-    int32_t ExecuteOffForTrackingEvent(bool isNull, const TrackingEventCBTaihe &callback);
+    int32_t ExecuteOffForTrackingEvent(const ::taihe::optional_view<TrackingEventCBTaihe> &callback);
     int32_t ExecuteOnForRotationAxesStatusChange(const RotationAxesCBTaihe &callback);
-    int32_t ExecuteOffForRotationAxesStatusChange(bool isNull, const RotationAxesCBTaihe &callback);
+    int32_t ExecuteOffForRotationAxesStatusChange(const ::taihe::optional_view<RotationAxesCBTaihe> &callback);
 
     bool InitAttachStateChangeStub();
     bool InitTrackingEventStub();
