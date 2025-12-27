@@ -25,6 +25,7 @@
 #include "mc_camera_tracking_controller.h"
 #include "mc_connect_manager.h"
 #include "mechbody_controller_utils.h"
+#include "hisysevent_utils.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -348,6 +349,19 @@ void MotionManager::MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelD
     return;
 }
 
+void ReportFocustrackingStartEvent()
+{
+    uint32_t tokenId = McCameraTrackingController::GetInstance().GetTokenIdOfCurrentCameraInfo();
+    if (tokenId == 0) {
+        // No token: The yuntai is connected and there are no camera or other applications open.
+        // Simply click on the tracking switch on the yuntai and come here without a token ID
+        HILOGI("tokenId not exist, report.");
+        HisyseventUtils::DotReportFocustrackingStartEvent("");
+    } else {
+        MechBodyControllerService::JudgeAppEnableSwitchAndReportFocustrackingStartEvent(tokenId);
+    }
+}
+
 void MotionManager::MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd)
 {
     CHECK_POINTER_RETURN(cmd, "cmd");
@@ -370,6 +384,7 @@ void MotionManager::MechTrackingStatusNotify(const std::shared_ptr<RegisterMechT
             deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
             tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
             HILOGI("tkCmd is:MECH_TK_ENABLE_NO_TARGET.");
+            ReportFocustrackingStartEvent();
         }
     }
     CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_ is empty.");
@@ -529,8 +544,9 @@ void MotionManager::GetMechRealName()
     std::shared_ptr<GetMechRealNameCmd> realNameCmd = factory.CreateGetMechRealNameCmd();
     CHECK_POINTER_RETURN(realNameCmd, "RealNameCmd is empty.");
     auto nameCallback = [this, realNameCmd]() {
-        deviceRealName_ = realNameCmd->GetParams();
-        HILOGI("device callback real name: %{public}s", GetAnonymStr(deviceRealName_).c_str());
+        std::string realName = realNameCmd->GetParams();
+        SetDeviceRealName(realName);
+        HILOGI("device callback real name: %{public}s", GetAnonymStr(realName).c_str());
     };
 
     realNameCmd->SetResponseCallback(nameCallback);
@@ -1429,6 +1445,25 @@ int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &act
 
 const std::string &MotionManager::GetDeviceRealName() const
 {
+    return deviceRealName_;
+}
+
+void MotionManager::SetDeviceRealName(const std::string &deviceRealName)
+{
+    std::lock_guard<std::mutex> lock(deviceRealNameVisitMutex_);
+    deviceRealName_ = deviceRealName;
+    deviceRealNameVisitCon_.notify_all();
+}
+
+const std::string &MotionManager::TryGetDeviceRealNameSync(uint32_t timeoutMs)
+{
+    std::unique_lock<std::mutex> lock(deviceRealNameVisitMutex_);
+    if (!deviceRealNameVisitCon_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+        [this] { return !deviceRealName_.empty(); })) {
+        HILOGE("wait timeout, deviceRealName not set.");
+        return deviceRealName_;
+    }
+    HILOGI("deviceRealName not empty return.");
     return deviceRealName_;
 }
 

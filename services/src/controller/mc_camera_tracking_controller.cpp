@@ -23,6 +23,7 @@
 #include "os_account_manager.h"
 #include "capture_scene_const.h"
 #include "mechbody_controller_utils.h"
+#include "hisysevent_utils.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -152,10 +153,18 @@ void McCameraTrackingController::UnInit()
     HILOGI("end");
 }
 
-int32_t McCameraTrackingController::OnCaptureSessionConfiged(
+uint32_t McCameraTrackingController::GetTokenIdOfCurrentCameraInfo()
+{
+    if (currentCameraInfo_ == nullptr) {
+        HILOGW("currentCameraInfo_ is nullptr; ");
+        return 0;
+    }
+    return currentCameraInfo_->tokenId;
+}
+
+void McCameraTrackingController::UpdateCurrentCameraInfoByCaptureSessionInfo(
     const CameraStandard::CaptureSessionInfo& captureSessionInfo)
 {
-    HILOGI("start");
     if (currentCameraInfo_ == nullptr) {
         currentCameraInfo_ = std::make_shared<CameraInfo>();
     }
@@ -187,17 +196,33 @@ int32_t McCameraTrackingController::OnCaptureSessionConfiged(
     currentCameraInfo_->zoomFactor = captureSessionInfo.zoomInfo.zoomValue;
     currentCameraInfo_->equivalentFocus = captureSessionInfo.zoomInfo.equivalentFocus;
     currentCameraInfo_->videoStabilizationMode = captureSessionInfo.zoomInfo.videoStabilizationMode;
+}
+
+int32_t McCameraTrackingController::OnCaptureSessionConfiged(
+    const CameraStandard::CaptureSessionInfo& captureSessionInfo)
+{
+    HILOGI("start");
+    UpdateCurrentCameraInfoByCaptureSessionInfo(captureSessionInfo);
     ComputeFov();
     if (currentCameraInfo_->tokenId != 0) {
         UpdateMotionManagers();
+        bool isTrackingEnabledFlag = false;
         if (!appSettings.empty() && appSettings.find(currentCameraInfo_->tokenId) != appSettings.end()) {
             HILOGI("The application settings trackingEnable is not empty.");
+            isTrackingEnabledFlag = appSettings[currentCameraInfo_->tokenId]->isTrackingEnabled;
             SetTrackingEnabled(currentCameraInfo_->tokenId,
-                appSettings[currentCameraInfo_->tokenId]->isTrackingEnabled);
+                isTrackingEnabledFlag);
         } else {
-            SetTrackingEnabled(currentCameraInfo_->tokenId, true);
+            isTrackingEnabledFlag = true;
+            SetTrackingEnabled(currentCameraInfo_->tokenId, isTrackingEnabledFlag);
         }
         UpdateActionControl();
+        if (isTrackingEnabledFlag) {
+            // only set app enable flag
+            // need query device enable flag
+            MechBodyControllerService::JudgeDeviceEnableSwitchAndReportFocustrackingStartEvent(
+                currentCameraInfo_->tokenId);
+        }
     }
     HILOGI("end");
     return ERR_OK;

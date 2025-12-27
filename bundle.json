@@ -46,6 +46,7 @@
           "window_manager",
           "sensor",
           "os_account",
+          "hisysevent",
           "runtime_core"
         ],
         "third_party": []

@@ -36,6 +36,7 @@ struct TimeLimit {
 
 struct MechInfo : public OHOS::Parcelable {
     int32_t mechId = 0;
+    // device type
     MechType mechType = MechType::PORTABLE_GIMBAL;
     std::string mechName;
     std::string mac;

@@ -27,6 +27,9 @@ class MechBodyControllerService : public SystemAbility, public MechBodyControlle
     DECLARE_SYSTEM_ABILITY(MechBodyControllerService);
 public:
     static MechBodyControllerService& GetInstance();
+    static std::string GetAppNameByTokenId(uint32_t tokenId);
+    static void JudgeDeviceEnableSwitchAndReportFocustrackingStartEvent(uint32_t tokenId);
+    static void JudgeAppEnableSwitchAndReportFocustrackingStartEvent(uint32_t tokenId);
 private:
     MechBodyControllerService(const MechBodyControllerService&) = delete;
     MechBodyControllerService& operator= (const MechBodyControllerService&) = delete;
@@ -74,6 +77,7 @@ public:
     int32_t SearchTarget(std::string &napiCmdId, const std::shared_ptr<TargetInfo> &targetInfo,
                          const std::shared_ptr<SearchParams> &searchParams) override;
     int32_t SearchTargetEnd(const uint32_t &tokenId, const std::string &napiCmdId, const int32_t &targetNum);
+    int32_t GetTrackingEnabledDevice(bool &isEnabled);
 
 private:
     bool IsSystemApp();

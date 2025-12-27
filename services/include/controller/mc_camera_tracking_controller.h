@@ -127,6 +127,8 @@ public:
     void Init();
     void UnInit();
     int32_t OnCaptureSessionConfiged(const CameraStandard::CaptureSessionInfo& captureSessionInfo);
+    void UpdateCurrentCameraInfoByCaptureSessionInfo(
+        const CameraStandard::CaptureSessionInfo& captureSessionInfo);
     int32_t OnZoomInfoChange(int32_t sessionid, const CameraStandard::ZoomInfo& zoomInfo);
     int32_t OnSessionStatusChange(int32_t sessionid, bool status);
     int32_t OnFocusTracking(CameraStandard::FocusTrackingMetaInfo &info);
@@ -147,6 +149,7 @@ public:
     void OnConnectChange();
     int32_t UpdateActionControl();
     int32_t SetStickOffset(const int16_t &stickX, const int16_t &stickY);
+    uint32_t GetTokenIdOfCurrentCameraInfo();
 
 private:
     int32_t ComputeFov();

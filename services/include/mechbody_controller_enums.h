@@ -167,6 +167,18 @@ enum class SearchDirection : uint32_t {
     LEFTWARD = 1,
     RIGHTWARD = 2,
 };
+
+enum class MechKitStartResCode : int32_t {
+    SUCCESS = 0,
+    GATT_CONNECT_FAIL = 1,
+    EVENT_HANDLER_INIT_FAIL = 2,
+};
+
+enum class ConnectType : int32_t {
+    UNKNOWN = -1,
+    BLUETOOTH = 0,
+    NFC = 1
+};
 }  // namespace MechBodyController
 }  // namespace OHOS
 #endif  // MECHBODY_CONTROLLER_MECHBODY_CONTROLLER_ENUMS_H
