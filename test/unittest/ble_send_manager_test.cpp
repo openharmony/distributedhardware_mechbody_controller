@@ -14,6 +14,7 @@
  */
 #include "ble_send_manager_test.h"
 #include "bluetooth_errorcode.h"
+#include "bluetooth_gatt_client.h"
 #include "c_header/ohos_bt_gatt.h"
 #include "mechbody_controller_log.h"
 #include "test_log.h"
@@ -25,6 +26,16 @@
 using namespace testing;
 using namespace testing::ext;
 using namespace OHOS;
+
+static int g_mock;
+namespace OHOS {
+namespace Bluetooth {
+    int GattClient::WriteCharacteristic(GattCharacteristic &characteristic, bool isWithContext)
+    {
+        return g_mock;
+    }
+}
+}
 
 namespace OHOS {
 namespace MechBodyController {
@@ -439,6 +450,7 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_003, TestSize.Leve
     bleSendManager_.address_ = mac;
     BluetoothRemoteDevice device(bleSendManager_.address_, 1);
     bleSendManager_.gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    g_mock = ERROR_INVALID_PARAMETERS;
     int32_t result = bleSendManager_.MechbodyGattcWriteCharacteristic(data, dataLen);
     EXPECT_EQ(result, ERROR_INVALID_PARAMETERS);
     DTEST_LOG << "BleSendManagerTest MechbodyGattcWriteCharacteristic_003 end" << std::endl;
