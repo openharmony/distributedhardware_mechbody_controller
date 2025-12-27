@@ -864,7 +864,8 @@ int32_t AniMechManager::ExecuteOffForTrackingEvent(const ::taihe::optional_view<
     return ERR_OK;
 }
 
-int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(const ::taihe::optional_view<RotationAxesCBTaihe> &callback)
+int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(
+    const ::taihe::optional_view<RotationAxesCBTaihe> &callback)
 {
     HILOGE("ROTATE_AXIS_STATUS_CHANGE_EVENT");
     if (!InitMechClient()) {
@@ -881,7 +882,8 @@ int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(const ::taihe::opt
         rotateAxisStatusChangeCallback_.clear();
         return ERR_OK;
     }
-    auto it = std::find(rotateAxisStatusChangeCallback_.begin(), rotateAxisStatusChangeCallback_.end(), callback.value());
+    auto it = std::find(rotateAxisStatusChangeCallback_.begin(), rotateAxisStatusChangeCallback_.end(),
+        callback.value());
     if (it == rotateAxisStatusChangeCallback_.end()) {
         HILOGI("No found callback info.");
         return ERR_OK;
