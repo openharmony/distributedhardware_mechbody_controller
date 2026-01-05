@@ -81,7 +81,7 @@ int32_t JsMechManagerService::AttachStateChangeCallback(const AttachmentState &a
 
             napi_close_handle_scope(item.env, scope);
         };
-        napi_send_event(item.env, task, napi_eprio_high);
+        napi_send_event(item.env, task, napi_eprio_high, "MechbodyTask");
     }
     HILOGI("end");
     return ERR_OK;
@@ -118,7 +118,7 @@ int32_t JsMechManagerService::TrackingEventCallback(const int32_t &mechId,
 
             napi_close_handle_scope(item.env, scope);
         };
-        napi_send_event(item.env, task, napi_eprio_high);
+        napi_send_event(item.env, task, napi_eprio_high, "MechbodyTask");
     }
 
     HILOGI("end");
@@ -178,7 +178,7 @@ int32_t JsMechManagerService::RotationAxesStatusChangeCallback(const int32_t &me
 
             napi_close_handle_scope(item.env, scope);
         };
-        napi_send_event(item.env, task, napi_eprio_high);
+        napi_send_event(item.env, task, napi_eprio_high, "MechbodyTask");
     }
 
     HILOGI("end");
@@ -218,7 +218,7 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
         JsMechManagerService::GetInstance().promiseParams_.erase(cmdId);
         napi_close_handle_scope(param->env, scope);
     };
-    napi_status status = napi_send_event(param->env, task, napi_eprio_high);
+    napi_status status = napi_send_event(param->env, task, napi_eprio_high, "MechbodyTask");
     HILOGI("RotatePromise send result: %{public}s", status == napi_ok ? "success" : "failed");
     return ERR_OK;
 }
@@ -253,7 +253,7 @@ int32_t JsMechManagerService::SearchTargetCallback(std::string &cmdId, const int
         JsMechManagerService::GetInstance().searchTargetCallback_.erase(cmdId);
         napi_close_handle_scope(param->env, scope);
     };
-    napi_send_event(param->env, task, napi_eprio_high);
+    napi_send_event(param->env, task, napi_eprio_high, "MechbodyTask");
 
     return ERR_OK;
 }
