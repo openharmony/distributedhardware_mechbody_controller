@@ -387,8 +387,16 @@ void AniMechManager::Rotate(int32_t mechId,
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
     int32_t result = mechClient_->Rotate(mechId, rotatePromiseParam->cmdId, rotateParam);
     HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
         return;
@@ -397,8 +405,6 @@ void AniMechManager::Rotate(int32_t mechId,
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
-    std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-    promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
 }
 
@@ -429,8 +435,16 @@ void AniMechManager::RotateToEulerAngles(int32_t mechId,
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
     int32_t result = mechClient_->RotateToEulerAngles(mechId, rotatePromiseParam->cmdId, rotateToEulerAnglesParam);
     HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
         return;
@@ -439,8 +453,6 @@ void AniMechManager::RotateToEulerAngles(int32_t mechId,
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
-    std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-    promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
 }
 
@@ -475,8 +487,16 @@ void AniMechManager::RotateBySpeed(
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
     int32_t result = mechClient_->RotateBySpeed(mechId, rotatePromiseParam->cmdId, rotateBySpeedParam);
     HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
         return;
@@ -485,8 +505,6 @@ void AniMechManager::RotateBySpeed(
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
-    std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-    promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
 }
 
@@ -511,14 +529,20 @@ void AniMechManager::StopMoving(int32_t mechId, uintptr_t &promise)
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
     int32_t result = mechClient_->StopMoving(mechId, rotatePromiseParam->cmdId);
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
+        {
+            std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+            promiseParams_.erase(rotatePromiseParam->cmdId);
+        }
         ProcessOnResultCode(result);
         return;
     }
-    std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-    promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
 }
 
@@ -642,14 +666,20 @@ void AniMechManager::SearchTarget(const TargetInfoTaihe &target, const SearchPar
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
+    {
+        std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
+        searchTargetPromiseParam_[searchTargetPromiseParam->cmdId] = searchTargetPromiseParam;
+    }
     int32_t result = mechClient_->SearchTarget(searchTargetPromiseParam->cmdId, targetInfo, searchParams);
     HILOGI("result: %{public}d;", result);
     if (result != ERR_OK) {
+        {
+            std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
+            searchTargetPromiseParam_.erase(searchTargetPromiseParam->cmdId);
+        }
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
     }
-    std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
-    searchTargetPromiseParam_[searchTargetPromiseParam->cmdId] = searchTargetPromiseParam;
     promise = reinterpret_cast<uintptr_t>(searchTargetPromiseParam->promise);
 }
 
@@ -1254,7 +1284,7 @@ void AniMechManager::SearchResultTaihePromise(ani_env *env, ani_resolver deferre
 int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
     const int32_t &result)
 {
-    HILOGI("AniRotatePrimiseFulfillmentParam cmdId: %{public}s", cmdId.c_str());
+    HILOGI("[ets]AniRotatePrimiseFulfillmentParam cmdId: %{public}s", cmdId.c_str());
     std::shared_ptr<AniRotatePrimiseFulfillmentParam> param = nullptr;
     {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
@@ -1269,41 +1299,30 @@ int32_t AniMechManager::RotatePromiseFulfillment(const std::string &cmdId,
             return ERR_OK;
         }
     }
-
     auto task = [this, param, result]() {
-        if (param == nullptr || param->vm == nullptr) {
-            HILOGE("param or etsVm is null!");
+        HILOGI("[ets]cmdId: %{public}s; result: %{public}d", param->cmdId.c_str(), result);
+        if (param == nullptr || param->env == nullptr) {
+            HILOGE("param or env is null!");
             return;
         }
-        auto etsVm = param->vm;
-        ani_env* etsEnv = nullptr;
-        ani_options aniArgs { 0, nullptr };
-        ani_status aniResult = etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv);
-        if (aniResult != ANI_OK) {
-            HILOGE("AttachCurrentThread error!");
-            return;
-        }
+        ani_env* etsEnv = param->env;
         if (param->retVoid) {
             VoidPromise(etsEnv, param->deferred);
         } else {
             ResultTaihePromise(etsEnv, param->deferred, result);
         }
-        if ((aniResult = etsVm->DetachCurrentThread()) != ANI_OK) {
-            HILOGE("DetachCurrentThread error!");
-            return;
+        {
+            std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+            promiseParams_.erase(param->cmdId);
         }
     };
-    task();
-    {
-        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        promiseParams_.erase(param->cmdId);
-    }
+    AniSendEvent(task);
     return ERR_OK;
 }
 
 int32_t AniMechManager::SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result)
 {
-    HILOGI("cmdId: %{public}s; targetCount: %{public}d", cmdId.c_str(), targetsNum);
+    HILOGI("[ets]cmdId: %{public}s; targetCount: %{public}d", cmdId.c_str(), targetsNum);
     std::shared_ptr<AniRotatePrimiseFulfillmentParam> param = nullptr;
     {
         std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
@@ -1318,31 +1337,21 @@ int32_t AniMechManager::SearchTargetCallback(std::string &cmdId, const int32_t &
             return ERR_OK;
         }
     }
-    
+
     auto task = [this, param, targetsNum]() {
-        if (param == nullptr || param->vm == nullptr) {
-            HILOGE("param or etsVm is null!");
+        HILOGI("[ets]cmdId: %{public}s; targetCount: %{public}d", param->cmdId.c_str(), targetsNum);
+        if (param == nullptr || param->env == nullptr) {
+            HILOGE("param or env is null!");
             return;
         }
-        auto etsVm = param->vm;
-        ani_env* etsEnv = nullptr;
-        ani_options aniArgs { 0, nullptr };
-        ani_status aniResult = etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv);
-        if (aniResult != ANI_OK) {
-            HILOGE("AttachCurrentThread error!");
-            return;
-        }
+        ani_env* etsEnv = param->env;
         SearchResultTaihePromise(etsEnv, param->deferred, targetsNum);
-        if ((aniResult = etsVm->DetachCurrentThread()) != ANI_OK) {
-            HILOGE("DetachCurrentThread error!");
-            return;
+        {
+            std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
+            searchTargetPromiseParam_.erase(param->cmdId);
         }
     };
-    task();
-    {
-        std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
-        searchTargetPromiseParam_.erase(param->cmdId);
-    }
+    AniSendEvent(task);
     HILOGI("end");
     return ERR_OK;
 }
