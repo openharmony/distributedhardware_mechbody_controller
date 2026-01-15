@@ -843,8 +843,13 @@ int32_t McCameraTrackingController::SetTrackingLayout(const uint32_t &tokenId,
 {
     HILOGI("tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
     currentCameraInfo_->currentCameraTrackingLayout = cameraTrackingLayout;
-    horizontal_ = cameraTrackingLayout == CameraTrackingLayout::RIGHT ? -OFFSET_VALUE
-        : (cameraTrackingLayout == CameraTrackingLayout::LEFT ? OFFSET_VALUE : 0.0f);
+    if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
+        horizontal_ = cameraTrackingLayout == CameraTrackingLayout::RIGHT ? -OFFSET_VALUE
+            : (cameraTrackingLayout == CameraTrackingLayout::LEFT ? OFFSET_VALUE : 0.0f);
+    } else if (sensorRotation_ == MobileRotation::LEFT || sensorRotation_ == MobileRotation::RIGHT) {
+        horizontal_ = cameraTrackingLayout == CameraTrackingLayout::RIGHT ? OFFSET_VALUE
+            : (cameraTrackingLayout == CameraTrackingLayout::LEFT ? -OFFSET_VALUE : 0.0f);
+    }
     vertical_ = 0.0f;
     OnTrackingEvent(0, TrackingEvent::CAMERA_TRACKING_LAYOUT_CHANGED);
     HILOGI("SetTrackingLayout horizontal_: %{public}f vertical_: %{public}f.", horizontal_, vertical_);
@@ -853,9 +858,15 @@ int32_t McCameraTrackingController::SetTrackingLayout(const uint32_t &tokenId,
 
 int32_t McCameraTrackingController::GetTrackingLayout(CameraTrackingLayout &cameraTrackingLayout)
 {
-    cameraTrackingLayout = horizontal_ + MIDDLE_VALUE_HORIZONTAL > MIDDLE_MAX ? CameraTrackingLayout::LEFT
-        : (horizontal_ + MIDDLE_VALUE_HORIZONTAL < MIDDLE_MIN ? CameraTrackingLayout::RIGHT
-        : CameraTrackingLayout::MIDDLE);
+    if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
+        cameraTrackingLayout = horizontal_ + MIDDLE_VALUE_HORIZONTAL > MIDDLE_MAX ? CameraTrackingLayout::LEFT
+            : (horizontal_ + MIDDLE_VALUE_HORIZONTAL < MIDDLE_MIN ? CameraTrackingLayout::RIGHT
+            : CameraTrackingLayout::MIDDLE);
+    } else if (sensorRotation_ == MobileRotation::LEFT || sensorRotation_ == MobileRotation::RIGHT) {
+        cameraTrackingLayout = horizontal_ + MIDDLE_VALUE_HORIZONTAL > MIDDLE_MAX ? CameraTrackingLayout::RIGHT
+            : (horizontal_ + MIDDLE_VALUE_HORIZONTAL < MIDDLE_MIN ? CameraTrackingLayout::LEFT
+            : CameraTrackingLayout::MIDDLE);
+    }
     
     currentCameraInfo_->currentCameraTrackingLayout = cameraTrackingLayout;
     return ERR_OK;
