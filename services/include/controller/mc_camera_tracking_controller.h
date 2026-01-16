@@ -182,6 +182,8 @@ private:
         const RotateDegreeLimit &limit, const std::shared_ptr<EulerAngles> &currentPosition);
     void AdjustROI(ROI &roi, CameraStandard::Rect &rect, CameraType cameraType, MobileRotation sensorRotation);
     void AdjustOffset(std::shared_ptr<TrackingFrameParams> &trackingParams, CameraType cameraType);
+    void AddYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
+    void AddXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
     void AdjustYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
     void AdjustXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
     bool IsCurrentTrackingEnabled();
@@ -209,6 +211,10 @@ private:
 
     float vertical_ = 0.0f;
     float horizontal_ = 0.0f;
+    float targetVertical_ = 0.0f;
+    float targetHorizontal_ = 0.0f;
+    std::chrono::steady_clock::time_point lastStickTime_;
+    bool isStick_ = false;
 };
 } // namespace MechBodyController
 } // namespace OHOS
