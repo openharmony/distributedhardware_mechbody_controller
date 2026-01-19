@@ -305,8 +305,6 @@ std::string MechBodyControllerService::GetAppNameByTokenId(uint32_t tokenId)
         getTokenInfoRes = AccessTokenKit::GetNativeTokenInfo(tokenId, callingTokenInfo);
         processName = callingTokenInfo.processName;
     }
-    HILOGI("get processname: %{public}d, %{public}d, %{public}s.", static_cast<int>(tokenType),
-        getTokenInfoRes, processName.c_str());
     return processName;
 }
 
