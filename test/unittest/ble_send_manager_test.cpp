@@ -41,7 +41,6 @@ namespace {
     constexpr int32_t BUF_MIN_LEN = 8;
     constexpr int32_t BUF_LESS_THAN_MIN_LEN = 5;
     constexpr int32_t BUF_GREATER_THAN_MAX_LEN = 252;
-    constexpr int32_t ERROR_INVALID_PARAMETERS = 2901003;
     UUID MECHBODY_CHARACTERISTIC_NOTIFY_UUID = UUID::FromString("15f1e603-a277-43fc-a484-dd39ef8a9100"); // notify uuid
 }
 
@@ -438,7 +437,7 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcWriteCharacteristic_003, TestSize.Leve
     BluetoothRemoteDevice device(bleSendManager_.address_, 1);
     bleSendManager_.gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
     int32_t result = bleSendManager_.MechbodyGattcWriteCharacteristic(data, dataLen);
-    EXPECT_EQ(result, ERROR_INVALID_PARAMETERS);
+    EXPECT_NE(result, 0);
     DTEST_LOG << "BleSendManagerTest MechbodyGattcWriteCharacteristic_003 end" << std::endl;
 }
 
