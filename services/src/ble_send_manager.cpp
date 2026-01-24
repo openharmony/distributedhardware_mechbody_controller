@@ -146,7 +146,9 @@ void BleGattClientCallback::OnSetNotifyCharacteristic(const GattCharacteristic &
     bleSendManager.isGattReady_ = (status == 1);
     HILOGI("end. IsGattReady= %{public}d", bleSendManager.isGattReady_);
 
-    BleSendManager::GetInstance().OnGattReady(mechInfo);
+    std::thread([mechInfo]() mutable {
+        BleSendManager::GetInstance().OnGattReady(mechInfo);
+        }).detach();
 }
 
 void BleGattClientCallback::OnCharacteristicChanged(const GattCharacteristic &characteristic)
@@ -512,12 +514,12 @@ bool BleSendManager::CheckGattcIsReady()
 void BleSendManager::OnGattReady(MechInfo &mechInfo)
 {
     HILOGI("MECHBODY_EXEC_CONNECT called");
-    MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
     {
         std::unique_lock<std::mutex> lock(gattMutex_);
         MechConnectManager::GetInstance().SetMechanicGattState(mechInfo.mac, true);
         gattCv_.notify_all();
     }
+    MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
     HILOGI("MECHBODY_EXEC_CONNECT Tracking init start.");
     McCameraTrackingController::GetInstance().Init();
     HILOGI("MECHBODY_EXEC_CONNECT Tracking init finish.");

@@ -49,7 +49,7 @@ constexpr int TASK_COMPLETED = 2;
 constexpr int32_t RESPONSE_TIMEOUT = 10000;
 constexpr float YAW_OFFSET = 0.2f;
 constexpr int32_t CMD_SEND_INTERVAL = 100;
-constexpr int32_t TRACKING_CHECKER_INTERVAL = 3;
+constexpr int32_t TRACKING_CHECKER_INTERVAL = 100;
 
 const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
     {CameraKeyEvent::START_FILMING, MMI::KeyEvent::KEYCODE_VOLUME_UP},
@@ -60,9 +60,9 @@ const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
 };
 
 const std::vector<RotateParam> NOD_ACTIONS = {
-    {{0.0f, 0.0f, -0.02f}, 30, false},
-    {{0.0f, 0.0f, 0.2f}, 80, false},
-    {{0.0f, 0.0f, 0.0f}, 100, false}
+    {{0.0f, 0.0f, -0.02f}, 100, false},
+    {{0.0f, 0.0f, 0.2f}, 600, false},
+    {{0.0f, 0.0f, 0.0f}, 500, false}
 };
 }
 
@@ -81,7 +81,7 @@ bool CheckRotatePointParam(EulerAngles rotateDegree)
     return true;
 }
 
-void MotionManager::MechAttitudeNotify(const std::shared_ptr<RegisterMechPositionInfoCmd> &cmd)
+void MotionManager::MechAttitudeNotify(const std::shared_ptr<CommonRegisterMechPositionInfoCmd> &cmd)
 {
     HILOGD("Received gimbal attitude change event.");
     CHECK_POINTER_RETURN(cmd, "cmd");
@@ -142,7 +142,7 @@ int64_t MotionManager::GetSysClockTime()
     return (ts.tv_sec * TRANS_TIME * TRANS_TIME) + (ts.tv_nsec / TRANS_TIME);
 }
 
-void MotionManager::MechButtonEventNotify(const std::shared_ptr<RegisterMechCameraKeyEventCmd> &cmd)
+void MotionManager::MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd)
 {
     CHECK_POINTER_RETURN(cmd, "cmd");
     CameraKeyEvent eventType = cmd->GetEvent();
@@ -177,7 +177,7 @@ void MotionManager::MechButtonEventNotify(const std::shared_ptr<RegisterMechCame
     McCameraTrackingController::GetInstance().SetStickOffset(cmd->GetStickX(), cmd->GetStickY());
 }
 
-void MotionManager::MechParamNotify(const std::shared_ptr<RegisterMechStateInfoCmd> &cmd)
+void MotionManager::MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd)
 {
     HILOGD("Received gimbal param change event.");
     CHECK_POINTER_RETURN(cmd, "cmd");
@@ -219,6 +219,37 @@ void MotionManager::MechParamNotify(const std::shared_ptr<RegisterMechStateInfoC
             default:
                 break;
         }
+        if (deviceStatus_->rotationAxesStatus == status) {
+            return;
+        }
+        deviceStatus_->rotationAxesStatus = status;
+    }
+    HILOGI("notify");
+    MechBodyControllerService::GetInstance().OnRotationAxesStatusChange(mechId_, status);
+}
+
+
+void MotionManager::MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd)
+{
+    HILOGD("Received generic param change event.");
+    CHECK_POINTER_RETURN(cmd, "cmd");
+    DeviceStateInfo info = cmd->GetParams();
+    RotationAxesStatus status{};
+    {
+        std::unique_lock <std::mutex> lock(deviceStatusMutex_);
+        if (info.attached != static_cast<uint8_t>(-1)) {
+            HILOGI("mech info change, isPhoneOn %{public}d", info.attached);
+            deviceStatus_->stateInfo.isPhoneOn = info.attached;
+            if (MechConnectManager::GetInstance().GetMechState(mechId_) != info.attached) {
+                HandleMechPlacementChange(info.attached);
+            }
+        }
+        if (info.yawDisable == static_cast<uint8_t>(-1)) {
+            return;
+        }
+        status.yawEnabled = !bool(info.yawDisable);
+        status.rollEnabled = !bool(info.rollDisable);
+        status.pitchEnabled = !bool(info.pitchDisable);
         if (deviceStatus_->rotationAxesStatus == status) {
             return;
         }
@@ -362,13 +393,13 @@ void ReportFocustrackingStartEvent()
     }
 }
 
-void MotionManager::MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd)
+void MotionManager::MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd)
 {
     CHECK_POINTER_RETURN(cmd, "cmd");
     bool isEnabled = cmd->GetIsEnabled();
     HILOGI("Received mech tracking status notify, isEnabled: %{public}d.", isEnabled);
     TrackingEvent trackingEvent;
-    std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd = nullptr;
+    std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> tkCmd = nullptr;
     {
         std::unique_lock<std::mutex> lock(deviceStatusMutex_);
         CHECK_POINTER_RETURN(deviceStatus_, "deviceStatus_ is empty.");
@@ -402,6 +433,20 @@ uint8_t MotionManager::CreateResponseTaskId()
         return 0;
     }
     uint8_t taskId = ++lastTaskId_;
+    HILOGI("end, new taskId is %{public}d", taskId);
+    return taskId;
+}
+
+uint16_t MotionManager::CreateRotateTaskId()
+{
+    HILOGI("called");
+    std::unique_lock<std::shared_mutex> responseReadLock(taskIdMutex_);
+    if (taskId_ >= UINT16_MAX) {
+        HILOGE("the taskId is full, reorder the taskId.");
+        taskId_ = 1;
+        return 1;
+    }
+    uint16_t taskId = ++taskId_;
     HILOGI("end, new taskId is %{public}d", taskId);
     return taskId;
 }
@@ -457,35 +502,38 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     deviceStatus_->rotateSpeedLimit.speedMax.rollSpeed = DEGREE_CIRCLED_MAX;
     deviceStatus_->rotateSpeedLimit.speedMax.pitchSpeed = DEGREE_CIRCLED_MAX;
 
-    GetMechRealName();
+    HILOGI("MotionManager end.");
+}
 
-    std::shared_ptr<GetMechCapabilityInfoCmd> limitCmd = factory
-            .CreateGetMechCapabilityInfoCmd();
-    CHECK_POINTER_RETURN(limitCmd, "CapabilityInfoCmd is empty.");
-    auto limitCallback = [this, limitCmd]() {
-        auto rawParams = limitCmd->GetParams();
-        auto params = rawParams;
-        {
-            std::unique_lock <std::mutex> lock(this->deviceStatusMutex_);
-            this->deviceStatus_->rotationLimit = rawParams;
-            FormatLimit(params);
-            this->deviceStatus_->rotationLimitWithOffset = params;
-        }
-        JudgingYawLimit(params);
-    };
+void MotionManager::Init()
+{
+    HILOGI("MotionManager Init start");
 
-    limitCmd->SetResponseCallback(limitCallback);
-    limitCmd->SetTimeoutCallback(SetTimeout);
-    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
-    sendAdapter_->SendCommand(limitCmd);
+    GetProtocolVer();
+    factory.SetFactoryProtocolVer(protocolVer_);
+    switch (protocolVer_) {
+        case 0x01:
+            GetMechRealName();
+            break;
+        case 0x02:
+            SetProtocolVer();
+            GetDeviceBaseInfo();
+            GetDeviceCapabilityInfo();
+            GetDeviceStateInfo();
+            break;
+        default:
+            HILOGW("Unknown protocol version: %{public}d", protocolVer_);
+            break;
+    }
 
-    auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(false);
-    CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
-    sendAdapter_->SendCommand(hidCmd, CMD_SEND_INTERVAL);
-    deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
-    auto tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
-    CHECK_POINTER_RETURN(tkCmd, "tkCmd is empty.");
-    sendAdapter_->SendCommand(tkCmd, CMD_SEND_INTERVAL * BIT_OFFSET_2);
+    GetMechLimitInfo();
+    if (protocolVer_ == 0x01) {
+        auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(false);
+        CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
+        sendAdapter_->SendCommand(hidCmd, CMD_SEND_INTERVAL);
+    }
+
+    SetMechTkEnableNoTarget();
 
     PerformPresetAction(PresetAction::NOD, CMD_SEND_INTERVAL * BIT_OFFSET_3);
 
@@ -497,7 +545,21 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
 
     startTrackingChecker_ = true;
     trackingCheckerThread_ = std::make_unique<std::thread>(&MotionManager::TrackingChecker, this);
-    HILOGI("MotionManager end.");
+    HILOGI("MotionManager Init end.");
+}
+
+void MotionManager::SetMechTkEnableNoTarget()
+{
+    HILOGI("start");
+
+    auto tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET);
+    auto tkCallback = [this, tkCmd]() {
+        deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
+    };
+    tkCmd->SetResponseCallback(tkCallback);
+
+    CHECK_POINTER_RETURN(tkCmd, "tkCmd is empty.");
+    sendAdapter_->SendCommand(tkCmd, CMD_SEND_INTERVAL * BIT_OFFSET_2);
 }
 
 void MotionManager::TrackingChecker()
@@ -521,11 +583,11 @@ void MotionManager::TrackingChecker()
 void MotionManager::ProcessTrackingStatus()
 {
     auto currentTime = std::chrono::steady_clock::now();
-    auto timeDiff = std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastTrackingFrameTime_).count();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTrackingFrameTime_).count();
     if (timeDiff <= TRACKING_CHECKER_INTERVAL) {
         return;
     }
-    std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd = nullptr;
+    std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> tkCmd = nullptr;
     {
         std::unique_lock<std::mutex> lock(deviceStatusMutex_);
         deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
@@ -536,6 +598,45 @@ void MotionManager::ProcessTrackingStatus()
     if (sendAdapter_ != nullptr) {
         sendAdapter_->SendCommand(tkCmd);
     }
+}
+
+void MotionManager::GetProtocolVer()
+{
+    HILOGI("start");
+    std::shared_ptr<GetMechProtocolVerCmd> protocolVerCmd = factory.CreateGetMechProtocolVerCmd();
+    CHECK_POINTER_RETURN(protocolVerCmd, "protocolVerCmd is empty.");
+    auto protocolVerCallback = [this, protocolVerCmd]() {
+        std::lock_guard<std::mutex> lock(protocolVerMutex_);
+        protocolVerCon_.notify_all();
+        protocolVer_ = protocolVerCmd->GetParams();
+        HILOGI("device callback protocol version: %{public}d", protocolVer_);
+        };
+
+    protocolVerCmd->SetResponseCallback(protocolVerCallback);
+    protocolVerCmd->SetTimeoutCallback(SetTimeout);
+    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    sendAdapter_->SendCommand(protocolVerCmd);
+    {
+        std::unique_lock<std::mutex> lock(protocolVerMutex_);
+
+        protocolVerCon_.wait(lock, [this] {
+            return protocolVer_ == static_cast<uint8_t>(ProtocolVersion::V01) ||
+                protocolVer_ == static_cast<uint8_t>(ProtocolVersion::V02);
+            });
+    }
+    HILOGI("end");
+}
+
+void MotionManager::SetProtocolVer()
+{
+    HILOGI("start");
+    std::shared_ptr<NormalSetMechProtocolVerCmd> protocolVerCmd = factory.CreateNormalSetMechProtocolVerCmd(0x01);
+    CHECK_POINTER_RETURN(protocolVerCmd, "protocolVerCmd is empty.");
+
+    protocolVerCmd->SetTimeoutCallback(SetTimeout);
+    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    sendAdapter_->SendCommand(protocolVerCmd);
+    HILOGI("end");
 }
 
 void MotionManager::GetMechRealName()
@@ -553,6 +654,93 @@ void MotionManager::GetMechRealName()
     realNameCmd->SetTimeoutCallback(SetTimeout);
     CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
     sendAdapter_->SendCommand(realNameCmd);
+    HILOGI("end");
+}
+
+void MotionManager::GetDeviceBaseInfo()
+{
+    HILOGI("start");
+    std::shared_ptr<NormalGetMechBaseInfoCmd> baseInfoCmd = factory.CreateGetMechBaseInfoCmd();
+    CHECK_POINTER_RETURN(baseInfoCmd, "baseInfoCmd is empty.");
+    auto baseInfoCallback = [this, baseInfoCmd]() {
+        deviceBaseInfo_ = baseInfoCmd->GetParams();
+        deviceRealName_ = baseInfoCmd->GetParams().realName;
+        HILOGI("device callback real name: %{public}s", GetAnonymStr(deviceRealName_).c_str());
+        };
+
+    baseInfoCmd->SetResponseCallback(baseInfoCallback);
+    baseInfoCmd->SetTimeoutCallback(SetTimeout);
+    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    sendAdapter_->SendCommand(baseInfoCmd);
+    HILOGI("end");
+}
+
+void MotionManager::GetDeviceCapabilityInfo()
+{
+    HILOGI("start");
+    std::shared_ptr<NormalGetMechCapabilityInfoCmd> capabilityInfoCmd = factory.CreateGetMechCapabilityInfoCmd();
+    CHECK_POINTER_RETURN(capabilityInfoCmd, "capabilityInfoCmd is empty.");
+    auto capabilityInfoCallback = [this, capabilityInfoCmd]() {
+        deviceCapabilityInfo_ = capabilityInfoCmd->GetParams();
+        HILOGI("device callback deviceCapabilityInfo_ ok");
+        };
+
+    capabilityInfoCmd->SetResponseCallback(capabilityInfoCallback);
+    capabilityInfoCmd->SetTimeoutCallback(SetTimeout);
+    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    sendAdapter_->SendCommand(capabilityInfoCmd);
+    HILOGI("end");
+}
+
+void MotionManager::GetDeviceStateInfo()
+{
+    HILOGI("start");
+    std::shared_ptr<NormalGetMechStateInfoCmd> stateInfoCmd = factory.CreateGetMechStateInfoCmd();
+    CHECK_POINTER_RETURN(stateInfoCmd, "stateInfoCmd is empty.");
+    auto stateInfoCallback = [this, stateInfoCmd]() {
+        DeviceStateInfo info = stateInfoCmd->GetParams();
+        deviceStatus_->stateInfo.isPhoneOn = info.attached;
+        if (MechConnectManager::GetInstance().GetMechState(mechId_) != info.attached) {
+            HandleMechPlacementChange(info.attached);
+        }
+        HILOGI("device callback deviceStateInfo_ ok");
+        };
+
+    auto stateInfoTimeoutCallback = [this, stateInfoCmd, stateInfoCallback]() {
+        stateInfoCmd->SetResponseCallback(stateInfoCallback);
+        CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+        sendAdapter_->SendCommand(stateInfoCmd);
+        };
+
+    stateInfoCmd->SetResponseCallback(stateInfoCallback);
+    stateInfoCmd->SetTimeoutCallback(stateInfoTimeoutCallback);
+    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    sendAdapter_->SendCommand(stateInfoCmd);
+    HILOGI("end");
+}
+
+void MotionManager::GetMechLimitInfo()
+{
+    HILOGI("start");
+    std::shared_ptr<CommonGetMechLimitInfoCmd> limitCmd = factory
+        .CreateGetMechLimitInfoCmd();
+    CHECK_POINTER_RETURN(limitCmd, "CapabilityInfoCmd is empty.");
+    auto limitCallback = [this, limitCmd]() {
+        auto rawParams = limitCmd->GetParams();
+        auto params = rawParams;
+        {
+            std::unique_lock <std::mutex> lock(this->deviceStatusMutex_);
+            this->deviceStatus_->rotationLimit = rawParams;
+            FormatLimit(params);
+            this->deviceStatus_->rotationLimitWithOffset = params;
+        }
+        JudgingYawLimit(params);
+    };
+
+    limitCmd->SetResponseCallback(limitCallback);
+    limitCmd->SetTimeoutCallback(SetTimeout);
+    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    sendAdapter_->SendCommand(limitCmd);
     HILOGI("end");
 }
 
@@ -587,13 +775,7 @@ void MotionManager::RegisterEventListener()
         HILOGI("RegisterReceiveListener create.");
         mechEventListener_ = std::make_shared<MechEventListenerImpl>(shared_from_this());
     }
-    std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
-    CHECK_POINTER_RETURN(executionResultCmd, "ControlResultCmd is empty.");
-    {
-        std::lock_guard<std::mutex> lock(notifyListenerMutex_);
-        notifyListenerType_.push_back(executionResultCmd->GetCmdType());
-    }
-    SubscriptionCenter::GetInstance().Subscribe(executionResultCmd->GetCmdType(), mechEventListener_);
+    RegisterEventListenerV01();
 
     std::shared_ptr<CommandBase> attitudeCmd = factory.CreateRegisterMechPositionInfoCmd();
     CHECK_POINTER_RETURN(attitudeCmd, "PositionInfoCmd is empty.");
@@ -618,15 +800,15 @@ void MotionManager::RegisterEventListener()
         notifyListenerType_.push_back(paramCmd->GetCmdType());
     }
     SubscriptionCenter::GetInstance().Subscribe(paramCmd->GetCmdType(), mechEventListener_);
-
-    std::shared_ptr<CommandBase> wheelCmd = factory.CreateRegisterMechWheelDataCmd();
-    CHECK_POINTER_RETURN(wheelCmd, "WheelDataCmd is empty.");
-    {
-        std::lock_guard<std::mutex> lock(notifyListenerMutex_);
-        notifyListenerType_.push_back(wheelCmd->GetCmdType());
+    if (protocolVer_ == 0x02) {
+        std::shared_ptr<CommandBase> paramCmd = factory.CreateRegisterMechGenericEventCmd();
+        CHECK_POINTER_RETURN(paramCmd, "GenericInfoCmd is empty.");
+        {
+            std::lock_guard<std::mutex> lock(notifyListenerMutex_);
+            notifyListenerType_.push_back(paramCmd->GetCmdType());
+        }
+        SubscriptionCenter::GetInstance().Subscribe(paramCmd->GetCmdType(), mechEventListener_);
     }
-    SubscriptionCenter::GetInstance().Subscribe(wheelCmd->GetCmdType(), mechEventListener_);
-
     std::shared_ptr<CommandBase> tkEnableCmd = factory.CreateRegisterMechTrackingEnableCmd();
     CHECK_POINTER_RETURN(tkEnableCmd, "tkEnableCmd is empty.");
     {
@@ -635,6 +817,31 @@ void MotionManager::RegisterEventListener()
     }
     SubscriptionCenter::GetInstance().Subscribe(tkEnableCmd->GetCmdType(), mechEventListener_);
     HILOGI("RegisterEventListener end.");
+}
+
+void MotionManager::RegisterEventListenerV01()
+{
+    HILOGI("RegisterEventListenerV01 start.");
+    if (protocolVer_ == 0x01) {
+        std::shared_ptr<CommandBase> executionResultCmd = factory.CreateRegisterMechControlResultCmd();
+        CHECK_POINTER_RETURN(executionResultCmd, "ControlResultCmd is empty.");
+        {
+            std::lock_guard<std::mutex> lock(notifyListenerMutex_);
+            notifyListenerType_.push_back(executionResultCmd->GetCmdType());
+        }
+        SubscriptionCenter::GetInstance().Subscribe(executionResultCmd->GetCmdType(), mechEventListener_);
+    }
+    if (protocolVer_ == 0x01) {
+        std::shared_ptr<CommandBase> wheelCmd = factory.CreateRegisterMechWheelDataCmd();
+        CHECK_POINTER_RETURN(wheelCmd, "WheelDataCmd is empty.");
+        {
+            std::lock_guard<std::mutex> lock(notifyListenerMutex_);
+            notifyListenerType_.push_back(wheelCmd->GetCmdType());
+        }
+        SubscriptionCenter::GetInstance().Subscribe(wheelCmd->GetCmdType(), mechEventListener_);
+    }
+
+    HILOGI("RegisterEventListenerV01 end.");
 }
 
 void MotionManager::StartEvent()
@@ -887,11 +1094,12 @@ int32_t MotionManager::RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateS
     }
     CHECK_POINTER_RETURN_VALUE(rotateSpeedParam, INVALID_PARAMETERS_ERR, "rotateSpeedParam");
     MechNapiCommandCallbackInfo callbackInfo = {tokenId, napiCmdId};
-    std::shared_ptr<CommandBase> rotationBySpeedCmd =
+    rotateSpeedParam->taskId = CreateRotateTaskId();
+    std::shared_ptr<CommonSetMechRotationBySpeedCmd> rotationBySpeedCmd =
             factory.CreateSetMechRotationBySpeedCmd(*rotateSpeedParam);
     CHECK_POINTER_RETURN_VALUE(rotationBySpeedCmd, INVALID_PARAMETERS_ERR, "RotationBySpeedCmd is empty.");
     auto rotateBySpeedCallback = [rotationBySpeedCmd, this]() {
-        RotationAxesStatus limitInfo = static_cast<SetMechRotationBySpeedCmd*>(rotationBySpeedCmd.get())
+        RotationAxesStatus limitInfo = static_cast<CommonSetMechRotationBySpeedCmd*>(rotationBySpeedCmd.get())
             ->GetRotationAxesStatus();
         HILOGI("Rotate By Speed callback. limit info: %{public}s", limitInfo.ToString().c_str());
         if (limitInfo.IsChange(this->deviceStatus_->rotationAxesStatus)) {
@@ -912,9 +1120,11 @@ int32_t MotionManager::RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateS
                GetAnonymUint32(callbackInfo.tokenId).c_str(), callbackInfo.napiCmdId.c_str());
         MechBodyControllerService::GetInstance().NotifyOperationResult(callbackInfo.tokenId,
             callbackInfo.napiCmdId, ExecResult::COMPLETED);
-        std::shared_ptr<CommandBase> motionCmd = factory.CreateSetMechStopCmd();
-        CHECK_POINTER_RETURN(motionCmd, "StopCmd is empty.");
-        sendAdapter_->SendCommand(motionCmd);
+        if (protocolVer_ == 0x01) {
+            std::shared_ptr<CommandBase> motionCmd = factory.CreateSetMechStopCmd();
+            CHECK_POINTER_RETURN(motionCmd, "StopCmd is empty.");
+            sendAdapter_->SendCommand(motionCmd);
+        }
     };
     uint8_t taskId = CreateResponseTaskId();
     std::string taskName = EVENT_THREAD_NAME + std::to_string(taskId);
@@ -1071,10 +1281,17 @@ int32_t MotionManager::StopRotate(uint32_t &tokenId, std::string &napiCmdId)
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
-    std::shared_ptr<CommandBase> motionCmd = factory.CreateSetMechStopCmd();
-    CHECK_POINTER_RETURN_VALUE(motionCmd, INVALID_PARAMETERS_ERR, "StopCmd is empty.");
-    sendAdapter_->SendCommand(motionCmd);
-    MechBodyControllerService::GetInstance().NotifyOperationResult(tokenId, napiCmdId, ExecResult::COMPLETED);
+    if (protocolVer_ == 0x01) {
+        std::shared_ptr<CommandBase> motionCmd = factory.CreateSetMechStopCmd();
+        CHECK_POINTER_RETURN_VALUE(motionCmd, INVALID_PARAMETERS_ERR, "StopCmd is empty.");
+        sendAdapter_->SendCommand(motionCmd);
+        MechBodyControllerService::GetInstance().NotifyOperationResult(tokenId, napiCmdId, ExecResult::COMPLETED);
+    } else {
+        std::shared_ptr<CommandBase> motionCmd = factory.CreateSetMechMotionControlCmd(ControlCommand::STOP);
+        CHECK_POINTER_RETURN_VALUE(motionCmd, INVALID_PARAMETERS_ERR, "StopCmd is empty.");
+        sendAdapter_->SendCommand(motionCmd);
+        MechBodyControllerService::GetInstance().NotifyOperationResult(tokenId, napiCmdId, ExecResult::COMPLETED);
+    }
     HILOGI("Stop rotate end.");
     return ERR_OK;
 }
@@ -1142,7 +1359,7 @@ void MotionManager::UpdateTrackingTime()
     std::lock_guard<std::mutex> lock(deviceStatusMutex_);
     if (deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET) {
         deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_WITH_TARGET;
-        std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd = nullptr;
+        std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> tkCmd = nullptr;
         tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
         HILOGI("tkCmd, is:MECH_TK_ENABLE_WITH_TARGET.");
         if (sendAdapter_ != nullptr) {
@@ -1163,7 +1380,7 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     auto cameraTrackingFrameCallback = [this]() {
     };
 
-    if (!deviceStatus_->isEnabled) {
+    if (!deviceStatus_->isEnabled || deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_DISABLE) {
         HILOGE("device tracking is not enabled");
         return ERR_OK;
     }
@@ -1201,7 +1418,7 @@ int32_t MotionManager::SetMechCameraTrackingEnabled(bool &isEnabled)
         deviceStatus_->isEnabled = isEnabled;
         deviceStatus_->trackingStatus =
             isEnabled ? MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET : MechTrackingStatus::MECH_TK_DISABLE;
-        std::shared_ptr<SetMechCameraTrackingEnableCmd> tkCmd =
+        std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> tkCmd =
             factory.CreateSetMechCameraTrackingEnableCmd(deviceStatus_->trackingStatus);
         sendAdapter_->SendCommand(tkCmd);
         HILOGI("device Status is enable: %{public}s", deviceStatus_->isEnabled ? "true" : "false");
@@ -1263,9 +1480,12 @@ int32_t MotionManager::SetMechCameraInfo(const CameraInfoParams &mechCameraInfo)
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
-
+    auto setMechCameraInfoCallback = [this]() {
+        SetMechCameraInfo_ = true;
+        };
     std::shared_ptr<CommandBase> cameraInfoCmd = factory.CreateSetMechCameraInfoCmd(mechCameraInfo);
     CHECK_POINTER_RETURN_VALUE(cameraInfoCmd, INVALID_PARAMETERS_ERR, "cameraInfoCmd is empty.");
+    cameraInfoCmd->SetResponseCallback(setMechCameraInfoCallback);
     sendAdapter_->SendCommand(cameraInfoCmd);
     HILOGI("SetMechCameraInfo end.");
     return ERR_OK;
@@ -1323,13 +1543,14 @@ int32_t MotionManager::PerformPresetAction(PresetAction action, int32_t delay)
 {
     HILOGI("called, action %{public}d", static_cast<int32_t>(action));
     std::vector<RotateParam> trace;
-    std::shared_ptr<SetMechRotationTraceCmd> setMechRotationTraceCmd = nullptr;
+    std::shared_ptr<CommonSetMechRotationTraceCmd> setMechRotationTraceCmd = nullptr;
+    uint16_t taskId = CreateRotateTaskId();
     switch (action) {
         case PresetAction::NOD: {
             for (auto action : NOD_ACTIONS) {
                 trace.push_back(action);
             }
-            setMechRotationTraceCmd = factory.CreateSetMechRotationTraceCmd(trace);
+            setMechRotationTraceCmd = factory.CreateSetMechRotationTraceCmd(taskId, trace);
             CHECK_POINTER_RETURN_VALUE(sendAdapter_, INVALID_PARAMETERS_ERR, "sendAdapter_");
             sendAdapter_->SendCommand(setMechRotationTraceCmd, delay);
             break;
@@ -1431,6 +1652,9 @@ void MotionManager::LimitCalculationLocked(EulerAngles& position, RotationAxesSt
 int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &actionControlParams)
 {
     HILOGI("ActionGimbalFeatureControl start.");
+    if (protocolVer_ == 0x02) {
+        return ERR_OK;
+    }
     if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
@@ -1478,22 +1702,28 @@ MechEventListenerImpl::~MechEventListenerImpl()
     HILOGI("MechEventListenerImpl called");
 }
 
-void MechEventListenerImpl::MechAttitudeNotify(const std::shared_ptr<RegisterMechPositionInfoCmd> &cmd)
+void MechEventListenerImpl::MechAttitudeNotify(const std::shared_ptr<CommonRegisterMechPositionInfoCmd> &cmd)
 {
     CHECK_POINTER_RETURN(motionManager_, "motionManager_");
     motionManager_->MechAttitudeNotify(cmd);
 }
 
-void MechEventListenerImpl::MechButtonEventNotify(const std::shared_ptr<RegisterMechCameraKeyEventCmd> &cmd)
+void MechEventListenerImpl::MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd)
 {
     CHECK_POINTER_RETURN(motionManager_, "motionManager_");
     motionManager_->MechButtonEventNotify(cmd);
 }
 
-void MechEventListenerImpl::MechParamNotify(const std::shared_ptr<RegisterMechStateInfoCmd> &cmd)
+void MechEventListenerImpl::MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd)
 {
     CHECK_POINTER_RETURN(motionManager_, "motionManager_");
     motionManager_->MechParamNotify(cmd);
+}
+
+void MechEventListenerImpl::MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd)
+{
+    CHECK_POINTER_RETURN(motionManager_, "motionManager_");
+    motionManager_->MechGenericEventNotify(cmd);
 }
 
 void MechEventListenerImpl::MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd)
@@ -1508,7 +1738,7 @@ void MechEventListenerImpl::MechWheelZoomNotify(const std::shared_ptr<RegisterMe
     motionManager_->MechWheelZoomNotify(cmd);
 }
 
-void MechEventListenerImpl::MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd)
+void MechEventListenerImpl::MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd)
 {
     CHECK_POINTER_RETURN(motionManager_, "motionManager_");
     motionManager_->MechTrackingStatusNotify(cmd);

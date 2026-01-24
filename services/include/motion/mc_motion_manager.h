@@ -68,6 +68,7 @@ struct MechNapiCommandCallbackInfo {
 class MotionManager : public IMechEventListener, public std::enable_shared_from_this<MotionManager> {
 public:
     MotionManager(const std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId);
+    void Init();
 
 public:
     ~MotionManager();
@@ -75,6 +76,7 @@ public:
     MotionManager& operator=(const MotionManager&) = delete;
 
     void RegisterEventListener();
+    void RegisterEventListenerV01();
     int32_t Rotate(std::shared_ptr<RotateParam> rotateParam, uint32_t &tokenId, std::string &napiCmdId);
     int32_t RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
                           uint32_t &tokenId, std::string &napiCmdId);
@@ -94,12 +96,13 @@ public:
     int32_t GetMechCapabilityInfo(std::shared_ptr<MechCapabilityInfo> &mechCapabilityInfo);
     int32_t GetRotationAxesStatus(const int32_t &mechId, RotationAxesStatus &axesStatus);
     int32_t PerformPresetAction(PresetAction action, int32_t delay);
-    void MechAttitudeNotify(const std::shared_ptr<RegisterMechPositionInfoCmd> &cmd);
-    void MechParamNotify(const std::shared_ptr<RegisterMechStateInfoCmd> &cmd);
+    void MechAttitudeNotify(const std::shared_ptr<CommonRegisterMechPositionInfoCmd> &cmd);
+    void MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd);
+    void MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd> &cmd);
     void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd);
     void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd);
-    void MechButtonEventNotify(const std::shared_ptr<RegisterMechCameraKeyEventCmd> &cmd);
-    void MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd);
+    void MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd);
+    void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd);
     void UnRegisterNotifyEvent();
     int32_t ActionGimbalFeatureControl(const ActionControlParams &actionControlParams);
     const std::string &GetDeviceRealName() const;
@@ -110,6 +113,7 @@ private:
     void JudgingYawLimit(RotateDegreeLimit& limit);
     void AbsolutelyEulerAnglesJudgingLimitLocked(EulerAngles& eulerAngles);
     uint8_t CreateResponseTaskId();
+    uint16_t CreateRotateTaskId();
     void FormatLimit(RotateDegreeLimit &params);
     bool IsLimited();
     bool IsLimited(const float &negMax, const float &posMax, const float &position);
@@ -129,9 +133,16 @@ private:
         float rollResult);
     void CheckYawSpeed(const std::shared_ptr<RotateBySpeedParam> &rotateBySpeedParam, const RotateDegreeLimit &limit,
         float yawResult);
+    void SetMechTkEnableNoTarget();
     void TrackingChecker();
     void ProcessTrackingStatus();
+    void GetProtocolVer();
+    void SetProtocolVer();
     void GetMechRealName();
+    void GetMechLimitInfo();
+    void GetDeviceBaseInfo();
+    void GetDeviceCapabilityInfo();
+    void GetDeviceStateInfo();
     void UpdateTrackingTime();
     void SetDeviceRealName(const std::string &deviceRealName);
 
@@ -169,18 +180,27 @@ private:
     std::condition_variable deviceRealNameVisitCon_;
     std::mutex deviceRealNameVisitMutex_;
     std::string deviceRealName_;
+    volatile uint8_t protocolVer_ = 0x00;
+    std::condition_variable protocolVerCon_;
+    std::mutex protocolVerMutex_;
+
+    DeviceBaseInfo deviceBaseInfo_;
+    DeviceCapabilityInfo deviceCapabilityInfo_;
+    uint16_t taskId_ = 1;
+    bool SetMechCameraInfo_ = false;
 };
 
 class MechEventListenerImpl : public IMechEventListener {
 public:
     MechEventListenerImpl(std::shared_ptr<MotionManager> motionManager);
     ~MechEventListenerImpl();
-    void MechAttitudeNotify(const std::shared_ptr<RegisterMechPositionInfoCmd> &cmd) override;
-    void MechButtonEventNotify(const std::shared_ptr<RegisterMechCameraKeyEventCmd> &cmd) override;
-    void MechParamNotify(const std::shared_ptr<RegisterMechStateInfoCmd> &cmd) override;
+    void MechAttitudeNotify(const std::shared_ptr<CommonRegisterMechPositionInfoCmd> &cmd) override;
+    void MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd) override;
+    void MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd) override;
+    void MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd) override;
     void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd) override;
     void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd) override;
-    void MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd) override;
+    void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd) override;
 
 private:
     std::shared_ptr<MotionManager> motionManager_;

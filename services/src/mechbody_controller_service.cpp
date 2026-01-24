@@ -246,6 +246,7 @@ int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId)
             sendAdapter_->RegisterBluetoothListener();
         }
         std::shared_ptr<MotionManager> manager = std::make_shared<MotionManager>(sendAdapter_, mechId);
+        manager->Init();
         manager->RegisterEventListener();
         motionManagers_[mechId] = manager;
     }

@@ -118,7 +118,16 @@ int32_t SubscriptionCenter::Notify(const std::shared_ptr<CommandBase> &cmd)
                 callback->MechWheelZoomNotify(std::static_pointer_cast<RegisterMechWheelDataCmd>(cmd));
                 break;
             case CMD_TYPE_TRACKING_ENABLED_NOTIFY:
-                callback->MechTrackingStatusNotify(std::static_pointer_cast<RegisterMechTrackingEnableCmd>(cmd));
+                callback->MechTrackingStatusNotify(std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(cmd));
+                break;
+            case CMD_TYPE_NORMAL_BUTTON_EVENT_NOTIFY:
+                callback->MechButtonEventNotify(std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(cmd));
+                break;
+            case CMD_TYPE_NORMAL_ATTITUDE_NOTIFY:
+                callback->MechAttitudeNotify(std::static_pointer_cast<NormalRegisterMechPositionInfoCmd>(cmd));
+                break;
+            case CMD_TYPE_NORMAL_GENERIC_NOTIFY:
+                callback->MechGenericEventNotify(std::static_pointer_cast<NormalRegisterMechGenericEventCmd>(cmd));
                 break;
             default:
                 HILOGD("Not found cmdType : 0x%{public}x, cmdId: %{public}d", cmd->GetCmdType(), cmd->GetCmdId());

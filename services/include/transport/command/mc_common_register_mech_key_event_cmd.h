@@ -12,40 +12,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MC_SET_MECH_ROTATION_BY_SPEED_CMD_H
-#define MC_SET_MECH_ROTATION_BY_SPEED_CMD_H
-
+#ifndef MC_COMMON_REGISTER_MECH_KEY_EVENT_CMD_H
+#define MC_COMMON_REGISTER_MECH_KEY_EVENT_CMD_H
 #include "mc_command_base.h"
 #include "mechbody_controller_types.h"
 
 namespace OHOS {
 namespace MechBodyController {
 
-class SetMechRotationBySpeedCmd : public CommandBase {
+class CommonRegisterMechKeyEventCmd : public CommandBase {
 public:
-    static constexpr uint8_t CMD_SET = 0x02;
-    static constexpr uint8_t CMD_ID = 0x21;
-    static constexpr uint16_t REQ_SIZE = 14;
-    static constexpr uint16_t RSP_SIZE = 2;
-
-    explicit SetMechRotationBySpeedCmd(const RotateBySpeedParam& params);
-    ~SetMechRotationBySpeedCmd() override = default;
+    ~CommonRegisterMechKeyEventCmd() override = default;
 
     std::shared_ptr<MechDataBuffer> Marshal() const override;
+    virtual bool Unmarshal(std::shared_ptr<MechDataBuffer> data) = 0;
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
-    const RotateBySpeedParam& GetParams() const;
-    const RotationAxesStatus& GetRotationAxesStatus() const;
-    uint8_t GetResult() const;
-
-private:
-    RotateBySpeedParam params_;
-    RotationAxesStatus status_;
-    uint8_t result_ = 0;
+    virtual CameraKeyEvent GetEvent() const;
+    virtual uint8_t GetResult() const;
+    virtual int16_t GetStickX() const;
+    virtual int16_t GetStickY() const;
 };
 
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // MC_SET_MECH_ROTATION_BY_SPEED_CMD_H
+#endif // MC_COMMON_REGISTER_MECH_KEY_EVENT_CMD_H

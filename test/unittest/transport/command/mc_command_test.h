@@ -21,7 +21,7 @@
 #include "mc_command_base.h"
 #include "mc_command_factory.h"
 #include "mc_get_mech_camera_tracking_layout_cmd.h"
-#include "mc_get_mech_capability_info_cmd.h"
+#include "mc_get_mech_limit_info_cmd.h"
 #include "mc_register_mech_camera_key_event_cmd.h"
 #include "mc_register_mech_control_result_cmd.h"
 #include "mc_register_mech_position_info_cmd.h"

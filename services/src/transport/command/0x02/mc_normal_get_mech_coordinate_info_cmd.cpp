@@ -13,19 +13,17 @@
  * limitations under the License.
  */
 
-#include "mc_get_mech_capability_info_cmd.h"
+#include "mc_normal_get_mech_coordinate_info_cmd.h"
 
 #include "mechbody_controller_log.h"
 
 namespace OHOS {
 namespace MechBodyController {
 namespace {
-    const std::string TAG = "GetMechCapabilityInfoCmd";
-    static constexpr uint8_t CMD_GET_MECH_LIMIT_TYPE = 0x03;
-    constexpr uint8_t CMD_GET_MECH_LIMIT_REPLY_LENGTH = 24;
+    const std::string TAG = "NormalGetMechCoordinateInfoCmd";
 }
 
-GetMechCapabilityInfoCmd::GetMechCapabilityInfoCmd()
+NormalGetMechCoordinateInfoCmd::NormalGetMechCoordinateInfoCmd()
 {
     cmdSet_ = CMD_SET;
     cmdId_ = CMD_ID;
@@ -36,7 +34,7 @@ GetMechCapabilityInfoCmd::GetMechCapabilityInfoCmd()
     retryTimes_ = CMD_PRIORITY_MIDDLE;
 }
 
-std::shared_ptr<MechDataBuffer> GetMechCapabilityInfoCmd::Marshal() const
+std::shared_ptr<MechDataBuffer> NormalGetMechCoordinateInfoCmd::Marshal() const
 {
     HILOGI("start.");
     auto buffer = std::make_shared<MechDataBuffer>(reqSize_ + BIT_OFFSET_2);
@@ -47,16 +45,14 @@ std::shared_ptr<MechDataBuffer> GetMechCapabilityInfoCmd::Marshal() const
 
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(cmdSet_), nullptr, "append cmdSet_");
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(cmdId_), nullptr, "append cmdId_");
-    CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(CMD_GET_MECH_LIMIT_TYPE), nullptr, "append get mech limit type");
-    CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(BIT_0), nullptr, "append get mech limit len");
-    CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(BIT_0), nullptr, "append get mech limit value");
 
     HILOGI("end.");
     return buffer;
 }
 
-void GetMechCapabilityInfoCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> data)
+void NormalGetMechCoordinateInfoCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> data)
 {
+    HILOGI("start.");
     if (data == nullptr || data->Size() < RSP_SIZE + BIT_OFFSET_2) {
         HILOGE("Invalid input data for response");
         return;
@@ -68,52 +64,33 @@ void GetMechCapabilityInfoCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> d
     HILOGI("response code: %{public}u", result_);
     offset++;
 
-    uint8_t resultType = 0;
-    CHECK_ERR_RETURN(data->ReadUint8(offset, resultType), "read resultType");
-    if (resultType != CMD_GET_MECH_LIMIT_TYPE) {
-        HILOGE("Reply data resultType invalid");
-        return;
-    }
+    uint8_t bitResult;
+    CHECK_ERR_RETURN(data->ReadUint8(offset, bitResult), "read bitResult");
+    params_.ismoving = (bitResult >> 0) & 1;
     offset++;
 
-    uint8_t resultLength = 0;
-    CHECK_ERR_RETURN(data->ReadUint8(offset, resultLength), "read resultLength");
-    if (resultLength != CMD_GET_MECH_LIMIT_REPLY_LENGTH) {
-        HILOGE("Reply data resultLength invalid");
-        return;
-    }
-    offset++;
-
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.roll), "read rollMax");
+    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.yawPose), "read yawPose");
     offset += sizeof(float);
 
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.negMax.roll), "read rollMin");
+    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.rollPose), "read rollPose");
     offset += sizeof(float);
 
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.pitch), "read pitchMax");
-    offset += sizeof(float);
-
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.negMax.pitch), "read pitchMin");
-    offset += sizeof(float);
-
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.yaw), "read yawMax");
-    offset += sizeof(float);
-
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.negMax.yaw), "read yawMin");
+    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.pitchPose), "read pitchPose");
     offset += sizeof(float);
 
     if (responseCb_) {
         HILOGI("trigger response callback.");
         responseCb_();
     }
+    HILOGI("end.");
 }
 
-const RotateDegreeLimit& GetMechCapabilityInfoCmd::GetParams() const
+DeviceCoordinateInfo NormalGetMechCoordinateInfoCmd::GetParams() const
 {
     return params_;
 }
 
-uint8_t GetMechCapabilityInfoCmd::GetResult() const
+uint8_t NormalGetMechCoordinateInfoCmd::GetResult() const
 {
     return result_;
 }

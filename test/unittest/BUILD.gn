@@ -32,6 +32,8 @@ config("mech_test_config") {
     "${mechbody_path}/services/include/motion",
     "${mechbody_path}/services/include/transport",
     "${mechbody_path}/services/include/transport/command",
+    "${mechbody_path}/services/include/transport/command/0x01",
+    "${mechbody_path}/services/include/transport/command/0x02",
     "${mechbody_path}/interface/inner_api",
   ]
 }

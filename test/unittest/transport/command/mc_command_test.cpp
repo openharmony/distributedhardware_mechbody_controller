@@ -48,6 +48,8 @@ void SetTimeout()
 {
 }
 
+uint16_t g_taskIdOldCommand = 0;
+
 /**
 * @tc.name  : TriggerTimeout_001
 * @tc.number: TriggerTimeout_001
@@ -185,7 +187,7 @@ HWTEST_F(MechCommandTest, CreateSetMechRotationTraceCmd_001, TestSize.Level1)
 {
     CommandFactory factory;
     std::vector<RotateParam> params;
-    auto executionCmd = factory.CreateSetMechRotationTraceCmd(params);
+    auto executionCmd = factory.CreateSetMechRotationTraceCmd(++g_taskIdOldCommand, params);
 
     EXPECT_NE(executionCmd, nullptr);
 }
@@ -337,7 +339,7 @@ HWTEST_F(MechCommandTest, GetMechCapabilityInfoCmd_TriggerResponse_001, TestSize
     for (int i = 0; i < 30; i++) {
         buffer->AppendUint8(value);
     }
-    auto executionCmd = factory.CreateGetMechCapabilityInfoCmd();
+    auto executionCmd = factory.CreateGetMechLimitInfoCmd();
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferNull));
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -351,7 +353,7 @@ HWTEST_F(MechCommandTest, GetMechCapabilityInfoCmd_TriggerResponse_001, TestSize
 HWTEST_F(MechCommandTest, GetMechCapabilityInfoCmd_GetParams_001, TestSize.Level1)
 {
     CommandFactory factory;
-    auto executionCmd = factory.CreateGetMechCapabilityInfoCmd();
+    auto executionCmd = factory.CreateGetMechLimitInfoCmd();
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NO_FATAL_FAILURE(executionCmd->GetParams());
 }
@@ -364,7 +366,7 @@ HWTEST_F(MechCommandTest, GetMechCapabilityInfoCmd_GetParams_001, TestSize.Level
 HWTEST_F(MechCommandTest, GetMechCapabilityInfoCmd_GetResult_001, TestSize.Level1)
 {
     CommandFactory factory;
-    auto executionCmd = factory.CreateGetMechCapabilityInfoCmd();
+    auto executionCmd = factory.CreateGetMechLimitInfoCmd();
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NO_FATAL_FAILURE(executionCmd->GetResult());
 }
@@ -1079,7 +1081,7 @@ HWTEST_F(MechCommandTest, SetMechRotationTraceCmd_TriggerResponse_001, TestSize.
     for (int i = 0; i < 10; i++) {
         buffer->AppendUint8(value);
     }
-    auto executionCmd = factory.CreateSetMechRotationTraceCmd(params);
+    auto executionCmd = factory.CreateSetMechRotationTraceCmd(++g_taskIdOldCommand, params);
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferNull));
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -1096,7 +1098,7 @@ HWTEST_F(MechCommandTest, SetMechRotationTraceCmd_GetParams_001, TestSize.Level1
     RotateParam param;
     std::vector<RotateParam> params;
     params.push_back(param);
-    auto executionCmd = factory.CreateSetMechRotationTraceCmd(params);
+    auto executionCmd = factory.CreateSetMechRotationTraceCmd(++g_taskIdOldCommand, params);
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NO_FATAL_FAILURE(executionCmd->GetParams());
 }
@@ -1112,7 +1114,7 @@ HWTEST_F(MechCommandTest, SetMechRotationTraceCmd_GetResult_001, TestSize.Level1
     RotateParam param;
     std::vector<RotateParam> params;
     params.push_back(param);
-    auto executionCmd = factory.CreateSetMechRotationTraceCmd(params);
+    auto executionCmd = factory.CreateSetMechRotationTraceCmd(++g_taskIdOldCommand, params);
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NO_FATAL_FAILURE(executionCmd->GetResult());
 }
