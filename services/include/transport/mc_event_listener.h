@@ -22,18 +22,20 @@
 #include "mc_register_mech_state_info_cmd.h"
 #include "mc_register_mech_tracking_enable_cmd.h"
 #include "mc_register_mech_wheel_data_cmd.h"
+#include "mc_normal_register_mech_generic_event_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
 class IMechEventListener {
 public:
     virtual ~IMechEventListener() {};
-    virtual void MechAttitudeNotify(const std::shared_ptr<RegisterMechPositionInfoCmd> &cmd) = 0;
-    virtual void MechButtonEventNotify(const std::shared_ptr<RegisterMechCameraKeyEventCmd> &cmd) = 0;
-    virtual void MechParamNotify(const std::shared_ptr<RegisterMechStateInfoCmd> &cmd) = 0;
+    virtual void MechAttitudeNotify(const std::shared_ptr<CommonRegisterMechPositionInfoCmd> &cmd) = 0;
+    virtual void MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd) = 0;
+    virtual void MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd) = 0;
+    virtual void MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd) = 0;
     virtual void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd) = 0;
     virtual void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd) = 0;
-    virtual void MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd) = 0;
+    virtual void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd) = 0;
 };
 } // namespace MechBodyController
 } // namespace OHOS

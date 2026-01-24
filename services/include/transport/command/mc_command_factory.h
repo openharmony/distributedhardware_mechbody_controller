@@ -22,7 +22,7 @@
 #include "mc_command_base.h"
 #include "mc_data_buffer.h"
 #include "mc_get_mech_camera_tracking_layout_cmd.h"
-#include "mc_get_mech_capability_info_cmd.h"
+#include "mc_get_mech_limit_info_cmd.h"
 #include "mc_get_mech_real_name_cmd.h"
 #include "mc_register_mech_camera_key_event_cmd.h"
 #include "mc_register_mech_control_result_cmd.h"
@@ -40,39 +40,74 @@
 #include "mc_set_mech_rotation_cmd.h"
 #include "mc_set_mech_rotation_trace_cmd.h"
 #include "mc_set_mech_stop_cmd.h"
+#include "mc_normal_get_mech_base_info_cmd.h"
+#include "mc_normal_get_mech_capability_info_cmd.h"
+#include "mc_normal_get_mech_coordinate_info_cmd.h"
+#include "mc_normal_get_mech_limit_info_cmd.h"
+#include "mc_normal_get_mech_pose_info_cmd.h"
+#include "mc_normal_get_mech_state_info_cmd.h"
+#include "mc_normal_register_mech_generic_event_cmd.h"
+#include "mc_normal_register_mech_key_event_cmd.h"
+#include "mc_normal_register_mech_position_info_cmd.h"
+#include "mc_normal_register_mech_state_info_cmd.h"
+#include "mc_normal_register_mech_tracking_enable_cmd.h"
+#include "mc_normal_set_mech_camera_info_cmd.h"
+#include "mc_normal_set_mech_camera_tracking_enable_cmd.h"
+#include "mc_normal_set_mech_camera_tracking_frame_cmd.h"
+#include "mc_normal_set_mech_location_report_cmd.h"
+#include "mc_normal_set_mech_motion_control_cmd.h"
+#include "mc_normal_set_mech_protocol_ver_cmd.h"
+#include "mc_normal_set_mech_rotation_by_speed_cmd.h"
+#include "mc_normal_set_mech_rotation_to_location_cmd.h"
+#include "mc_normal_set_mech_rotation_trace_cmd.h"
+#include "mc_get_mech_protocol_ver_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
 
 class CommandFactory {
 public:
+    void SetFactoryProtocolVer(uint8_t protocolVer);
     std::shared_ptr<GetMechCameraTrackingLayoutCmd> CreateGetMechCameraTrackingLayoutCmd();
-    std::shared_ptr<GetMechCapabilityInfoCmd> CreateGetMechCapabilityInfoCmd();
+    std::shared_ptr<CommonGetMechLimitInfoCmd> CreateGetMechLimitInfoCmd();
+    std::shared_ptr<NormalGetMechCapabilityInfoCmd> CreateGetMechCapabilityInfoCmd();
+    std::shared_ptr<GetMechProtocolVerCmd> CreateGetMechProtocolVerCmd();
     std::shared_ptr<GetMechRealNameCmd> CreateGetMechRealNameCmd();
-    std::shared_ptr<SetMechCameraInfoCmd> CreateSetMechCameraInfoCmd(
+    std::shared_ptr<NormalGetMechBaseInfoCmd> CreateGetMechBaseInfoCmd();
+    std::shared_ptr<NormalGetMechPoseInfoCmd> CreateGetMechPoseInfoCmd();
+    std::shared_ptr<NormalGetMechStateInfoCmd> CreateGetMechStateInfoCmd();
+    std::shared_ptr<NormalGetMechCoordinateInfoCmd> CreateGetMechCoordinateInfoCmd();
+    std::shared_ptr<NormalSetMechProtocolVerCmd> CreateNormalSetMechProtocolVerCmd(uint8_t protocolVer);
+    std::shared_ptr<CommonSetMechCameraInfoCmd> CreateSetMechCameraInfoCmd(
         const CameraInfoParams& params);
-    std::shared_ptr<SetMechCameraTrackingEnableCmd> CreateSetMechCameraTrackingEnableCmd(
+    std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> CreateSetMechCameraTrackingEnableCmd(
         MechTrackingStatus status);
-    std::shared_ptr<SetMechCameraTrackingFrameCmd> CreateSetMechCameraTrackingFrameCmd(
+    std::shared_ptr<CommonSetMechCameraTrackingFrameCmd> CreateSetMechCameraTrackingFrameCmd(
         const TrackingFrameParams& params);
     std::shared_ptr<SetMechCameraTrackingLayoutCmd> CreateSetMechCameraTrackingLayoutCmd(
         const LayoutParams& params);
     std::shared_ptr<SetMechConfigCmd> CreateSetMechConfigCmd(
         uint8_t configVersion);
     std::shared_ptr<SetMechHidPreemptiveCmd> CreateSetMechHidPreemptiveCmd(bool isPreemptive);
-    std::shared_ptr<SetMechRotationBySpeedCmd> CreateSetMechRotationBySpeedCmd(
+    std::shared_ptr<CommonSetMechRotationBySpeedCmd> CreateSetMechRotationBySpeedCmd(
         const RotateBySpeedParam& params);
+    std::shared_ptr<NormalSetMechRotationToLocationCmd> CreateSetMechRotationToLocationCmd(
+        const RotateToLocationParam& params);
     std::shared_ptr<SetMechRotationCmd> CreateSetMechRotationCmd(
         const RotateParam& params);
-    std::shared_ptr<SetMechRotationTraceCmd> CreateSetMechRotationTraceCmd(
-        const std::vector<RotateParam>& params);
+    std::shared_ptr<CommonSetMechRotationTraceCmd> CreateSetMechRotationTraceCmd(
+        uint16_t taskId, const std::vector<RotateParam>& params);
     std::shared_ptr<SetMechStopCmd> CreateSetMechStopCmd();
-    std::shared_ptr<RegisterMechCameraKeyEventCmd> CreateRegisterMechCameraKeyEventCmd();
+    std::shared_ptr<NormalSetMechMotionControlCmd> CreateSetMechMotionControlCmd(ControlCommand action);
+    std::shared_ptr<NormalSetMechLocationReportCmd> CreateSetMechLocationReportCmd(
+        uint8_t reportSwitch, uint8_t reportFrequency);
+    std::shared_ptr<CommonRegisterMechKeyEventCmd> CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<RegisterMechControlResultCmd> CreateRegisterMechControlResultCmd();
-    std::shared_ptr<RegisterMechPositionInfoCmd> CreateRegisterMechPositionInfoCmd();
-    std::shared_ptr<RegisterMechStateInfoCmd> CreateRegisterMechStateInfoCmd();
+    std::shared_ptr<CommonRegisterMechPositionInfoCmd> CreateRegisterMechPositionInfoCmd();
+    std::shared_ptr<CommonRegisterMechStateInfoCmd> CreateRegisterMechStateInfoCmd();
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> CreateRegisterMechGenericEventCmd();
     std::shared_ptr<RegisterMechWheelDataCmd> CreateRegisterMechWheelDataCmd();
-    std::shared_ptr<RegisterMechTrackingEnableCmd> CreateRegisterMechTrackingEnableCmd();
+    std::shared_ptr<CommonRegisterMechTrackingEnableCmd> CreateRegisterMechTrackingEnableCmd();
 
     std::shared_ptr<CommandBase> CreateFromData(std::shared_ptr<MechDataBuffer> data);
     std::shared_ptr<ActionGimbalFeatureControlCmd> CreateActionGimbalFeatureControlCmd(
@@ -88,6 +123,7 @@ private:
         }
         return cmd;
     }
+    uint8_t protocolVer_;
 };
 
 } // namespace MechBodyController

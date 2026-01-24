@@ -12,39 +12,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MC_REGISTER_MECH_TRACKING_ENABLE_CMD_H
-#define MC_REGISTER_MECH_TRACKING_ENABLE_CMD_H
+
+#ifndef MC_NORMAL_SET_MECH_ROTATION_TRACE_CMD_H
+#define MC_NORMAL_SET_MECH_ROTATION_TRACE_CMD_H
 
 #include "mc_command_base.h"
 #include "mechbody_controller_types.h"
+#include "mc_common_set_mech_rotation_trace_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
 
-class RegisterMechTrackingEnableCmd : public CommandBase {
+class NormalSetMechRotationTraceCmd : public CommonSetMechRotationTraceCmd {
 public:
     static constexpr uint8_t CMD_SET = 0x02;
-    static constexpr uint8_t CMD_ID = 0x45;
-    static constexpr uint16_t REQ_SIZE = 0;
-    static constexpr uint16_t RSP_SIZE = 0;
-    static constexpr uint16_t RPT_SIZE = 1;
+    static constexpr uint8_t CMD_ID = 0x27;
+    static constexpr uint16_t REQ_SIZE = 8; // full lenth = 2 + 5 + 13 * 3 * numOfPoints
+    static constexpr uint16_t RSP_SIZE = 4;
 
-    explicit RegisterMechTrackingEnableCmd();
-    ~RegisterMechTrackingEnableCmd() override = default;
+    explicit NormalSetMechRotationTraceCmd(uint16_t taskId, const std::vector<RotateParam>& params);
+    ~NormalSetMechRotationTraceCmd() override = default;
 
     std::shared_ptr<MechDataBuffer> Marshal() const override;
-    bool Unmarshal(std::shared_ptr<MechDataBuffer> data);
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
-    bool GetIsEnabled() const;
-    uint8_t GetResult() const;
+    const std::vector<RotateParam>& GetParams() const override;
+    uint8_t GetResult() const override;
 
 private:
-    bool isEnabled_ = false;
+    uint16_t taskId_;
+    std::vector<RotateParam> params_;
     uint8_t result_ = 0;
 };
 
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // MC_REGISTER_MECH_TRACKING_ENABLE_CMD_H
+#endif // MC_NORMAL_SET_MECH_ROTATION_TRACE_CMD_H

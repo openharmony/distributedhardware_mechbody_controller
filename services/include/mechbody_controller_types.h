@@ -275,6 +275,7 @@ struct RotateSpeed : public OHOS::Parcelable {
 };
 
 struct RotateBySpeedParam : public OHOS::Parcelable {
+    uint16_t taskId;
     RotateSpeed speed;
     float duration = 0;
 
@@ -307,6 +308,20 @@ struct RotateBySpeedParam : public OHOS::Parcelable {
     {
         return "RotateBySpeedParam { " + speed.ToString() +
                ", duration=" + std::to_string(duration) + " }";
+    }
+};
+
+struct RotateToLocationParam : public OHOS::Parcelable {
+    uint16_t taskId;
+    uint8_t rotateMap;
+    uint16_t rotateTime;
+    float yawRadian;
+    float rollRadian;
+    float pitchRadian;
+
+    bool Marshalling(OHOS::Parcel &parcel) const override
+    {
+        return true;
     }
 };
 
@@ -572,6 +587,7 @@ struct ROI {
 struct TrackingFrameParams {
     uint16_t targetId = 0;
     uint64_t timeStamp;
+    CameraType cameraType = CameraType::OTHER;
     ConfidenceLevel confidence;
     uint8_t objectType;
     ROI roi;
@@ -585,6 +601,7 @@ struct TrackingFrameParams {
         return "TrackingFrameParams {"
                "targetId=" + std::to_string(targetId) +
                ", timeStamp=" + std::to_string(timeStamp) +
+               ", cameraType=" + std::to_string(static_cast<int>(cameraType)) +
                ", confidence=" + std::to_string(static_cast<int>(confidence)) +
                ", objectType=" + std::to_string(objectType) +
                ", roi.x=" + std::to_string(roi.x) +
@@ -672,6 +689,53 @@ struct ActionControlParams {
                ", rollControl=" + std::to_string(rollControl) + " }";
     }
 };
+
+struct DeviceBaseInfo {
+    uint8_t devType;
+    uint8_t ctrlType;
+    uint8_t protocolVer;
+    std::array<uint8_t, ADDRESS_COUNT> macAddress;
+    std::string realName;
+};
+
+struct DeviceCapabilityInfo {
+    uint8_t centerAble;
+    uint8_t switchAble;
+    uint8_t trackAble;
+    uint8_t absoluteCoordinate;
+    uint8_t relativeCoordinate;
+    uint8_t poseReport;
+    uint8_t batteryReport;
+    uint8_t trackPoints;
+    uint8_t yawable;
+    uint8_t rollable;
+    uint8_t pitchable;
+    float yawmaxspeed;
+    float rollmaxspeed;
+    float pitchmaxspeed;
+    uint16_t maxturntime;
+};
+
+struct DeviceAccelerationInfo {
+    uint16_t accelerationX;
+    uint16_t accelerationY;
+    uint16_t accelerationZ;
+};
+
+struct DeviceStateInfo {
+    uint8_t attached = -1;
+    uint8_t yawDisable = -1;
+    uint8_t rollDisable = -1;
+    uint8_t pitchDisable = -1;
+};
+
+struct DeviceCoordinateInfo {
+    uint8_t ismoving;
+    float yawPose;
+    float rollPose;
+    float pitchPose;
+};
+
 }  // namespace MechBodyController
 }  // namespace OHOS
 #endif  // MECHBODY_CONTROLLER_MECHBODY_CONTROLLER_TYPES_H

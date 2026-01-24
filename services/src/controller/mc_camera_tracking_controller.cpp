@@ -397,6 +397,7 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
         HILOGE("Failed to build tracking params");
         return ERR_OK;
     }
+    trackingParams->cameraType = currentCameraInfo_->cameraType;
     HILOGI("tracking param: %{public}s", trackingParams->ToString().c_str());
 #ifdef MECHBODY_CONTROLLER_EXTENDED
     int32_t objectId = info.GetTrackingObjectId();
@@ -1204,9 +1205,17 @@ void McCameraTrackingController::AdjustOffset(std::shared_ptr<TrackingFrameParam
             AdjustXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace);
         }
     }
+
+    setTrackingLimit(trackingParams->roi);
+
     trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
 }
 
+void McCameraTrackingController::setTrackingLimit(ROI &roi)
+{
+    roi.x = roi.x > 1.0f ? 1.0f : (roi.x < 0.0f ? 0.0f : roi.x);
+    roi.y = roi.y > 1.0f ? 1.0f : (roi.y < 0.0f ? 0.0f : roi.y);
+}
 void McCameraTrackingController::AddYOffset(ROI &roi, CameraType cameraType,
     float &offsetX, float &offsetY, bool &isFace)
 {

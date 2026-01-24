@@ -12,36 +12,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MC_SET_MECH_CAMERA_INFO_CMD_H
-#define MC_SET_MECH_CAMERA_INFO_CMD_H
-
+#ifndef MC_REGISTER_MECH_POSITION_INFO_CMD_H
+#define MC_REGISTER_MECH_POSITION_INFO_CMD_H
 #include "mc_command_base.h"
 #include "mechbody_controller_types.h"
+#include "mc_common_register_mech_position_info_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
 
-class SetMechCameraInfoCmd : public CommandBase {
+class RegisterMechPositionInfoCmd : public CommonRegisterMechPositionInfoCmd {
 public:
     static constexpr uint8_t CMD_SET = 0x02;
-    static constexpr uint8_t CMD_ID = 0x25;
-    static constexpr uint16_t REQ_SIZE = 7;
+    static constexpr uint8_t CMD_ID = 0x42;
+    static constexpr uint16_t REQ_SIZE = 0;
     static constexpr uint16_t RSP_SIZE = 0;
+    static constexpr uint16_t RPT_SIZE = 12;
 
-    explicit SetMechCameraInfoCmd(const CameraInfoParams& params);
-    ~SetMechCameraInfoCmd() override = default;
+    explicit RegisterMechPositionInfoCmd();
+    ~RegisterMechPositionInfoCmd() override = default;
 
     std::shared_ptr<MechDataBuffer> Marshal() const override;
+    bool Unmarshal(std::shared_ptr<MechDataBuffer> data) override;
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
-    const CameraInfoParams& GetParams() const;
+    const EulerAngles& GetPosition() const override;
+    uint8_t GetResult() const override;
 
 private:
-    CameraInfoParams params_;
+    EulerAngles position_;
+    uint8_t result_ = 0;
 };
 
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // MC_SET_MECH_CAMERA_INFO_CMD_H
+#endif // MC_REGISTER_MECH_POSITION_INFO_CMD_H

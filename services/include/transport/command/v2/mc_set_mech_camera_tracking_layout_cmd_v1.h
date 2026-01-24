@@ -12,38 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MC_REGISTER_MECH_STATE_INFO_CMD_H
-#define MC_REGISTER_MECH_STATE_INFO_CMD_H
+
+#ifndef MC_SET_MECH_CAMERA_TRACKING_LAYOUT_CMD_V1_H
+#define MC_SET_MECH_CAMERA_TRACKING_LAYOUT_CMD_V1_H
+
 #include "mc_command_base.h"
 #include "mechbody_controller_types.h"
+#include "mc_set_mech_camera_tracking_layout_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
 
-class RegisterMechStateInfoCmd : public CommandBase {
+class SetMechCameraTrackingLayoutCmdV1 : public SetMechCameraTrackingLayoutCmd {
 public:
     static constexpr uint8_t CMD_SET = 0x02;
-    static constexpr uint8_t CMD_ID = 0x41;
-    static constexpr uint16_t REQ_SIZE = 0;
-    static constexpr uint16_t RSP_SIZE = 0;
-    static constexpr uint16_t RPT_SIZE = 5;
+    static constexpr uint8_t CMD_ID = 0x23;
+    static constexpr uint16_t REQ_SIZE = 11;
+    static constexpr uint16_t RSP_SIZE = 3;
 
-    explicit RegisterMechStateInfoCmd();
-    ~RegisterMechStateInfoCmd() override = default;
+    explicit SetMechCameraTrackingLayoutCmdV1(const LayoutParams& params);
+    ~SetMechCameraTrackingLayoutCmdV1() override = default;
 
     std::shared_ptr<MechDataBuffer> Marshal() const override;
-    bool Unmarshal(std::shared_ptr<MechDataBuffer> data);
+    bool Unmarshal(std::shared_ptr<MechDataBuffer> data) override;
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
-    const MechStateInfo& GetInfo() const;
-    uint8_t GetResult() const;
-
-private:
-    MechStateInfo info_;
-    uint8_t result_ = 0;
+    const LayoutParams& GetParams() const override;
+    uint8_t GetResult() const override;
 };
-
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // MC_REGISTER_MECH_STATE_INFO_CMD_H
+#endif // MC_SET_MECH_CAMERA_TRACKING_LAYOUT_CMD_V1_H

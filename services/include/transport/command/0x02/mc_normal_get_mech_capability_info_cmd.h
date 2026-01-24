@@ -12,38 +12,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MC_REGISTER_MECH_POSITION_INFO_CMD_H
-#define MC_REGISTER_MECH_POSITION_INFO_CMD_H
+
+#ifndef MC_NORMAL_GET_MECH_CAPABILITY_INFO_CMD_H
+#define MC_NORMAL_GET_MECH_CAPABILITY_INFO_CMD_H
+
 #include "mc_command_base.h"
 #include "mechbody_controller_types.h"
+#include <string>
 
 namespace OHOS {
 namespace MechBodyController {
 
-class RegisterMechPositionInfoCmd : public CommandBase {
+class NormalGetMechCapabilityInfoCmd : public CommandBase {
 public:
     static constexpr uint8_t CMD_SET = 0x02;
-    static constexpr uint8_t CMD_ID = 0x42;
-    static constexpr uint16_t REQ_SIZE = 0;
-    static constexpr uint16_t RSP_SIZE = 0;
-    static constexpr uint16_t RPT_SIZE = 12;
+    static constexpr uint8_t CMD_ID = 0x00;
+    static constexpr uint16_t REQ_SIZE = 2;
+    static constexpr uint16_t RSP_SIZE = 21;
 
-    explicit RegisterMechPositionInfoCmd();
-    ~RegisterMechPositionInfoCmd() override = default;
+    explicit NormalGetMechCapabilityInfoCmd();
+    ~NormalGetMechCapabilityInfoCmd() override = default;
 
     std::shared_ptr<MechDataBuffer> Marshal() const override;
-    bool Unmarshal(std::shared_ptr<MechDataBuffer> data);
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
 
-    const EulerAngles& GetPosition() const;
+    DeviceCapabilityInfo GetParams() const;
     uint8_t GetResult() const;
 
 private:
-    EulerAngles position_;
+    DeviceCapabilityInfo params_;
     uint8_t result_ = 0;
 };
 
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // MC_REGISTER_MECH_POSITION_INFO_CMD_H
+#endif // MC_NORMAL_GET_MECH_CAPABILITY_INFO_CMD_H

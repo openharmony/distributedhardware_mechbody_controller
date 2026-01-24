@@ -24,12 +24,13 @@ namespace MechBodyController {
 class SubMechEventListener : public IMechEventListener {
 public:
     SubMechEventListener() {}
-    void MechAttitudeNotify(const std::shared_ptr<RegisterMechPositionInfoCmd> &cmd) {}
-    void MechButtonEventNotify(const std::shared_ptr<RegisterMechCameraKeyEventCmd> &cmd) {}
-    void MechParamNotify(const std::shared_ptr<RegisterMechStateInfoCmd> &cmd) {}
-    void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd) {}
-    void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd) {}
-    void MechTrackingStatusNotify(const std::shared_ptr<RegisterMechTrackingEnableCmd> &cmd) {};
+    void MechAttitudeNotify(const std::shared_ptr<CommonRegisterMechPositionInfoCmd> &cmd) {};
+    void MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd) {};
+    void MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd) {};
+    void MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd> &cmd) {};
+    void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd) {};
+    void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd) {};
+    void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd) {};
 };
 
 class SubscriptionCenterTest : public testing::Test {

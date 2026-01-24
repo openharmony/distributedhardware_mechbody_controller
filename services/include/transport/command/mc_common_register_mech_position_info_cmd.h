@@ -12,36 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MC_SET_MECH_CAMERA_TRACKING_FRAME_CMD_H
-#define MC_SET_MECH_CAMERA_TRACKING_FRAME_CMD_H
-
+#ifndef MC_COMMON_REGISTER_MECH_POSITION_INFO_CMD_H
+#define MC_COMMON_REGISTER_MECH_POSITION_INFO_CMD_H
 #include "mc_command_base.h"
 #include "mechbody_controller_types.h"
 
 namespace OHOS {
 namespace MechBodyController {
 
-class SetMechCameraTrackingFrameCmd : public CommandBase {
+class CommonRegisterMechPositionInfoCmd : public CommandBase {
 public:
-    static constexpr uint8_t CMD_SET = 0x02;
-    static constexpr uint8_t CMD_ID = 0x22;
-    static constexpr uint16_t REQ_SIZE = 38;
-    static constexpr uint16_t RSP_SIZE = 0;
+    ~CommonRegisterMechPositionInfoCmd() override = default;
 
-    explicit SetMechCameraTrackingFrameCmd(const TrackingFrameParams& params);
-    ~SetMechCameraTrackingFrameCmd() override = default;
+    std::shared_ptr<MechDataBuffer> Marshal() const override = 0;
+    virtual bool Unmarshal(std::shared_ptr<MechDataBuffer> data) = 0;
+    void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override = 0;
 
-    std::shared_ptr<MechDataBuffer> Marshal() const override;
-    void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
-
-    const TrackingFrameParams& GetParams() const;
-
-private:
-    TrackingFrameParams params_;
+    virtual const EulerAngles& GetPosition() const = 0;
+    virtual uint8_t GetResult() const = 0;
 };
 
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // MC_SET_MECH_CAMERA_TRACKING_FRAME_CMD_H
+#endif // MC_COMMON_REGISTER_MECH_POSITION_INFO_CMD_H
