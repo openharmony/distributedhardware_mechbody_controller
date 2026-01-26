@@ -713,7 +713,7 @@ void MotionManager::GetDeviceStateInfo()
         };
 
     stateInfoCmd->SetResponseCallback(stateInfoCallback);
-    stateInfoCmd->SetTimeoutCallback(stateInfoTimeoutCallback);
+    stateInfoCmd->SetTimeoutResetCallback(stateInfoTimeoutCallback);
     CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
     sendAdapter_->SendCommand(stateInfoCmd);
     HILOGI("end");
