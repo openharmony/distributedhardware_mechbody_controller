@@ -50,7 +50,6 @@ void CommandBase::TriggerTimeoutReset() const
     }
 }
 
-
 uint8_t CommandBase::GetCmdSet() const
 {
     return cmdSet_;
