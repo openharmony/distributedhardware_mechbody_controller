@@ -31,6 +31,7 @@ namespace {
     const std::string TAG = "TransportSendAdapter";
     const std::string RESPONSE_TIMEOUT_TASK = "transport_send_task";
     constexpr int32_t RESPONSE_TIMEOUT = 10000;
+    constexpr int32_t RESPONSE_TIMEOUT_RESET = 2000;
     constexpr int32_t CMD_RETRY_INTERVAL = 10; //ms
 }
 
@@ -283,7 +284,12 @@ int32_t TransportSendAdapter::PushResponseTask(const std::shared_ptr<CommandBase
     auto responseTimeoutTask = [this, seqNo]() {
         ExeRespTimeoutTask(seqNo);
     };
+    auto responseTimeoutResetTask = [this, seqNo]() {
+        ExeRespTimeoutResetTask(seqNo);
+    };
+    
     const std::string taskName = RESPONSE_TIMEOUT_TASK + std::to_string(seqNo);
+    recvEventHandler_->PostTask(responseTimeoutResetTask, taskName, RESPONSE_TIMEOUT_RESET);
     recvEventHandler_->PostTask(responseTimeoutTask, taskName, RESPONSE_TIMEOUT);
     HILOGI("end");
     return ERR_OK;
@@ -339,6 +345,20 @@ int32_t TransportSendAdapter::ExeRespTimeoutTask(uint16_t seqNo)
         if (it != pendingRequests_.end() && it->second != nullptr) {
             it->second->TriggerTimeout();
             pendingRequests_.erase(it);
+        }
+    }
+    HILOGI("end");
+    return ERR_OK;
+}
+
+int32_t TransportSendAdapter::ExeRespTimeoutResetTask(uint16_t seqNo)
+{
+    HILOGI("called, seqNo: %{public}d", seqNo);
+    {
+        std::unique_lock<std::shared_mutex> responseWriteLock(responseMutex_);
+        auto it = pendingRequests_.find(seqNo);
+        if (it != pendingRequests_.end() && it->second != nullptr) {
+            it->second->TriggerTimeoutReset();
         }
     }
     HILOGI("end");

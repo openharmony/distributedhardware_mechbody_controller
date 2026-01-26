@@ -31,12 +31,25 @@ void CommandBase::SetTimeoutCallback(TimeoutCallback cb)
     timeoutCb_ = cb;
 }
 
+void CommandBase::SetTimeoutResetCallback(TimeoutResetCallback cb)
+{
+    timeoutResetCb_ = cb;
+}
+
 void CommandBase::TriggerTimeout() const
 {
     if (timeoutCb_) {
         timeoutCb_();
     }
 }
+
+void CommandBase::TriggerTimeoutReset() const
+{
+    if (timeoutResetCb_) {
+        timeoutResetCb_();
+    }
+}
+
 
 uint8_t CommandBase::GetCmdSet() const
 {
