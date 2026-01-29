@@ -114,7 +114,9 @@ ohos_shared_library("mechbody_service") {
       "-DMECHBODY_CONTROLLER_EXTENDED",
     ]
   }
-
+  cflags_cc = [
+      "-fstack-protector-strong",
+  ]
   ldflags = [
     "-Wl,-z,relro",
     "-Wl,-z,now",
