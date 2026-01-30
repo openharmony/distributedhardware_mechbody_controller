@@ -414,7 +414,6 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechProtocolVerCmd_TriggerResponse_001, T
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
 }
 
-
 HWTEST_F(MechCommandTest0x02, NormalSetMechMotionControlCmd_Marshal_001, TestSize.Level1)
 {
     CommandFactory factory;
@@ -593,7 +592,6 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_Marshal_001, 
     EXPECT_NE(executionCmd->Marshal(), nullptr);
 }
 
-
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerResponse_001, TestSize.Level1)
 {
     MechTrackingStatus status = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
@@ -639,7 +637,6 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerRespon
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     EXPECT_EQ(executionCmd->GetResult(), 1);
 }
-
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraInfoCmd_Marshal_001, TestSize.Level1)
 {
@@ -728,7 +725,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_TriggerRespons
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
         EXPECT_EQ(executionCmd->result_, 10);
     }
-
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Unmarshal_001, TestSize.Level1)
@@ -753,7 +749,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Unmarshal_001,
     buffer->AppendUint8(1);
     EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
     EXPECT_EQ(executionCmd->isEnabled_, true);
-
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechStateInfoCmd_Marshal_001, TestSize.Level1)
@@ -868,7 +863,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_Unmarshal_001, T
     buffer->AppendUint8(3.33);
     EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
     EXPECT_GT(executionCmd->position_.pitch, 3);
-
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Marshal_001, TestSize.Level1)
@@ -1051,7 +1045,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003, TestS
         buffer->AppendUint8(1);
         buffer->AppendUint8(1);
         EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-
     }
 }
 
@@ -1180,7 +1173,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002, T
         buffer->AppendUint8(2);
         buffer->AppendUint8(10);
         EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-
     }
 }
 
@@ -1347,7 +1339,6 @@ HWTEST_F(MechCommandTest0x02, CommonGetMechLimitInfoCmd_TriggerResponse_001, Tes
         buffer->AppendFloat(3.2434);
     }
     
-
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     executionCmd->GetResult();
     EXPECT_GT(executionCmd->GetParams().negMax.pitch, 3);
