@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace MechBodyController {
-class MechCommandTest0X02 : public testing::Test {
+class MechCommandTest0x02 : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
