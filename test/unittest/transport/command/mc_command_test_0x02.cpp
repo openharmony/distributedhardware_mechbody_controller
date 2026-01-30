@@ -52,19 +52,19 @@ namespace {
 
 }
 
-void MotionManagerTest::SetUpTestCase()
+void MechCommandTest0x02::SetUpTestCase()
 {
 }
 
-void MotionManagerTest::TearDownTestCase()
+void MechCommandTest0x02::TearDownTestCase()
 {
 }
 
-void MotionManagerTest::SetUp()
+void MechCommandTest0x02::SetUp()
 {
 }
 
-void MotionManagerTest::TearDown()
+void MechCommandTest0x02::TearDown()
 {
 }
 
