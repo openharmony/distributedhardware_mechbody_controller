@@ -438,7 +438,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechMotionControlCmd_TriggerResponse_001,
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
-    bffer->AppendUint8(1);
+    buffer->AppendUint8(1);
 
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
@@ -458,7 +458,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechMotionControlCmd_TriggerResponse_002,
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
-    bffer->AppendUint8(1);
+    buffer->AppendUint8(1);
 
     EXPECT_NE(executionCmd, nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
@@ -499,7 +499,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_001
     EXPECT_NE(executionCmd->GetResult(), 1);
 }
 
-HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_001, TestSize.Level1)
+HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_002, TestSize.Level1)
 {
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
@@ -541,7 +541,6 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingFrameCmd_Marshal_001, T
     std::shared_ptr<NormalSetMechCameraTrackingFrameCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingFrameCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
-    executionCmd->GetResult();
     EXPECT_NE(executionCmd->Marshal(), nullptr);
 }
 
@@ -583,7 +582,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_Marshal_001, 
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> executionCmdCommon =
-        factory.CreateSetMechCameraTrCreateSetMechCameraTrackingEnableCmdackingFrameCmd(status);
+        factory.CreateSetMechCameraTrackingEnableCmd(status);
     std::shared_ptr<NormalSetMechCameraTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingEnableCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
@@ -600,7 +599,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerRespon
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> executionCmdCommon =
-        factory.CreateSetMechCameraTrCreateSetMechCameraTrackingEnableCmdackingFrameCmd(status);
+        factory.CreateSetMechCameraTrackingEnableCmd(status);
     std::shared_ptr<NormalSetMechCameraTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingEnableCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
@@ -624,7 +623,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerRespon
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> executionCmdCommon =
-        factory.CreateSetMechCameraTrCreateSetMechCameraTrackingEnableCmdackingFrameCmd(status);
+        factory.CreateSetMechCameraTrackingEnableCmd(status);
     std::shared_ptr<NormalSetMechCameraTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingEnableCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
@@ -733,7 +732,7 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Unmarshal_001,
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechTrackingEnableCmd> executionCmdCommon =
-        factory.CreateRegisterMechTrackingEnableCmd(params);
+        factory.CreateRegisterMechTrackingEnableCmd();
     std::shared_ptr<NormalRegisterMechTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
@@ -803,7 +802,7 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechStateInfoCmd_Unmarshal_001, Test
     buffer->AppendUint8(0);
     buffer->AppendUint8(0);
     EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), true);
-    EXPECT_EQ(executionCmd->info.isPhoneOn, true);
+    EXPECT_EQ(executionCmd->info_.isPhoneOn, true);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_Marshal_001, TestSize.Level1)
@@ -836,7 +835,7 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_TriggerResponse_
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(8);
-    executionCmd->TriggerResponse(buffer)
+    executionCmd->TriggerResponse(buffer);
     EXPECT_EQ(executionCmd->result_, 0);
 }
 
@@ -858,9 +857,9 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_Unmarshal_001, T
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(8);
-    buffer->AppendUint8(1.11);
-    buffer->AppendUint8(2.22);
-    buffer->AppendUint8(3.33);
+    buffer->AppendFloat(1.11);
+    buffer->AppendFloat(2.22);
+    buffer->AppendFloat(3.33);
     EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
     EXPECT_GT(executionCmd->position_.pitch, 3);
 }
@@ -1036,7 +1035,7 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003, TestS
         buffer->AppendUint16(12);
         buffer->AppendUint8(4);
         EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->wheelData_speed, 12);
+        EXPECT_EQ(executionCmd->wheelData_.speed, 12);
     }
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
@@ -1369,7 +1368,7 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_Marshal_001, TestSize.Lev
 {
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
-    std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.NormalGetMechBaseInfoCmd();
+    std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.CreateGetMechBaseInfoCmd();
 
     EXPECT_NE(executionCmd, nullptr);
     EXPECT_NE(executionCmd->Marshal(), nullptr);
@@ -1379,7 +1378,7 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_001, Test
 {
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
-    std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.NormalGetMechBaseInfoCmd();
+    std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.CreateGetMechBaseInfoCmd();
     EXPECT_NE(executionCmd, nullptr);
 
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
@@ -1410,7 +1409,7 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_002, Test
 {
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
-    std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.NormalGetMechBaseInfoCmd();
+    std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.CreateGetMechBaseInfoCmd();
     EXPECT_NE(executionCmd, nullptr);
 
     executionCmd->SetResponseCallback(ResponseCb);
