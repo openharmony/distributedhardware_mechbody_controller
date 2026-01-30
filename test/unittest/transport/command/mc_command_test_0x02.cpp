@@ -234,7 +234,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
         EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::POS_LIMITED);
     }
-    executionCmd->SetResponseCallback(ResponseCb)j
+    executionCmd->SetResponseCallback(ResponseCb);
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
@@ -304,42 +304,42 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_00
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
-        buffer.AppendUint16(++g_taskId);
-        buffer.AppendUint8(1);
-        buffer.AppendUint8(0b00000000);
+        buffer->AppendUint16(++g_taskId);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0b00000000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RatationAxisLimited::NOT_LIMITED);
+        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NOT_LIMITED);
     }
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
-        buffer.AppendUint16(++g_taskId);
-        buffer.AppendUint8(1);
-        buffer.AppendUint8(0b00000001);
+        buffer->AppendUint16(++g_taskId);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0b00000001);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RatationAxisLimited::POS_LIMITED);
+        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::POS_LIMITED);
     }
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
-        buffer.AppendUint16(++g_taskId);
-        buffer.AppendUint8(1);
-        buffer.AppendUint8(0b00000010);
+        buffer->AppendUint16(++g_taskId);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0b00000010);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RatationAxisLimited::NEG_LIMITED);
+        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NEG_LIMITED);
     }
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
-        buffer.AppendUint16(++g_taskId);
-        buffer.AppendUint8(1);
-        buffer.AppendUint8(0b00000100);
+        buffer->AppendUint16(++g_taskId);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0b00000100);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RatationAxisLimited::POS_LIMITED);
+        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::POS_LIMITED);
     }
 }
 
@@ -360,33 +360,33 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_00
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
-        buffer.AppendUint16(++g_taskId);
-        buffer.AppendUint8(1);
-        buffer.AppendUint8(0b00001000);
+        buffer->AppendUint16(++g_taskId);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0b00001000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RatationAxisLimited::NEG_LIMITED);
+        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::NEG_LIMITED);
     }
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
-        buffer.AppendUint16(++g_taskId);
-        buffer.AppendUint8(1);
-        buffer.AppendUint8(0b00010000);
+        buffer->AppendUint16(++g_taskId);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0b00010000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RatationAxisLimited::POS_LIMITED);
+        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::POS_LIMITED);
     }
     executionCmd->SetResponseCallback(ResponseCb);
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
-        buffer.AppendUint16(++g_taskId);
-        buffer.AppendUint8(1);
-        buffer.AppendUint8(0b00100000);
+        buffer->AppendUint16(++g_taskId);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0b00100000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RatationAxisLimited::NEG_LIMITED);
+        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::NEG_LIMITED);
     }
 }
 
