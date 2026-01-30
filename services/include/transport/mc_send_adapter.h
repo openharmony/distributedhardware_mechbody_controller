@@ -43,6 +43,7 @@ private:
     int32_t PushResponseTask(const std::shared_ptr<CommandBase> &cmd, uint16_t seqNo);
     int32_t ExeResponseTask(uint16_t seqNo, const std::shared_ptr<MechDataBuffer>& mechDataBuffer);
     int32_t ExeRespTimeoutTask(uint16_t seqNo);
+    int32_t ExeRespTimeoutResetTask(uint16_t seqNo);
     int32_t RemoveRespTimeoutTask(uint16_t seqNo);
     void StartSendEvent();
     void StartRecvEvent();

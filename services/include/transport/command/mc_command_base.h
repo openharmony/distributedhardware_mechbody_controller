@@ -43,7 +43,6 @@ public:
     virtual void TriggerResponse(std::shared_ptr<MechDataBuffer> data) = 0;
     void TriggerTimeout() const;
     void TriggerTimeoutReset() const;
-
     uint8_t GetCmdSet() const;
     uint8_t GetCmdId() const;
     uint16_t GetCmdType() const;
@@ -64,7 +63,7 @@ protected:
     uint32_t timeoutMs_ = MECHBODY_MSG_TIMEOUT;
     ResponseCallback responseCb_;
     TimeoutCallback timeoutCb_;
-    TimeoutResetCallback timeoutResetCb_
+    TimeoutResetCallback timeoutResetCb_;
 };
 } // namespace MechBodyController
 } // namespace OHOS
