@@ -1393,7 +1393,7 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_001, Test
     buffer->AppendUint8(0);
     buffer->AppendUint8(0);
 
-    size_t macAddressSize = executionCmd->GetParams.macAddress.size();
+    size_t macAddressSize = executionCmd->GetParams().macAddress.size();
     for (int i = 0; i < macAddressSize; i++) {
         buffer->AppendUint8(i + 1);
     }
@@ -1421,7 +1421,7 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_002, Test
     buffer->AppendUint8(0);
     buffer->AppendUint8(0);
 
-    size_t macAddressSize = executionCmd->GetParams.macAddress.size();
+    size_t macAddressSize = executionCmd->GetParams().macAddress.size();
     for (int i = 0; i < macAddressSize; i++) {
         buffer->AppendUint8(i + 1);
     }
@@ -1526,7 +1526,7 @@ HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_TriggerResponse_001, TestSiz
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     executionCmd->GetResult();
     executionCmd->GetParams();
-    EXPECT_EQ(executionCmd->lowProtocoVer_, 3);
+    EXPECT_EQ(executionCmd->lowProtocolVer_, 3);
 }
 
 HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_TriggerResponse_002, TestSize.Level1)
@@ -1551,7 +1551,7 @@ HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_TriggerResponse_002, TestSiz
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     executionCmd->GetResult();
     executionCmd->GetParams();
-    EXPECT_EQ(executionCmd->lowProtocoVer_, 3);
+    EXPECT_EQ(executionCmd->lowProtocolVer_, 3);
 }
 
 
