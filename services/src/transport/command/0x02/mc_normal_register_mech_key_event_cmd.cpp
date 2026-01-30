@@ -110,6 +110,16 @@ bool NormalRegisterMechKeyEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer> da
                         break;
                 }
             }
+            if (buttonFrequency_ == 3) {
+                switch (keyType) {
+                    case SWITCH_CAMERA :
+                        event_ = CameraKeyEvent::SWITCH_PHOTO_FILM;
+                        break;
+                    default :
+                        HILOGW("ButtonEvent undefined action.");
+                        break;
+                }
+            }
             offset++;
             continue;
         }

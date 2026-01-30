@@ -147,6 +147,9 @@ void McCameraTrackingController::UnInit()
     if (eventHandler_ != nullptr) {
         eventHandler_->RemoveTask(SEND_CAMERA_INFO_TASK_NAME);
         eventHandler_->RemoveTask(UPDATE_ACTION_CONTROL_TASK_NAME);
+        #ifdef MECHBODY_CONTROLLER_EXTENDED
+            eventHandler_->RemoveTask(PREDICTION_TASK_NAME);
+        #endif
     }
 #ifdef MECHBODY_CONTROLLER_EXTENDED
     MechbodyAdapterUtils::Clear();
