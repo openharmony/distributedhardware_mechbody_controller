@@ -40,7 +40,7 @@ struct MechInfo : public OHOS::Parcelable {
     MechType mechType = MechType::PORTABLE_GIMBAL;
     std::string mechName;
     std::string mac;
-    AttachmentState state = AttachmentState::DETACHED;
+    AttachmentState state = AttachmentState::UNKNOWN;
     bool gattCoonectState = false;
     bool pairState = false;
     bool hidState = false;

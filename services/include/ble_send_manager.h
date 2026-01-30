@@ -176,7 +176,7 @@ public:
     bool CheckGattcIsReady();
     int32_t RegisterTransportSendAdapter(const std::shared_ptr<BleReceviceListener> listener);
     int32_t UnRegisterTransportSendAdapter(const std::shared_ptr<BleReceviceListener> listener);
-    void OnGattReady(MechInfo &mechInfo);
+    int32_t OnGattReady(MechInfo &mechInfo);
     void OnGattDisconnect(MechInfo &mechInfo);
     int32_t MechbodyConnect(std::string mac, std::string deviceName);
     int32_t MechbodyGattcConnect(std::string mac, std::string deviceName);

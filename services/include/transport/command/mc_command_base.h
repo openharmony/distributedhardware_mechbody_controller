@@ -50,6 +50,14 @@ public:
     uint16_t GetRspSize() const;
     uint32_t GetTimeoutMs() const;
     int32_t GetRetryTimes() const;
+    int64_t GetTimestamp() const
+    {
+        return timestamp;
+    }
+    void SetTimestamp(int64_t time)
+    {
+        timestamp = time;
+    }
 
     bool NeedResponse() const;
 
@@ -61,6 +69,7 @@ protected:
     bool needResponse_ = 0;
     int32_t retryTimes_ = 0;
     uint32_t timeoutMs_ = MECHBODY_MSG_TIMEOUT;
+    int64_t timestamp = 0;
     ResponseCallback responseCb_;
     TimeoutCallback timeoutCb_;
     TimeoutResetCallback timeoutResetCb_;

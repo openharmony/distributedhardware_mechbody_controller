@@ -33,6 +33,8 @@ namespace {
     constexpr uint8_t CMD_KEY_STICK_CLICK = 0x08;
     constexpr uint8_t CMD_GET_STICK_LENGTH = 4;
     constexpr uint8_t dataRedundant = 2;
+    constexpr uint8_t ONE_CLICK = 1;
+    constexpr uint8_t TRIPLE_CLICK = 3;
 }
 
 NormalRegisterMechKeyEventCmd::NormalRegisterMechKeyEventCmd()
@@ -72,95 +74,127 @@ bool NormalRegisterMechKeyEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer> da
 
     size_t offset = BIT_OFFSET_2;
     uint8_t keyType = 0;
-    uint8_t resultLength = 0;
+    bool result;
     do {
         CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, keyType), false, "read keyType");
         offset++;
         if (keyType >= SWITCH_MODE && keyType <= START_FILMING) {
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read buttonLength");
-            if (resultLength != CMD_GET_BUTTON_LENGTH) {
-                HILOGE("Reply data buttonLength invalid");
+            result = RegisterKeyEvent(data, offset, keyType);
+            if (!result) {
                 return false;
             }
-            offset++;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, buttonFrequency_), false, "read buttonFrequency");
-            if (buttonFrequency_ == 1) {
-                switch (keyType) {
-                    case SWITCH_MODE :
-                        break;
-                    case SWITCH_TRACKING :
-                        HILOGI("ButtonEvent SWITCH_CAMERA.");
-                        event_ = CameraKeyEvent::SWITCH_TRACKING;
-                        break;
-                    case ZOOM_IN :
-                        event_ = CameraKeyEvent::ZOOM_IN;
-                        break;
-                    case ZOOM_OUT :
-                        event_ = CameraKeyEvent::ZOOM_OUT;
-                        break;
-                    case SWITCH_CAMERA :
-                        event_ = CameraKeyEvent::SWITCH_CAMERA;
-                        break;
-                    case START_FILMING :
-                        event_ = CameraKeyEvent::START_FILMING;
-                        break;
-                    default :
-                        HILOGW("ButtonEvent undefined action.");
-                        break;
-                }
-            }
-            if (buttonFrequency_ == 3) {
-                switch (keyType) {
-                    case SWITCH_CAMERA :
-                        event_ = CameraKeyEvent::SWITCH_PHOTO_FILM;
-                        break;
-                    default :
-                        HILOGW("ButtonEvent undefined action.");
-                        break;
-                }
-            }
-            offset++;
             continue;
         }
 
         if (keyType == CMD_KEY_WHEEL_CLICK) {
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read wheelLength");
-            if (resultLength != CMD_GET_WHEEL_LENGTH) {
-                HILOGE("Reply data wheelLength invalid");
+            result = RegisterWheelEvent(data, offset);
+            if (!result) {
                 return false;
             }
-            offset++;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, wheelData_.degree), false, "read degree");
-            HILOGD("get degree: %{public}d", wheelData_.degree);
-            offset += BIT_OFFSET_2;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, wheelData_.speed), false, "read speed");
-            HILOGD("get speed: %{public}d", wheelData_.speed);
-            offset += BIT_OFFSET_2;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, wheelData_.speed_ratio), false, "read speed_ratio");
-            HILOGD("get speed_ratio: %{public}u", wheelData_.speed_ratio);
-            offset++;
             continue;
         }
 
         if (keyType == CMD_KEY_STICK_CLICK) {
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read stickLength");
-            if (resultLength != CMD_GET_STICK_LENGTH) {
-                HILOGE("Reply data stickLength invalid");
+            result = RegisterStickEvent(data, offset);
+            if (!result) {
                 return false;
             }
-            offset++;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, stickX_), false, "read stickX 1-2");
-            offset += BIT_OFFSET_2;
-            CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, stickY_), false, "read stickY 3-4");
-            offset += BIT_OFFSET_2;
             continue;
         }
     } while (offset < data->Size() - dataRedundant);
+    return true;
+}
+
+bool NormalRegisterMechKeyEventCmd::RegisterKeyEvent(
+    std::shared_ptr<MechDataBuffer> data, size_t& offset, uint8_t keyType)
+{
+    uint8_t resultLength = 0;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read buttonLength");
+    if (resultLength != CMD_GET_BUTTON_LENGTH) {
+        HILOGE("Reply data buttonLength invalid");
+        return false;
+    }
+    offset++;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, buttonFrequency_), false, "read buttonFrequency");
+    if (buttonFrequency_ == ONE_CLICK) {
+        switch (keyType) {
+            case SWITCH_MODE :
+                break;
+            case SWITCH_TRACKING :
+                HILOGI("ButtonEvent SWITCH_CAMERA.");
+                event_ = CameraKeyEvent::SWITCH_TRACKING;
+                break;
+            case ZOOM_IN :
+                event_ = CameraKeyEvent::ZOOM_IN;
+                break;
+            case ZOOM_OUT :
+                event_ = CameraKeyEvent::ZOOM_OUT;
+                break;
+            case SWITCH_CAMERA :
+                event_ = CameraKeyEvent::SWITCH_CAMERA;
+                break;
+            case START_FILMING :
+                event_ = CameraKeyEvent::START_FILMING;
+                break;
+            default :
+                HILOGW("ButtonEvent undefined action.");
+                break;
+        }
+    }
+    if (buttonFrequency_ == TRIPLE_CLICK) {
+        switch (keyType) {
+            case SWITCH_CAMERA :
+                event_ = CameraKeyEvent::SWITCH_PHOTO_FILM;
+                break;
+            default :
+                HILOGW("ButtonEvent undefined action.");
+                break;
+        }
+    }
+    offset++;
+
+    return true;
+}
+
+bool NormalRegisterMechKeyEventCmd::RegisterWheelEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset)
+{
+    uint8_t resultLength = 0;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read wheelLength");
+    if (resultLength != CMD_GET_WHEEL_LENGTH) {
+        HILOGE("Reply data wheelLength invalid");
+        return false;
+    }
+    offset++;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, wheelData_.degree), false, "read degree");
+    HILOGD("get degree: %{public}d", wheelData_.degree);
+    offset += BIT_OFFSET_2;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, wheelData_.speed), false, "read speed");
+    HILOGD("get speed: %{public}d", wheelData_.speed);
+    offset += BIT_OFFSET_2;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, wheelData_.speed_ratio), false, "read speed_ratio");
+    HILOGD("get speed_ratio: %{public}u", wheelData_.speed_ratio);
+    offset++;
+    return true;
+}
+
+bool NormalRegisterMechKeyEventCmd::RegisterStickEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset)
+{
+    uint8_t resultLength = 0;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read stickLength");
+    if (resultLength != CMD_GET_STICK_LENGTH) {
+        HILOGE("Reply data stickLength invalid");
+        return false;
+    }
+    offset++;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, stickX_), false, "read stickX 1-2");
+    offset += BIT_OFFSET_2;
+    CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, stickY_), false, "read stickY 3-4");
+    offset += BIT_OFFSET_2;
     return true;
 }
 

@@ -241,12 +241,12 @@ HWTEST_F(MechConnectManagerTest, GetMechState_001, TestSize.Level3)
     mechInfo.mechId = mechId;
     mechInfo.state = AttachmentState::ATTACHED;
     mechConnectManager.mechInfos_.erase(mechInfo);
-    bool ret = mechConnectManager.GetMechState(mechId);
-    EXPECT_EQ(ret, false);
+    AttachmentStateMap ret = mechConnectManager.GetMechState(mechId);
+    EXPECT_EQ(ret, AttachmentStateMap::DETACHED);
 
     mechConnectManager.mechInfos_.insert(mechInfo);
     ret = mechConnectManager.GetMechState(mechId);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, AttachmentStateMap::ATTACHED);
     DTEST_LOG << "MechConnectManagerTest GetMechState_001 end" << std::endl;
 }
 }

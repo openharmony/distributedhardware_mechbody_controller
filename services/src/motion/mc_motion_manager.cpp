@@ -190,7 +190,8 @@ void MotionManager::MechParamNotify(const std::shared_ptr<CommonRegisterMechStat
         }
         HILOGI("mech info change, isPhoneOn %{public}d", info.isPhoneOn);
         deviceStatus_->stateInfo = info;
-        if (MechConnectManager::GetInstance().GetMechState(mechId_) != info.isPhoneOn) {
+        if (MechConnectManager::GetInstance().GetMechState(mechId_) !=
+            static_cast<AttachmentStateMap>(info.isPhoneOn)) {
             HandleMechPlacementChange(info.isPhoneOn);
         }
         // roll is not enable now, it will be available in the future
@@ -240,7 +241,8 @@ void MotionManager::MechGenericEventNotify(const std::shared_ptr<NormalRegisterM
         if (info.attached != static_cast<uint8_t>(-1)) {
             HILOGI("mech info change, isPhoneOn %{public}d", info.attached);
             deviceStatus_->stateInfo.isPhoneOn = info.attached;
-            if (MechConnectManager::GetInstance().GetMechState(mechId_) != info.attached) {
+            if (MechConnectManager::GetInstance().GetMechState(mechId_) !=
+                static_cast<AttachmentStateMap>(info.attached)) {
                 HandleMechPlacementChange(info.attached);
             }
         }
@@ -328,7 +330,7 @@ void MotionManager::MechExecutionResultNotify(const std::shared_ptr<RegisterMech
 
 void MotionManager::MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd)
 {
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on.");
         return;
     }
@@ -505,11 +507,15 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     HILOGI("MotionManager end.");
 }
 
-void MotionManager::Init()
+int32_t MotionManager::Init()
 {
     HILOGI("MotionManager Init start");
 
-    GetProtocolVer();
+    int32_t result = GetProtocolVer();
+    if (result == MECH_CONNECT_FAILED) {
+        return MECH_CONNECT_FAILED;
+    }
+
     factory.SetFactoryProtocolVer(protocolVer_);
     switch (protocolVer_) {
         case 0x01:
@@ -529,7 +535,7 @@ void MotionManager::Init()
     GetMechLimitInfo();
     if (protocolVer_ == 0x01) {
         auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(false);
-        CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
+        CHECK_POINTER_RETURN_VALUE(hidCmd, MECH_CONNECT_FAILED, "hidCmd is empty.");
         sendAdapter_->SendCommand(hidCmd, CMD_SEND_INTERVAL);
     }
 
@@ -546,6 +552,7 @@ void MotionManager::Init()
     startTrackingChecker_ = true;
     trackingCheckerThread_ = std::make_unique<std::thread>(&MotionManager::TrackingChecker, this);
     HILOGI("MotionManager Init end.");
+    return ERR_OK;
 }
 
 void MotionManager::SetMechTkEnableNoTarget()
@@ -600,11 +607,11 @@ void MotionManager::ProcessTrackingStatus()
     }
 }
 
-void MotionManager::GetProtocolVer()
+int32_t MotionManager::GetProtocolVer()
 {
     HILOGI("start");
     std::shared_ptr<GetMechProtocolVerCmd> protocolVerCmd = factory.CreateGetMechProtocolVerCmd();
-    CHECK_POINTER_RETURN(protocolVerCmd, "protocolVerCmd is empty.");
+    CHECK_POINTER_RETURN_VALUE(protocolVerCmd, MECH_CONNECT_FAILED, "protocolVerCmd is empty.");
     auto protocolVerCallback = [this, protocolVerCmd]() {
         std::lock_guard<std::mutex> lock(protocolVerMutex_);
         protocolVerCon_.notify_all();
@@ -614,17 +621,22 @@ void MotionManager::GetProtocolVer()
 
     protocolVerCmd->SetResponseCallback(protocolVerCallback);
     protocolVerCmd->SetTimeoutCallback(SetTimeout);
-    CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
+    CHECK_POINTER_RETURN_VALUE(sendAdapter_, MECH_CONNECT_FAILED, "sendAdapter_");
     sendAdapter_->SendCommand(protocolVerCmd);
     {
         std::unique_lock<std::mutex> lock(protocolVerMutex_);
 
-        protocolVerCon_.wait(lock, [this] {
+        bool protocolVerReady = protocolVerCon_.wait_for(lock, std::chrono::seconds(3), [this] {
             return protocolVer_ == static_cast<uint8_t>(ProtocolVersion::V01) ||
                 protocolVer_ == static_cast<uint8_t>(ProtocolVersion::V02);
             });
+        if (!protocolVerReady) {
+            MechConnectManager::GetInstance().NotifyMechState(mechId_, false);
+            return MECH_CONNECT_FAILED;
+        }
     }
     HILOGI("end");
+    return ERR_OK;
 }
 
 void MotionManager::SetProtocolVer()
@@ -700,7 +712,8 @@ void MotionManager::GetDeviceStateInfo()
     auto stateInfoCallback = [this, stateInfoCmd]() {
         DeviceStateInfo info = stateInfoCmd->GetParams();
         deviceStatus_->stateInfo.isPhoneOn = info.attached;
-        if (MechConnectManager::GetInstance().GetMechState(mechId_) != info.attached) {
+        if (MechConnectManager::GetInstance().GetMechState(mechId_) !=
+            static_cast<AttachmentStateMap>(info.attached)) {
             HandleMechPlacementChange(info.attached);
         }
         HILOGI("device callback deviceStateInfo_ ok");
@@ -912,7 +925,7 @@ int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
     uint32_t &tokenId, std::string &napiCmdId)
 {
     HILOGI("Rotate start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1088,7 +1101,7 @@ int32_t MotionManager::RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateS
     uint32_t &tokenId, std::string &napiCmdId)
 {
     HILOGI("Rotate by speed start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1277,7 +1290,7 @@ void MotionManager::CheckPitchSpeed(const std::shared_ptr<RotateBySpeedParam> &r
 int32_t MotionManager::StopRotate(uint32_t &tokenId, std::string &napiCmdId)
 {
     HILOGI("Stop rotate start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1299,7 +1312,7 @@ int32_t MotionManager::StopRotate(uint32_t &tokenId, std::string &napiCmdId)
 int32_t MotionManager::GetSpeedControlTimeLimit(std::shared_ptr<TimeLimit> &timeLimit)
 {
     HILOGI("GetSpeedControlTimeLimit start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1313,7 +1326,7 @@ int32_t MotionManager::GetSpeedControlTimeLimit(std::shared_ptr<TimeLimit> &time
 
 int32_t MotionManager::GetRotateSpeedLimit(RotateSpeedLimit &speedLimit)
 {
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1327,7 +1340,7 @@ int32_t MotionManager::GetRotateSpeedLimit(RotateSpeedLimit &speedLimit)
 int32_t MotionManager::GetCurrentPosition(std::shared_ptr<EulerAngles> &eulerAngles)
 {
     HILOGI("GetCurrentPosition start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1341,7 +1354,7 @@ int32_t MotionManager::GetCurrentPosition(std::shared_ptr<EulerAngles> &eulerAng
 
 int32_t MotionManager::GetRotationLimit(RotateDegreeLimit &rotationLimit)
 {
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1371,7 +1384,7 @@ void MotionManager::UpdateTrackingTime()
 int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<TrackingFrameParams> trackingFrameParams)
 {
     HILOGI("SetMechCameraTrackingFrame start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1384,6 +1397,12 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
         HILOGE("device tracking is not enabled");
         return ERR_OK;
     }
+
+    if (protocolVer_ == 0x02 && !SetMechCameraInfo_) {
+        HILOGE("device cameraInfo is not enabled");
+        return ERR_OK;
+    }
+
     HILOGI("Start tracking.");
     UpdateTrackingTime();
 
@@ -1392,6 +1411,10 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     CHECK_POINTER_RETURN_VALUE(cameraTrackingFrameCmd, INVALID_PARAMETERS_ERR, "CameraTrackingFrameCmd is empty.");
     cameraTrackingFrameCmd->SetResponseCallback(cameraTrackingFrameCallback);
     cameraTrackingFrameCmd->SetTimeoutCallback(SetTimeout);
+    std::chrono::microseconds nowUs =
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+    cameraTrackingFrameCmd->SetTimestamp(nowUs.count());
+
     sendAdapter_->SendCommand(cameraTrackingFrameCmd);
     return ERR_OK;
 }
@@ -1431,7 +1454,7 @@ int32_t MotionManager::SetMechCameraTrackingEnabled(bool &isEnabled)
 int32_t MotionManager::SetMechCameraTrackingLayout(const std::shared_ptr<LayoutParams> layoutParams)
 {
     HILOGI("SetCameraTrackingLayout start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1476,7 +1499,7 @@ int32_t MotionManager::GetMechCameraTrackingLayout(std::shared_ptr<LayoutParams>
 int32_t MotionManager::SetMechCameraInfo(const CameraInfoParams &mechCameraInfo)
 {
     HILOGI("SetMechCameraInfo start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1494,7 +1517,7 @@ int32_t MotionManager::SetMechCameraInfo(const CameraInfoParams &mechCameraInfo)
 int32_t MotionManager::GetMechBaseInfo(std::shared_ptr<MechBaseInfo> &mechBaseInfo)
 {
     HILOGI("GetMechBaseInfo start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1511,7 +1534,7 @@ int32_t MotionManager::GetMechBaseInfo(std::shared_ptr<MechBaseInfo> &mechBaseIn
 int32_t MotionManager::GetMechCapabilityInfo(std::shared_ptr<MechCapabilityInfo> &mechCapabilityInfo)
 {
     HILOGI("GetMechCapabilityInfo start.");
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1527,7 +1550,7 @@ int32_t MotionManager::GetMechCapabilityInfo(std::shared_ptr<MechCapabilityInfo>
 
 int32_t MotionManager::GetRotationAxesStatus(const int32_t &mechId, RotationAxesStatus &axesStatus)
 {
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
@@ -1655,7 +1678,7 @@ int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &act
     if (protocolVer_ == 0x02) {
         return ERR_OK;
     }
-    if (!MechConnectManager::GetInstance().GetMechState(mechId_)) {
+    if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }

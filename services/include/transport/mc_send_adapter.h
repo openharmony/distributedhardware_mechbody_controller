@@ -35,6 +35,7 @@ public:
     explicit TransportSendAdapter();
     virtual ~TransportSendAdapter();
     int32_t SendCommand(const std::shared_ptr<CommandBase> &cmd, int32_t delayMs = 0);
+    bool DiscardExpiredData(const std::shared_ptr<CommandBase> &cmd);
     int32_t RegisterBluetoothListener();
     int32_t UnRegisterBluetoothListener();
     int32_t OnReceive(bool isAck, uint16_t seqNo, std::shared_ptr<MechDataBuffer> dataBuffer);
