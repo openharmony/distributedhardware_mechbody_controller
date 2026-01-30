@@ -103,8 +103,6 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationTraceCmd_Marshal_001, TestSiz
     EXPECT_NE(executionCmd->Marshal(), nullptr);
 }
 
-
-
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_Marshal_001, TestSize.Level1)
 {
     RotateToLocationParam params;
@@ -738,7 +736,8 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Unmarshal_001,
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
-    std::shared_ptr<CommonRegisterMechTrackingEnableCmd> executionCmdCommon = factory.CreateRegisterMechTrackingEnableCmd(params);
+    std::shared_ptr<CommonRegisterMechTrackingEnableCmd> executionCmdCommon =
+        factory.CreateRegisterMechTrackingEnableCmd(params);
     std::shared_ptr<NormalRegisterMechTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
@@ -1253,7 +1252,6 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechStateInfoCmd_TriggerResponse_001, Tes
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     executionCmd->GetResult();
     EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
-
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechStateInfoCmd_TriggerResponse_002, TestSize.Level1)
@@ -1270,7 +1268,6 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechStateInfoCmd_TriggerResponse_002, Tes
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     executionCmd->GetResult();
     EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
-
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechPoseInfoCmd_Marshal_001, TestSize.Level1)
