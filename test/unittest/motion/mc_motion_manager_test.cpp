@@ -1432,7 +1432,7 @@ HWTEST_F(MotionManagerTest, GetProtocoVer_001, TestSize.Level1)
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr.protocolVer_ = 2;
+    motionMgr->protocolVer_ = 2;
     EXPECT_NO_FATAL_FAILURE(motionMgr->GetProtocolVer());
     EXPECT_NO_FATAL_FAILURE(motionMgr->SetProtocolVer());
 
@@ -1446,9 +1446,9 @@ HWTEST_F(MotionManagerTest, RegisterEventListener_001, TestSize.Level1)
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr.protocolVer_ = 1;
+    motionMgr->protocolVer_ = 1;
     EXPECT_NO_FATAL_FAILURE(motionMgr->RegisterEventListener());
-    motionMgr.protocolVer_ = 2;
+    motionMgr->protocolVer_ = 2;
     EXPECT_NO_FATAL_FAILURE(motionMgr->RegisterEventListener());
 }
 }
