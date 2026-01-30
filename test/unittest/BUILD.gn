@@ -282,6 +282,36 @@ ohos_unittest("mc_command_test") {
   subsystem_name = "distributedhardware"
 }
 
+ohos_unittest("mc_command_test_0x02") {
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+  visibility = [ ":*" ]
+
+  module_out_path = mechbody_module_output_path
+
+  sanitize = {
+    blocklist = "./cfi_blocklist.txt"
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  sources = [ "transport/command/mc_command_test_0x02.cpp" ]
+
+  configs = [
+    ":mech_test_config",
+    "${mechbody_path}/test/resource:coverage_flags",
+  ]
+
+  external_deps = mech_external_deps
+  deps = mech_public_deps
+
+  part_name = "mechbody_controller"
+  subsystem_name = "distributedhardware"
+}
+
 ohos_unittest("mechbody_controller_stub_test") {
   visibility = [ ":*" ]
 
@@ -382,6 +412,7 @@ group("unittest") {
     ":connect_manager_test",
     ":mc_camera_tracking_controller_test",
     ":mc_command_test",
+    ":mc_command_test_0x02",
     ":mc_montion_manager_test",
     ":mc_send_manager_test",
     ":mc_subcription_center_test",

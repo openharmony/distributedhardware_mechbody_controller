@@ -41,6 +41,7 @@ constexpr size_t BIT_OFFSET_1 = 1;
 constexpr size_t BIT_OFFSET_2 = 2;
 constexpr size_t BIT_OFFSET_3 = 3;
 constexpr size_t BIT_OFFSET_4 = 4;
+constexpr size_t BIT_OFFSET_5 = 5;
 constexpr size_t BIT_OFFSET_6 = 6;
 constexpr size_t BIT_OFFSET_7 = 7;
 constexpr size_t BIT_OFFSET_8 = 8;
