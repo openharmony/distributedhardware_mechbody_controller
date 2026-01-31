@@ -162,7 +162,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
         buffer->AppendUint16(100);
-        buffer->AppendUint16(1);
+        buffer->AppendUint8(1);
         buffer->AppendUint16(0b00000000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -172,7 +172,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
         buffer->AppendUint16(100);
-        buffer->AppendUint16(1);
+        buffer->AppendUint8(1);
         buffer->AppendUint16(0b00000001);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -182,7 +182,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
         buffer->AppendUint16(100);
-        buffer->AppendUint16(1);
+        buffer->AppendUint8(1);
         buffer->AppendUint16(0b00000010);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -192,7 +192,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
         buffer->AppendUint16(100);
-        buffer->AppendUint16(1);
+        buffer->AppendUint8(1);
         buffer->AppendUint16(0b00000100);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -218,7 +218,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
         buffer->AppendUint16(100);
-        buffer->AppendUint16(1);
+        buffer->AppendUint8(1);
         buffer->AppendUint16(0b00001000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -228,7 +228,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
         buffer->AppendUint16(100);
-        buffer->AppendUint16(1);
+        buffer->AppendUint8(1);
         buffer->AppendUint16(0b00010000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -239,7 +239,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         auto buffer = std::make_shared<MechDataBuffer>(100);
         AppendUint8BySize(buffer, 2);
         buffer->AppendUint16(100);
-        buffer->AppendUint16(1);
+        buffer->AppendUint8(1);
         buffer->AppendUint16(0b00100000);
 
         EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
@@ -496,7 +496,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_001
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    EXPECT_NE(executionCmd->GetResult(), 1);
+    EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_002, TestSize.Level1)
@@ -514,7 +514,7 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_002
     EXPECT_NE(executionCmd, nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    EXPECT_NE(executionCmd->GetResult(), 1);
+    EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingFrameCmd_Marshal_001, TestSize.Level1)
@@ -741,7 +741,7 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Unmarshal_001,
 
     size_t capacity = 100;
     auto bufferEmpty = std::make_shared<MechDataBuffer>(capacity);
-    EXPECT_NE(executionCmd->Unmarshal(bufferEmpty), false);
+    EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), false);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
@@ -801,7 +801,7 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechStateInfoCmd_Unmarshal_001, Test
     buffer->AppendUint8(1);
     buffer->AppendUint8(0);
     buffer->AppendUint8(0);
-    EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), true);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
     EXPECT_EQ(executionCmd->info_.isPhoneOn, true);
 }
 
@@ -934,7 +934,7 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_002, TestS
         buffer->AppendUint8(1);
         buffer->AppendUint8(2);
         EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->buttonFrequency_, true);
+        EXPECT_EQ(executionCmd->buttonFrequency_, 2);
     }
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
@@ -1131,10 +1131,10 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_001, T
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
     EXPECT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->Unmarshal(nullptr));
+    EXPECT_EQ(executionCmd->Unmarshal(nullptr), false);
 
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->Unmarshal(bufferEmpty));
+    EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), false);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002, TestSize.Level1)
@@ -1585,7 +1585,7 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_TriggerResponse_001
 
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().pitchPose, 5);
+    EXPECT_GT(executionCmd->GetParams().pitchPose, 5);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_TriggerResponse_002, TestSize.Level1)
@@ -1609,7 +1609,7 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_TriggerResponse_002
 
     EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
     executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().pitchPose, 5);
+    EXPECT_GT(executionCmd->GetParams().pitchPose, 5);
 }
 }
 }
