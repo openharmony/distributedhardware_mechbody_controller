@@ -26,7 +26,7 @@ class NormalSetMechRotationToLocationCmd : public CommandBase {
 public:
     static constexpr uint8_t CMD_SET = 0x02;
     static constexpr uint8_t CMD_ID = 0x20;
-    static constexpr uint16_t REQ_SIZE = 16;
+    static constexpr uint16_t REQ_SIZE = 17;
     static constexpr uint16_t RSP_SIZE = 4;
 
     explicit NormalSetMechRotationToLocationCmd(const RotateToLocationParam& params);
