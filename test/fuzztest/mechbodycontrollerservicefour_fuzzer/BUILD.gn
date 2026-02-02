@@ -54,6 +54,7 @@ ohos_fuzztest("MechBodyControllerServiceFourFuzzTest") {
     "access_token:libtokensetproc_shared",
     "bluetooth:btframework",
     "camera_framework:camera_framework",
+    "drivers_interface_camera:metadata",
     "cJSON:cjson_static",
     "c_utils:utils",
     "device_manager:devicemanagersdk",
