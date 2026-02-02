@@ -48,7 +48,8 @@
           "os_account",
           "hisysevent",
           "runtime_core",
-          "device_manager"
+          "device_manager",
+          "selinux_adapter"
         ],
         "third_party": []
       },
