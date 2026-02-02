@@ -55,9 +55,9 @@ void MotionManager::MMIKeyEvent(CameraKeyEvent eventType)
     keyEvent_ = eventType;
 }
 
-static bool g_mockMechState = false;
+static AttachmentStateMap g_mockMechState = AttachmentStateMap::DETACHED;
 
-bool MechConnectManager::GetMechState(int32_t mechId)
+AttachmentStateMap MechConnectManager::GetMechState(int32_t mechId)
 {
     return g_mockMechState;
 }
@@ -355,7 +355,7 @@ HWTEST_F(MotionManagerTest, Rotate_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
     rotateParam->degree.yaw = 0;
@@ -382,7 +382,7 @@ HWTEST_F(MotionManagerTest, Rotate_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
     rotateParam->degree.yaw = 10;
@@ -408,7 +408,7 @@ HWTEST_F(MotionManagerTest, Rotate_003, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
     rotateParam->degree.yaw = 361;
@@ -434,7 +434,7 @@ HWTEST_F(MotionManagerTest, Rotate_004, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
     rotateParam->degree.yaw = 1;
@@ -464,7 +464,7 @@ HWTEST_F(MotionManagerTest, RotateBySpeed_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<RotateBySpeedParam> rotateSpeedParam = std::make_shared<RotateBySpeedParam>();
     rotateSpeedParam->speed.yawSpeed = 1;
@@ -490,7 +490,7 @@ HWTEST_F(MotionManagerTest, RotateBySpeed_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<RotateBySpeedParam> rotateSpeedParam = std::make_shared<RotateBySpeedParam>();
     rotateSpeedParam->speed.yawSpeed = 1;
@@ -516,7 +516,7 @@ HWTEST_F(MotionManagerTest, RotateBySpeed_003, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<RotateBySpeedParam> rotateSpeedParam = std::make_shared<RotateBySpeedParam>();
     rotateSpeedParam->speed.yawSpeed = 1;
@@ -545,7 +545,7 @@ HWTEST_F(MotionManagerTest, StopRotate_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     uint32_t tokenId = 1;
     std::string napiCmdId = "1";
@@ -565,7 +565,7 @@ HWTEST_F(MotionManagerTest, StopRotate_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     uint32_t tokenId = 1;
     std::string napiCmdId = "1";
@@ -585,7 +585,7 @@ HWTEST_F(MotionManagerTest, GetSpeedControlTimeLimit_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<TimeLimit> timeLimit = nullptr;
 
@@ -604,7 +604,7 @@ HWTEST_F(MotionManagerTest, GetSpeedControlTimeLimit_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<TimeLimit> timeLimit = std::make_shared<TimeLimit>();
     std::shared_ptr<TimeLimit> timeLimitNull = nullptr;
@@ -630,7 +630,7 @@ HWTEST_F(MotionManagerTest, GetRotateSpeedLimit_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     RotateSpeedLimit speedLimit;
 
@@ -649,7 +649,7 @@ HWTEST_F(MotionManagerTest, GetRotateSpeedLimit_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     RotateSpeedLimit speedLimit;
 
@@ -674,7 +674,7 @@ HWTEST_F(MotionManagerTest, GetCurrentPosition_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<EulerAngles> eulerAngles = std::make_shared<EulerAngles>();
 
@@ -693,7 +693,7 @@ HWTEST_F(MotionManagerTest, GetCurrentPosition_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<EulerAngles> eulerAngles = std::make_shared<EulerAngles>();
 
@@ -715,7 +715,7 @@ HWTEST_F(MotionManagerTest, GetRotationLimit_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     RotateDegreeLimit rotationLimit;
 
@@ -734,7 +734,7 @@ HWTEST_F(MotionManagerTest, GetRotationLimit_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     RotateDegreeLimit rotationLimit;
 
@@ -760,7 +760,7 @@ HWTEST_F(MotionManagerTest, SetMechCameraTrackingFrame_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<TrackingFrameParams> trackingFrameParams = std::make_shared<TrackingFrameParams>();
 
@@ -779,7 +779,7 @@ HWTEST_F(MotionManagerTest, SetMechCameraTrackingFrame_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<TrackingFrameParams> trackingFrameParams = std::make_shared<TrackingFrameParams>();
     motionMgr->deviceStatus_->isEnabled = true;
@@ -799,7 +799,7 @@ HWTEST_F(MotionManagerTest, GetMechCameraTrackingEnabled_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     bool isEnabled = false;
 
@@ -818,7 +818,7 @@ HWTEST_F(MotionManagerTest, GetMechCameraTrackingEnabled_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     bool isEnabled = false;
 
@@ -839,7 +839,7 @@ HWTEST_F(MotionManagerTest, SetMechCameraTrackingLayout_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<LayoutParams> layoutParams = std::make_shared<LayoutParams>();
     layoutParams->isDefault = true;
@@ -861,7 +861,7 @@ HWTEST_F(MotionManagerTest, SetMechCameraTrackingLayout_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<LayoutParams> layoutParams = std::make_shared<LayoutParams>();
     layoutParams->isDefault = true;
@@ -887,7 +887,7 @@ HWTEST_F(MotionManagerTest, GetMechCameraTrackingLayout_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<LayoutParams> layoutParams = nullptr;
 
@@ -906,7 +906,7 @@ HWTEST_F(MotionManagerTest, GetMechCameraTrackingLayout_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     std::shared_ptr<LayoutParams> layoutParams = nullptr;
 
@@ -928,7 +928,7 @@ HWTEST_F(MotionManagerTest, GetMechBaseInfo_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<MechBaseInfo> mechBaseInfo = nullptr;
 
@@ -947,7 +947,7 @@ HWTEST_F(MotionManagerTest, GetMechBaseInfo_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
     motionMgr->deviceStatus_->mechBaseInfo.obtainable = false;
 
     std::shared_ptr<MechBaseInfo> mechBaseInfo = nullptr;
@@ -967,7 +967,7 @@ HWTEST_F(MotionManagerTest, GetMechBaseInfo_003, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
     motionMgr->deviceStatus_->mechBaseInfo.obtainable = true;
 
     std::shared_ptr<MechBaseInfo> mechBaseInfo = nullptr;
@@ -989,7 +989,7 @@ HWTEST_F(MotionManagerTest, GetMechCapabilityInfo_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     std::shared_ptr<MechCapabilityInfo> mechCapabilityInfo = nullptr;
 
@@ -1008,7 +1008,7 @@ HWTEST_F(MotionManagerTest, GetMechCapabilityInfo_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
     motionMgr->deviceStatus_->mechCapabilityInfo.obtainable = false;
 
     std::shared_ptr<MechCapabilityInfo> mechCapabilityInfo = nullptr;
@@ -1028,7 +1028,7 @@ HWTEST_F(MotionManagerTest, GetMechCapabilityInfo_003, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
     motionMgr->deviceStatus_->mechCapabilityInfo.obtainable = true;
 
     std::shared_ptr<MechCapabilityInfo> mechCapabilityInfo = nullptr;
@@ -1050,7 +1050,7 @@ HWTEST_F(MotionManagerTest, GetRotationAxesStatus_001, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = false;
+    g_mockMechState = AttachmentStateMap::DETACHED;
 
     RotationAxesStatus axesStatus;
 
@@ -1069,7 +1069,7 @@ HWTEST_F(MotionManagerTest, GetRotationAxesStatus_002, TestSize.Level1)
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
 
     RotationAxesStatus axesStatus;
 
@@ -1143,7 +1143,7 @@ HWTEST_F(MotionManagerTest, MechWheelZoomNotify_001, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
     CommandFactory factory;
     auto cmd = factory.CreateRegisterMechWheelDataCmd();
 
@@ -1201,7 +1201,7 @@ HWTEST_F(MotionManagerTest, SetMechCameraInfo_001, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
-    g_mockMechState = true;
+    g_mockMechState = AttachmentStateMap::ATTACHED;
     CameraInfoParams mechCameraInfo;
     mechCameraInfo.fovH = 1;
     mechCameraInfo.fovV = 1;

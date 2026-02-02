@@ -34,6 +34,7 @@ namespace {
     constexpr int32_t RESPONSE_TIMEOUT = 10000;
     constexpr int32_t RESPONSE_TIMEOUT_RESET = 2000;
     constexpr int32_t CMD_RETRY_INTERVAL = 10; //ms
+    constexpr int32_t CMD_DROP_INTERVAL = 70000; //us
 }
 
 TransportSendAdapter::TransportSendAdapter()
@@ -161,6 +162,11 @@ int32_t TransportSendAdapter::SendCommand(const std::shared_ptr<CommandBase> &cm
             HILOGE("ble status error");
             return;
         }
+        bool timeResult = DiscardExpiredData(cmd);
+        if (timeResult) {
+            return;
+        }
+
         std::shared_ptr<MechDataBuffer> mechDataBuffer = cmd->Marshal();
         if (mechDataBuffer == nullptr) {
             HILOGE("mechDataBuffer is nullptr");
@@ -200,6 +206,33 @@ int32_t TransportSendAdapter::SendCommand(const std::shared_ptr<CommandBase> &cm
     HILOGI("end");
     return ERR_OK;
 }
+
+bool TransportSendAdapter::DiscardExpiredData(const std::shared_ptr<CommandBase> &cmd)
+{
+    HILOGI("called");
+    int64_t cmdTime = cmd->GetTimestamp();
+    if (cmdTime > 0) {
+        std::chrono::microseconds nowUs =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::system_clock::now().time_since_epoch());
+        int64_t currentUs = nowUs.count();
+        int64_t timeDiffUs = currentUs - cmdTime;
+        HILOGI(
+            "sendTask cmd time: %" PRId64 " us, current time: %" PRId64 " us, time diff: %" PRId64 " us",
+            cmdTime,
+            currentUs,
+            timeDiffUs
+        );
+        // 70ms
+        if (timeDiffUs > CMD_DROP_INTERVAL) {
+            HILOGE("SendCommand expire 0222");
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+
 
 int32_t BleReceviceListenerImpl::OnReceive(const uint8_t *data, uint32_t dataLen)
 {

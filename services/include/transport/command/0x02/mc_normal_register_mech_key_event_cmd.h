@@ -43,6 +43,9 @@ public:
     int16_t GetStickY() const override;
 
 private:
+    bool RegisterKeyEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset, uint8_t keyType);
+    bool RegisterWheelEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset);
+    bool RegisterStickEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset);
     CameraKeyEvent event_ = CameraKeyEvent::INVALID;
     uint8_t buttonFrequency_;
     WheelData wheelData_;
