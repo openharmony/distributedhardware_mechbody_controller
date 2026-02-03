@@ -47,7 +47,8 @@
           "sensor",
           "os_account",
           "hisysevent",
-          "runtime_core"
+          "runtime_core",
+          "drivers_interface_camera"
         ],
         "third_party": []
       },

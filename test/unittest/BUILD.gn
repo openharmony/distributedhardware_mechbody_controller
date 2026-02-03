@@ -47,6 +47,7 @@ mech_external_deps = [
   "cJSON:cjson",
   "c_utils:utils",
   "camera_framework:camera_framework",
+  "drivers_interface_camera:metadata",
   "eventhandler:libeventhandler",
   "graphic_surface:surface",
   "hilog:libhilog",
