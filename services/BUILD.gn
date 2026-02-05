@@ -145,7 +145,8 @@ ohos_shared_library("mechbody_service") {
     "samgr:samgr_proxy",
     "sensor:sensor_interface_native",
     "window_manager:libdm_lite",
-    "hisysevent:libhisysevent"
+    "hisysevent:libhisysevent",
+    "drivers_interface_camera:metadata"
   ]
 
   install_images = [ system_base_dir ]

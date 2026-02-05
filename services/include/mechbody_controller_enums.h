@@ -122,8 +122,15 @@ enum class MechType : int32_t {
 };
 
 enum class AttachmentState : int32_t {
+    UNKNOWN = -1,
     ATTACHED = 0,
     DETACHED = 1
+};
+
+enum class AttachmentStateMap : int32_t {
+    UNKNOWN = -1,
+    DETACHED = 0,
+    ATTACHED = 1
 };
 
 enum class CameraTrackingLayout : int32_t {

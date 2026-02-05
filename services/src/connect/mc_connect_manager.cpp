@@ -55,7 +55,11 @@ void MechConnectManager::UnInit()
 
 int32_t MechConnectManager::NotifyMechConnect(MechInfo& mechInfo)
 {
-    MechBodyControllerService::GetInstance().OnDeviceConnected(mechInfo.mechId);
+    int32_t result = MechBodyControllerService::GetInstance().OnDeviceConnected(mechInfo.mechId);
+    if (result == MECH_CONNECT_FAILED) {
+        return MECH_CONNECT_FAILED;
+    }
+
     auto connectNotifyTask = [this, mechInfo]() {
         std::lock_guard<std::mutex> autoLock(listenerSetMutex_);
         for (auto& listener : listenerSet_) {
@@ -195,7 +199,7 @@ bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached)
     return true;
 }
 
-bool MechConnectManager::GetMechState(int32_t mechId)
+AttachmentStateMap MechConnectManager::GetMechState(int32_t mechId)
 {
     HILOGI("called, mechId: %{public}d", mechId);
     std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
@@ -204,11 +208,19 @@ bool MechConnectManager::GetMechState(int32_t mechId)
     });
     if (it == mechInfos_.end()) {
         HILOGE("not found");
-        return false;
+        return AttachmentStateMap::UNKNOWN;
     }
     HILOGI("found");
     MechInfo mechInfo = *it;
-    return mechInfo.state == AttachmentState::ATTACHED ? true : false;
+    if (mechInfo.state == AttachmentState::UNKNOWN) {
+        return AttachmentStateMap::UNKNOWN;
+    } else if (mechInfo.state == AttachmentState::ATTACHED) {
+        return AttachmentStateMap::ATTACHED;
+    } else if (mechInfo.state == AttachmentState::DETACHED) {
+        return AttachmentStateMap::DETACHED;
+    } else {
+        return AttachmentStateMap::UNKNOWN;
+    }
 }
 
 bool MechConnectManager::UpdateBleStatus(bool isBLEActive)

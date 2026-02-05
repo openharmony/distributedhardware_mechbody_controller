@@ -68,7 +68,7 @@ struct MechNapiCommandCallbackInfo {
 class MotionManager : public IMechEventListener, public std::enable_shared_from_this<MotionManager> {
 public:
     MotionManager(const std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId);
-    void Init();
+    int32_t Init();
 
 public:
     ~MotionManager();
@@ -136,7 +136,7 @@ private:
     void SetMechTkEnableNoTarget();
     void TrackingChecker();
     void ProcessTrackingStatus();
-    void GetProtocolVer();
+    int32_t GetProtocolVer();
     void SetProtocolVer();
     void GetMechRealName();
     void GetMechLimitInfo();

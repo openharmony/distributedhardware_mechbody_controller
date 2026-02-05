@@ -48,8 +48,7 @@
           "os_account",
           "hisysevent",
           "runtime_core",
-          "device_manager",
-          "selinux_adapter"
+          "drivers_interface_camera"
         ],
         "third_party": []
       },

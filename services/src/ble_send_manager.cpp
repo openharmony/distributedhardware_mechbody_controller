@@ -511,7 +511,7 @@ bool BleSendManager::CheckGattcIsReady()
     // LCOV_EXCL_STOP
 }
 
-void BleSendManager::OnGattReady(MechInfo &mechInfo)
+int32_t BleSendManager::OnGattReady(MechInfo &mechInfo)
 {
     HILOGI("MECHBODY_EXEC_CONNECT called");
     {
@@ -519,10 +519,14 @@ void BleSendManager::OnGattReady(MechInfo &mechInfo)
         MechConnectManager::GetInstance().SetMechanicGattState(mechInfo.mac, true);
         gattCv_.notify_all();
     }
-    MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
+    int32_t result = MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
+    if (result == MECH_CONNECT_FAILED) {
+        return MECH_CONNECT_FAILED;
+    }
     HILOGI("MECHBODY_EXEC_CONNECT Tracking init start.");
     McCameraTrackingController::GetInstance().Init();
     HILOGI("MECHBODY_EXEC_CONNECT Tracking init finish.");
+    return ERR_OK;
 }
 
 void BleSendManager::InitScanPara()
