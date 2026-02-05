@@ -74,6 +74,7 @@ ohos_fuzztest("MechBodyControllerStubThreeFuzzTest") {
     "sensor:sensor_interface_native",
     "window_manager:libdm_lite",
     "hisysevent:libhisysevent",
+    "bluetooth:btcommon",
   ]
 }
 
