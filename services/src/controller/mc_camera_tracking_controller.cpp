@@ -111,6 +111,7 @@ namespace {
 
     constexpr float IOU_THRESHOLD = 0.1f;
     constexpr float IOU_DEFAULT = 0.0f;
+    constexpr int32_t META_DATA_SIZE = 2;
 #ifdef MECHBODY_CONTROLLER_EXTENDED
     const std::string PREDICTION_TASK_NAME = "PredictionTaskName";
     constexpr int32_t PREDICTION_TASK_DELAY = 100; // ms
@@ -219,16 +220,16 @@ int32_t McCameraTrackingController::OnMetadataInfo(const std::shared_ptr<OHOS::C
     }
     camera_metadata_item_t item;
     int ret = Camera::FindCameraMetadataItem(result->get(), OHOS_STATUS_FOV_INFOS, &item);
-    if (ret == CAM_META_SUCCESS && item.count == 2) {
+    if (ret == CAM_META_SUCCESS && item.count == META_DATA_SIZE) {
         currentCameraInfo_->fovH = static_cast<uint8_t>(item.data.f[0]);
         currentCameraInfo_->fovV = static_cast<uint8_t>(item.data.f[1]);
         HILOGI("currentCameraInfo Get FOV: [%{public}f, %{public}f]",
-        static_cast<double>(currentCameraInfo_->fovH),
-        static_cast<double>(currentCameraInfo_->fovV));
+            static_cast<double>(currentCameraInfo_->fovH),
+            static_cast<double>(currentCameraInfo_->fovV));
         return ERR_OK;
     } else {
         HILOGI("Find Tag OHOS_STATUS_FOV_INFOS failed, ret: %{public}d, count: %{public}d",
-        ret, item.count);
+            ret, item.count);
         return GET_FOV_INFO_TAG_FAILED;
     }
 }
@@ -551,8 +552,8 @@ int32_t McCameraTrackingController::GetTrackingTarget(CameraStandard::Rect &trac
         for (const auto &item : detectedObjects) {
             if (item->GetObjectId() == trackingObjectId) {
                 HILOGI("got detected object for id: %{public}d, type: %{public}d",
-                trackingObjectId, static_cast<int>(item->GetType()));
-                selectedObject = item;
+                    trackingObjectId, static_cast<int>(item->GetType()));
+                    selectedObject = item;
                 break;
             }
         }
@@ -693,7 +694,8 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
             if (item->GetObjectId() == lastTrackingFrame_->targetId) {
                 HILOGI("got detected object for id: %{public}d", lastTrackingFrame_->targetId);
                 targetObject = item;
-
+                return ERR_OK;
+            }
         }
     }
 
@@ -701,7 +703,14 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
         CameraStandard::Rect itemRect = item->GetBoundingBox();
         if (std::abs(itemRect.topLeftX - trackingRegion.topLeftX) <= TRACKING_LOST_CHECK &&
             std::abs(itemRect.topLeftY - trackingRegion.topLeftY) <= TRACKING_LOST_CHECK) {
+            HILOGI("got detected object which is same as trackingRegion");
+            targetObject = item;
+            return ERR_OK;
+            }
+    }
 
+    HILOGW("use first object as target object.");
+    targetObject = detectedObjects[0];
     return ERR_OK;
 }
 
@@ -745,8 +754,6 @@ int32_t McCameraTrackingController::CinematicVideoModeTrackingTargetFilter(
     if (currentCameraInfo_->sessionMode != static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO)) {
         return ERR_OK;
     }
-    HILOGI("current is CINEMATIC_VIDEO mode; last target id: %{public}d; current target id: %{public}d",
-        lastTrackingFrame_->targetId, trackingParams->targetId);
     HILOGI("current is CINEMATIC_VIDEO mode; last target id: %{public}d; original target id: %{public}d;"
            "tracking target id:%{public}d",
         lastTrackingFrame_->targetId,
@@ -761,9 +768,6 @@ int32_t McCameraTrackingController::CinematicVideoModeTrackingTargetFilter(
 
     if (lastTrackingFrame_->targetId != trackingParams->targetId &&
         currentCameraInfo_->pauseFrameCount < MAX_PAUSED_FRAME) {
-        currentCameraInfo_->pauseFrameCount++;
-        HILOGE("tracking target changed, stop tracking");
-        return INVALID_TRACKING_TARGET;
         bool isAllowedConversion = false;
         HILOGI("lastTrackingFrame type: %{public}d; trackingParams type:%{public}d",
             lastTrackingFrame_->objectType,
