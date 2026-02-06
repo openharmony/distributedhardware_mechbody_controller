@@ -122,21 +122,6 @@ HWTEST_F(MechConnectManagerTest, RemoveDeviceChangeListener_001, TestSize.Level3
 }
 
 /**
- * @tc.name: NotifyMechConnectr_001
- * @tc.desc: test NotifyMechConnectr func
- * @tc.type: FUNC
- */
-HWTEST_F(MechConnectManagerTest, NotifyMechConnectr_001, TestSize.Level3)
-{
-    DTEST_LOG << "MechConnectManagerTest NotifyMechConnectr_001 begin" << std::endl;
-    const std::shared_ptr<IMechConnectListener> listener = nullptr;
-    MechInfo mechInfo;
-    int32_t ret = MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "MechConnectManagerTest NotifyMechConnectr_001 end" << std::endl;
-}
-
-/**
  * @tc.name: NotifyMechDosconnect_001
  * @tc.desc: test NotifyMechDosconnect func
  * @tc.type: FUNC

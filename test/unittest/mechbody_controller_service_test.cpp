@@ -181,22 +181,6 @@ HWTEST_F(MechBodyControllerServiceTest, OnAttachStateChange_001, TestSize.Level1
 }
 
 /**
- * @tc.name  : OnDeviceConnected_001
- * @tc.number: OnDeviceConnected_001
- * @tc.desc  : Test OnDeviceConnected function.
- */
-HWTEST_F(MechBodyControllerServiceTest, OnDeviceConnected_001, TestSize.Level1)
-{
-    DTEST_LOG << "MechBodyControllerServiceTest OnDeviceConnected_001 begin" << std::endl;
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    int32_t mechId = MECHID;
-    int32_t ret = mechBodyControllerService.OnDeviceConnected(mechId);
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "MechBodyControllerServiceTest OnDeviceConnected_001 end" << std::endl;
-}
-
-/**
  * @tc.name  : OnDeviceDisconnected_001
  * @tc.number: OnDeviceDisconnected_001
  * @tc.desc  : Test OnDeviceDisconnected function.

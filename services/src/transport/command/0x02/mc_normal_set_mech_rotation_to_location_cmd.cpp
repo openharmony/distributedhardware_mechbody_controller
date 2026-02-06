@@ -66,13 +66,13 @@ void NormalSetMechRotationToLocationCmd::TriggerResponse(std::shared_ptr<MechDat
     }
 
     CHECK_ERR_RETURN(data->ReadUint16(BIT_OFFSET_2, taskId_), "read taskId_");
-    HILOGI("response code: %{public}u", taskId_);
+    HILOGI("taskId: %{public}u", taskId_);
 
-    CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_2, result_), "read result_");
+    CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_4, result_), "read result_");
     HILOGI("response code: %{public}u", result_);
 
     uint8_t limitInfo = 0;
-    CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_3, limitInfo), "read limit info");
+    CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_5, limitInfo), "read limit info");
     HILOGI("limitInfo : %{public}u", limitInfo);
  
     uint8_t yawLimit = (limitInfo >> BIT_OFFSET_0) & BIT_3;

@@ -1282,7 +1282,12 @@ HWTEST_F(MotionManagerTest, SetMechCameraTrackingEnabled_001, TestSize.Level1)
     bool isEnabled = true;
 
     EXPECT_EQ(motionMgr->SetMechCameraTrackingEnabled(isEnabled), ERR_OK);
-
+    if (motionMgr->trackingCheckerThread_ != nullptr) {
+        motionMgr->startTrackingChecker_ = false;
+        if (motionMgr->trackingCheckerThread_->joinable()) {
+            motionMgr->trackingCheckerThread_->join();
+        }
+    }
     motionMgr->deviceStatus_ = nullptr;
     EXPECT_EQ(motionMgr->SetMechCameraTrackingEnabled(isEnabled), ERR_OK);
 }
@@ -1316,7 +1321,12 @@ HWTEST_F(MotionManagerTest, AbsolutelyEulerAnglesJudgingLimitLocked_002, TestSiz
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-
+    if (motionMgr->trackingCheckerThread_ != nullptr) {
+        motionMgr->startTrackingChecker_ = false;
+        if (motionMgr->trackingCheckerThread_->joinable()) {
+            motionMgr->trackingCheckerThread_->join();
+        }
+    }
     motionMgr->deviceStatus_ = nullptr;
     EulerAngles eulerAngles;
 
@@ -1394,6 +1404,52 @@ HWTEST_F(MotionManagerTest, HandleMechPlacementChange_001, TestSize.Level1)
     motionMgr->HandleMechPlacementChange(true);
 
     EXPECT_NO_FATAL_FAILURE(motionMgr->HandleMechPlacementChange(false));
+}
+
+HWTEST_F(MotionManagerTest, MechGenericEventNotify_001, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    EXPECT_NO_FATAL_FAILURE(motionMgr->MechGenericEventNotify(nullptr));
+
+    {
+        std::shared_ptr<NormalRegisterMechGenericEventCmd> cmd =
+            std::make_shared<NormalRegisterMechGenericEventCmd>();
+        cmd->params_.attached = 1;
+        EXPECT_NO_FATAL_FAILURE(motionMgr->MechGenericEventNotify(cmd));
+    }
+    {
+        std::shared_ptr<NormalRegisterMechGenericEventCmd> cmd =
+            std::make_shared<NormalRegisterMechGenericEventCmd>();
+        cmd->params_.attached = 0;
+        EXPECT_NO_FATAL_FAILURE(motionMgr->MechGenericEventNotify(cmd));
+    }
+}
+
+HWTEST_F(MotionManagerTest, GetProtocoVer_001, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    motionMgr->protocolVer_ = 2;
+    EXPECT_NO_FATAL_FAILURE(motionMgr->GetProtocolVer());
+    EXPECT_NO_FATAL_FAILURE(motionMgr->SetProtocolVer());
+
+    EXPECT_NO_FATAL_FAILURE(motionMgr->GetDeviceBaseInfo());
+    EXPECT_NO_FATAL_FAILURE(motionMgr->GetDeviceCapabilityInfo());
+    EXPECT_NO_FATAL_FAILURE(motionMgr->GetDeviceBaseInfo());
+}
+
+HWTEST_F(MotionManagerTest, RegisterEventListener_001, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    motionMgr->protocolVer_ = 1;
+    EXPECT_NO_FATAL_FAILURE(motionMgr->RegisterEventListener());
+    motionMgr->protocolVer_ = 2;
+    EXPECT_NO_FATAL_FAILURE(motionMgr->RegisterEventListener());
 }
 }
 }
