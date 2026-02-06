@@ -706,7 +706,7 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
             HILOGI("got detected object which is same as trackingRegion");
             targetObject = item;
             return ERR_OK;
-            }
+        }
     }
 
     HILOGW("use first object as target object.");
