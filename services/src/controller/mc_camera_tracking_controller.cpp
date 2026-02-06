@@ -495,7 +495,6 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     std::shared_ptr<TrackingFrameParams> trackingFrameParams = std::make_shared<TrackingFrameParams>();
     trackingFrameParams->confidence = ConfidenceLevel::HIGH;
     trackingFrameParams->targetId = info.GetTrackingObjectId();
-    auto now = std::chrono::system_clock::now();
     trackingFrameParams->timeStamp = currentTime;
     trackingFrameParams->fovV = currentCameraInfo_->fovV;
     trackingFrameParams->fovH = currentCameraInfo_->fovH;
