@@ -75,6 +75,7 @@ struct CameraInfo {
     int32_t videoStabilizationMode =
         static_cast<int32_t>(CameraVideoStabilizationMode::OHOS_CAMERA_VIDEO_STABILIZATION_OFF);
     bool isCameraOn = false;
+    int32_t pauseFrameCount = 0;
 
     std::string ToString() const
     {

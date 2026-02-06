@@ -490,13 +490,13 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     CameraStandard::FocusTrackingMetaInfo &info)
 {
     CameraStandard::Rect trackingRegion = info.GetTrackingRegion();
-
+    uint64_t currentTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+             std::chrono::system_clock::now()).time_since_epoch().count());
     std::shared_ptr<TrackingFrameParams> trackingFrameParams = std::make_shared<TrackingFrameParams>();
     trackingFrameParams->confidence = ConfidenceLevel::HIGH;
     trackingFrameParams->targetId = info.GetTrackingObjectId();
     auto now = std::chrono::system_clock::now();
-    trackingFrameParams->timeStamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch()).count());
+    trackingFrameParams->timeStamp = currentTime;
     trackingFrameParams->fovV = currentCameraInfo_->fovV;
     trackingFrameParams->fovH = currentCameraInfo_->fovH;
     trackingFrameParams->isRecording = currentCameraInfo_->isRecording;
@@ -524,17 +524,17 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
                 SearchTargetStop();
             }, SEARCH_TARGET_TASK_NAME);
     }
-    uint64_t currentTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now()).time_since_epoch().count());
     if ((lastTrackingTargetNum == 0 && currentCameraInfo_->trackingTargetNum > 0) ||
         (currentTime - lastTrackingFrame_->timeStamp >= TRACKING_PARAM_LOST_DELAY &&
          currentCameraInfo_->trackingTargetNum > 0)) {
         UpdateActionControl();
     }
+    if (CinematicVideoModeTrackingTargetFilter(info, trackingFrameParams) != ERR_OK) {
+        HILOGE("CinematicVideoMode check failed, ignore frame");
+        return nullptr;
+    }
     lastTrackingFrame_ = trackingFrameParams;
-    lastTrackingFrame_->timeStamp = static_cast<uint64_t>
-        (std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
-            .time_since_epoch().count());
+    lastTrackingFrame_->timeStamp = currentTime;
     lastTrackingRect_ = trackingRect_;
     return trackingFrameParams;
 }
