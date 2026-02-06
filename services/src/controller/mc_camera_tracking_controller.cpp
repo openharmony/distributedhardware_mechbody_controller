@@ -745,7 +745,8 @@ float McCameraTrackingController::CalculateIOU(const CameraStandard::Rect &rect1
     if (minArea <= TRACKING_LOST_CHECK) {
         return IOU_DEFAULT;
     }
-    return interArea / minArea;
+    float iou = interArea / minArea;
+    return iou;
 }
 
 int32_t McCameraTrackingController::CinematicVideoModeTrackingTargetFilter(
