@@ -271,6 +271,16 @@ enum {
     * Result(96469023) for load adapter function failed.
     */
     LOAD_MECH_ADAPTER_FUNCTION_ERROR,
+
+    /**
+    * Result(96469024) for metadata info is empty.
+    */
+    METADATA_INFO_IS_EMPTY,
+    
+    /**
+    * Result(96469025) for get fov info tag failed.
+    */
+    GET_FOV_INFO_TAG_FAILED,
 };
 
 enum MechNapiErrorCode {

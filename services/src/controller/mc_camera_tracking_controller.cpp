@@ -106,6 +106,12 @@ namespace {
     constexpr float OFFSET_VALUE = 0.2f;
     constexpr int32_t ACTION_CONTROL_TIMEOUT = 2000;
     constexpr int32_t TRACKING_PARAM_LOST_DELAY = 200; // ms
+
+    constexpr int32_t MAX_PAUSED_FRAME = 10;
+
+    constexpr float IOU_THRESHOLD = 0.1f;
+    constexpr float IOU_DEFAULT = 0.0f;
+    constexpr int32_t META_DATA_SIZE = 2;
 #ifdef MECHBODY_CONTROLLER_EXTENDED
     const std::string PREDICTION_TASK_NAME = "PredictionTaskName";
     constexpr int32_t PREDICTION_TASK_DELAY = 100; // ms
@@ -206,6 +212,28 @@ void McCameraTrackingController::UpdateCurrentCameraInfoByCaptureSessionInfo(
     currentCameraInfo_->videoStabilizationMode = captureSessionInfo.zoomInfo.videoStabilizationMode;
 }
 
+int32_t McCameraTrackingController::OnMetadataInfo(const std::shared_ptr<OHOS::Camera::CameraMetadata>& result)
+{
+    if (result == nullptr) {
+        HILOGE("%{public}s result nullptr", __FUNCTION__);
+        return METADATA_INFO_IS_EMPTY;
+    }
+    camera_metadata_item_t item;
+    int ret = Camera::FindCameraMetadataItem(result->get(), OHOS_STATUS_FOV_INFOS, &item);
+    if (ret == CAM_META_SUCCESS && item.count == META_DATA_SIZE) {
+        currentCameraInfo_->fovH = static_cast<uint8_t>(item.data.f[0]);
+        currentCameraInfo_->fovV = static_cast<uint8_t>(item.data.f[1]);
+        HILOGI("currentCameraInfo Get FOV: [%{public}f, %{public}f]",
+            static_cast<double>(currentCameraInfo_->fovH),
+            static_cast<double>(currentCameraInfo_->fovV));
+        return ERR_OK;
+    } else {
+        HILOGI("Find Tag OHOS_STATUS_FOV_INFOS failed, ret: %{public}d, count: %{public}d",
+            ret, item.count);
+        return GET_FOV_INFO_TAG_FAILED;
+    }
+}
+
 int32_t McCameraTrackingController::OnCaptureSessionConfiged(
     const CameraStandard::CaptureSessionInfo& captureSessionInfo)
 {
@@ -277,12 +305,14 @@ int32_t McCameraTrackingController::ComputeFov()
     float shortSideBasic = (fovA < fovB) ? fovABasic : fovBBasic;
     float longSide = (fovA < fovB) ? fovB : fovA;
     float longSideBasic = (fovA < fovB) ? fovBBasic : fovABasic;
-    if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
-        currentCameraInfo_->fovH = static_cast<uint8_t>(shortSide);
-        currentCameraInfo_->fovV = static_cast<uint8_t>(longSide);
-    } else {
-        currentCameraInfo_->fovH = static_cast<uint8_t>(longSide);
-        currentCameraInfo_->fovV = static_cast<uint8_t>(shortSide);
+    if (currentCameraInfo_->fovH == 0 && currentCameraInfo_->fovV == 0) {
+        if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
+            currentCameraInfo_->fovH = static_cast<uint8_t>(shortSide);
+            currentCameraInfo_->fovV = static_cast<uint8_t>(longSide);
+        } else {
+            currentCameraInfo_->fovH = static_cast<uint8_t>(longSide);
+            currentCameraInfo_->fovV = static_cast<uint8_t>(shortSide);
+        }
     }
     currentCameraInfo_->fovHBasic = static_cast<uint8_t>(shortSideBasic);
     currentCameraInfo_->fovVBasic = static_cast<uint8_t>(longSideBasic);
@@ -460,31 +490,30 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     CameraStandard::FocusTrackingMetaInfo &info)
 {
     CameraStandard::Rect trackingRegion = info.GetTrackingRegion();
-
+    uint64_t currentTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+             std::chrono::system_clock::now()).time_since_epoch().count());
     std::shared_ptr<TrackingFrameParams> trackingFrameParams = std::make_shared<TrackingFrameParams>();
     trackingFrameParams->confidence = ConfidenceLevel::HIGH;
     trackingFrameParams->targetId = info.GetTrackingObjectId();
-    auto now = std::chrono::system_clock::now();
-    trackingFrameParams->timeStamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch()).count());
+    trackingFrameParams->timeStamp = currentTime;
     trackingFrameParams->fovV = currentCameraInfo_->fovV;
     trackingFrameParams->fovH = currentCameraInfo_->fovH;
     trackingFrameParams->isRecording = currentCameraInfo_->isRecording;
     trackingFrameParams->timeDelay = 0;
     trackingFrameParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
-
     sptr<CameraStandard::MetadataObject> targetObject;
     std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = info.GetDetectedObjects();
     if (GetTrackingTarget(trackingRegion, detectedObjects, info.GetTrackingObjectId(), targetObject) ==
-        ERR_OK) {
+        ERR_OK && targetObject != nullptr) {
         trackingFrameParams->timeStamp = static_cast<uint64_t>(targetObject->GetTimestamp());
         trackingFrameParams->targetId = targetObject->GetObjectId();
         CameraStandard::MetadataObjectType objectType = targetObject->GetType();
         ConvertObjectType(objectType, trackingFrameParams->objectType);
+        HILOGI("trackingFrameParams param: %{public}s", trackingFrameParams->ToString().c_str());
         CameraStandard::Rect targetRect = targetObject->GetBoundingBox();
+        trackingRect_ = targetRect;
         UpdateROI(trackingFrameParams, targetRect);
     }
-
     uint64_t lastTrackingTargetNum = currentCameraInfo_->trackingTargetNum;
     currentCameraInfo_->trackingTargetNum = detectedObjects.size();
     if (currentCameraInfo_->searchingTarget && currentCameraInfo_->trackingTargetNum > 0) {
@@ -494,17 +523,18 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
                 SearchTargetStop();
             }, SEARCH_TARGET_TASK_NAME);
     }
-    uint64_t currentTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now()).time_since_epoch().count());
     if ((lastTrackingTargetNum == 0 && currentCameraInfo_->trackingTargetNum > 0) ||
         (currentTime - lastTrackingFrame_->timeStamp >= TRACKING_PARAM_LOST_DELAY &&
          currentCameraInfo_->trackingTargetNum > 0)) {
         UpdateActionControl();
     }
+    if (CinematicVideoModeTrackingTargetFilter(info, trackingFrameParams) != ERR_OK) {
+        HILOGE("CinematicVideoMode check failed, ignore frame");
+        return nullptr;
+    }
     lastTrackingFrame_ = trackingFrameParams;
-    lastTrackingFrame_->timeStamp = static_cast<uint64_t>
-        (std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
-            .time_since_epoch().count());
+    lastTrackingFrame_->timeStamp = currentTime;
+    lastTrackingRect_ = trackingRect_;
     return trackingFrameParams;
 }
 
@@ -516,18 +546,150 @@ int32_t McCameraTrackingController::GetTrackingTarget(CameraStandard::Rect &trac
         HILOGW("detectedObjects is empty!!!");
         return DETECTED_OBJECT_IS_EMPTY;
     }
+    sptr<CameraStandard::MetadataObject> selectedObject = nullptr;
     if (trackingObjectId >= 0) {
-        for (const auto &item: detectedObjects) {
+        for (const auto &item : detectedObjects) {
             if (item->GetObjectId() == trackingObjectId) {
-                HILOGI("got detected object for id: %{public}d", trackingObjectId);
-                targetObject = item;
-                return ERR_OK;
+                HILOGI("got detected object for id: %{public}d, type: %{public}d",
+                    trackingObjectId, static_cast<int>(item->GetType()));
+                    selectedObject = item;
+                break;
             }
         }
     }
+    if (selectedObject != nullptr) {
+        return ProcessTargetByType(selectedObject, detectedObjects, targetObject);
+    }
+    if (currentCameraInfo_ &&
+        currentCameraInfo_->sessionMode == static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO) &&
+        trackingObjectId >= 0) {
+        HILOGW("CinematicVideo mode: trackingObjectId %{public}d not found in current frame", trackingObjectId);
+    }
+    return GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
+}
+int32_t McCameraTrackingController::ProcessTargetByType(
+    const sptr<CameraStandard::MetadataObject> &selectedObject,
+    const std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects,
+    sptr<CameraStandard::MetadataObject> &targetObject)
+{
+    CameraStandard::MetadataObjectType selectedType = selectedObject->GetType();
+        switch (selectedType) {
+            case CameraStandard::MetadataObjectType::HUMAN_HEAD:
+                targetObject = FindFaceForHead(*selectedObject, detectedObjects);
+                if (targetObject != nullptr) {
+                    HILOGI("Tracking matching face for head.ObjectId:%{public}d ", targetObject->GetObjectId());
+                    return ERR_OK;
+                }
+                targetObject = selectedObject;
+                HILOGI("Tracking head (no matching face found)");
+                return ERR_OK;
+            case CameraStandard::MetadataObjectType::HUMAN_BODY:
+                targetObject = FindBestFaceOrHeadForBody(*selectedObject, detectedObjects);
+                if (targetObject != nullptr) {
+                    HILOGI("Tracking %{public}s for body, objectID:%{public}d",
+                        targetObject->GetType() == (CameraStandard::MetadataObjectType::HUMAN_HEAD)
+                            ? "head"
+                            : "face", targetObject->GetObjectId());
+                    return ERR_OK;
+                }
+                targetObject = selectedObject;
+                HILOGI("No matching face/head found, continue tracking body");
 
+                return ERR_OK;
+            default:
+                targetObject = selectedObject;
+                HILOGW("Tracking face/unknown type: %{public}d", static_cast<int>(selectedType));
+                return ERR_OK;
+        }
+}
+
+sptr<CameraStandard::MetadataObject> McCameraTrackingController::FindFaceForHead(
+    CameraStandard::MetadataObject& headObject,
+    const std::vector<sptr<CameraStandard::MetadataObject>>& detectedObjects)
+{
+    CameraStandard::Rect headRect = headObject.GetBoundingBox();
+    sptr<CameraStandard::MetadataObject> bestFace = nullptr;
+    float bestIou = 0.0f;
+
+    for (const auto& obj : detectedObjects) {
+        if (obj->GetType() != CameraStandard::MetadataObjectType::FACE &&
+            obj->GetType() != CameraStandard::MetadataObjectType::BASE_FACE_DETECTION) {
+            continue;
+        }
+        float iou = CalculateIOU(headRect, obj->GetBoundingBox());
+        if (iou > bestIou && iou > IOU_THRESHOLD) {
+            bestIou = iou;
+            bestFace = obj;
+            HILOGI("FindFaceForHead objectId:%{public}d,  CalculateIOU %{public}f", obj->GetObjectId(),  iou);
+        }
+    }
+    if (bestFace != nullptr) {
+        HILOGI("Found matching face for head, IOU: %{public}f", bestIou);
+    }
+    return bestFace;
+}
+
+sptr<CameraStandard::MetadataObject> McCameraTrackingController::FindBestFaceOrHeadForBody(
+    CameraStandard::MetadataObject &bodyObject,
+    const std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects)
+{
+    CameraStandard::Rect bodyRect = bodyObject.GetBoundingBox();
+    std::vector<sptr<CameraStandard::MetadataObject>> faces;
+    std::vector<sptr<CameraStandard::MetadataObject>> heads;
+    for (const auto &obj : detectedObjects) {
+        CameraStandard::MetadataObjectType type = obj->GetType();
+        if (type == CameraStandard::MetadataObjectType::FACE ||
+            type == CameraStandard::MetadataObjectType::BASE_FACE_DETECTION) {
+            faces.push_back(obj);
+        } else if (type == CameraStandard::MetadataObjectType::HUMAN_HEAD) {
+            heads.push_back(obj);
+        }
+    }
+    sptr<CameraStandard::MetadataObject> bestMatch = FindBestMatchForBody(bodyRect, faces);
+    if (bestMatch != nullptr) {
+        HILOGI("Found matching face for body.Face ObjectId:%{public}d", bestMatch->GetObjectId());
+        return bestMatch;
+    }
+    bestMatch = FindBestMatchForBody(bodyRect, heads);
+    if (bestMatch != nullptr) {
+        HILOGI("Found matching head for body.Head ObjectId:%{public}d", bestMatch->GetObjectId());
+        return bestMatch;
+    }
+    return nullptr;
+}
+
+sptr<CameraStandard::MetadataObject> McCameraTrackingController::FindBestMatchForBody(
+    const CameraStandard::Rect &bodyRect, std::vector<sptr<CameraStandard::MetadataObject>> &objectsForBody)
+{
+    sptr<CameraStandard::MetadataObject> bestMatch = nullptr;
+    float bestIou = 0.0f;
+    int matchCount = 0;
+    for (const auto &object : objectsForBody) {
+        float iou = CalculateIOU(bodyRect, object->GetBoundingBox());
+        if (iou > IOU_THRESHOLD) {
+            matchCount++;
+            if (iou > bestIou) {
+                bestIou = iou;
+                bestMatch = object;
+                HILOGI("Find MatchObject IOU For Body. objectId:%{public}d,  CalculateIOU %{public}f",
+                    object->GetObjectId(),
+                    iou);
+            }
+        }
+    }
+    if (matchCount > 1) {
+        HILOGW("Found %{public}d matching object for body, keeping body tracking", matchCount);
+        return nullptr;
+    }
+    return bestMatch;
+}
+
+int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Rect &trackingRegion,
+    std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects,
+    sptr<CameraStandard::MetadataObject> &targetObject)
+{
     if (lastTrackingFrame_ != nullptr && lastTrackingFrame_->targetId >= 0) {
-        for (const auto &item: detectedObjects) {
+        for (const auto &item : detectedObjects) {
             if (item->GetObjectId() == lastTrackingFrame_->targetId) {
                 HILOGI("got detected object for id: %{public}d", lastTrackingFrame_->targetId);
                 targetObject = item;
@@ -536,7 +698,7 @@ int32_t McCameraTrackingController::GetTrackingTarget(CameraStandard::Rect &trac
         }
     }
 
-    for (const auto &item: detectedObjects) {
+    for (const auto &item : detectedObjects) {
         CameraStandard::Rect itemRect = item->GetBoundingBox();
         if (std::abs(itemRect.topLeftX - trackingRegion.topLeftX) <= TRACKING_LOST_CHECK &&
             std::abs(itemRect.topLeftY - trackingRegion.topLeftY) <= TRACKING_LOST_CHECK) {
@@ -549,6 +711,99 @@ int32_t McCameraTrackingController::GetTrackingTarget(CameraStandard::Rect &trac
     HILOGW("use first object as target object.");
     targetObject = detectedObjects[0];
     return ERR_OK;
+}
+
+float McCameraTrackingController::CalculateIOU(const CameraStandard::Rect &rect1, const CameraStandard::Rect &rect2)
+{
+    if (rect1.width <= 0 || rect1.height <= 0 || rect2.width <= 0 || rect2.height <= 0) {
+        return IOU_DEFAULT;
+    }
+    float left1 = rect1.topLeftX;
+    float top1 = rect1.topLeftY;
+    float right1 = rect1.width;
+    float bottom1 = rect1.height;
+
+    float left2 = rect2.topLeftX;
+    float top2 = rect2.topLeftY;
+    float right2 = rect2.width;
+    float bottom2 = rect2.height;
+    if (right1 <= left1 || bottom1 <= top1 || right2 <= left2 || bottom2 <= top2) {
+        return IOU_DEFAULT;
+    }
+    float interLeft = std::max(left1, left2);
+    float interTop = std::max(top1, top2);
+    float interRight = std::min(right1, right2);
+    float interBottom = std::min(bottom1, bottom2);
+    if (interRight <= interLeft || interBottom <= interTop) {
+        return IOU_DEFAULT;
+    }
+    float interArea = (interRight - interLeft) * (interBottom - interTop);
+    float area1 = (right1 - left1) * (bottom1 - top1);
+    float area2 = (right2 - left2) * (bottom2 - top2);
+    float minArea = std::min(area1, area2);
+    if (minArea <= TRACKING_LOST_CHECK || minArea <= 0) {
+        return IOU_DEFAULT;
+    }
+    return interArea / minArea;
+}
+
+int32_t McCameraTrackingController::CinematicVideoModeTrackingTargetFilter(
+    CameraStandard::FocusTrackingMetaInfo &info, std::shared_ptr<TrackingFrameParams> &trackingParams)
+{
+    if (currentCameraInfo_->sessionMode != static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO)) {
+        return ERR_OK;
+    }
+    HILOGI("current is CINEMATIC_VIDEO mode; last target id: %{public}d; original target id: %{public}d;"
+           "tracking target id:%{public}d",
+        lastTrackingFrame_->targetId,
+        info.GetTrackingObjectId(),
+        trackingParams->targetId);
+    if (info.GetTrackingMode() == CameraStandard::FocusTrackingMode::FOCUS_TRACKING_MODE_LOCKED &&
+        std::abs(info.GetTrackingRegion().topLeftX - info.GetTrackingRegion().width) <= TRACKING_LOST_CHECK &&
+        std::abs(info.GetTrackingRegion().topLeftY - info.GetTrackingRegion().height) <= TRACKING_LOST_CHECK) {
+        HILOGE("FOCUS_TRACKING_MODE_LOCKED and tracking region is 0");
+        return INVALID_TRACKING_TARGET;
+    }
+
+    if (lastTrackingFrame_->targetId != trackingParams->targetId &&
+        currentCameraInfo_->pauseFrameCount < MAX_PAUSED_FRAME) {
+        bool isAllowedConversion = false;
+        HILOGI("lastTrackingFrame type: %{public}d; trackingParams type:%{public}d",
+            lastTrackingFrame_->objectType,
+            trackingParams->objectType);
+        if (lastTrackingFrame_->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY) &&
+            (trackingParams->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE) ||
+                trackingParams->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_HEAD))) {
+            isAllowedConversion = IsAllowedConversion(lastTrackingRect_, trackingRect_);
+        } else if ((lastTrackingFrame_->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE) &&
+                       trackingParams->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_HEAD)) ||
+                   (lastTrackingFrame_->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_HEAD) &&
+                       trackingParams->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE))) {
+            isAllowedConversion = IsAllowedConversion(lastTrackingRect_, trackingRect_);
+        }
+        if (!isAllowedConversion) {
+            currentCameraInfo_->pauseFrameCount++;
+            HILOGE("Tracking target changed and not allowed, pause count: %{public}d",
+                currentCameraInfo_->pauseFrameCount);
+            return INVALID_TRACKING_TARGET;
+        }
+    }
+    HILOGI("Tracking");
+    currentCameraInfo_->pauseFrameCount = 0;
+    return ERR_OK;
+}
+
+bool McCameraTrackingController::IsAllowedConversion(
+    CameraStandard::Rect &lastTrackingRect, CameraStandard::Rect &trackingRect)
+{
+    float iou = CalculateIOU(lastTrackingRect, trackingRect);
+    if (iou > IOU_THRESHOLD) {
+        HILOGI("Conversion allowed, IOU: %{public}f", iou);
+        return true;
+    } else {
+        HILOGW("Conversion rejected, IOU too low: %{public}f", iou);
+        return false;
+    }
 }
 
 bool McCameraTrackingController::FilterDetectedObject(sptr<CameraStandard::MetadataObject> &detectedObject)
@@ -1062,6 +1317,9 @@ void McCameraTrackingController::ConvertObjectType(CameraStandard::MetadataObjec
         case CameraStandard::MetadataObjectType::FACE :
             mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
             break;
+        case CameraStandard::MetadataObjectType::BASE_FACE_DETECTION :
+            mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+            break;
         case CameraStandard::MetadataObjectType::HUMAN_BODY :
             mechObjectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
             break;
@@ -1440,6 +1698,11 @@ void MechSessionCallbackImpl::OnZoomInfoChange(int sessionid, CameraStandard::Zo
 void MechSessionCallbackImpl::OnSessionStatusChange(int32_t sessionid, bool status)
 {
     McCameraTrackingController::GetInstance().OnSessionStatusChange(sessionid, status);
+}
+
+void MechSessionCallbackImpl::OnMetadataInfo(const std::shared_ptr<OHOS::Camera::CameraMetadata>& result)
+{
+    McCameraTrackingController::GetInstance().OnMetadataInfo(result);
 }
 
 } // namespace MechBodyController

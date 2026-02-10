@@ -75,6 +75,7 @@ struct CameraInfo {
     int32_t videoStabilizationMode =
         static_cast<int32_t>(CameraVideoStabilizationMode::OHOS_CAMERA_VIDEO_STABILIZATION_OFF);
     bool isCameraOn = false;
+    int32_t pauseFrameCount = 0;
 
     std::string ToString() const
     {
@@ -110,6 +111,7 @@ public:
     void OnCaptureSessionConfiged(CameraStandard::CaptureSessionInfo captureSessionInfo) override;
     void OnZoomInfoChange(int sessionid, CameraStandard::ZoomInfo zoomInfo) override;
     void OnSessionStatusChange(int sessionid, bool status) override;
+    void OnMetadataInfo(const std::shared_ptr<OHOS::Camera::CameraMetadata>& result) override;
 };
 
 class McCameraTrackingController {
@@ -127,6 +129,7 @@ public:
     void Init();
     void UnInit();
     int32_t OnCaptureSessionConfiged(const CameraStandard::CaptureSessionInfo& captureSessionInfo);
+    int32_t OnMetadataInfo(const std::shared_ptr<OHOS::Camera::CameraMetadata>& result);
     void UpdateCurrentCameraInfoByCaptureSessionInfo(
         const CameraStandard::CaptureSessionInfo& captureSessionInfo);
     int32_t OnZoomInfoChange(int32_t sessionid, const CameraStandard::ZoomInfo& zoomInfo);
@@ -161,6 +164,25 @@ private:
     int32_t GetTrackingTarget(CameraStandard::Rect &trackingRegion,
         std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects, int32_t trackingObjectId,
         sptr<CameraStandard::MetadataObject> &targetObject);
+    float CalculateIOU(const CameraStandard::Rect& rect1, const CameraStandard::Rect& rect2);
+    sptr<CameraStandard::MetadataObject> FindBestFaceOrHeadForBody(
+        CameraStandard::MetadataObject& bodyObject,
+        const std::vector<sptr<CameraStandard::MetadataObject>>& detectedObjects);
+    sptr<CameraStandard::MetadataObject> FindFaceForHead(
+        CameraStandard::MetadataObject& headObject,
+        const std::vector<sptr<CameraStandard::MetadataObject>>& detectedObjects);
+    int32_t GetTrackingTargetFallback(
+        CameraStandard::Rect &trackingRegion,
+        std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects,
+        sptr<CameraStandard::MetadataObject> &targetObject);
+    int32_t ProcessTargetByType(const sptr<CameraStandard::MetadataObject> &selectedObject,
+        const std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects,
+        sptr<CameraStandard::MetadataObject> &targetObject);
+    sptr<CameraStandard::MetadataObject> FindBestMatchForBody(
+        const CameraStandard::Rect &bodyRect, std::vector<sptr<CameraStandard::MetadataObject>> &objectsForBody);
+    int32_t CinematicVideoModeTrackingTargetFilter(CameraStandard::FocusTrackingMetaInfo &info,
+       std::shared_ptr<TrackingFrameParams> &trackingParams);
+    bool IsAllowedConversion(CameraStandard::Rect &lastTrackingRect, CameraStandard::Rect &trackingRect);
     int32_t UpdateMotionsWithTrackingData(
         const std::shared_ptr<TrackingFrameParams> &params, int32_t trackingObjectId);
     bool FilterDetectedObject(sptr<CameraStandard::MetadataObject> &detectedObject);
@@ -204,6 +226,8 @@ private:
     std::shared_ptr<CameraInfo> currentCameraInfo_ = std::make_shared<CameraInfo>();
 
     std::shared_ptr<TrackingFrameParams> lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    CameraStandard::Rect lastTrackingRect_;
+    CameraStandard::Rect trackingRect_;
 
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
 
