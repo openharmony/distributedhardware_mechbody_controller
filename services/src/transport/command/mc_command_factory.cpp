@@ -55,6 +55,11 @@ std::shared_ptr<GetMechProtocolVerCmd> CommandFactory::CreateGetMechProtocolVerC
     return std::make_shared<GetMechProtocolVerCmd>();
 }
 
+std::shared_ptr<SetMechDisconnectCmd> CommandFactory::CreateSetMechDisconnectCmd(uint8_t reason)
+{
+    return std::make_shared<SetMechDisconnectCmd>(reason);
+}
+
 std::shared_ptr<GetMechRealNameCmd> CommandFactory::CreateGetMechRealNameCmd()
 {
     return std::make_shared<GetMechRealNameCmd>();

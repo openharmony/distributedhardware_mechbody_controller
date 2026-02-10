@@ -627,9 +627,8 @@ int32_t MotionManager::GetProtocolVer()
         std::unique_lock<std::mutex> lock(protocolVerMutex_);
 
         bool protocolVerReady = protocolVerCon_.wait_for(lock, std::chrono::seconds(3), [this] {
-            return protocolVer_ == static_cast<uint8_t>(ProtocolVersion::V01) ||
-                protocolVer_ == static_cast<uint8_t>(ProtocolVersion::V02);
-            });
+            return protocolVer_ >= static_cast<uint8_t>(ProtocolVersion::V01);
+        });
         if (!protocolVerReady) {
             MechConnectManager::GetInstance().NotifyMechState(mechId_, false);
             return MECH_CONNECT_FAILED;
@@ -642,7 +641,7 @@ int32_t MotionManager::GetProtocolVer()
 void MotionManager::SetProtocolVer()
 {
     HILOGI("start");
-    std::shared_ptr<NormalSetMechProtocolVerCmd> protocolVerCmd = factory.CreateNormalSetMechProtocolVerCmd(0x01);
+    std::shared_ptr<NormalSetMechProtocolVerCmd> protocolVerCmd = factory.CreateNormalSetMechProtocolVerCmd(0x02);
     CHECK_POINTER_RETURN(protocolVerCmd, "protocolVerCmd is empty.");
 
     protocolVerCmd->SetTimeoutCallback(SetTimeout);
@@ -678,7 +677,12 @@ void MotionManager::GetDeviceBaseInfo()
         deviceBaseInfo_ = baseInfoCmd->GetParams();
         deviceRealName_ = baseInfoCmd->GetParams().realName;
         HILOGI("device callback real name: %{public}s", GetAnonymStr(deviceRealName_).c_str());
-        };
+        if (deviceBaseInfo_.devType != 0) {
+            std::shared_ptr<SetMechDisconnectCmd> disconnectCmd = factory.CreateSetMechDisconnectCmd(0x00);
+            CHECK_POINTER_RETURN(disconnectCmd, "disconnectCmd is empty.");
+            sendAdapter_->SendCommand(disconnectCmd);
+        }
+    };
 
     baseInfoCmd->SetResponseCallback(baseInfoCallback);
     baseInfoCmd->SetTimeoutCallback(SetTimeout);

@@ -48,6 +48,7 @@ ohos_shared_library("mechbody_service") {
       "src/transport/command/mc_command_base.cpp",
       "src/transport/command/mc_command_factory.cpp",
       "src/transport/command/mc_get_mech_protocol_ver_cmd.cpp",
+      "src/transport/command/mc_set_mech_disconnect_cmd.cpp",
       "src/transport/command/0x01/mc_get_mech_camera_tracking_layout_cmd.cpp",
       "src/transport/command/0x01/mc_get_mech_limit_info_cmd.cpp",
       "src/transport/command/0x01/mc_get_mech_real_name_cmd.cpp",
