@@ -75,6 +75,24 @@ HWTEST_F(McCameraTrackingControllerTest, UpdateMotionManagers_001, TestSize.Leve
 }
 
 /**
+ * @tc.name  : OnMetadataInfo_001
+ * @tc.number: OnMetadataInfo_001
+ * @tc.desc  : Testing OnMetadataInfo function with null metadata.
+ */
+HWTEST_F(McCameraTrackingControllerTest, OnMetadataInfo_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest OnMetadataInfo_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    std::shared_ptr<OHOS::Camera::CameraMetadata> metadata = nullptr;
+
+    int32_t ret = mcCameraTrackingController.OnMetadataInfo(metadata);
+    EXPECT_EQ(ret, METADATA_INFO_IS_EMPTY);
+
+    DTEST_LOG << "McCameraTrackingControllerTest OnMetadataInfo_001 end" << std::endl;
+}
+
+/**
  * @tc.name  : OnFocusTracking_002
  * @tc.number: OnFocusTracking_002
  * @tc.desc  : Testing OnFocusTracking function.
@@ -83,7 +101,7 @@ HWTEST_F(McCameraTrackingControllerTest, OnFocusTracking_002, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTest OnFocusTracking_002 begin" << std::endl;
 
-    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
     CameraStandard::FocusTrackingMetaInfo info;
     mcCameraTrackingController.currentCameraInfo_->currentTrackingEnable = true;
 
@@ -100,11 +118,937 @@ HWTEST_F(McCameraTrackingControllerTest, BuildTrackingParams_001, TestSize.Level
 {
     DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_001 begin" << std::endl;
 
-    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
     CameraStandard::FocusTrackingMetaInfo info;
 
     EXPECT_NO_FATAL_FAILURE(mcCameraTrackingController.BuildTrackingParams(info));
     DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : BuildTrackingParams_002
+ * @tc.number: BuildTrackingParams_002
+ * @tc.desc  : Test BuildTrackingParams when GetTrackingTarget returns error.
+ */
+HWTEST_F(McCameraTrackingControllerTest, BuildTrackingParams_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->fovH = 90;
+    mcCameraTrackingController.currentCameraInfo_->fovV = 60;
+    mcCameraTrackingController.currentCameraInfo_->isRecording = false;
+    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 0;
+    mcCameraTrackingController.currentCameraInfo_->searchingTarget = false;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+
+    mcCameraTrackingController.eventHandler_ = std::make_shared<AppExecFwk::EventHandler>(nullptr);
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->timeStamp = 0;
+    mcCameraTrackingController.lastTrackingFrame_->targetId = -1;
+    mcCameraTrackingController.lastTrackingFrame_->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+
+    std::shared_ptr<TrackingFrameParams> result = mcCameraTrackingController.BuildTrackingParams(info);
+
+    EXPECT_NE(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : BuildTrackingParams_003
+ * @tc.number: BuildTrackingParams_003
+ * @tc.desc  : Test BuildTrackingParams when searching target found.
+ */
+HWTEST_F(McCameraTrackingControllerTest, BuildTrackingParams_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_003 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->fovH = 90;
+    mcCameraTrackingController.currentCameraInfo_->fovV = 60;
+    mcCameraTrackingController.currentCameraInfo_->searchingTarget = true;
+    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 1;
+    mcCameraTrackingController.currentCameraInfo_->sessionMode = 0;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+    mcCameraTrackingController.eventHandler_ = std::make_shared<AppExecFwk::EventHandler>(nullptr);
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->timeStamp = 0;
+    mcCameraTrackingController.lastTrackingFrame_->targetId = -1;
+
+    std::shared_ptr<TrackingFrameParams> result = mcCameraTrackingController.BuildTrackingParams(info);
+
+    EXPECT_NE(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : BuildTrackingParams_004
+ * @tc.number: BuildTrackingParams_004
+ * @tc.desc  : Testing BuildTrackingParams function with valid detected objects.
+ */
+HWTEST_F(McCameraTrackingControllerTest, BuildTrackingParams_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_004 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->fovH = 90;
+    mcCameraTrackingController.currentCameraInfo_->fovV = 60;
+    mcCameraTrackingController.currentCameraInfo_->isRecording = false;
+    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 0;
+    mcCameraTrackingController.currentCameraInfo_->searchingTarget = false;
+    mcCameraTrackingController.currentCameraInfo_->sessionMode = 0;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+    CameraStandard::Rect targetRect;
+    targetRect.topLeftX = 0.3f;
+    targetRect.topLeftY = 0.3f;
+    targetRect.width = 0.35f;
+    targetRect.height = 0.35f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp,
+            targetRect,
+            100,
+            0
+        );
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    std::shared_ptr<TrackingFrameParams> result = mcCameraTrackingController.BuildTrackingParams(info);
+
+    EXPECT_NE(result, nullptr);
+    if (result != nullptr) {
+        EXPECT_EQ(result->confidence, ConfidenceLevel::HIGH);
+        EXPECT_EQ(result->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE));
+    }
+
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : BuildTrackingParams_005
+ * @tc.number: BuildTrackingParams_005
+ * @tc.desc  : Testing BuildTrackingParams function when CinematicVideoMode check fails.
+ */
+HWTEST_F(McCameraTrackingControllerTest, BuildTrackingParams_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_005 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode =
+        static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO);
+    mcCameraTrackingController.currentCameraInfo_->pauseFrameCount = 0;
+    mcCameraTrackingController.currentCameraInfo_->fovV = 45.0f;
+    mcCameraTrackingController.currentCameraInfo_->fovH = 60.0f;
+    mcCameraTrackingController.currentCameraInfo_->isRecording = false;
+    mcCameraTrackingController.currentCameraInfo_->trackingTargetNum = 0;
+    mcCameraTrackingController.currentCameraInfo_->searchingTarget = false;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+    info.SetTrackingMode(CameraStandard::FocusTrackingMode::FOCUS_TRACKING_MODE_LOCKED);
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.5f;
+    trackingRegion.topLeftY = 0.5f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+    info.SetTrackingRegion(trackingRegion);
+
+    std::shared_ptr<TrackingFrameParams> lastFrame = std::make_shared<TrackingFrameParams>();
+    lastFrame->targetId = 100;
+    lastFrame->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+    lastFrame->timeStamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+    mcCameraTrackingController.lastTrackingFrame_ = lastFrame;
+
+    CameraStandard::Rect lastRect;
+    lastRect.topLeftX = 0.3f;
+    lastRect.topLeftY = 0.3f;
+    lastRect.width = 0.4f;
+    lastRect.height = 0.4f;
+    mcCameraTrackingController.lastTrackingRect_ = lastRect;
+
+    std::shared_ptr<TrackingFrameParams> result = mcCameraTrackingController.BuildTrackingParams(info);
+
+    EXPECT_EQ(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_005 end" << std::endl;
+}
+
+/**
+ * @tc.name  : GetTrackingTarget_001
+ * @tc.number: GetTrackingTarget_001
+ * @tc.desc  : Testing GetTrackingTarget function with empty detected objects.
+ */
+HWTEST_F(McCameraTrackingControllerTest, GetTrackingTarget_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTarget_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+    sptr<CameraStandard::MetadataObject> targetObject;
+    int32_t trackingObjectId = 100;
+
+    int32_t ret =
+        mcCameraTrackingController.GetTrackingTarget(trackingRegion, detectedObjects, trackingObjectId, targetObject);
+
+    EXPECT_EQ(ret, DETECTED_OBJECT_IS_EMPTY);
+    EXPECT_EQ(targetObject, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTarget_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : GetTrackingTarget_002
+ * @tc.number: GetTrackingTarget_002
+ * @tc.desc  : Testing GetTrackingTarget function with matching trackingObjectId.
+ */
+HWTEST_F(McCameraTrackingControllerTest, GetTrackingTarget_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTarget_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    int64_t timestamp = 0;
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.2f;
+    rect1.height = 0.2f;
+
+    sptr<CameraStandard::MetadataObject> mockObject1 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, rect1, 100, 0);
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.3f;
+    rect2.topLeftY = 0.3f;
+    rect2.width = 0.2f;
+    rect2.height = 0.2f;
+
+    sptr<CameraStandard::MetadataObject> mockObject2 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_BODY, timestamp, rect2, 200, 0);
+
+    detectedObjects.push_back(mockObject1);
+    detectedObjects.push_back(mockObject2);
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+    int32_t trackingObjectId = 100;
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode = 0;
+
+    int32_t ret =
+        mcCameraTrackingController.GetTrackingTarget(trackingRegion, detectedObjects, trackingObjectId, targetObject);
+    EXPECT_EQ(ret, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTarget_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : GetTrackingTarget_003
+ * @tc.number: GetTrackingTarget_003
+ * @tc.desc  : Test GetTrackingTarget with trackingObjectId not found.
+ */
+HWTEST_F(McCameraTrackingControllerTest, GetTrackingTarget_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTarget_003 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+    CameraStandard::Rect rect;
+    rect.topLeftX = 0.3f;
+    rect.topLeftY = 0.3f;
+    rect.width = 0.4f;
+    rect.height = 0.4f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, rect, 100, 0);
+
+    detectedObjects.push_back(mockObject);
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+    int32_t trackingObjectId = 999;
+
+    mcCameraTrackingController.currentCameraInfo_ = nullptr;
+
+    int32_t ret =
+        mcCameraTrackingController.GetTrackingTarget(trackingRegion, detectedObjects, trackingObjectId, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTarget_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : ProcessTargetByType_001
+ * @tc.number: ProcessTargetByType_001
+ * @tc.desc  : Testing ProcessTargetByType function with HUMAN_HEAD type.
+ */
+HWTEST_F(McCameraTrackingControllerTest, ProcessTargetByType_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest ProcessTargetByType_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    int64_t timestamp = 0;
+    CameraStandard::Rect headRect;
+    headRect.topLeftX = 0.3f;
+    headRect.topLeftY = 0.3f;
+    headRect.width = 0.4f;
+    headRect.height = 0.4f;
+
+    sptr<CameraStandard::MetadataObject> headObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_HEAD, timestamp, headRect, 100, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+
+    CameraStandard::Rect rect;
+    rect.topLeftX = 0.3f;
+    rect.topLeftY = 0.3f;
+    rect.width = 0.4f;
+    rect.height = 0.4f;
+
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, rect, 100, 0);
+    detectedObjects.push_back(mockObject);
+
+    CameraStandard::Rect faceRect;
+    faceRect.topLeftX = 0.32f;
+    faceRect.topLeftY = 0.32f;
+    faceRect.width = 0.38f;
+    faceRect.height = 0.38f;
+
+    sptr<CameraStandard::MetadataObject> faceObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, faceRect, 200, 0);
+
+    detectedObjects.push_back(faceObject);
+    sptr<CameraStandard::MetadataObject> targetObject;
+    int32_t ret = mcCameraTrackingController.ProcessTargetByType(headObject, detectedObjects, targetObject);
+    EXPECT_EQ(ret, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest ProcessTargetByType_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : ProcessTargetByType_002
+ * @tc.number: ProcessTargetByType_002
+ * @tc.desc  : Testing ProcessTargetByType function with HUMAN_BODY type.
+ */
+HWTEST_F(McCameraTrackingControllerTest, ProcessTargetByType_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest ProcessTargetByType_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect bodyRect;
+    bodyRect.topLeftX = 0.3f;
+    bodyRect.topLeftY = 0.3f;
+    bodyRect.width = 0.5f;
+    bodyRect.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> bodyObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_BODY, timestamp, bodyRect, 100, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    CameraStandard::Rect faceRect;
+    faceRect.topLeftX = 0.35f;
+    faceRect.topLeftY = 0.35f;
+    faceRect.width = 0.2f;
+    faceRect.height = 0.2f;
+
+    sptr<CameraStandard::MetadataObject> faceObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, faceRect, 200, 0);
+
+    detectedObjects.push_back(faceObject);
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    int32_t ret = mcCameraTrackingController.ProcessTargetByType(bodyObject, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest ProcessTargetByType_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : ProcessTargetByType_003
+ * @tc.number: ProcessTargetByType_003
+ * @tc.desc  : Test ProcessTargetByType with default case.
+ */
+HWTEST_F(McCameraTrackingControllerTest, ProcessTargetByType_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest ProcessTargetByType_003 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect;
+    rect.topLeftX = 0.3f;
+    rect.topLeftY = 0.3f;
+    rect.width = 0.4f;
+    rect.height = 0.4f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> selectedObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, rect, 100, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    int32_t ret = mcCameraTrackingController.ProcessTargetByType(selectedObject, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_NE(targetObject, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest ProcessTargetByType_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : FindFaceForHead_001
+ * @tc.number: FindFaceForHead_001
+ * @tc.desc  : Testing FindFaceForHead function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, FindFaceForHead_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest FindFaceForHead_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect headRect;
+    headRect.topLeftX = 0.3f;
+    headRect.topLeftY = 0.3f;
+    headRect.width = 0.4f;
+    headRect.height = 0.4f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> headObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_HEAD, timestamp, headRect, 100, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    CameraStandard::Rect faceRect1;
+    faceRect1.topLeftX = 0.32f;
+    faceRect1.topLeftY = 0.32f;
+    faceRect1.width = 0.38f;
+    faceRect1.height = 0.38f;
+
+    sptr<CameraStandard::MetadataObject> faceObject1 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, faceRect1, 200, 0);
+
+    CameraStandard::Rect faceRect2;
+    faceRect2.topLeftX = 0.7f;
+    faceRect2.topLeftY = 0.7f;
+    faceRect2.width = 0.2f;
+    faceRect2.height = 0.2f;
+
+    sptr<CameraStandard::MetadataObject> faceObject2 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, faceRect2, 300, 0);
+
+    detectedObjects.push_back(faceObject1);
+    detectedObjects.push_back(faceObject2);
+
+    sptr<CameraStandard::MetadataObject> result =
+        mcCameraTrackingController.FindFaceForHead(*headObject, detectedObjects);
+
+    EXPECT_NE(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest FindFaceForHead_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : FindBestFaceOrHeadForBody_001
+ * @tc.number: FindBestFaceOrHeadForBody_001
+ * @tc.desc  : Testing FindBestFaceOrHeadForBody function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, FindBestFaceOrHeadForBody_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest FindBestFaceOrHeadForBody_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect bodyRect;
+    bodyRect.topLeftX = 0.3f;
+    bodyRect.topLeftY = 0.3f;
+    bodyRect.width = 0.5f;
+    bodyRect.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> bodyObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_BODY, timestamp, bodyRect, 100, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    CameraStandard::Rect faceRect;
+    faceRect.topLeftX = 0.35f;
+    faceRect.topLeftY = 0.35f;
+    faceRect.width = 0.2f;
+    faceRect.height = 0.2f;
+
+    sptr<CameraStandard::MetadataObject> faceObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, faceRect, 200, 0);
+
+    CameraStandard::Rect headRect;
+    headRect.topLeftX = 0.3f;
+    headRect.topLeftY = 0.3f;
+    headRect.width = 0.5f;
+    headRect.height = 0.6f;
+
+    sptr<CameraStandard::MetadataObject> headObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_HEAD, timestamp, headRect, 300, 0);
+
+    detectedObjects.push_back(faceObject);
+    detectedObjects.push_back(headObject);
+
+    sptr<CameraStandard::MetadataObject> result =
+        mcCameraTrackingController.FindBestFaceOrHeadForBody(*bodyObject, detectedObjects);
+
+    EXPECT_NE(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest FindBestFaceOrHeadForBody_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : FindBestMatchForBody_001
+ * @tc.number: FindBestMatchForBody_001
+ * @tc.desc  : Testing FindBestMatchForBody function.
+ */
+HWTEST_F(McCameraTrackingControllerTest, FindBestMatchForBody_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest FindBestMatchForBody_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect bodyRect;
+    bodyRect.topLeftX = 0.3f;
+    bodyRect.topLeftY = 0.3f;
+    bodyRect.width = 0.5f;
+    bodyRect.height = 0.6f;
+
+    std::vector<sptr<CameraStandard::MetadataObject>> objectsForBody;
+
+    CameraStandard::Rect highIouRect;
+    highIouRect.topLeftX = 0.3f;
+    highIouRect.topLeftY = 0.3f;
+    highIouRect.width = 0.5f;
+    highIouRect.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> highIouObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp,
+            highIouRect,
+            200,
+            0);
+
+    CameraStandard::Rect lowIouRect;
+    lowIouRect.topLeftX = 0.1f;
+    lowIouRect.topLeftY = 0.1f;
+    lowIouRect.width = 0.1f;
+    lowIouRect.height = 0.1f;
+
+    sptr<CameraStandard::MetadataObject> lowIouObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp,
+            lowIouRect,
+            300,
+            0);
+
+    objectsForBody.push_back(highIouObject);
+    objectsForBody.push_back(lowIouObject);
+
+    sptr<CameraStandard::MetadataObject> result =
+        mcCameraTrackingController.FindBestMatchForBody(bodyRect, objectsForBody);
+
+    EXPECT_NE(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest FindBestMatchForBody_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : FindBestMatchForBody_002
+ * @tc.number: FindBestMatchForBody_002
+ * @tc.desc  : Test FindBestMatchForBody with multiple matches.
+ */
+HWTEST_F(McCameraTrackingControllerTest, FindBestMatchForBody_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest FindBestMatchForBody_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect bodyRect;
+    bodyRect.topLeftX = 0.3f;
+    bodyRect.topLeftY = 0.3f;
+    bodyRect.width = 0.5f;
+    bodyRect.height = 0.6f;
+
+    std::vector<sptr<CameraStandard::MetadataObject>> objectsForBody;
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.32f;
+    rect1.topLeftY = 0.32f;
+    rect1.width = 0.25f;
+    rect1.height = 0.3f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> obj1 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, rect1, 200, 0);
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.35f;
+    rect2.topLeftY = 0.35f;
+    rect2.width = 0.2f;
+    rect2.height = 0.25f;
+
+    sptr<CameraStandard::MetadataObject> obj2 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, rect2, 300, 0);
+
+    objectsForBody.push_back(obj1);
+    objectsForBody.push_back(obj2);
+
+    sptr<CameraStandard::MetadataObject> result =
+        mcCameraTrackingController.FindBestMatchForBody(bodyRect, objectsForBody);
+
+    EXPECT_EQ(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest FindBestMatchForBody_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : GetTrackingTargetFallback_001
+ * @tc.number: GetTrackingTargetFallback_001
+ * @tc.desc  : Testing GetTrackingTargetFallback function with lastTrackingFrame.
+ */
+HWTEST_F(McCameraTrackingControllerTest, GetTrackingTargetFallback_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.3f;
+    objectRect.topLeftY = 0.3f;
+    objectRect.width = 0.4f;
+    objectRect.height = 0.4f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, objectRect, 100, 0);
+
+    detectedObjects.push_back(mockObject);
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->targetId = 100;
+
+    int32_t ret = mcCameraTrackingController.GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_NE(targetObject, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_001
+ * @tc.number: CalculateIOU_001
+ * @tc.desc  : Testing CalculateIOU function with overlapping rectangles.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CalculateIOU_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.5f;
+    rect1.height = 0.5f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.3f;
+    rect2.topLeftY = 0.3f;
+    rect2.width = 0.6f;
+    rect2.height = 0.6f;
+
+    float iou = mcCameraTrackingController.CalculateIOU(rect1, rect2);
+
+    EXPECT_GT(iou, 0.0f);
+    EXPECT_LT(iou, 1.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_002
+ * @tc.number: CalculateIOU_002
+ * @tc.desc  : Testing CalculateIOU function with non-overlapping rectangles.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CalculateIOU_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.2f;
+    rect1.height = 0.2f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.5f;
+    rect2.topLeftY = 0.5f;
+    rect2.width = 0.2f;
+    rect2.height = 0.2f;
+
+    float iou = mcCameraTrackingController.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_003
+ * @tc.number: CalculateIOU_003
+ * @tc.desc  : Testing CalculateIOU function with invalid rectangles.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CalculateIOU_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_003 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.0f;
+    rect1.height = 0.2f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.3f;
+    rect2.topLeftY = 0.3f;
+    rect2.width = 0.2f;
+    rect2.height = 0.2f;
+
+    float iou = mcCameraTrackingController.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_004
+ * @tc.number: CalculateIOU_004
+ * @tc.desc  : Test CalculateIOU with same rectangle.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CalculateIOU_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_004 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect;
+    rect.topLeftX = 0.1f;
+    rect.topLeftY = 0.1f;
+    rect.width = 0.5f;
+    rect.height = 0.5f;
+
+    float iou = mcCameraTrackingController.CalculateIOU(rect, rect);
+
+    EXPECT_FLOAT_EQ(iou, 1.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CalculateIOU_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CinematicVideoModeTrackingTargetFilter_001
+ * @tc.number: CinematicVideoModeTrackingTargetFilter_001
+ * @tc.desc  : Testing CinematicVideoModeTrackingTargetFilter function in non-cinematic mode.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CinematicVideoModeTrackingTargetFilter_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode = 0;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+    std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
+
+    int32_t ret = mcCameraTrackingController.CinematicVideoModeTrackingTargetFilter(info, trackingParams);
+
+    EXPECT_EQ(ret, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CinematicVideoModeTrackingTargetFilter_002
+ * @tc.number: CinematicVideoModeTrackingTargetFilter_002
+ * @tc.desc  : Testing CinematicVideoModeTrackingTargetFilter function with locked tracking mode.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CinematicVideoModeTrackingTargetFilter_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode =
+        static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO);
+    mcCameraTrackingController.currentCameraInfo_->pauseFrameCount = 0;
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->targetId = 100;
+    mcCameraTrackingController.lastTrackingFrame_->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
+
+    std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
+    trackingParams->targetId = 200;
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+
+    CameraStandard::Rect trackingRect;
+    trackingRect.topLeftX = 0.3f;
+    trackingRect.topLeftY = 0.3f;
+    trackingRect.width = 0.4f;
+    trackingRect.height = 0.4f;
+    mcCameraTrackingController.trackingRect_ = trackingRect;
+
+    CameraStandard::Rect lastTrackingRect;
+    lastTrackingRect.topLeftX = 0.32f;
+    lastTrackingRect.topLeftY = 0.32f;
+    lastTrackingRect.width = 0.38f;
+    lastTrackingRect.height = 0.38f;
+    mcCameraTrackingController.lastTrackingRect_ = lastTrackingRect;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+
+    int32_t ret = mcCameraTrackingController.CinematicVideoModeTrackingTargetFilter(info, trackingParams);
+
+    EXPECT_TRUE(ret == ERR_OK || ret == INVALID_TRACKING_TARGET);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CinematicVideoModeTrackingTargetFilter_003
+ * @tc.number: CinematicVideoModeTrackingTargetFilter_003
+ * @tc.desc  : Test CinematicVideoModeTrackingTargetFilter with locked tracking mode.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CinematicVideoModeTrackingTargetFilter_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_003 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode =
+        static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO);
+    mcCameraTrackingController.currentCameraInfo_->pauseFrameCount = 0;
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->targetId = 100;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+
+    std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
+    trackingParams->targetId = 100;
+
+    EXPECT_NO_FATAL_FAILURE(mcCameraTrackingController.CinematicVideoModeTrackingTargetFilter(info, trackingParams));
+
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : IsAllowedConversion_001
+ * @tc.number: IsAllowedConversion_001
+ * @tc.desc  : Testing IsAllowedConversion function with high IOU.
+ */
+HWTEST_F(McCameraTrackingControllerTest, IsAllowedConversion_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest IsAllowedConversion_001 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect lastTrackingRect;
+    lastTrackingRect.topLeftX = 0.3f;
+    lastTrackingRect.topLeftY = 0.3f;
+    lastTrackingRect.width = 0.4f;
+    lastTrackingRect.height = 0.4f;
+
+    CameraStandard::Rect trackingRect;
+    trackingRect.topLeftX = 0.32f;
+    trackingRect.topLeftY = 0.32f;
+    trackingRect.width = 0.38f;
+    trackingRect.height = 0.38f;
+
+    bool result = mcCameraTrackingController.IsAllowedConversion(lastTrackingRect, trackingRect);
+
+    EXPECT_TRUE(result);
+
+    DTEST_LOG << "McCameraTrackingControllerTest IsAllowedConversion_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : IsAllowedConversion_002
+ * @tc.number: IsAllowedConversion_002
+ * @tc.desc  : Testing IsAllowedConversion function with low IOU.
+ */
+HWTEST_F(McCameraTrackingControllerTest, IsAllowedConversion_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest IsAllowedConversion_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect lastTrackingRect;
+    lastTrackingRect.topLeftX = 0.1f;
+    lastTrackingRect.topLeftY = 0.1f;
+    lastTrackingRect.width = 0.2f;
+    lastTrackingRect.height = 0.2f;
+
+    CameraStandard::Rect trackingRect;
+    trackingRect.topLeftX = 0.7f;
+    trackingRect.topLeftY = 0.7f;
+    trackingRect.width = 0.2f;
+    trackingRect.height = 0.2f;
+
+    bool result = mcCameraTrackingController.IsAllowedConversion(lastTrackingRect, trackingRect);
+
+    EXPECT_FALSE(result);
+
+    DTEST_LOG << "McCameraTrackingControllerTest IsAllowedConversion_002 end" << std::endl;
 }
 
 /**
