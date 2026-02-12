@@ -164,12 +164,10 @@ void BleGattClientCallback::OnCharacteristicChanged(const GattCharacteristic &ch
 
 void BleGattClientCallback::OnCharacteristicWriteResult(const GattCharacteristic &characteristic, int ret)
 {
-    HILOGI("GattClientCallback::OnCharacteristicWriteResult called ret = %{public}d\n", ret);
     if (ret == OHOS::Bluetooth::GattStatus::GATT_SUCCESS) {
-        HILOGI("write success");
         size_t size = 0;
         const std::unique_ptr<uint8_t[]> &value = characteristic.GetValue(&size);
-        HILOGI("size = %{public}zu", size);
+        HILOGI("valueNull: %{public}d, size = %{public}zu", value == nullptr, size);
         if (value == nullptr || size == 0) {
             HILOGI("value is empty or null");
             return;
@@ -1041,9 +1039,11 @@ int32_t BleSendManager::MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t
     wrCharacteristic.SetValue(data, dataLen);
     wrCharacteristic.SetWriteType(GattCharacteristic::WriteType::NO_RESPONSE);
     HILOGI("Mech writeC");
+    uint64_t beginTime = GetTimeStampMs();
     result = gattClient_->WriteCharacteristic(wrCharacteristic);
-    HILOGI("Mech writeC, result = %{public}d handle: %{public}d dataLen: %{public}d \n", \
-        result, handle_, dataLen);
+    uint64_t endTime = GetTimeStampMs();
+    HILOGI("Mech writeC, result = %{public}d handle: %{public}d dataLen: %{public}d, castTime:%{public}s \n", \
+        result, handle_, dataLen, std::to_string(endTime - beginTime).c_str());
     return result;
 }
 
