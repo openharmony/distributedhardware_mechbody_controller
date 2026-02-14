@@ -20,6 +20,7 @@
 
 #include "accesstoken_kit.h"
 #include "ble_send_manager.h"
+#include "load_mechbody_adapter.h"
 #include "mechbody_controller_log.h"
 #include "mechbody_controller_utils.h"
 #include "mc_controller_manager.h"
@@ -74,6 +75,9 @@ void MechBodyControllerService::OnStart(const SystemAbilityOnDemandReason &start
         sendAdapter_->RegisterBluetoothListener();
     }
     BleSendManager::GetInstance().Init();
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    MechbodyAdapterUtils::InitTrackingCore();
+#endif
     if (startReason.GetName() == START_REASON_RESTART) {
         BleSendManager::GetInstance().CleanOldAssetsForMechbodyStart();
         BleSendManager::GetInstance().DelayedUnloadSystemAbility();
@@ -91,6 +95,9 @@ void MechBodyControllerService::OnStop()
     }
     BleSendManager::GetInstance().UnInit();
     McCameraTrackingController::GetInstance().UnInit();
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    MechbodyAdapterUtils::Clear();
+#endif
     MechConnectManager::GetInstance().UnInit();
 }
 
