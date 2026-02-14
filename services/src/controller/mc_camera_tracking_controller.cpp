@@ -138,9 +138,6 @@ void McCameraTrackingController::Init()
     std::lock_guard<std::mutex> lock(cameraTrackingControllerInitMutex_);
     RegisterTrackingListener();
     RegisterSensorListener();
-#ifdef MECHBODY_CONTROLLER_EXTENDED
-    MechbodyAdapterUtils::InitTrackingCore();
-#endif
     HILOGI("end");
 }
 
@@ -157,9 +154,6 @@ void McCameraTrackingController::UnInit()
             eventHandler_->RemoveTask(PREDICTION_TASK_NAME);
         #endif
     }
-#ifdef MECHBODY_CONTROLLER_EXTENDED
-    MechbodyAdapterUtils::Clear();
-#endif
     horizontal_ = 0.0f;
     vertical_ = 0.0f;
     HILOGI("end");
