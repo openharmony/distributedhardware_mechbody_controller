@@ -1407,7 +1407,6 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
         return ERR_OK;
     }
 
-    HILOGI("Start tracking.");
     UpdateTrackingTime();
 
     std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory

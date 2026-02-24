@@ -37,7 +37,6 @@ NormalSetMechCameraTrackingFrameCmd::NormalSetMechCameraTrackingFrameCmd(const T
 
 std::shared_ptr<MechDataBuffer> NormalSetMechCameraTrackingFrameCmd::Marshal() const
 {
-    HILOGI("start.");
     auto buffer = std::make_shared<MechDataBuffer>(reqSize_ + BIT_OFFSET_2);
     if (buffer == nullptr) {
         HILOGE("Failed to allocate memory for Marshal buffer");
@@ -60,7 +59,6 @@ std::shared_ptr<MechDataBuffer> NormalSetMechCameraTrackingFrameCmd::Marshal() c
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint8(params_.isRecording), nullptr, "append isRecording");
     CHECK_ERR_RETURN_VALUE(buffer->AppendUint32(params_.timeDelay), nullptr, "append timeDelay");
 
-    HILOGI("end.");
     return buffer;
 }
 
