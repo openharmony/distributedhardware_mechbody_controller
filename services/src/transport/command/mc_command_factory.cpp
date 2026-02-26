@@ -38,7 +38,7 @@ std::shared_ptr<CommonGetMechLimitInfoCmd> CommandFactory::CreateGetMechLimitInf
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<GetMechLimitInfoCmd>();
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalGetMechLimitInfoCmd>();
     } else {
         return std::make_shared<GetMechLimitInfoCmd>();
@@ -96,7 +96,7 @@ std::shared_ptr<CommonSetMechCameraInfoCmd> CommandFactory::CreateSetMechCameraI
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<SetMechCameraInfoCmd>(params);
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalSetMechCameraInfoCmd>(params);
     } else {
         return std::make_shared<SetMechCameraInfoCmd>(params);
@@ -108,7 +108,7 @@ std::shared_ptr<CommonSetMechCameraTrackingEnableCmd> CommandFactory::CreateSetM
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<SetMechCameraTrackingEnableCmd>(status);
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalSetMechCameraTrackingEnableCmd>(status);
     } else {
         return std::make_shared<SetMechCameraTrackingEnableCmd>(status);
@@ -120,7 +120,7 @@ std::shared_ptr<CommonSetMechCameraTrackingFrameCmd> CommandFactory::CreateSetMe
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<SetMechCameraTrackingFrameCmd>(params);
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalSetMechCameraTrackingFrameCmd>(params);
     } else {
         return std::make_shared<SetMechCameraTrackingFrameCmd>(params);
@@ -150,7 +150,7 @@ std::shared_ptr<CommonSetMechRotationBySpeedCmd> CommandFactory::CreateSetMechRo
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<SetMechRotationBySpeedCmd>(params);
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalSetMechRotationBySpeedCmd>(params);
     } else {
         return std::make_shared<SetMechRotationBySpeedCmd>(params);
@@ -174,7 +174,7 @@ std::shared_ptr<CommonSetMechRotationTraceCmd> CommandFactory::CreateSetMechRota
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<SetMechRotationTraceCmd>(params);
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalSetMechRotationTraceCmd>(taskId, params);
     } else {
         return std::make_shared<SetMechRotationTraceCmd>(params);
@@ -201,7 +201,7 @@ std::shared_ptr<CommonRegisterMechKeyEventCmd> CommandFactory::CreateRegisterMec
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<RegisterMechCameraKeyEventCmd>();
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalRegisterMechKeyEventCmd>();
     } else {
         return std::make_shared<RegisterMechCameraKeyEventCmd>();
@@ -217,7 +217,7 @@ std::shared_ptr<CommonRegisterMechPositionInfoCmd> CommandFactory::CreateRegiste
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<RegisterMechPositionInfoCmd>();
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalRegisterMechPositionInfoCmd>();
     } else {
         return std::make_shared<RegisterMechPositionInfoCmd>();
@@ -228,7 +228,7 @@ std::shared_ptr<CommonRegisterMechStateInfoCmd> CommandFactory::CreateRegisterMe
 {
     if (protocolVer_ == 0x01) {
         return std::make_shared<RegisterMechStateInfoCmd>();
-    } else if (protocolVer_ == 0x02) {
+    } else if (protocolVer_ >= 0x02) {
         return std::make_shared<NormalRegisterMechStateInfoCmd>();
     } else {
         return std::make_shared<RegisterMechStateInfoCmd>();

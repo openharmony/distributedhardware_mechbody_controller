@@ -84,18 +84,21 @@ bool NormalRegisterMechKeyEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer> da
                 return false;
             }
             continue;
-        }
-
-        if (keyType == CMD_KEY_WHEEL_CLICK) {
+        } else if (keyType == CMD_KEY_WHEEL_CLICK) {
             result = RegisterWheelEvent(data, offset);
             if (!result) {
                 return false;
             }
             continue;
-        }
-
-        if (keyType == CMD_KEY_STICK_CLICK) {
+        } else if (keyType == CMD_KEY_STICK_CLICK) {
             result = RegisterStickEvent(data, offset);
+            if (!result) {
+                return false;
+            }
+            continue;
+        } else {
+            HILOGE("Unknown button");
+            result = DropButtonTLV(data, offset);
             if (!result) {
                 return false;
             }
@@ -195,6 +198,16 @@ bool NormalRegisterMechKeyEventCmd::RegisterStickEvent(std::shared_ptr<MechDataB
     offset += BIT_OFFSET_2;
     CHECK_ERR_RETURN_VALUE(data->ReadInt16(offset, stickY_), false, "read stickY 3-4");
     offset += BIT_OFFSET_2;
+    return true;
+}
+
+bool NormalRegisterMechKeyEventCmd::DropButtonTLV(std::shared_ptr<MechDataBuffer> data, size_t& offset)
+{
+    uint8_t resultLength = 0;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read Length");
+    offset++;
+
+    offset += resultLength;
     return true;
 }
 

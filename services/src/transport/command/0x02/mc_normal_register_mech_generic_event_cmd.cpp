@@ -66,55 +66,101 @@ bool NormalRegisterMechGenericEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer
     }
 
     size_t offset = BIT_OFFSET_2;
-    uint8_t resultLength = 0;
-    uint8_t bitResult;
-
+    bool result;
     do {
         uint8_t resultType = 0;
         CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultType), false, "read attach resultType");
         offset++;
         if (resultType == CMD_GET_MECH_ATTACH_TYPE) {
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read attach resultLength");
-            if (resultLength != CMD_GET_MECH_ATTACH_REPLY_LENGTH) {
-                HILOGE("Reply data attach resultLength invalid");
+            result = RegisterAttachEvent(data, offset);
+            if (!result) {
                 return false;
             }
-            offset++;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, params_.attached), false, "read isAttached");
-            offset++;
-        }
-
-        if (resultType == CMD_GET_MECH_AXIS_TYPE) {
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read axis resultLength");
-            if (resultLength != CMD_GET_MECH_AXIS_REPLY_LENGTH) {
-                HILOGE("Reply data axis resultLength invalid");
+            continue;
+        } else if (resultType == CMD_GET_MECH_AXIS_TYPE) {
+            result = RegisterAxisEvent(data, offset);
+            if (!result) {
                 return false;
             }
-            offset++;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, bitResult), false, "read bitResult");
-            params_.yawDisable = (bitResult >> 0) & 1;
-            params_.rollDisable = (bitResult >> 1) & 1;
-            params_.pitchDisable = (bitResult >> 2) & 1;
-
-            offset++;
-        }
-
-        if (resultType == CMD_GET_MECH_POWER_TYPE) {
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read power resultLength");
-            if (resultLength != CMD_GET_MECH_POWER_REPLY_LENGTH) {
-                HILOGE("Reply data power resultLength invalid");
+            continue;
+        } else if (resultType == CMD_GET_MECH_POWER_TYPE) {
+            result = RegisterPowerEvent(data, offset);
+            if (!result) {
                 return false;
             }
-            offset++;
-
-            CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, bitResult), false, "read bitResult");
-            lowPower = (bitResult >> 0) & 1;
-            isCharging = (bitResult >> 1) & 1;
-            offset++;
+            continue;
+        } else {
+            HILOGE("Unknown event");
+            result = DropGenericTLV(data, offset);
+            if (!result) {
+                return false;
+            }
+            continue;
         }
     } while (offset < data->Size() - dataRedundant);
+    return true;
+}
+
+bool NormalRegisterMechGenericEventCmd::RegisterAttachEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset)
+{
+    uint8_t resultLength = 0;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read attach resultLength");
+    if (resultLength != CMD_GET_MECH_ATTACH_REPLY_LENGTH) {
+        HILOGE("Reply data attach resultLength invalid");
+        return false;
+    }
+    offset++;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, params_.attached), false, "read isAttached");
+    offset++;
+    return true;
+}
+
+bool NormalRegisterMechGenericEventCmd::RegisterAxisEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset)
+{
+    uint8_t resultLength = 0;
+    uint8_t bitResult;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read axis resultLength");
+    if (resultLength != CMD_GET_MECH_AXIS_REPLY_LENGTH) {
+        HILOGE("Reply data axis resultLength invalid");
+        return false;
+    }
+    offset++;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, bitResult), false, "read bitResult");
+    params_.yawDisable = (bitResult >> 0) & 1;
+    params_.rollDisable = (bitResult >> 1) & 1;
+    params_.pitchDisable = (bitResult >> 2) & 1;
+
+    offset++;
+    return true;
+}
+
+bool NormalRegisterMechGenericEventCmd::RegisterPowerEvent(std::shared_ptr<MechDataBuffer> data, size_t& offset)
+{
+    uint8_t resultLength = 0;
+    uint8_t bitResult;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read power resultLength");
+    if (resultLength != CMD_GET_MECH_POWER_REPLY_LENGTH) {
+        HILOGE("Reply data power resultLength invalid");
+        return false;
+    }
+    offset++;
+
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, bitResult), false, "read bitResult");
+    lowPower = (bitResult >> 0) & 1;
+    isCharging = (bitResult >> 1) & 1;
+    offset++;
+    return true;
+}
+
+bool NormalRegisterMechGenericEventCmd::DropGenericTLV(std::shared_ptr<MechDataBuffer> data, size_t& offset)
+{
+    uint8_t resultLength = 0;
+    CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, resultLength), false, "read Length");
+    offset++;
+
+    offset += resultLength;
     return true;
 }
 
