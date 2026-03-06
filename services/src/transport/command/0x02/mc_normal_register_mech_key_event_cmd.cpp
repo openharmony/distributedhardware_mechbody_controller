@@ -32,7 +32,6 @@ namespace {
     constexpr uint8_t CMD_GET_WHEEL_LENGTH = 5;
     constexpr uint8_t CMD_KEY_STICK_CLICK = 0x08;
     constexpr uint8_t CMD_GET_STICK_LENGTH = 4;
-    constexpr uint8_t dataRedundant = 2;
     constexpr uint8_t ONE_CLICK = 1;
     constexpr uint8_t TRIPLE_CLICK = 3;
 }
@@ -104,7 +103,7 @@ bool NormalRegisterMechKeyEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer> da
             }
             continue;
         }
-    } while (offset < data->Size() - dataRedundant);
+    } while (offset < data->Size());
     return true;
 }
 

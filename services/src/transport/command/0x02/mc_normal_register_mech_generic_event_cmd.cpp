@@ -27,7 +27,6 @@ namespace {
     constexpr uint8_t CMD_GET_MECH_AXIS_REPLY_LENGTH = 1;
     static constexpr uint8_t CMD_GET_MECH_POWER_TYPE = 0x02;
     constexpr uint8_t CMD_GET_MECH_POWER_REPLY_LENGTH = 1;
-    constexpr uint8_t dataRedundant = 2;
 }
 
 NormalRegisterMechGenericEventCmd::NormalRegisterMechGenericEventCmd()
@@ -97,7 +96,7 @@ bool NormalRegisterMechGenericEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer
             }
             continue;
         }
-    } while (offset < data->Size() - dataRedundant);
+    } while (offset < data->Size());
     return true;
 }
 
