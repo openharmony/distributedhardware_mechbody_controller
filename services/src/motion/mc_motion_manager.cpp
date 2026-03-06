@@ -267,10 +267,14 @@ void MotionManager::HandleMechPlacementChange(bool isPhoneOn)
     if (!isPhoneOn) {
         auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(true);
         CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
-        auto callback = [this, hidCmd, isPhoneOn]() {
+        auto callback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), hidCmd, isPhoneOn]() {
+            auto sharedThis = weakThis.lock();
+            if (!sharedThis) {
+                return;
+            }
             uint8_t result = hidCmd->GetResult();
             HILOGI("SetMechHidPreemptiveCmd result: %{public}u.", result);
-            MechConnectManager::GetInstance().NotifyMechState(mechId_, isPhoneOn);
+            MechConnectManager::GetInstance().NotifyMechState(sharedThis->mechId_, isPhoneOn);
         };
         hidCmd->SetResponseCallback(callback);
         CHECK_POINTER_RETURN(sendAdapter_, "sendAdapter_");
