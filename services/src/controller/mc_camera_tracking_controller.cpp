@@ -66,6 +66,7 @@ namespace {
     constexpr float MIDDLE_MAX = 0.55f;
     constexpr float MIDDLE_MIN = 0.45f;
     constexpr float FACE_OFFSET = 0.1f;
+    constexpr float BODY_OFFSET = 0.1f;
     constexpr int16_t STICK_BASE = 300;
     constexpr float UP_LIMIT = 1.2f;
     constexpr float DOWN_LIMIT = 0.2f;
@@ -1452,20 +1453,21 @@ void McCameraTrackingController::AdjustOffset(std::shared_ptr<TrackingFrameParam
     }
 
     bool isFace = trackingParams->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+    bool isBody = trackingParams->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
     if (isStick_) {
         if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
-            AddYOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace);
+            AddYOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
             HILOGI("AddYOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         } else if (sensorRotation_ == MobileRotation::LEFT || sensorRotation_ == MobileRotation::RIGHT) {
-            AddXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace);
+            AddXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
             HILOGI("AddXOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         }
     } else {
         if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
-            AdjustYOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace);
+            AdjustYOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
             HILOGI("AdjustYOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         } else if (sensorRotation_ == MobileRotation::LEFT || sensorRotation_ == MobileRotation::RIGHT) {
-            AdjustXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace);
+            AdjustXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
             HILOGI("AdjustXOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         }
     }
@@ -1481,7 +1483,7 @@ void McCameraTrackingController::setTrackingLimit(ROI &roi)
     roi.y = roi.y > 1.0f ? 1.0f : (roi.y < 0.0f ? 0.0f : roi.y);
 }
 void McCameraTrackingController::AddYOffset(ROI &roi, CameraType cameraType,
-    float &offsetX, float &offsetY, bool &isFace)
+    float &offsetX, float &offsetY, bool &isFace, bool &isBody)
 {
     HILOGD("start offset before ROI: %{public}s", roi.ToString().c_str());
     float yOffset = offsetY;
@@ -1496,13 +1498,16 @@ void McCameraTrackingController::AddYOffset(ROI &roi, CameraType cameraType,
     if (isFace) {
         xOffset += FACE_OFFSET;
     }
+    if (isBody) {
+        xOffset -= BODY_OFFSET;
+    }
     xOffset = xOffset > UP_HORIZONTAL ? UP_HORIZONTAL : (xOffset < DOWN_HORIZONTAL ? DOWN_HORIZONTAL : xOffset);
     roi.x = roi.x + xOffset;
     HILOGD("start offset after ROI: %{public}s", roi.ToString().c_str());
 }
 
 void McCameraTrackingController::AddXOffset(ROI &roi, CameraType cameraType,
-    float &offsetX, float &offsetY, bool &isFace)
+    float &offsetX, float &offsetY, bool &isFace, bool &isBody)
 {
     HILOGD("start offset before ROI: %{public}s", roi.ToString().c_str());
     float yOffset = offsetX;
@@ -1515,6 +1520,15 @@ void McCameraTrackingController::AddXOffset(ROI &roi, CameraType cameraType,
             yOffset += FACE_OFFSET;
         }
     }
+
+    if (isBody) {
+        if (cameraType == CameraType::FRONT) {
+            yOffset += BODY_OFFSET;
+        } else if (cameraType == CameraType::BACK) {
+            yOffset -= BODY_OFFSET;
+        }
+    }
+
     yOffset = yOffset > UP_HORIZONTAL ? UP_HORIZONTAL : (yOffset < DOWN_HORIZONTAL ? DOWN_HORIZONTAL : yOffset);
     roi.y = roi.y + yOffset;
 
@@ -1524,7 +1538,7 @@ void McCameraTrackingController::AddXOffset(ROI &roi, CameraType cameraType,
 }
 
 void McCameraTrackingController::AdjustYOffset(ROI &roi, CameraType cameraType,
-    float &offsetX, float &offsetY, bool &isFace)
+    float &offsetX, float &offsetY, bool &isFace, bool &isBody)
 {
     HILOGD("start offset before ROI: %{public}s", roi.ToString().c_str());
     float yOffset = offsetY;
@@ -1547,13 +1561,16 @@ void McCameraTrackingController::AdjustYOffset(ROI &roi, CameraType cameraType,
     if (isFace) {
         xOffset += FACE_OFFSET;
     }
+    if (isBody) {
+        xOffset -= BODY_OFFSET;
+    }
     xOffset = xOffset > UP_HORIZONTAL ? UP_HORIZONTAL : (xOffset < DOWN_HORIZONTAL ? DOWN_HORIZONTAL : xOffset);
     roi.x = roi.x + xOffset;
     HILOGD("start offset after ROI: %{public}s", roi.ToString().c_str());
 }
 
 void McCameraTrackingController::AdjustXOffset(ROI &roi, CameraType cameraType,
-    float &offsetX, float &offsetY, bool &isFace)
+    float &offsetX, float &offsetY, bool &isFace, bool &isBody)
 {
     HILOGD("start offset before ROI: %{public}s", roi.ToString().c_str());
     float yOffset = offsetX;
@@ -1564,6 +1581,13 @@ void McCameraTrackingController::AdjustXOffset(ROI &roi, CameraType cameraType,
             yOffset -= FACE_OFFSET;
         } else if (cameraType == CameraType::BACK) {
             yOffset += FACE_OFFSET;
+        }
+    }
+    if (isBody) {
+        if (cameraType == CameraType::FRONT) {
+            yOffset += BODY_OFFSET;
+        } else if (cameraType == CameraType::BACK) {
+            yOffset -= BODY_OFFSET;
         }
     }
     yOffset = yOffset > UP_HORIZONTAL ? UP_HORIZONTAL : (yOffset < DOWN_HORIZONTAL ? DOWN_HORIZONTAL : yOffset);

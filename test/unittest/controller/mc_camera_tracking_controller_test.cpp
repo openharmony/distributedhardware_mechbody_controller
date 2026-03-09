@@ -1634,10 +1634,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Zero_001, TestSize.Level1
     ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
     CameraType cameraType = CameraType::FRONT;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.0f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Zero_001 end" << std::endl;
 }
@@ -1655,10 +1656,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Front_Left_001, TestSize.
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::FRONT;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.0f;
     float y = 0.5f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Front_Left_001 end" << std::endl;
 }
@@ -1676,10 +1678,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Front_Right_001, TestSize
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::FRONT;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.0f;
     float y = -0.5f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Front_Right_001 end" << std::endl;
 }
@@ -1697,10 +1700,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Back_Left_001, TestSize.L
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.0f;
     float y = -0.5f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Back_Left_001 end" << std::endl;
 }
@@ -1718,10 +1722,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Back_Right_001, TestSize.
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.0f;
     float y = 0.5f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Back_Right_001 end" << std::endl;
 }
@@ -1739,10 +1744,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Up_001, TestSize.Level1)
     ROI roi = {0.0f, 0.0f, 1.0f, 1.0f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
+    bool isBody = false;
     float x = -0.5f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Up_001 end" << std::endl;
 }
@@ -1760,10 +1766,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustYOffset_Down_001, TestSize.Level1
     ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.5f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustYOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustYOffset_Down_001 end" << std::endl;
 }
@@ -1781,10 +1788,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_Zero_001, TestSize.Level1
     ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
     CameraType cameraType = CameraType::FRONT;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.0f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_Zero_001 end" << std::endl;
 }
@@ -1802,10 +1810,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_Front_Left_001, TestSize.
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::FRONT;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.5f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace, isBody));
     DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_Front_Left_001 end" << std::endl;
 }
 
@@ -1822,10 +1831,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_Front_Right_001, TestSize
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::FRONT;
     bool isFace = true;
+    bool isBody = false;
     float x = -0.5f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_Front_Right_001 end" << std::endl;
 }
@@ -1843,10 +1853,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_Back_Left_001, TestSize.L
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
+    bool isBody = false;
     float x = -0.5f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_Back_Left_001 end" << std::endl;
 }
@@ -1864,10 +1875,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_Back_Right_001, TestSize.
     ROI roi = {0.5f, 0.5f, 0.2f, 0.2f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.5f;
     float y = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_Back_Right_001 end" << std::endl;
 }
@@ -1885,11 +1897,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_Up_001, TestSize.Level1)
     ROI roi = {0.0f, 0.0f, 1.0f, 1.0f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
-
+    bool isBody = false;
     float x = 0.0f;
     float y = -0.5f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_Up_001 end" << std::endl;
 }
@@ -1907,10 +1919,11 @@ HWTEST_F(McCameraTrackingControllerTest, AdjustXOffset_Down_001, TestSize.Level1
     ROI roi = {0.0f, 0.0f, 0.0f, 0.0f};
     CameraType cameraType = CameraType::BACK;
     bool isFace = true;
+    bool isBody = false;
     float x = 0.0f;
     float y = 0.5f;
 
-    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace));
+    EXPECT_NO_FATAL_FAILURE(controller.AdjustXOffset(roi, cameraType, x, y, isFace, isBody));
 
     DTEST_LOG << "McCameraTrackingControllerTest AdjustXOffset_Down_001 end" << std::endl;
 }

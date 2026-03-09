@@ -205,10 +205,10 @@ private:
     void AdjustROI(ROI &roi, CameraStandard::Rect &rect, CameraType cameraType, MobileRotation sensorRotation);
     void AdjustOffset(std::shared_ptr<TrackingFrameParams> &trackingParams, CameraType cameraType);
     void setTrackingLimit(ROI &roi);
-    void AddYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
-    void AddXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
-    void AdjustYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
-    void AdjustXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace);
+    void AddYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace, bool &isBody);
+    void AddXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace, bool &isBody);
+    void AdjustYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace, bool &isBody);
+    void AdjustXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace, bool &isBody);
     bool IsCurrentTrackingEnabled();
 
 public:
