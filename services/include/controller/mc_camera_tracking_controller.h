@@ -226,8 +226,9 @@ private:
     std::shared_ptr<CameraInfo> currentCameraInfo_ = std::make_shared<CameraInfo>();
 
     std::shared_ptr<TrackingFrameParams> lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
-    CameraStandard::Rect lastTrackingRect_;
-    CameraStandard::Rect trackingRect_;
+    // Initialize topLeftX, topLeftY, width and height in lastTrackingRect_ and trackingRect_
+    CameraStandard::Rect lastTrackingRect_ = {0.0, 0.0, 0.0, 0.0};
+    CameraStandard::Rect trackingRect_ = {0.0, 0.0, 0.0, 0.0};
 
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
 
