@@ -138,8 +138,9 @@ std::shared_ptr<MechDataBuffer> ProtocolConverter::GetData(
     }
 
     // Copy data
-    std::shared_ptr<MechDataBuffer> data = std::make_shared<MechDataBuffer>(static_cast<size_t>(dataLen));
-    data->SetRange(0, static_cast<size_t>(dataLen));
+    std::shared_ptr<MechDataBuffer> data = std::make_shared<MechDataBuffer>(static_cast<size_t>(
+        dataLen - BT_COMMAND_HEADER_LENTH));
+    data->SetRange(0, static_cast<size_t>(dataLen - BT_COMMAND_HEADER_LENTH));
     if (memcpy_s(data->Data(), data->Capacity(),
     pclData->Data() + seqNoOffset + BT_COMMAND_HEADER_LENTH, dataLen - BT_COMMAND_HEADER_LENTH) != 0) {
         HILOGE("memcpy failed.");
