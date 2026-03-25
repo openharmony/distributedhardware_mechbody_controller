@@ -690,11 +690,12 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
     std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects,
     sptr<CameraStandard::MetadataObject> &targetObject)
 {
+    sptr<CameraStandard::MetadataObject> selectedObject = nullptr;
     if (lastTrackingFrame_ != nullptr && lastTrackingFrame_->targetId >= 0) {
         for (const auto &item : detectedObjects) {
             if (item->GetObjectId() == lastTrackingFrame_->targetId) {
                 HILOGI("got detected object for id: %{public}d", lastTrackingFrame_->targetId);
-                targetObject = item;
+                selectedObject = item;
                 return ERR_OK;
             }
         }
@@ -705,14 +706,14 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
         if (std::abs(itemRect.topLeftX - trackingRegion.topLeftX) <= TRACKING_LOST_CHECK &&
             std::abs(itemRect.topLeftY - trackingRegion.topLeftY) <= TRACKING_LOST_CHECK) {
             HILOGI("got detected object which is same as trackingRegion");
-            targetObject = item;
+            selectedObject = item;
             return ERR_OK;
         }
     }
 
     HILOGW("use first object as target object.");
-    targetObject = detectedObjects[0];
-    return ERR_OK;
+    selectedObject = detectedObjects[0];
+    return ProcessTargetByType(selectedObject, detectedObjects, targetObject);
 }
 
 float McCameraTrackingController::CalculateIOU(const CameraStandard::Rect &rect1, const CameraStandard::Rect &rect2)
