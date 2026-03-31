@@ -925,6 +925,21 @@ void MotionManager::UnRegisterNotifyEvent()
     mechEventListener_ = nullptr;
 }
 
+RotateToLocationParam GenerateRotateToLocationParam(const RotateParam &param)
+{
+    RotateToLocationParam rotateToLocationParam;
+    rotateToLocationParam.yawRadian = param.degree.yaw;
+    rotateToLocationParam.rollRadian = param.degree.roll;
+    rotateToLocationParam.pitchRadian = param.degree.pitch;
+    rotateToLocationParam.rotateTime = param.duration;
+    if (param.isRelative) {
+        rotateToLocationParam.rotateMap = 0b00010111;
+    } else {
+        rotateToLocationParam.rotateMap = 0b00010111;
+    }
+    return rotateToLocationParam;
+}
+
 int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
     uint32_t &tokenId, std::string &napiCmdId)
 {
@@ -948,8 +963,16 @@ int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
     }
     RotateParam param = *rotateParam;
     uint8_t taskId = CreateResponseTaskId();
-    param.taskId = taskId;
-    std::shared_ptr<CommandBase> rotationCmd = factory.CreateSetMechRotationCmd(param);
+    std::shared_ptr<CommandBase> rotationCmd;
+    if (protocolVer_ == 0x02) {
+        RotateToLocationParam rotateToLocationParam = GenerateRotateToLocationParam(param);
+        rotateToLocationParam.taskId = taskId;
+        rotationCmd = factory.CreateSetMechRotationToLocationCmd(rotateToLocationParam);
+    } else {
+        param.taskId = taskId;
+        rotationCmd = factory.CreateSetMechRotationCmd(param);
+    }
+
     CHECK_POINTER_RETURN_VALUE(rotationCmd, INVALID_PARAMETERS_ERR, "RotationCmd is empty.");
 
     {
