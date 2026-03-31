@@ -967,7 +967,7 @@ int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
     if (protocolVer_ == 0x02) {
         RotateToLocationParam rotateToLocationParam = GenerateRotateToLocationParam(param);
         rotateToLocationParam.taskId = taskId;
-        rotationCmd = factory.CreateSetMechRotationToLocalCmd(rotateToLocationParam);
+        rotationCmd = factory.CreateSetMechRotationToLocationCmd(rotateToLocationParam);
     } else {
         param.taskId = taskId;
         rotationCmd = factory.CreateSetMechRotationCmd(param);
