@@ -963,7 +963,7 @@ int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
     }
     RotateParam param = *rotateParam;
     uint8_t taskId = CreateResponseTaskId();
-    std::shared_ptr<CommandBase> rotateCmd;
+    std::shared_ptr<CommandBase> rotationCmd;
     if (protocolVer_ == 0x02) {
         RotateToLocationParam rotateToLocationParam = GenerateRotateToLocationParam(param);
         rotateToLocationParam.taskId = taskId;
