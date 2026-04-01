@@ -1463,6 +1463,49 @@ napi_value MechManager::SearchTarget(napi_env env, napi_callback_info info)
     return promise;
 }
 
+napi_value MechManager::IsControlSupported(napi_env env, napi_callback_info info)
+{
+    napi_value isSupportedResult;
+    bool isSupported = false;
+
+    if (CheckControlL1(env)) {
+        HILOGE("Device not support.");
+        napi_get_boolean(env, false, &isSupportedResult);
+        return isSupportedResult;
+    }
+
+    if (!InitMechClient()) {
+        HILOGE("Init Mech Client failed.");
+        napi_get_boolean(env, false, &isSupportedResult);
+        return isSupportedResult;
+    }
+
+    int32_t result;
+    // Determining whether there is an input device type.
+    size_t argc = 1;
+    napi_value args[1];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    if (argc < 1) {
+        result = mechClient_->CheckAnyDeviceControlSupported(isSupported);
+    } else {
+        // Parsing input parameters
+        int32_t jsMechDeviceType;
+        napi_status status = napi_get_value_int32(env, args[0], &jsMechDeviceType);
+        if (static != napi_ok) {
+            HILOGE("Invalid device type parameter");
+            napi_get_boolean(env, false, &isSupportedResult);
+            return isSupportedResult;
+        }
+        auto mechDeviceType = static_cast<MechDeviceType>(jsMechDeviceType);
+        // Checking whether the device type is supported
+        result = mechClient_->IsControlSupported(mechDeviceType, isSupported);
+    }
+    HILOGI("result code: %{public}d ", result);
+
+    napi_get_boolean(env, isSupported, &isSupportedResult);
+    return isSupportedResult;
+}
+
 bool MechManager::GetSearchTargetParam(napi_env env, napi_callback_info info,
     TargetInfo &targetInfo, SearchParams &searchParams)
 {
@@ -1675,8 +1718,38 @@ void MechManager::CmdChannelDeathListener::OnRemoteDied(const wptr <IRemoteObjec
 
 napi_value Init(napi_env env, napi_value exports)
 {
+    CreateAndSetEnumProperty(env, exports);
+    napi_value MechManager;
+    napi_create_object(env, &MechManager);
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_FUNCTION("on", MechManager::On),
+        DECLARE_NAPI_FUNCTION("off", MechManager::Off),
+        DECLARE_NAPI_FUNCTION("getAttachedMechDevices", MechManager::GetAttachedDevices),
+        DECLARE_NAPI_FUNCTION("setUserOperation", MechManager::SetUserOperation),
+        DECLARE_NAPI_FUNCTION("setCameraTrackingEnabled", MechManager::SetCameraTrackingEnabled),
+        DECLARE_NAPI_FUNCTION("getCameraTrackingEnabled", MechManager::GetCameraTrackingEnabled),
+        DECLARE_NAPI_FUNCTION("setCameraTrackingLayout", MechManager::SetCameraTrackingLayout),
+        DECLARE_NAPI_FUNCTION("getCameraTrackingLayout", MechManager::GetCameraTrackingLayout),
+        DECLARE_NAPI_FUNCTION("rotate", MechManager::Rotate),
+        DECLARE_NAPI_FUNCTION("rotateToEulerAngles", MechManager::RotateToEulerAngles),
+        DECLARE_NAPI_FUNCTION("getMaxRotationTime", MechManager::GetMaxRotationTime),
+        DECLARE_NAPI_FUNCTION("getMaxRotationSpeed", MechManager::GetMaxRotationSpeed),
+        DECLARE_NAPI_FUNCTION("rotateBySpeed", MechManager::RotateBySpeed),
+        DECLARE_NAPI_FUNCTION("stopMoving", MechManager::StopMoving),
+        DECLARE_NAPI_FUNCTION("getCurrentAngles", MechManager::GetCurrentAngles),
+        DECLARE_NAPI_FUNCTION("getRotationLimits", MechManager::GetRotationLimits),
+        DECLARE_NAPI_FUNCTION("getRotationAxesStatus", MechManager::GetRotationAxesStatus),
+        DECLARE_NAPI_FUNCTION("searchTarget", MechManager::SearchTarget),
+        DECLARE_NAPI_FUNCTION("isControlSupported", MechManager::IsControlSupported),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+    return exports;
+}
+
+void CreateAndSetEnumProperty(napi_env env, napi_value exports)
+{
     napi_value rotationAxisLimitedEnum =
-        CreateEnumObject(env, {{"NOT_LIMITED", 0}, {"NEGATIVE_LIMITED", 1}, {"POSITIVE_LIMITED", 2}});
+    CreateEnumObject(env, {{"NOT_LIMITED", 0}, {"NEGATIVE_LIMITED", 1}, {"POSITIVE_LIMITED", 2}});
     napi_set_named_property(env, exports, "RotationAxisLimited", rotationAxisLimitedEnum);
     napi_value operationEnum = CreateEnumObject(env, {{"CONNECT", 0}, {"DISCONNECT", 1}});
     napi_set_named_property(env, exports, "Operation", operationEnum);
@@ -1686,7 +1759,7 @@ napi_value Init(napi_env env, napi_value exports)
     napi_set_named_property(env, exports, "TrackingEvent", trackingEventEnum);
     napi_value resultEnum =
         CreateEnumObject(env, {{"COMPLETED", 0}, {"INTERRUPTED", 1}, {"LIMITED", 2},
-                                {"TIMEOUT",3}, {"SYSTEM_ERROR", 100}});
+                                {"TIMEOUT", 3}, {"SYSTEM_ERROR", 100}});
     napi_set_named_property(env, exports, "Result", resultEnum);
     napi_value mechDeviceTypeEnum = CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}});
     napi_set_named_property(env, exports, "MechDeviceType", mechDeviceTypeEnum);
@@ -1699,33 +1772,6 @@ napi_value Init(napi_env env, napi_value exports)
     napi_set_named_property(env, exports, "TargetType", targetTypeEnum);
     napi_value searchDirectionEnum = CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFTWARD", 1}, {"RIGHTWARD", 2}});
     napi_set_named_property(env, exports, "SearchDirection", searchDirectionEnum);
-    napi_value MechManager;
-    napi_create_object(env, &MechManager);
-    napi_property_descriptor desc[] = {
-        DECLARE_NAPI_FUNCTION("on", MechManager::On),
-        DECLARE_NAPI_FUNCTION("off", MechManager::Off),
-
-        DECLARE_NAPI_FUNCTION("getAttachedMechDevices", MechManager::GetAttachedDevices),
-        DECLARE_NAPI_FUNCTION("setUserOperation", MechManager::SetUserOperation),
-
-        DECLARE_NAPI_FUNCTION("setCameraTrackingEnabled", MechManager::SetCameraTrackingEnabled),
-        DECLARE_NAPI_FUNCTION("getCameraTrackingEnabled", MechManager::GetCameraTrackingEnabled),
-        DECLARE_NAPI_FUNCTION("setCameraTrackingLayout", MechManager::SetCameraTrackingLayout),
-        DECLARE_NAPI_FUNCTION("getCameraTrackingLayout", MechManager::GetCameraTrackingLayout),
-
-        DECLARE_NAPI_FUNCTION("rotate", MechManager::Rotate),
-        DECLARE_NAPI_FUNCTION("rotateToEulerAngles", MechManager::RotateToEulerAngles),
-        DECLARE_NAPI_FUNCTION("getMaxRotationTime", MechManager::GetMaxRotationTime),
-        DECLARE_NAPI_FUNCTION("getMaxRotationSpeed", MechManager::GetMaxRotationSpeed),
-        DECLARE_NAPI_FUNCTION("rotateBySpeed", MechManager::RotateBySpeed),
-        DECLARE_NAPI_FUNCTION("stopMoving", MechManager::StopMoving),
-        DECLARE_NAPI_FUNCTION("getCurrentAngles", MechManager::GetCurrentAngles),
-        DECLARE_NAPI_FUNCTION("getRotationLimits", MechManager::GetRotationLimits),
-        DECLARE_NAPI_FUNCTION("getRotationAxesStatus", MechManager::GetRotationAxesStatus),
-        DECLARE_NAPI_FUNCTION("searchTarget", MechManager::SearchTarget),
-    };
-    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
-    return exports;
 }
 
 static napi_module mechManagerModule = {

@@ -70,6 +70,8 @@ public:
 
     static napi_value SearchTarget(napi_env env, napi_callback_info info);
 
+    static napi_value IsControlSupported(napi_env env, napi_callback_info info);
+
 private:
     static int32_t CheckControlL1(napi_env env);
     static int32_t CheckDeviceL1(napi_env env);
