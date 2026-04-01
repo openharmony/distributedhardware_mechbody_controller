@@ -162,6 +162,7 @@ private:
 };
 
 napi_value Init(napi_env env, napi_value exports);
+void CreateAndSetEnumProperty(napi_env env, napi_value exports);
 
 } // namespace MechManager
 } // namespace OHOS
