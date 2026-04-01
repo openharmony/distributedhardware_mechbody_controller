@@ -207,7 +207,7 @@ enum class ProtocolVersion : int8_t {
 
 enum class MechDeviceType : int32_t {
     GIMBAL_DEVICE = 0
-}
+};
 
 }  // namespace MechBodyController
 }  // namespace OHOS
