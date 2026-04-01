@@ -232,7 +232,7 @@ int32_t MechClient::IsControlSupported(MechDeviceType mechDeviceType, bool &isSu
             break;
         default:
             HILOGE("Invalid device type");
-            return MechNapiErrorCode::PARAMETER_CHECK_FAILED;  
+            return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
     }
     return ERR_OK;
 }
