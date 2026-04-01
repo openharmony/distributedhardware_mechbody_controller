@@ -1491,7 +1491,7 @@ napi_value MechManager::IsControlSupported(napi_env env, napi_callback_info info
         // Parsing input parameters
         int32_t jsMechDeviceType;
         napi_status status = napi_get_value_int32(env, args[0], &jsMechDeviceType);
-        if (static != napi_ok) {
+        if (status != napi_ok) {
             HILOGE("Invalid device type parameter");
             napi_get_boolean(env, false, &isSupportedResult);
             return isSupportedResult;
