@@ -56,7 +56,7 @@ void OnReceiveFuzzTest(const uint8_t *data, size_t size)
     uint8_t *dataInputPtr = dataInput;
 
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    bleSendManager.OnReceive(dataInputPtr, size);
+    bleSendManager.OnReceive(dataInputPtr, dataLen);
 }
 
 void OnGattReadyFuzzTest(const uint8_t *data, size_t size)
