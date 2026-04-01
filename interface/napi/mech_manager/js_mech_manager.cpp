@@ -1746,7 +1746,7 @@ napi_value Init(napi_env env, napi_value exports)
     return exports;
 }
 
-void MechManager::CreateAndSetEnumProperty(napi_env env, napi_value exports)
+void CreateAndSetEnumProperty(napi_env env, napi_value exports)
 {
     napi_value rotationAxisLimitedEnum =
     CreateEnumObject(env, {{"NOT_LIMITED", 0}, {"NEGATIVE_LIMITED", 1}, {"POSITIVE_LIMITED", 2}});
