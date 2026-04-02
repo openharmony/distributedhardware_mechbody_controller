@@ -47,6 +47,8 @@ constexpr uint8_t FUZZ_TEST_COUNT = 10;
 
 namespace OHOS {
 using namespace OHOS::MechBodyController;
+static constexpr uint32_t OPT_SIZE = 80;
+FuzzedDataProvider *FDP;
 bool Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(uint64_t tokenId)
 {
     return true;
@@ -270,43 +272,43 @@ void SetUserOperationFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    if (data == nullptr || size == 0) {
+    if (size < OHOS::OPT_SIZE) {
         return 0;
     }
-    FuzzedDataProvider fdp(data, size);
+    FuzzedDataProvider fdp(data + size - OHOS::OPT_SIZE, OHOS::OPT_SIZE);
     // randomly select a test API
     uint8_t selector = fdp.ConsumeIntegral<uint8_t>() % FUZZ_TEST_COUNT;
 
     switch (selector) {
         case FUZZ_TEST_ROTATE_TO_EULER_ANGLES:
-            OHOS::RotateToEulerAnglesFuzzTest(data, size);
+            OHOS::RotateToEulerAnglesFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_GET_MAX_ROTATION_TIME:
-            OHOS::GetMaxRotationTimeFuzzTest(data, size);
+            OHOS::GetMaxRotationTimeFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_GET_MAX_ROTATION_SPEED:
-            OHOS::GetMaxRotationSpeedFuzzTest(data, size);
+            OHOS::GetMaxRotationSpeedFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_ROTATE_BY_SPEED:
-            OHOS::RotateBySpeedFuzzTest(data, size);
+            OHOS::RotateBySpeedFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_STOP_MOVING:
-            OHOS::StopMovingFuzzTest(data, size);
+            OHOS::StopMovingFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_GET_ROTATION_ANGLES:
-            OHOS::GetRotationAnglesFuzzTest(data, size);
+            OHOS::GetRotationAnglesFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_GET_ROTATION_DEGREE_LIMITS:
-            OHOS::GetRotationDegreeLimitsFuzzTest(data, size);
+            OHOS::GetRotationDegreeLimitsFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_GET_ROTATION_AXES_STATUS:
-            OHOS::GetRotationAxesStatusFuzzTest(data, size);
+            OHOS::GetRotationAxesStatusFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_ON_ROTATION_AXES_STATUS_CHANGE:
-            OHOS::OnRotationAxesStatusChangeFuzzTest(data, size);
+            OHOS::OnRotationAxesStatusChangeFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         case FUZZ_TEST_SET_USER_OPERATION:
-            OHOS::SetUserOperationFuzzTest(data, size);
+            OHOS::SetUserOperationFuzzTest(data, size - OHOS::OPT_SIZE);
             break;
         default:
             break;
