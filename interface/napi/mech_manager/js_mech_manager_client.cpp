@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <fstream>
 
 #include "iremote_object.h"
 #include "ipc_skeleton.h"
@@ -22,6 +23,7 @@
 #include "mechbody_controller_log.h"
 #include "mechbody_controller_ipc_interface_code.h"
 #include "js_mech_manager_client.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -214,6 +216,39 @@ int32_t MechClient::GetCameraTrackingEnabled(bool &isEnabled)
         isEnabled = reply.ReadBool();
     }
     return result;
+}
+
+int32_t MechClient::CheckAnyDeviceControlSupported(bool &isSupported)
+{
+    isSupported = DetectGimbalSupport();
+    return ERR_OK;
+}
+
+int32_t MechClient::IsControlSupported(MechDeviceType mechDeviceType, bool &isSupported)
+{
+    switch (mechDeviceType) {
+        case MechDeviceType::GIMBAL_DEVICE:
+            isSupported = DetectGimbalSupport();
+            break;
+        default:
+            HILOGE("Invalid device type");
+            return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    }
+    return ERR_OK;
+}
+
+bool MechClient::DetectGimbalSupport()
+{
+    // verifying the CCM configuration
+    std::string getDeviceTypes = OHOS::system::GetParameter("persist.mechbody.unsupported_mechdevicetype", "");
+    if (getDeviceTypes.empty()) {
+        return true;
+    }
+    std::string gimbalType = std::to_string(static_cast<int32_t>(MechDeviceType::GIMBAL_DEVICE));
+    if (getDeviceTypes.find(gimbalType) != std::string::npos) {
+        return false;
+    }
+    return true;
 }
 
 int32_t MechClient::TrackingEventListenOn(sptr<JsMechManagerStub> callback)

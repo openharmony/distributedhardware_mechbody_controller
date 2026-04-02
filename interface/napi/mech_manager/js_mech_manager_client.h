@@ -111,11 +111,16 @@ public:
 
     int32_t SearchTarget(const std::string &cmdId, const TargetInfo &targetInfo, const SearchParams &searchParams);
 
+    int32_t CheckAnyDeviceControlSupported(bool &isSupported);
+
+    int32_t IsControlSupported(MechDeviceType mechDeviceType, bool &isSupported);
 private:
     sptr <IRemoteObject> GetDmsProxy();
 
     int32_t SubscribeMechAbility();
 
+    bool DetectGimbalSupport();
+    
 private:
     std::condition_variable producerCon_;
     std::mutex systemAbilityStatusChangeListenerMutex_;
