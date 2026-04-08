@@ -18,7 +18,7 @@ import(
     "//foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
 ohos_fuzztest("BleSendManagerOneFuzzTest") {
-  module_out_path = "mechbody_controller/"
+  module_out_path = "mechbody_controller/mechbody_controller/"
   mechbody_path =
       "//foundation/distributedhardware/mechbody_controller"
   fuzz_config_file = "${mechbody_path}/test/fuzztest/blesendmanagerone_fuzzer"
