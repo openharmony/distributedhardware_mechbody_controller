@@ -149,7 +149,7 @@ ohos_shared_library("mechbody_service") {
     "window_manager:libdm_lite",
     "hisysevent:libhisysevent",
     "drivers_interface_camera:metadata",
- 	  "distributed_notification_service:ans_innerkits",
+    "distributed_notification_service:ans_innerkits",
   ]
 
   install_images = [ system_base_dir ]
