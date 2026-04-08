@@ -75,6 +75,7 @@ ohos_fuzztest("MechBodyControllerServiceTwoFuzzTest") {
     "window_manager:libdm_lite",
     "hisysevent:libhisysevent",
     "bluetooth:btcommon",
+    "distributed_notification_service:ans_innerkits",
   ]
 }
 
