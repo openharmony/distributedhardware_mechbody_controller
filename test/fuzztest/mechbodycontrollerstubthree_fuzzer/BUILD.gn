@@ -34,7 +34,7 @@ ohos_fuzztest("MechBodyControllerStubThreeFuzzTest") {
     "${mechbody_path}/services/include/transport/command/0x01",
     "${mechbody_path}/services/include/transport/command/0x02",
     "${mechbody_path}/interface/inner_api",
-
+    "${mechbody_path}/services/include/utils",
   ]
   cflags = [
     "-g",
@@ -75,6 +75,7 @@ ohos_fuzztest("MechBodyControllerStubThreeFuzzTest") {
     "window_manager:libdm_lite",
     "hisysevent:libhisysevent",
     "bluetooth:btcommon",
+    "distributed_notification_service:ans_innerkits",
   ]
 }
 

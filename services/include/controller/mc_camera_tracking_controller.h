@@ -27,6 +27,7 @@
 #include "istream_metadata.h"
 #include "sensor_agent.h"
 #include "sensor_agent_type.h"
+#include "subscribe_event_utils.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -102,6 +103,14 @@ struct CameraInfo {
     }
 };
 
+class MechBodyEventBaseService : public BaseService {
+public:
+    static MechBodyEventBaseService &GetInstance();
+    void OnReceiveEvent(std::string action, const EventFwk::CommonEventData &data) override;
+    
+private:
+    int32_t curUserId_ = -1;
+};
 
 class MechSessionCallbackImpl : public CameraStandard::MechSessionCallback {
 public:
@@ -153,6 +162,7 @@ public:
     int32_t UpdateActionControl();
     int32_t SetStickOffset(const int16_t &stickX, const int16_t &stickY);
     uint32_t GetTokenIdOfCurrentCameraInfo();
+    void UserIdChangeCallback();
 
 private:
     int32_t ComputeFov();

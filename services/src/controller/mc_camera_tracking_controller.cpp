@@ -137,6 +137,8 @@ void McCameraTrackingController::Init()
 {
     HILOGI("start");
     std::lock_guard<std::mutex> lock(cameraTrackingControllerInitMutex_);
+    SubscribeEventUtils::GetInstance().Init();
+    SubscribeEventUtils::GetInstance().AddEventService(&MechBodyEventBaseService::GetInstance());
     RegisterTrackingListener();
     RegisterSensorListener();
     HILOGI("end");
@@ -146,6 +148,7 @@ void McCameraTrackingController::UnInit()
 {
     HILOGI("start");
     std::lock_guard<std::mutex> lock(cameraTrackingControllerInitMutex_);
+    SubscribeEventUtils::GetInstance().UnInit();
     UnRegisterTrackingListener();
     UnRegisterSensorListener();
     if (eventHandler_ != nullptr) {
@@ -157,6 +160,14 @@ void McCameraTrackingController::UnInit()
     }
     horizontal_ = 0.0f;
     vertical_ = 0.0f;
+    HILOGI("end");
+}
+
+void McCameraTrackingController::UserIdChangeCallback()
+{
+    HILOGI("start");
+    UnRegisterTrackingListener();
+    RegisterTrackingListener();
     HILOGI("end");
 }
 
@@ -1733,5 +1744,23 @@ void MechSessionCallbackImpl::OnMetadataInfo(const std::shared_ptr<OHOS::Camera:
     McCameraTrackingController::GetInstance().OnMetadataInfo(result);
 }
 
+MechBodyEventBaseService &MechBodyEventBaseService::GetInstance()
+{
+    static MechBodyEventBaseService instance;
+    return instance;
+}
+ 
+void MechBodyEventBaseService::OnReceiveEvent(std::string action, const EventFwk::CommonEventData &data)
+{
+    HILOGI("enter.");
+    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED) {
+        auto userId = data.GetCode();
+        HILOGI("COMMON_EVENT_USER_SWITCHED. curUserId_: %{public}d, userId: %{public}d", curUserId_, userId);
+        if (curUserId_ == -1 || curUserId_ != userId) {
+            McCameraTrackingController::GetInstance().UserIdChangeCallback();
+        }
+        curUserId_ = userId;
+    }
+}
 } // namespace MechBodyController
 } // namespace OHOS
