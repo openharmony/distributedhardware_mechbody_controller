@@ -255,7 +255,8 @@ void OffTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
 } // namespace OHOS
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
     /* Run your code on data */
     OHOS::MechBodyController::OnAttachStateChangeInnerFuzzTest(data, size);
     OHOS::MechBodyController::OffAttachStateChangeInnerFuzzTest(data, size);
