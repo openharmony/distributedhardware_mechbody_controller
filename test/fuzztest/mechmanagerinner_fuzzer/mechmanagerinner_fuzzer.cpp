@@ -30,14 +30,21 @@ namespace MechBodyController {
 // Mock taihe types for testing
 namespace taihe {
 
-// Mock callback type
+// Mock Callback type
 template<typename Signature>
-class callback {
+class Callback {
 public:
-    callback() : func_(nullptr) {}
-    explicit callback(std::function<Signature> func) : func_(new std::function<Signature>(func)) {}
-    callback(const callback& other) : func_(other.func_ ? new std::function<Signature>(*other.func_) : nullptr) {}
-    ~callback() { delete func_; }
+    Callback() : func_(nullptr) {}
+    explicit Callback(std::function<Signature> func) : func_(new std::function<Signature>(func)) {}
+    Callback(const Callback& other) : func_(other.func_ ? new std::function<Signature>(*other.func_) : nullptr) {}
+    Callback& operator=(const Callback& other) {
+        if (this != &other) {
+            delete func_;
+            func_ = other.func_ ? new std::function<Signature>(*other.func_) : nullptr;
+        }
+        return *this;
+    }
+    ~Callback() { delete func_; }
 
     operator bool() const { return func_ != nullptr; }
 
@@ -46,19 +53,24 @@ private:
 };
 
 // Mock CallbackView type
-template<typename Signature>
+template <typename Signature>
 class CallbackView {
 public:
     CallbackView() : func_(nullptr) {}
-    explicit CallbackView(const callback<Signature>& cb) : func_(reinterpret_cast<const void*>(&cb)) {}
-    explicit CallbackView(std::function<Signature> func) :
-        func_(reinterpret_cast<const void*>(new std::function<Signature>(func))) {}
+    explicit CallbackView(const Callback<Signature> &cb) : func_(reinterpret_cast<const void *>(&cb)) {}
+    explicit CallbackView(std::function<Signature> func)
+        : func_(reinterpret_cast<const void *>(new std::function<Signature>(func)))
+    {
+    }
     explicit CallbackView(std::nullptr_t) : func_(nullptr) {}
 
-    operator bool() const { return func_ != nullptr; }
+    operator bool() const
+    {
+        return func_ != nullptr;
+    }
 
 private:
-    const void* func_;
+    const void *func_;
 };
 
 // Mock OptionalView type
@@ -82,8 +94,8 @@ private:
 // Mock types for the specific callbacks
 using AttachStateChangeInfoTaihe = int;
 using TrackingEventInfoTaihe = int;
-using AttachStateCBTaihe = taihe::callback<void(AttachStateChangeInfoTaihe const&)>;
-using TrackingEventCBTaihe = taihe::callback<void(TrackingEventInfoTaihe const&)>;
+using AttachStateCBTaihe = taihe::Callback<void(AttachStateChangeInfoTaihe const&)>;
+using TrackingEventCBTaihe = taihe::Callback<void(TrackingEventInfoTaihe const&)>;
 
 // Global fuzz data provider
 static FuzzedDataProvider* g_fdp = nullptr;
