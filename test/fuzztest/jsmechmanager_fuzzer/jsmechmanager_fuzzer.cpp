@@ -34,15 +34,30 @@
 namespace OHOS {
 namespace MechBodyController {
 
+// Constants for fuzz testing
+namespace {
+    constexpr uint32_t MOCK_NAPI_REF_VALUE = 0x12345678;
+    constexpr uint32_t MOCK_NAPI_DEFERRED_VALUE = 0x87654321;
+    constexpr uint32_t MOCK_CALLBACK_INFO_VALUE = 0x1234;
+    constexpr int32_t MAX_DEVICE_COUNT = 10;
+    constexpr int32_t MAX_STRING_LENGTH = 100;
+    constexpr int32_t MAX_MAC_LENGTH = 50;
+    constexpr int32_t MECH_TYPE_COUNT = 6;
+    constexpr int32_t ERROR_CODE_COUNT_5 = 5;
+    constexpr int32_t ERROR_CODE_COUNT_3 = 3;
+    constexpr int32_t MAX_ARG_COUNT = 4;
+    constexpr int32_t VALUE_TYPE_COUNT = 5;
+}
+
 // Mock NAPI types
 struct MockNapiValue {
     enum ValueType {
-        String,
-        Function,
-        Boolean,
-        Number,
-        Object,
-        Undefined
+        STRING,
+        FUNCTION,
+        BOOLEAN,
+        NUMBER,
+        OBJECT,
+        UNDEFINED
     };
     ValueType type;
     std::string stringValue;
@@ -100,19 +115,19 @@ extern "C" {
         }
 
         switch (mockValue->type) {
-            case MockNapiValue::String:
+            case MockNapiValue::STRING:
                 *result = napi_string;
                 break;
-            case MockNapiValue::Function:
+            case MockNapiValue::FUNCTION:
                 *result = napi_function;
                 break;
-            case MockNapiValue::Boolean:
+            case MockNapiValue::BOOLEAN:
                 *result = napi_boolean;
                 break;
-            case MockNapiValue::Number:
+            case MockNapiValue::NUMBER:
                 *result = napi_number;
                 break;
-            case MockNapiValue::Object:
+            case MockNapiValue::OBJECT:
                 *result = napi_object;
                 break;
             default:
@@ -130,7 +145,7 @@ extern "C" {
         }
 
         MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
-        if (mockValue == nullptr || mockValue->type != MockNapiValue::String) {
+        if (mockValue == nullptr || mockValue->type != MockNapiValue::STRING) {
             return napi_string_expected;
         }
 
@@ -154,7 +169,7 @@ extern "C" {
             return napi_invalid_arg;
         }
 
-        *result = reinterpret_cast<napi_ref>(0x12345678);
+        *result = reinterpret_cast<napi_ref>(MOCK_NAPI_REF_VALUE);
         return napi_ok;
     }
 
@@ -181,7 +196,7 @@ extern "C" {
         }
 
         MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
-        if (mockValue == nullptr || mockValue->type != MockNapiValue::Boolean) {
+        if (mockValue == nullptr || mockValue->type != MockNapiValue::BOOLEAN) {
             return napi_boolean_expected;
         }
 
@@ -196,7 +211,7 @@ extern "C" {
         }
 
         MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
-        if (mockValue == nullptr || mockValue->type != MockNapiValue::Number) {
+        if (mockValue == nullptr || mockValue->type != MockNapiValue::NUMBER) {
             return napi_number_expected;
         }
 
@@ -211,7 +226,7 @@ extern "C" {
         }
 
         MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
-        if (mockValue == nullptr || mockValue->type != MockNapiValue::Number) {
+        if (mockValue == nullptr || mockValue->type != MockNapiValue::NUMBER) {
             return napi_number_expected;
         }
 
@@ -226,7 +241,7 @@ extern "C" {
         }
 
         static MockNapiValue arrayValue;
-        arrayValue.type = MockNapiValue::Object;
+        arrayValue.type = MockNapiValue::OBJECT;
         *result = reinterpret_cast<napi_value>(&arrayValue);
         return napi_ok;
     }
@@ -237,7 +252,7 @@ extern "C" {
         }
 
         static MockNapiValue objectValue;
-        objectValue.type = MockNapiValue::Object;
+        objectValue.type = MockNapiValue::OBJECT;
         *result = reinterpret_cast<napi_value>(&objectValue);
         return napi_ok;
     }
@@ -249,7 +264,7 @@ extern "C" {
         }
 
         static MockNapiValue intValue;
-        intValue.type = MockNapiValue::Number;
+        intValue.type = MockNapiValue::NUMBER;
         intValue.numberValue = value;
         *result = reinterpret_cast<napi_value>(&intValue);
         return napi_ok;
@@ -262,7 +277,7 @@ extern "C" {
         }
 
         static MockNapiValue stringValue;
-        stringValue.type = MockNapiValue::String;
+        stringValue.type = MockNapiValue::STRING;
         if (str != nullptr) {
             stringValue.stringValue = std::string(str, length);
         }
@@ -302,7 +317,7 @@ extern "C" {
         }
 
         static MockNapiValue boolValue;
-        boolValue.type = MockNapiValue::Boolean;
+        boolValue.type = MockNapiValue::BOOLEAN;
         boolValue.boolValue = value;
         *result = reinterpret_cast<napi_value>(&boolValue);
         return napi_ok;
@@ -315,9 +330,9 @@ extern "C" {
         }
 
         static MockNapiValue promiseValue;
-        promiseValue.type = MockNapiValue::Object;
+        promiseValue.type = MockNapiValue::OBJECT;
         *promise = reinterpret_cast<napi_value>(&promiseValue);
-        *deferred = reinterpret_cast<napi_deferred>(0x87654321);
+        *deferred = reinterpret_cast<napi_deferred>(MOCK_NAPI_DEFERRED_VALUE);
         return napi_ok;
     }
 }
@@ -334,14 +349,14 @@ public:
         }
 
         // Generate random number of devices
-        int32_t numDevices = g_fdp->ConsumeIntegral<int32_t>() % 10;
+        int32_t numDevices = g_fdp->ConsumeIntegral<int32_t>() % MAX_DEVICE_COUNT;
 
         for (int32_t i = 0; i < numDevices; i++) {
             std::shared_ptr<MechInfo> info = std::make_shared<MechInfo>();
             info->mechId = g_fdp->ConsumeIntegral<int32_t>();
-            info->mechName = g_fdp->ConsumeRandomLengthString(100);
-            info->mac = g_fdp->ConsumeRandomLengthString(50);
-            info->mechType = static_cast<MechType>(g_fdp->ConsumeIntegral<uint32_t>() % 6);
+            info->mechName = g_fdp->ConsumeRandomLengthString(MAX_STRING_LENGTH);
+            info->mac = g_fdp->ConsumeRandomLengthString(MAX_MAC_LENGTH);
+            info->mechType = static_cast<MechType>(g_fdp->ConsumeIntegral<uint32_t>() % MECH_TYPE_COUNT);
             mechInfos.push_back(info);
         }
 
@@ -355,7 +370,7 @@ public:
         }
 
         // Randomly return different error codes
-        int32_t result = g_fdp->ConsumeIntegral<int32_t>() % 5;
+        int32_t result = g_fdp->ConsumeIntegral<int32_t>() % ERROR_CODE_COUNT_5;
         switch (result) {
             case 0:
                 return ERR_OK;
@@ -377,7 +392,7 @@ public:
         isEnabled = g_fdp->ConsumeBool();
 
         // Randomly return different error codes
-        int32_t result = g_fdp->ConsumeIntegral<int32_t>() % 3;
+        int32_t result = g_fdp->ConsumeIntegral<int32_t>() % ERROR_CODE_COUNT_3;
         switch (result) {
             case 0:
                 return ERR_OK;
@@ -415,31 +430,31 @@ public:
         MockCallbackInfo info;
 
         // Generate random number of arguments
-        size_t argc = fdp.ConsumeIntegral<size_t>() % 4;
+        size_t argc = fdp.ConsumeIntegral<size_t>() % MAX_ARG_COUNT;
 
         // Create mock arguments
         for (size_t i = 0; i < argc; i++) {
             MockNapiValue arg;
-            int32_t type = fdp.ConsumeIntegral<int32_t>() % 5;
+            int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
                 case 0: // String
-                    arg.type = MockNapiValue::String;
-                    arg.stringValue = fdp.ConsumeRandomLengthString(100);
+                    arg.type = MockNapiValue::STRING;
+                    arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
                 case 1: // Function
-                    arg.type = MockNapiValue::Function;
+                    arg.type = MockNapiValue::FUNCTION;
                     break;
                 case 2: // Boolean
-                    arg.type = MockNapiValue::Boolean;
+                    arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
                 case 3: // Number
-                    arg.type = MockNapiValue::Number;
+                    arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
                 default:
-                    arg.type = MockNapiValue::Undefined;
+                    arg.type = MockNapiValue::UNDEFINED;
                     break;
             }
             info.args.push_back(arg);
@@ -450,7 +465,7 @@ public:
 
         // Call On function
         MechManager::On(reinterpret_cast<napi_env>(&env),
-            reinterpret_cast<napi_callback_info>(0x1234));
+            reinterpret_cast<napi_callback_info>(MOCK_CALLBACK_INFO_VALUE));
 
         g_mockCallbackInfo = nullptr;
         g_fdp = nullptr;
@@ -468,31 +483,31 @@ public:
         MockCallbackInfo info;
 
         // Generate random number of arguments
-        size_t argc = fdp.ConsumeIntegral<size_t>() % 4;
+        size_t argc = fdp.ConsumeIntegral<size_t>() % MAX_ARG_COUNT;
 
         // Create mock arguments
         for (size_t i = 0; i < argc; i++) {
             MockNapiValue arg;
-            int32_t type = fdp.ConsumeIntegral<int32_t>() % 5;
+            int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
                 case 0: // String
-                    arg.type = MockNapiValue::String;
-                    arg.stringValue = fdp.ConsumeRandomLengthString(100);
+                    arg.type = MockNapiValue::STRING;
+                    arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
                 case 1: // Function
-                    arg.type = MockNapiValue::Function;
+                    arg.type = MockNapiValue::FUNCTION;
                     break;
                 case 2: // Boolean
-                    arg.type = MockNapiValue::Boolean;
+                    arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
                 case 3: // Number
-                    arg.type = MockNapiValue::Number;
+                    arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
                 default:
-                    arg.type = MockNapiValue::Undefined;
+                    arg.type = MockNapiValue::UNDEFINED;
                     break;
             }
             info.args.push_back(arg);
@@ -503,7 +518,7 @@ public:
 
         // Call Off function
         MechManager::Off(reinterpret_cast<napi_env>(&env),
-            reinterpret_cast<napi_callback_info>(0x1234));
+            reinterpret_cast<napi_callback_info>(MOCK_CALLBACK_INFO_VALUE));
 
         g_mockCallbackInfo = nullptr;
         g_fdp = nullptr;
@@ -521,31 +536,31 @@ public:
         MockCallbackInfo info;
 
         // Generate random number of arguments
-        size_t argc = fdp.ConsumeIntegral<size_t>() % 4;
+        size_t argc = fdp.ConsumeIntegral<size_t>() % MAX_ARG_COUNT;
 
         // Create mock arguments
         for (size_t i = 0; i < argc; i++) {
             MockNapiValue arg;
-            int32_t type = fdp.ConsumeIntegral<int32_t>() % 5;
+            int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
                 case 0: // String
-                    arg.type = MockNapiValue::String;
-                    arg.stringValue = fdp.ConsumeRandomLengthString(100);
+                    arg.type = MockNapiValue::STRING;
+                    arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
                 case 1: // Function
-                    arg.type = MockNapiValue::Function;
+                    arg.type = MockNapiValue::FUNCTION;
                     break;
                 case 2: // Boolean
-                    arg.type = MockNapiValue::Boolean;
+                    arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
                 case 3: // Number
-                    arg.type = MockNapiValue::Number;
+                    arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
                 default:
-                    arg.type = MockNapiValue::Undefined;
+                    arg.type = MockNapiValue::UNDEFINED;
                     break;
             }
             info.args.push_back(arg);
@@ -556,7 +571,7 @@ public:
 
         // Call GetAttachedDevices function
         MechManager::GetAttachedDevices(reinterpret_cast<napi_env>(&env),
-            reinterpret_cast<napi_callback_info>(0x1234));
+            reinterpret_cast<napi_callback_info>(MOCK_CALLBACK_INFO_VALUE));
 
         g_mockCallbackInfo = nullptr;
         g_fdp = nullptr;
@@ -574,31 +589,31 @@ public:
         MockCallbackInfo info;
 
         // Generate random number of arguments
-        size_t argc = fdp.ConsumeIntegral<size_t>() % 4;
+        size_t argc = fdp.ConsumeIntegral<size_t>() % MAX_ARG_COUNT;
 
         // Create mock arguments
         for (size_t i = 0; i < argc; i++) {
             MockNapiValue arg;
-            int32_t type = fdp.ConsumeIntegral<int32_t>() % 5;
+            int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
                 case 0: // String
-                    arg.type = MockNapiValue::String;
-                    arg.stringValue = fdp.ConsumeRandomLengthString(100);
+                    arg.type = MockNapiValue::STRING;
+                    arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
                 case 1: // Function
-                    arg.type = MockNapiValue::Function;
+                    arg.type = MockNapiValue::FUNCTION;
                     break;
                 case 2: // Boolean
-                    arg.type = MockNapiValue::Boolean;
+                    arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
                 case 3: // Number
-                    arg.type = MockNapiValue::Number;
+                    arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
                 default:
-                    arg.type = MockNapiValue::Undefined;
+                    arg.type = MockNapiValue::UNDEFINED;
                     break;
             }
             info.args.push_back(arg);
@@ -609,7 +624,7 @@ public:
 
         // Call SetCameraTrackingEnabled function
         MechManager::SetCameraTrackingEnabled(reinterpret_cast<napi_env>(&env),
-            reinterpret_cast<napi_callback_info>(0x1234));
+            reinterpret_cast<napi_callback_info>(MOCK_CALLBACK_INFO_VALUE));
 
         g_mockCallbackInfo = nullptr;
         g_fdp = nullptr;
@@ -627,31 +642,31 @@ public:
         MockCallbackInfo info;
 
         // Generate random number of arguments
-        size_t argc = fdp.ConsumeIntegral<size_t>() % 4;
+        size_t argc = fdp.ConsumeIntegral<size_t>() % MAX_ARG_COUNT;
 
         // Create mock arguments
         for (size_t i = 0; i < argc; i++) {
             MockNapiValue arg;
-            int32_t type = fdp.ConsumeIntegral<int32_t>() % 5;
+            int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
                 case 0: // String
-                    arg.type = MockNapiValue::String;
-                    arg.stringValue = fdp.ConsumeRandomLengthString(100);
+                    arg.type = MockNapiValue::STRING;
+                    arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
                 case 1: // Function
-                    arg.type = MockNapiValue::Function;
+                    arg.type = MockNapiValue::FUNCTION;
                     break;
                 case 2: // Boolean
-                    arg.type = MockNapiValue::Boolean;
+                    arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
                 case 3: // Number
-                    arg.type = MockNapiValue::Number;
+                    arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
                 default:
-                    arg.type = MockNapiValue::Undefined;
+                    arg.type = MockNapiValue::UNDEFINED;
                     break;
             }
             info.args.push_back(arg);
@@ -662,7 +677,7 @@ public:
 
         // Call GetCameraTrackingEnabled function
         MechManager::GetCameraTrackingEnabled(reinterpret_cast<napi_env>(&env),
-            reinterpret_cast<napi_callback_info>(0x1234));
+            reinterpret_cast<napi_callback_info>(MOCK_CALLBACK_INFO_VALUE));
 
         g_mockCallbackInfo = nullptr;
         g_fdp = nullptr;
