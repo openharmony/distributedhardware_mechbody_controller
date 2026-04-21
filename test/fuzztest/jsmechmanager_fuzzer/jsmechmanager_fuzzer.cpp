@@ -47,6 +47,10 @@ namespace {
     constexpr int32_t ERROR_CODE_COUNT_3 = 3;
     constexpr int32_t MAX_ARG_COUNT = 4;
     constexpr int32_t VALUE_TYPE_COUNT = 5;
+    constexpr int32_t VALUE_ZERO = 0;
+    constexpr int32_t VALUE_ONE = 1;
+    constexpr int32_t VALUE_TWO = 2;
+    constexpr int32_t VALUE_THREE = 3;
 }
 
 // Mock NAPI types
@@ -343,7 +347,8 @@ public:
     MockMechClient() = default;
     ~MockMechClient() = default;
 
-    int32_t GetAttachedDevices(std::vector<std::shared_ptr<MechInfo>>& mechInfos) {
+    int32_t GetAttachedDevices(std::vector<std::shared_ptr<MechInfo>>& mechInfos)
+    {
         if (g_fdp == nullptr) {
             return ERR_OK;
         }
@@ -363,7 +368,8 @@ public:
         return ERR_OK;
     }
 
-    int32_t SetCameraTrackingEnabled(bool isEnabled) {
+    int32_t SetCameraTrackingEnabled(bool isEnabled)
+    {
         (void)isEnabled;
         if (g_fdp == nullptr) {
             return ERR_OK;
@@ -383,7 +389,8 @@ public:
         }
     }
 
-    int32_t GetCameraTrackingEnabled(bool& isEnabled) {
+    int32_t GetCameraTrackingEnabled(bool& isEnabled)
+    {
         if (g_fdp == nullptr) {
             isEnabled = true;
             return ERR_OK;
@@ -407,18 +414,21 @@ public:
 // Mock MechManager for testing
 class TestMechManager : public MechManager {
 public:
-    static bool MockInitMechClient() {
+    static bool MockInitMechClient()
+    {
         return true;
     }
 
-    static bool MockIsSystemApp() {
+    static bool MockIsSystemApp()
+    {
         if (g_fdp == nullptr) {
             return true;
         }
         return g_fdp->ConsumeBool();
     }
 
-    static void TestOn(const uint8_t *data, size_t size) {
+    static void TestOn(const uint8_t *data, size_t size)
+    {
         if ((data == nullptr) || (size == 0)) {
             return;
         }
@@ -438,18 +448,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case 0: // String
+                case VALUE_ZERO: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case 1: // Function
+                case VALUE_ONE: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case 2: // Boolean
+                case VALUE_TWO: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case 3: // Number
+                case VALUE_THREE: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -471,7 +481,8 @@ public:
         g_fdp = nullptr;
     }
 
-    static void TestOff(const uint8_t *data, size_t size) {
+    static void TestOff(const uint8_t *data, size_t size)
+    {
         if ((data == nullptr) || (size == 0)) {
             return;
         }
@@ -491,18 +502,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case 0: // String
+                case VALUE_ZERO: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case 1: // Function
+                case VALUE_ONE: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case 2: // Boolean
+                case VALUE_TWO: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case 3: // Number
+                case VALUE_THREE: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -524,7 +535,8 @@ public:
         g_fdp = nullptr;
     }
 
-    static void TestGetAttachedDevices(const uint8_t *data, size_t size) {
+    static void TestGetAttachedDevices(const uint8_t *data, size_t size)
+    {
         if ((data == nullptr) || (size == 0)) {
             return;
         }
@@ -544,18 +556,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case 0: // String
+                case VALUE_ZERO: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case 1: // Function
+                case VALUE_ONE: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case 2: // Boolean
+                case VALUE_TWO: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case 3: // Number
+                case VALUE_THREE: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -577,7 +589,8 @@ public:
         g_fdp = nullptr;
     }
 
-    static void TestSetCameraTrackingEnabled(const uint8_t *data, size_t size) {
+    static void TestSetCameraTrackingEnabled(const uint8_t *data, size_t size)
+    {
         if ((data == nullptr) || (size == 0)) {
             return;
         }
@@ -597,18 +610,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case 0: // String
+                case VALUE_ZERO: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case 1: // Function
+                case VALUE_ONE: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case 2: // Boolean
+                case VALUE_TWO: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case 3: // Number
+                case VALUE_THREE: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -630,7 +643,8 @@ public:
         g_fdp = nullptr;
     }
 
-    static void TestGetCameraTrackingEnabled(const uint8_t *data, size_t size) {
+    static void TestGetCameraTrackingEnabled(const uint8_t *data, size_t size)
+    {
         if ((data == nullptr) || (size == 0)) {
             return;
         }
@@ -650,18 +664,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case 0: // String
+                case VALUE_ZERO: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case 1: // Function
+                case VALUE_ONE: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case 2: // Boolean
+                case VALUE_TWO: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case 3: // Number
+                case VALUE_THREE: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
