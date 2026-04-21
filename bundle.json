@@ -51,7 +51,8 @@
           "drivers_interface_camera",
           "device_manager",
           "selinux_adapter",
-          "distributed_notification_service"
+          "distributed_notification_service",
+          "api_metrics"
         ],
         "third_party": []
       },

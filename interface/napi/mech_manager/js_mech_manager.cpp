@@ -31,6 +31,7 @@
 #include "mechbody_controller_log.h"
 #include "js_mech_manager.h"
 #include "js_mech_manager_service.h"
+#include "histogram_plugin_macros.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -70,6 +71,31 @@ napi_value MechManager::On(napi_env env, napi_callback_info info)
         return nullptr;
     }
     HILOGI("Start to register the callback function.");
+
+    std::string eventType;
+    napi_ref callbackRef;
+    if (!ParseOnParams(env, info, eventType, callbackRef)) {
+        return nullptr;
+    }
+
+    CallbackFunctionInfo callbackFunctionInfo = {env, callbackRef};
+    int32_t result = ExecuteOn(eventType, callbackFunctionInfo);
+    
+    if (eventType == ATTACH_STATE_CHANGE_EVENT) {
+        HISTOGRAM_BOOLEAN("mechanicKit.onAttachStateChange.counts", result == ERR_OK ? 1 : 0);
+    } else if (eventType == TRACKING_EVENT) {
+        HISTOGRAM_BOOLEAN("mechanicKit.onTrackingStateChange.counts", result == ERR_OK ? 1 : 0);
+    } else if (eventType == ROTATE_AXIS_STATUS_CHANGE_EVENT) {
+        HISTOGRAM_BOOLEAN("mechanicKit.onRotationAxesStatusChange.counts", result == ERR_OK ? 1 : 0);
+    }
+
+    ProcessOnResultCode(env, result);
+    return nullptr;
+}
+
+bool MechManager::ParseOnParams(napi_env env, napi_callback_info info,
+    std::string& outEventType, napi_ref& outCallbackRef)
+{
     size_t argc = PARAM_COUNT_TWO;
     napi_value args[PARAM_COUNT_TWO];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -77,7 +103,7 @@ napi_value MechManager::On(napi_env env, napi_callback_info info)
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Wrong number of arguments");
         HILOGE("Wrong number of arguments.");
-        return nullptr;
+        return false;
     }
 
     napi_valuetype type;
@@ -86,7 +112,7 @@ napi_value MechManager::On(napi_env env, napi_callback_info info)
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "First argument must be a string");
         HILOGE("First argument must be a string.");
-        return nullptr;
+        return false;
     }
 
     size_t eventTypeLength = 0;
@@ -96,23 +122,19 @@ napi_value MechManager::On(napi_env env, napi_callback_info info)
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Invalid event type.");
         HILOGE("Invalid event type.");
-        return nullptr;
+        return false;
     }
+    outEventType = eventType;
 
     napi_typeof(env, args[1], &type);
     if (type != napi_function) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Second argument must be a function");
         HILOGE("Second argument must be a function.");
-        return nullptr;
+        return false;
     }
-    napi_ref callbackRef;
-    napi_create_reference(env, args[1], 1, &callbackRef);
-
-    CallbackFunctionInfo callbackFunctionInfo = {env, callbackRef};
-    int32_t result = ExecuteOn(eventType, callbackFunctionInfo);
-    ProcessOnResultCode(env, result);
-    return nullptr;
+    napi_create_reference(env, args[1], 1, &outCallbackRef);
+    return true;
 }
 
 int32_t MechManager::CheckControlL1(napi_env env)
@@ -310,6 +332,35 @@ napi_value MechManager::Off(napi_env env, napi_callback_info info)
         return nullptr;
     }
     HILOGI("Start to unregister the callback function.");
+    std::string eventType;
+    napi_ref callbackRef;
+    if (!ParseOffParams(env, info, eventType, callbackRef)) {
+        return nullptr;
+    }
+
+    int32_t result;
+    if (callbackRef != nullptr) {
+        CallbackFunctionInfo callbackFunctionInfo = {env, callbackRef};
+        result = ExecuteOff(eventType, callbackFunctionInfo);
+    } else {
+        result = ExecuteOff(eventType);
+    }
+
+    if (eventType == ATTACH_STATE_CHANGE_EVENT) {
+        HISTOGRAM_BOOLEAN("mechanicKit.offAttachStateChange.counts", result == ERR_OK ? 1 : 0);
+    } else if (eventType == TRACKING_EVENT) {
+        HISTOGRAM_BOOLEAN("mechanicKit.offTrackingStateChange.counts", result == ERR_OK ? 1 : 0);
+    } else if (eventType == ROTATE_AXIS_STATUS_CHANGE_EVENT) {
+        HISTOGRAM_BOOLEAN("mechanicKit.offRotationAxesStatusChange.counts", result == ERR_OK ? 1 : 0);
+    }
+
+    ProcessOffResultCode(env, result);
+    return nullptr;
+}
+
+bool MechManager::ParseOffParams(napi_env env, napi_callback_info info,
+    std::string& outEventType, napi_ref& outCallbackRef)
+{
     size_t argc = 2;
     napi_value args[2];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -317,7 +368,7 @@ napi_value MechManager::Off(napi_env env, napi_callback_info info)
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Wrong number of arguments");
         HILOGE("Wrong number of arguments.");
-        return nullptr;
+        return false;
     }
     napi_valuetype type;
     napi_typeof(env, args[0], &type);
@@ -325,7 +376,7 @@ napi_value MechManager::Off(napi_env env, napi_callback_info info)
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Argument must be a string");
         HILOGE("Argument must be a string.");
-        return nullptr;
+        return false;
     }
     size_t eventTypeLength = 0;
     napi_get_value_string_utf8(env, args[0], nullptr, 0, &eventTypeLength);
@@ -334,26 +385,21 @@ napi_value MechManager::Off(napi_env env, napi_callback_info info)
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
             "Invalid event type.");
         HILOGE("Invalid event type.");
-        return nullptr;
+        return false;
     }
-    int32_t result;
+    outEventType = eventType;
+
     if (argc == PARAM_COUNT_TWO) {
         napi_typeof(env, args[1], &type);
         if (type != napi_function) {
             napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
                 "Second argument must be a function");
             HILOGE("Second argument must be a function.");
-            return nullptr;
+            return false;
         }
-        napi_ref callbackRef;
-        napi_create_reference(env, args[1], 1, &callbackRef);
-        CallbackFunctionInfo callbackFunctionInfo = {env, callbackRef};
-        result = ExecuteOff(eventType, callbackFunctionInfo);
-    } else {
-        result = ExecuteOff(eventType);
+        napi_create_reference(env, args[1], 1, &outCallbackRef);
     }
-    ProcessOffResultCode(env, result);
-    return nullptr;
+    return true;
 }
 
 int32_t MechManager::ExecuteOff(std::string &eventType)
@@ -525,6 +571,7 @@ napi_value MechManager::GetAttachedDevices(napi_env env, napi_callback_info info
     std::vector<std::shared_ptr<MechInfo>> mechInfos;
     int32_t result = mechClient_->GetAttachedDevices(mechInfos);
     HILOGE("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.getAttachedMechDevices.counts", result == ERR_OK ? 1 : 0);
     if (result != ERR_OK) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(),
             "System exception");
@@ -658,6 +705,7 @@ napi_value MechManager::SetCameraTrackingEnabled(napi_env env, napi_callback_inf
     }
     int32_t result = mechClient_->SetCameraTrackingEnabled(isEnabled);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.setCameraTrackingEnabled.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
         return nullptr;
@@ -687,6 +735,7 @@ napi_value MechManager::GetCameraTrackingEnabled(napi_env env, napi_callback_inf
     }
     int32_t result = mechClient_->GetCameraTrackingEnabled(isEnabled);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.getCameraTrackingEnabled.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
         return nullptr;
@@ -709,26 +758,9 @@ napi_value MechManager::SetCameraTrackingLayout(napi_env env, napi_callback_info
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
         return nullptr;
     }
-    size_t argc = 1;
-    napi_value args[1];
-    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-
-    if (argc < 1) {
-        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
-            "Wrong number of arguments");
-        return nullptr;
-    }
 
     int32_t jsLayout;
-    napi_status status = napi_get_value_int32(env, args[0], &jsLayout);
-    if (status != napi_ok) {
-        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
-            "trackingLayout must be a number");
-        return nullptr;
-    }
-    if (jsLayout > LAYOUT_MAX || jsLayout < 0) {
-        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
-            "trackingLayout out of range ");
+    if (!ParseSetCameraTrackingLayoutParams(env, info, jsLayout)) {
         return nullptr;
     }
     auto layout = static_cast<CameraTrackingLayout>(jsLayout);
@@ -739,6 +771,7 @@ napi_value MechManager::SetCameraTrackingLayout(napi_env env, napi_callback_info
     }
     int32_t result = mechClient_->SetCameraTrackingLayout(layout);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.setCameraTrackingLayout.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
         return nullptr;
@@ -754,6 +787,32 @@ napi_value MechManager::SetCameraTrackingLayout(napi_env env, napi_callback_info
     return nullptr;
 }
 
+bool MechManager::ParseSetCameraTrackingLayoutParams(napi_env env, napi_callback_info info, int32_t &jsLayout)
+{
+    size_t argc = 1;
+    napi_value args[1];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+    if (argc < 1) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "Wrong number of arguments");
+        return false;
+    }
+
+    napi_status status = napi_get_value_int32(env, args[0], &jsLayout);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "trackingLayout must be a number");
+        return false;
+    }
+    if (jsLayout > LAYOUT_MAX || jsLayout < 0) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "trackingLayout out of range ");
+        return false;
+    }
+    return true;
+}
+
 napi_value MechManager::GetCameraTrackingLayout(napi_env env, napi_callback_info info)
 {
     if (CheckDeviceL1(env)) {
@@ -767,6 +826,7 @@ napi_value MechManager::GetCameraTrackingLayout(napi_env env, napi_callback_info
     }
     int32_t result = mechClient_->GetCameraTrackingLayout(layout);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.getCameraTrackingLayout.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
         return nullptr;

@@ -127,6 +127,13 @@ private:
     static bool InitMechClient();
 
     static std::string GenerateUniqueID();
+    
+    static bool ParseOnParams(napi_env env, napi_callback_info info,
+        std::string& outEventType, napi_ref& outCallbackRef);
+    static bool ParseOffParams(napi_env env, napi_callback_info info,
+        std::string& outEventType, napi_ref& outCallbackRef);
+    static bool ParseSetCameraTrackingLayoutParams(napi_env env, napi_callback_info info,
+        int32_t &jsLayout);
 
 private:
     static std::mutex attachStateChangeStubMutex_;

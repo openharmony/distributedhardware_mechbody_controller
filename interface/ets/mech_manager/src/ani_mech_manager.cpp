@@ -25,6 +25,7 @@
 
 #include "tokenid_kit.h"
 #include "mechbody_controller_log.h"
+#include "histogram_plugin_macros.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -85,6 +86,7 @@ void AniMechManager::OnAttachStateChange(const AttachStateCBTaihe &callback)
         return;
     }
     int32_t result = ExecuteOnForAttachStateChange(callback);
+    HISTOGRAM_BOOLEAN("mechanicKit.onAttachStateChange.counts", result == ERR_OK ? 1 : 0);
     ProcessOnResultCode(result);
 }
 
@@ -95,6 +97,7 @@ void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachSta
         return;
     }
     int32_t result = ExecuteOffForAttachStateChange(callback);
+    HISTOGRAM_BOOLEAN("mechanicKit.offAttachStateChange.counts", result == ERR_OK ? 1 : 0);
     ProcessOffResultCode(result);
 }
 
@@ -112,6 +115,7 @@ void AniMechManager::OffAttachStateChange(const ::taihe::optional_view<AttachSta
     std::vector<std::shared_ptr<MechInfo>> mechInfos;
     int32_t result = mechClient_->GetAttachedDevices(mechInfos);
     HILOGE("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.getAttachedMechDevices.counts", result == ERR_OK ? 1 : 0);
     if (result != ERR_OK) {
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return ::taihe::array<MechInfoTaihe>(vecMechInfos);
@@ -159,6 +163,7 @@ void AniMechManager::SetCameraTrackingEnabled(bool isEnabled)
     }
     int32_t result = mechClient_->SetCameraTrackingEnabled(isEnabled);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.setCameraTrackingEnabled.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
         return;
@@ -185,6 +190,7 @@ void AniMechManager::GetCameraTrackingEnabled(bool &isEnabled)
     isEnabled = false;
     int32_t result = mechClient_->GetCameraTrackingEnabled(isEnabled);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.getCameraTrackingEnabled.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
         return;
@@ -202,6 +208,7 @@ void AniMechManager::OnTrackingStateChange(const TrackingEventCBTaihe &callback)
         return;
     }
     int32_t result = ExecuteOnForTrackingEvent(callback);
+    HISTOGRAM_BOOLEAN("mechanicKit.onTrackingStateChange.counts", result == ERR_OK ? 1 : 0);
     ProcessOnResultCode(result);
 }
 
@@ -212,6 +219,7 @@ void AniMechManager::OffTrackingStateChange(const::taihe::optional_view<Tracking
         return;
     }
     int32_t result = ExecuteOffForTrackingEvent(callback);
+    HISTOGRAM_BOOLEAN("mechanicKit.offTrackingStateChange.counts", result == ERR_OK ? 1 : 0);
     ProcessOffResultCode(result);
 }
 
@@ -287,6 +295,7 @@ void AniMechManager::SetCameraTrackingLayout(const CameraTrackingLayoutTaihe &la
     CameraTrackingLayout layoutInner = static_cast<CameraTrackingLayout>(layoutT);
     int32_t result = mechClient_->SetCameraTrackingLayout(layoutInner);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.setCameraTrackingLayout.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
         return;
@@ -314,6 +323,7 @@ void AniMechManager::GetCameraTrackingLayout(CameraTrackingLayoutTaihe &layout)
     CameraTrackingLayout layoutInner;
     int32_t result = mechClient_->GetCameraTrackingLayout(layoutInner);
     HILOGI("result code: %{public}d ", result);
+    HISTOGRAM_BOOLEAN("mechanicKit.getCameraTrackingLayout.counts", result == ERR_OK ? 1 : 0);
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
         return;
@@ -628,6 +638,7 @@ void AniMechManager::OnRotationAxesStatusChange(const RotationAxesCBTaihe &callb
         return;
     }
     int32_t result = ExecuteOnForRotationAxesStatusChange(callback);
+    HISTOGRAM_BOOLEAN("mechanicKit.onRotationAxesStatusChange.counts", result == ERR_OK ? 1 : 0);
     ProcessOnResultCode(result);
 }
 
@@ -638,6 +649,7 @@ void AniMechManager::OffRotationAxesStatusChange(const ::taihe::optional_view<Ro
         return;
     }
     int32_t result = ExecuteOffForRotationAxesStatusChange(callback);
+    HISTOGRAM_BOOLEAN("mechanicKit.offRotationAxesStatusChange.counts", result == ERR_OK ? 1 : 0);
     ProcessOffResultCode(result);
 }
 
