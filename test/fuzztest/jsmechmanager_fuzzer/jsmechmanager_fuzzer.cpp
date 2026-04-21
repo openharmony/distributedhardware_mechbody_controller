@@ -47,10 +47,13 @@ namespace {
     constexpr int32_t ERROR_CODE_COUNT_3 = 3;
     constexpr int32_t MAX_ARG_COUNT = 4;
     constexpr int32_t VALUE_TYPE_COUNT = 5;
-    constexpr int32_t VALUE_ZERO = 0;
-    constexpr int32_t VALUE_ONE = 1;
-    constexpr int32_t VALUE_TWO = 2;
-    constexpr int32_t VALUE_THREE = 3;
+    constexpr int32_t VALUE_TYPE_STRING = 0;
+    constexpr int32_t VALUE_TYPE_FUNCTION = 1;
+    constexpr int32_t VALUE_TYPE_BOOLEAN = 2;
+    constexpr int32_t VALUE_TYPE_NUMBER = 3;
+    constexpr int32_t VALUE_ERR_OK = 0;
+    constexpr int32_t VALUE_DEVICE_NOT_CONNECTED = 1;
+    constexpr int32_t VALUE_DEVICE_NOT_SUPPORTED = 2;
 }
 
 // Mock NAPI types
@@ -86,34 +89,34 @@ static MockCallbackInfo* g_mockCallbackInfo = nullptr;
 
 // Mock NAPI functions
 extern "C" {
-    napi_status napi_get_cb_info(napi_env env, napi_callback_info info,
-        size_t* argc, napi_value* args, napi_value* this_arg,
-        void** data) {
-        if (env == nullptr || argc == nullptr) {
-            return napi_invalid_arg;
-        }
-
-        MockCallbackInfo* mockInfo = g_mockCallbackInfo;
-        if (mockInfo == nullptr) {
-            return napi_invalid_arg;
-        }
-
-        size_t argsToCopy = std::min(*argc, mockInfo->args.size());
-        for (size_t i = 0; i < argsToCopy; i++) {
-            args[i] = reinterpret_cast<napi_value>(&mockInfo->args[i]);
-        }
-        *argc = mockInfo->args.size();
-
-        return napi_ok;
+napi_status napi_get_cb_info(napi_env env, napi_callback_info info, size_t *argc, napi_value *args,
+                             napi_value *this_arg, void **data)
+{
+    if (env == nullptr || argc == nullptr) {
+        return napi_invalid_arg;
     }
 
-    napi_status napi_typeof(napi_env env, napi_value value,
-        napi_valuetype* result) {
+    MockCallbackInfo *mockInfo = g_mockCallbackInfo;
+    if (mockInfo == nullptr) {
+        return napi_invalid_arg;
+    }
+
+    size_t argsToCopy = std::min(*argc, mockInfo->args.size());
+    for (size_t i = 0; i < argsToCopy; i++) {
+        args[i] = reinterpret_cast<napi_value>(&mockInfo->args[i]);
+    }
+    *argc = mockInfo->args.size();
+
+    return napi_ok;
+}
+
+    napi_status napi_typeof(napi_env env, napi_value value, napi_valuetype *result)
+    {
         if (env == nullptr || value == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
 
-        MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
+        MockNapiValue *mockValue = reinterpret_cast<MockNapiValue *>(value);
         if (mockValue == nullptr) {
             return napi_invalid_arg;
         }
@@ -142,13 +145,13 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_get_value_string_utf8(napi_env env, napi_value value,
-        char* buf, size_t bufsize, size_t* result) {
+    napi_status napi_get_value_string_utf8(napi_env env, napi_value value, char *buf, size_t bufsize, size_t *result)
+    {
         if (env == nullptr || value == nullptr) {
             return napi_invalid_arg;
         }
 
-        MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
+        MockNapiValue *mockValue = reinterpret_cast<MockNapiValue *>(value);
         if (mockValue == nullptr || mockValue->type != MockNapiValue::STRING) {
             return napi_string_expected;
         }
@@ -167,8 +170,8 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_create_reference(napi_env env, napi_value value,
-        uint32_t initial_refcount, napi_ref* result) {
+    napi_status napi_create_reference(napi_env env, napi_value value, uint32_t initial_refcount, napi_ref *result)
+    {
         if (env == nullptr || value == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
@@ -177,29 +180,29 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_throw_error(napi_env env, const char* code,
-        const char* msg) {
+    napi_status napi_throw_error(napi_env env, const char *code, const char *msg)
+    {
         if (env == nullptr) {
             return napi_invalid_arg;
         }
         return napi_ok;
     }
 
-    napi_status napi_throw_type_error(napi_env env, const char* code,
-        const char* msg) {
+    napi_status napi_throw_type_error(napi_env env, const char *code, const char *msg)
+    {
         if (env == nullptr) {
             return napi_invalid_arg;
         }
         return napi_ok;
     }
 
-    napi_status napi_get_value_bool(napi_env env, napi_value value,
-        bool* result) {
+    napi_status napi_get_value_bool(napi_env env, napi_value value, bool *result)
+    {
         if (env == nullptr || value == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
 
-        MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
+        MockNapiValue *mockValue = reinterpret_cast<MockNapiValue *>(value);
         if (mockValue == nullptr || mockValue->type != MockNapiValue::BOOLEAN) {
             return napi_boolean_expected;
         }
@@ -208,13 +211,13 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_get_value_int32(napi_env env, napi_value value,
-        int32_t* result) {
+    napi_status napi_get_value_int32(napi_env env, napi_value value, int32_t *result)
+    {
         if (env == nullptr || value == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
 
-        MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
+        MockNapiValue *mockValue = reinterpret_cast<MockNapiValue *>(value);
         if (mockValue == nullptr || mockValue->type != MockNapiValue::NUMBER) {
             return napi_number_expected;
         }
@@ -223,13 +226,13 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_get_value_double(napi_env env, napi_value value,
-        double* result) {
+    napi_status napi_get_value_double(napi_env env, napi_value value, double *result)
+    {
         if (env == nullptr || value == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
 
-        MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
+        MockNapiValue *mockValue = reinterpret_cast<MockNapiValue *>(value);
         if (mockValue == nullptr || mockValue->type != MockNapiValue::NUMBER) {
             return napi_number_expected;
         }
@@ -238,8 +241,8 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_create_array_with_length(napi_env env, size_t length,
-        napi_value* result) {
+    napi_status napi_create_array_with_length(napi_env env, size_t length, napi_value *result)
+    {
         if (env == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
@@ -250,7 +253,8 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_create_object(napi_env env, napi_value* result) {
+    napi_status napi_create_object(napi_env env, napi_value *result)
+    {
         if (env == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
@@ -261,8 +265,8 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_create_int32(napi_env env, int32_t value,
-        napi_value* result) {
+    napi_status napi_create_int32(napi_env env, int32_t value, napi_value *result)
+    {
         if (env == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
@@ -274,8 +278,8 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_create_string_utf8(napi_env env, const char* str,
-        size_t length, napi_value* result) {
+    napi_status napi_create_string_utf8(napi_env env, const char *str, size_t length, napi_value *result)
+    {
         if (env == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
@@ -289,15 +293,14 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_set_named_property(napi_env env, napi_value object,
-        const char* utf8name, napi_value value) {
-        if (env == nullptr || object == nullptr || utf8name == nullptr ||
-            value == nullptr) {
+    napi_status napi_set_named_property(napi_env env, napi_value object, const char *utf8name, napi_value value)
+    {
+        if (env == nullptr || object == nullptr || utf8name == nullptr || value == nullptr) {
             return napi_invalid_arg;
         }
 
-        MockNapiValue* mockObject = reinterpret_cast<MockNapiValue*>(object);
-        MockNapiValue* mockValue = reinterpret_cast<MockNapiValue*>(value);
+        MockNapiValue *mockObject = reinterpret_cast<MockNapiValue *>(object);
+        MockNapiValue *mockValue = reinterpret_cast<MockNapiValue *>(value);
 
         if (mockObject != nullptr && mockValue != nullptr) {
             mockObject->objectProperties[utf8name] = *mockValue;
@@ -306,20 +309,19 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_set_element(napi_env env, napi_value array,
-        uint32_t index, napi_value value) {
+    napi_status napi_set_element(napi_env env, napi_value array, uint32_t index, napi_value value)
+    {
         if (env == nullptr || array == nullptr || value == nullptr) {
             return napi_invalid_arg;
         }
         return napi_ok;
     }
 
-    napi_status napi_get_boolean(napi_env env, bool value,
-        napi_value* result) {
+    napi_status napi_get_boolean(napi_env env, bool value, napi_value *result)
+    {
         if (env == nullptr || result == nullptr) {
             return napi_invalid_arg;
         }
-
         static MockNapiValue boolValue;
         boolValue.type = MockNapiValue::BOOLEAN;
         boolValue.boolValue = value;
@@ -327,8 +329,8 @@ extern "C" {
         return napi_ok;
     }
 
-    napi_status napi_create_promise(napi_env env, napi_deferred* deferred,
-        napi_value* promise) {
+    napi_status napi_create_promise(napi_env env, napi_deferred *deferred, napi_value *promise)
+    {
         if (env == nullptr || deferred == nullptr || promise == nullptr) {
             return napi_invalid_arg;
         }
@@ -378,11 +380,11 @@ public:
         // Randomly return different error codes
         int32_t result = g_fdp->ConsumeIntegral<int32_t>() % ERROR_CODE_COUNT_5;
         switch (result) {
-            case 0:
+            case VALUE_ERR_OK:
                 return ERR_OK;
-            case 1:
+            case VALUE_DEVICE_NOT_CONNECTED:
                 return MechNapiErrorCode::DEVICE_NOT_CONNECTED;
-            case 2:
+            case VALUE_DEVICE_NOT_SUPPORTED:
                 return MechNapiErrorCode::DEVICE_NOT_SUPPORTED;
             default:
                 return MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY;
@@ -448,18 +450,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_ZERO: // String
+                case VALUE_TYPE_STRING: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case VALUE_ONE: // Function
+                case VALUE_TYPE_FUNCTION: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case VALUE_TWO: // Boolean
+                case VALUE_TYPE_BOOLEAN: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case VALUE_THREE: // Number
+                case VALUE_TYPE_NUMBER: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -502,18 +504,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_ZERO: // String
+                case VALUE_TYPE_STRING: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case VALUE_ONE: // Function
+                case VALUE_TYPE_FUNCTION: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case VALUE_TWO: // Boolean
+                case VALUE_TYPE_BOOLEAN: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case VALUE_THREE: // Number
+                case VALUE_TYPE_NUMBER: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -556,18 +558,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_ZERO: // String
+                case VALUE_TYPE_STRING: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case VALUE_ONE: // Function
+                case VALUE_TYPE_FUNCTION: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case VALUE_TWO: // Boolean
+                case VALUE_TYPE_BOOLEAN: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case VALUE_THREE: // Number
+                case VALUE_TYPE_NUMBER: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -610,18 +612,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_ZERO: // String
+                case VALUE_TYPE_STRING: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case VALUE_ONE: // Function
+                case VALUE_TYPE_FUNCTION: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case VALUE_TWO: // Boolean
+                case VALUE_TYPE_BOOLEAN: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case VALUE_THREE: // Number
+                case VALUE_TYPE_NUMBER: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
@@ -664,18 +666,18 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_ZERO: // String
+                case VALUE_TYPE_STRING: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
-                case VALUE_ONE: // Function
+                case VALUE_TYPE_FUNCTION: // Function
                     arg.type = MockNapiValue::FUNCTION;
                     break;
-                case VALUE_TWO: // Boolean
+                case VALUE_TYPE_BOOLEAN: // Boolean
                     arg.type = MockNapiValue::BOOLEAN;
                     arg.boolValue = fdp.ConsumeBool();
                     break;
-                case VALUE_THREE: // Number
+                case VALUE_TYPE_NUMBER: // Number
                     arg.type = MockNapiValue::NUMBER;
                     arg.numberValue = fdp.ConsumeFloatingPoint<double>();
                     break;
