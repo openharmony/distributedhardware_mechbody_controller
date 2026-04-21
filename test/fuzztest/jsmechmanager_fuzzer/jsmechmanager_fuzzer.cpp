@@ -89,6 +89,7 @@ static MockCallbackInfo* g_mockCallbackInfo = nullptr;
 
 // Mock NAPI functions
 extern "C" {
+// NOLINTNEXTLINE(readability-function-cognitive-complexity, readability-function-size)
 napi_status napi_get_cb_info(napi_env env, napi_callback_info info, size_t *argc, napi_value *args,
                              napi_value *this_arg, void **data)
 {
@@ -163,7 +164,7 @@ napi_status napi_get_cb_info(napi_env env, napi_callback_info info, size_t *argc
 
         if (buf != nullptr && bufsize > 0) {
             size_t copyLen = std::min(len, bufsize - 1);
-            memcpy(buf, mockValue->stringValue.c_str(), copyLen);
+            memcpy_s(buf, bufsize, mockValue->stringValue.c_str(), copyLen);
             buf[copyLen] = '\0';
         }
 
