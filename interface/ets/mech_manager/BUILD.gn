@@ -106,6 +106,7 @@ taihe_shared_library("mechanic_manager_ani") {
     "hilog:libhilog",
     "ipc:ipc_core",
     "samgr:samgr_proxy",
+    "api_metrics:histogrammanager",
   ]
 }
 
