@@ -45,14 +45,15 @@ private:
     std::function<Signature>* func_;
 };
 
-// Mock callback_view type
+// Mock CallbackView type
 template<typename Signature>
-class callback_view {
+class CallbackView {
 public:
-    callback_view() : func_(nullptr) {}
-    callback_view(const callback<Signature>& cb) : func_(reinterpret_cast<const void*>(&cb)) {}
-    callback_view(std::function<Signature> func) : func_(reinterpret_cast<const void*>(new std::function<Signature>(func))) {}
-    callback_view(std::nullptr_t) : func_(nullptr) {}
+    CallbackView() : func_(nullptr) {}
+    explicit CallbackView(const callback<Signature>& cb) : func_(reinterpret_cast<const void*>(&cb)) {}
+    explicit CallbackView(std::function<Signature> func) :
+        func_(reinterpret_cast<const void*>(new std::function<Signature>(func))) {}
+    explicit CallbackView(std::nullptr_t) : func_(nullptr) {}
 
     operator bool() const { return func_ != nullptr; }
 
@@ -60,13 +61,13 @@ private:
     const void* func_;
 };
 
-// Mock optional_view type
+// Mock OptionalView type
 template<typename T>
-class optional_view {
+class OptionalView {
 public:
-    optional_view() : has_value_(false), value_(nullptr) {}
-    optional_view(const T& value) : has_value_(true), value_(reinterpret_cast<const void*>(&value)) {}
-    optional_view(std::nullptr_t) : has_value_(false), value_(nullptr) {}
+    OptionalView() : has_value_(false), value_(nullptr) {}
+    explicit OptionalView(const T& value) : has_value_(true), value_(reinterpret_cast<const void*>(&value)) {}
+    explicit OptionalView(std::nullptr_t) : has_value_(false), value_(nullptr) {}
 
     bool has_value() const { return has_value_; }
     explicit operator bool() const { return has_value_; }
@@ -103,7 +104,7 @@ public:
         (void)callback;
     }
 
-    void OffAttachStateChange(const taihe::optional_view<AttachStateCBTaihe>& callback) {
+    void OffAttachStateChange(const taihe::OptionalView<AttachStateCBTaihe>& callback) {
         if (g_fdp == nullptr) {
             return;
         }
@@ -119,7 +120,7 @@ public:
         (void)callback;
     }
 
-    void OffTrackingStateChange(const taihe::optional_view<TrackingEventCBTaihe>& callback) {
+    void OffTrackingStateChange(const taihe::OptionalView<TrackingEventCBTaihe>& callback) {
         if (g_fdp == nullptr) {
             return;
         }
@@ -135,34 +136,29 @@ private:
 };
 
 // Mock OnAttachStateChangeInner function
-void OnAttachStateChangeInner(taihe::callback_view<void(AttachStateChangeInfoTaihe const&)> callback)
-{
+void OnAttachStateChangeInner(taihe::CallbackView<void(AttachStateChangeInfoTaihe const&)> callback) {
     MockAniMechManager::GetInstance().OnAttachStateChange(
         AttachStateCBTaihe([](AttachStateChangeInfoTaihe const& info) { (void)info; }));
 }
 
 // Mock OffAttachStateChangeInner function
-void OffAttachStateChangeInner(taihe::optional_view<AttachStateCBTaihe> callback)
-{
+void OffAttachStateChangeInner(taihe::OptionalView<AttachStateCBTaihe> callback) {
     MockAniMechManager::GetInstance().OffAttachStateChange(callback);
 }
 
 // Mock OnTrackingStateChangeInner function
-void OnTrackingStateChangeInner(taihe::callback_view<void(TrackingEventInfoTaihe const&)> callback)
-{
+void OnTrackingStateChangeInner(taihe::CallbackView<void(TrackingEventInfoTaihe const&)> callback) {
     MockAniMechManager::GetInstance().OnTrackingStateChange(
         TrackingEventCBTaihe([](TrackingEventInfoTaihe const& info) { (void)info; }));
 }
 
 // Mock OffTrackingStateChangeInner function
-void OffTrackingStateChangeInner(taihe::optional_view<TrackingEventCBTaihe> callback)
-{
+void OffTrackingStateChangeInner(taihe::OptionalView<TrackingEventCBTaihe> callback) {
     MockAniMechManager::GetInstance().OffTrackingStateChange(callback);
 }
 
 // Fuzz test for OnAttachStateChangeInner
-void OnAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
-{
+void OnAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
     if ((data == nullptr) || (size == 0)) {
         return;
     }
@@ -172,20 +168,19 @@ void OnAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
 
     // Create a mock callback with random data
     auto callbackFunc = [](AttachStateChangeInfoTaihe const& info) { (void)info; };
-    taihe::callback_view<void(AttachStateChangeInfoTaihe const&)> callback(callbackFunc);
+    taihe::CallbackView<void(AttachStateChangeInfoTaihe const&)> callback(callbackFunc);
 
     // Call the function
     OnAttachStateChangeInner(callback);
 
     // Test with nullptr callback
-    OnAttachStateChangeInner(taihe::callback_view<void(AttachStateChangeInfoTaihe const&)>(nullptr));
+    OnAttachStateChangeInner(taihe::CallbackView<void(AttachStateChangeInfoTaihe const&)>(nullptr));
 
     g_fdp = nullptr;
 }
 
 // Fuzz test for OffAttachStateChangeInner
-void OffAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
-{
+void OffAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
     if ((data == nullptr) || (size == 0)) {
         return;
     }
@@ -195,23 +190,22 @@ void OffAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
 
     // Test with valid callback
     AttachStateCBTaihe validCallback([](AttachStateChangeInfoTaihe const& info) { (void)info; });
-    taihe::optional_view<AttachStateCBTaihe> callback1(validCallback);
+    taihe::OptionalView<AttachStateCBTaihe> callback1(validCallback);
     OffAttachStateChangeInner(callback1);
 
     // Test with nullptr callback
-    taihe::optional_view<AttachStateCBTaihe> callback2(nullptr);
+    taihe::OptionalView<AttachStateCBTaihe> callback2(nullptr);
     OffAttachStateChangeInner(callback2);
 
     // Test with empty optional
-    taihe::optional_view<AttachStateCBTaihe> callback3;
+    taihe::OptionalView<AttachStateCBTaihe> callback3;
     OffAttachStateChangeInner(callback3);
 
     g_fdp = nullptr;
 }
 
 // Fuzz test for OnTrackingStateChangeInner
-void OnTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
-{
+void OnTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
     if ((data == nullptr) || (size == 0)) {
         return;
     }
@@ -221,20 +215,19 @@ void OnTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
 
     // Create a mock callback with random data
     auto callbackFunc = [](TrackingEventInfoTaihe const& info) { (void)info; };
-    taihe::callback_view<void(TrackingEventInfoTaihe const&)> callback(callbackFunc);
+    taihe::CallbackView<void(TrackingEventInfoTaihe const&)> callback(callbackFunc);
 
     // Call the function
     OnTrackingStateChangeInner(callback);
 
     // Test with nullptr callback
-    OnTrackingStateChangeInner(taihe::callback_view<void(TrackingEventInfoTaihe const&)>(nullptr));
+    OnTrackingStateChangeInner(taihe::CallbackView<void(TrackingEventInfoTaihe const&)>(nullptr));
 
     g_fdp = nullptr;
 }
 
 // Fuzz test for OffTrackingStateChangeInner
-void OffTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
-{
+void OffTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
     if ((data == nullptr) || (size == 0)) {
         return;
     }
@@ -244,15 +237,15 @@ void OffTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
 
     // Test with valid callback
     TrackingEventCBTaihe validCallback([](TrackingEventInfoTaihe const& info) { (void)info; });
-    taihe::optional_view<TrackingEventCBTaihe> callback1(validCallback);
+    taihe::OptionalView<TrackingEventCBTaihe> callback1(validCallback);
     OffTrackingStateChangeInner(callback1);
 
     // Test with nullptr callback
-    taihe::optional_view<TrackingEventCBTaihe> callback2(nullptr);
+    taihe::OptionalView<TrackingEventCBTaihe> callback2(nullptr);
     OffTrackingStateChangeInner(callback2);
 
     // Test with empty optional
-    taihe::optional_view<TrackingEventCBTaihe> callback3;
+    taihe::OptionalView<TrackingEventCBTaihe> callback3;
     OffTrackingStateChangeInner(callback3);
 
     g_fdp = nullptr;
@@ -262,8 +255,7 @@ void OffTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
 } // namespace OHOS
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
-{
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     /* Run your code on data */
     OHOS::MechBodyController::OnAttachStateChangeInnerFuzzTest(data, size);
     OHOS::MechBodyController::OffAttachStateChangeInnerFuzzTest(data, size);
