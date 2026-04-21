@@ -91,12 +91,14 @@ static FuzzedDataProvider* g_fdp = nullptr;
 // Mock AniMechManager for testing
 class MockAniMechManager {
 public:
-    static MockAniMechManager& GetInstance() {
+    static MockAniMechManager& GetInstance()
+    {
         static MockAniMechManager instance;
         return instance;
     }
 
-    void OnAttachStateChange(const AttachStateCBTaihe& callback) {
+    void OnAttachStateChange(const AttachStateCBTaihe& callback)
+    {
         if (g_fdp == nullptr) {
             return;
         }
@@ -104,7 +106,8 @@ public:
         (void)callback;
     }
 
-    void OffAttachStateChange(const taihe::OptionalView<AttachStateCBTaihe>& callback) {
+    void OffAttachStateChange(const taihe::OptionalView<AttachStateCBTaihe>& callback)
+    {
         if (g_fdp == nullptr) {
             return;
         }
@@ -112,7 +115,8 @@ public:
         (void)callback;
     }
 
-    void OnTrackingStateChange(const TrackingEventCBTaihe& callback) {
+    void OnTrackingStateChange(const TrackingEventCBTaihe& callback)
+    {
         if (g_fdp == nullptr) {
             return;
         }
@@ -120,7 +124,8 @@ public:
         (void)callback;
     }
 
-    void OffTrackingStateChange(const taihe::OptionalView<TrackingEventCBTaihe>& callback) {
+    void OffTrackingStateChange(const taihe::OptionalView<TrackingEventCBTaihe>& callback)
+    {
         if (g_fdp == nullptr) {
             return;
         }
@@ -136,29 +141,34 @@ private:
 };
 
 // Mock OnAttachStateChangeInner function
-void OnAttachStateChangeInner(taihe::CallbackView<void(AttachStateChangeInfoTaihe const&)> callback) {
+void OnAttachStateChangeInner(taihe::CallbackView<void(AttachStateChangeInfoTaihe const&)> callback)
+{
     MockAniMechManager::GetInstance().OnAttachStateChange(
         AttachStateCBTaihe([](AttachStateChangeInfoTaihe const& info) { (void)info; }));
 }
 
 // Mock OffAttachStateChangeInner function
-void OffAttachStateChangeInner(taihe::OptionalView<AttachStateCBTaihe> callback) {
+void OffAttachStateChangeInner(taihe::OptionalView<AttachStateCBTaihe> callback)
+{
     MockAniMechManager::GetInstance().OffAttachStateChange(callback);
 }
 
 // Mock OnTrackingStateChangeInner function
-void OnTrackingStateChangeInner(taihe::CallbackView<void(TrackingEventInfoTaihe const&)> callback) {
+void OnTrackingStateChangeInner(taihe::CallbackView<void(TrackingEventInfoTaihe const&)> callback)
+{
     MockAniMechManager::GetInstance().OnTrackingStateChange(
         TrackingEventCBTaihe([](TrackingEventInfoTaihe const& info) { (void)info; }));
 }
 
 // Mock OffTrackingStateChangeInner function
-void OffTrackingStateChangeInner(taihe::OptionalView<TrackingEventCBTaihe> callback) {
+void OffTrackingStateChangeInner(taihe::OptionalView<TrackingEventCBTaihe> callback)
+{
     MockAniMechManager::GetInstance().OffTrackingStateChange(callback);
 }
 
 // Fuzz test for OnAttachStateChangeInner
-void OnAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
+void OnAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
+{
     if ((data == nullptr) || (size == 0)) {
         return;
     }
@@ -180,7 +190,8 @@ void OnAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
 }
 
 // Fuzz test for OffAttachStateChangeInner
-void OffAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
+void OffAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
+{
     if ((data == nullptr) || (size == 0)) {
         return;
     }
@@ -205,7 +216,8 @@ void OffAttachStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
 }
 
 // Fuzz test for OnTrackingStateChangeInner
-void OnTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
+void OnTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
+{
     if ((data == nullptr) || (size == 0)) {
         return;
     }
@@ -227,7 +239,8 @@ void OnTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
 }
 
 // Fuzz test for OffTrackingStateChangeInner
-void OffTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size) {
+void OffTrackingStateChangeInnerFuzzTest(const uint8_t *data, size_t size)
+{
     if ((data == nullptr) || (size == 0)) {
         return;
     }
