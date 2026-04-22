@@ -81,7 +81,7 @@ ohos_fuzztest("JsMechManagerFuzzTest") {
     "window_manager:libdm_lite",
     "hisysevent:libhisysevent",
     "napi:ace_napi",
-    "api_metrics_ext:histogram_management",
+    "api_metrics:histogrammanager",
   ]
 }
 
