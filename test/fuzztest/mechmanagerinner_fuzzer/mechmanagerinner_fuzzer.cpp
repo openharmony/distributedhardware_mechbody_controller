@@ -37,7 +37,8 @@ public:
     Callback() : func_(nullptr) {}
     explicit Callback(std::function<Signature> func) : func_(new std::function<Signature>(func)) {}
     Callback(const Callback& other) : func_(other.func_ ? new std::function<Signature>(*other.func_) : nullptr) {}
-    Callback& operator=(const Callback& other) {
+    Callback &operator=(const Callback &other)
+    {
         if (this != &other) {
             delete func_;
             func_ = other.func_ ? new std::function<Signature>(*other.func_) : nullptr;
@@ -77,15 +78,14 @@ private:
 template<typename T>
 class OptionalView {
 public:
-    OptionalView() : has_value_(false), value_(nullptr) {}
-    explicit OptionalView(const T& value) : has_value_(true), value_(reinterpret_cast<const void*>(&value)) {}
-    explicit OptionalView(std::nullptr_t) : has_value_(false), value_(nullptr) {}
+OptionalView() : hasValue_(false), value_(nullptr) {}
+    explicit OptionalView(const T& value) : hasValue_(true), value_(reinterpret_cast<const void*>(&value)) {}
+    explicit OptionalView(std::nullptr_t) : hasValue_(false), value_(nullptr) {}
 
-    bool has_value() const { return has_value_; }
-    explicit operator bool() const { return has_value_; }
+    bool has_value() const { return hasValue_; }
 
 private:
-    bool has_value_;
+    bool hasValue_;
     const void* value_;
 };
 
