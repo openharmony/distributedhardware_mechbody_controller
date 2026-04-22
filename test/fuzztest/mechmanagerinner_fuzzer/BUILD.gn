@@ -36,7 +36,7 @@ ohos_fuzztest("MechManagerInnerFuzzTest") {
 
   deps = []
 
-  external_deps = ["api_metrics_ext:histogram_management",]
+  external_deps = ["api_metrics:histogrammanager",]
 }
 
 group("fuzztest") {
