@@ -82,7 +82,7 @@ OptionalView() : hasValue_(false), value_(nullptr) {}
     explicit OptionalView(const T& value) : hasValue_(true), value_(reinterpret_cast<const void*>(&value)) {}
     explicit OptionalView(std::nullptr_t) : hasValue_(false), value_(nullptr) {}
 
-    bool has_value() const { return hasValue_; }
+    bool HasValue() const { return hasValue_; }
 
 private:
     bool hasValue_;
