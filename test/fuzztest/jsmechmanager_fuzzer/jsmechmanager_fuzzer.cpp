@@ -22,11 +22,11 @@
 #include <vector>
 #include <map>
 
-#define private public
-#define protected public
+#define PRIVATE public
+#define PROTECTED public
 #include "js_mech_manager.h"
-#undef private
-#undef protected
+#undef PRIVATE
+#undef PROTECTED
 #include "mechbody_controller_types.h"
 #include "mechbody_controller_log.h"
 #include "securec.h"
@@ -47,7 +47,7 @@ namespace {
     constexpr int32_t ERROR_CODE_COUNT_3 = 3;
     constexpr int32_t MAX_ARG_COUNT = 4;
     constexpr int32_t VALUE_TYPE_COUNT = 5;
-    constexpr int32_t VALUE_TYPE_STRING = 0;
+    constexpr int32_t VALUE_TYPE_STRINGS = 0;
     constexpr int32_t VALUE_TYPE_FUNCTION = 1;
     constexpr int32_t VALUE_TYPE_BOOLEAN = 2;
     constexpr int32_t VALUE_TYPE_NUMBER = 3;
@@ -164,7 +164,10 @@ napi_status napi_get_cb_info(napi_env env, napi_callback_info info, size_t *argc
 
         if (buf != nullptr && bufsize > 0) {
             size_t copyLen = std::min(len, bufsize - 1);
-            memcpy_s(buf, bufsize, mockValue->stringValue.c_str(), copyLen);
+            errno_t ret = memcpy_s(buf, bufsize, mockValue->stringValue.c_str(), copyLen);
+            if (ret != EOK) {
+                return napi_generic_failure;
+            }
             buf[copyLen] = '\0';
         }
 
@@ -451,7 +454,7 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_TYPE_STRING: // String
+                case VALUE_TYPE_STRINGS: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
@@ -505,7 +508,7 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_TYPE_STRING: // String
+                case VALUE_TYPE_STRINGS: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
@@ -559,7 +562,7 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_TYPE_STRING: // String
+                case VALUE_TYPE_STRINGS: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
@@ -613,7 +616,7 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_TYPE_STRING: // String
+                case VALUE_TYPE_STRINGS: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
@@ -667,7 +670,7 @@ public:
             int32_t type = fdp.ConsumeIntegral<int32_t>() % VALUE_TYPE_COUNT;
 
             switch (type) {
-                case VALUE_TYPE_STRING: // String
+                case VALUE_TYPE_STRINGS: // String
                     arg.type = MockNapiValue::STRING;
                     arg.stringValue = fdp.ConsumeRandomLengthString(MAX_STRING_LENGTH);
                     break;
