@@ -55,7 +55,8 @@ void MechConnectManager::UnInit()
 
 int32_t MechConnectManager::NotifyMechConnect(MechInfo& mechInfo)
 {
-    int32_t result = MechBodyControllerService::GetInstance().OnDeviceConnected(mechInfo.mechId);
+    int32_t result = MechBodyControllerService::GetInstance().OnDeviceConnected(
+        mechInfo.mechId, mechInfo.isFirstConnect, mechInfo.deviceIdentifier);
     if (result == MECH_CONNECT_FAILED) {
         return MECH_CONNECT_FAILED;
     }
@@ -188,6 +189,15 @@ bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached)
     mechInfos_.insert(newMechInfo);
 
     if (!isAttached) {
+        HILOGI("newMechInfo mechType: %{public}d, newMechInfo isFirstConnect %{public}d",
+            newMechInfo.mechType, newMechInfo.isFirstConnect);
+        if (newMechInfo.mechType == MechType::WHEEL_BASE && newMechInfo.isFirstConnect) {
+            newMechInfo.isFirstConnect = false;
+            mechInfos_.erase(it);
+            mechInfos_.insert(newMechInfo);
+            HILOGI("WHEEL_BASE first connect, keep connection but update isFirstConnect");
+            return true;
+        }
         auto disconnectTask = [this, newMechInfo]() mutable {
             BleSendManager::GetInstance().MechbodyDisConnect(newMechInfo);
         };
@@ -318,6 +328,20 @@ void MechConnectManager::SetRealMechName(int32_t mechId, std::string &name)
         mechInfos_.erase(it);
         mechInfos_.insert(newInfo);
         HILOGI("set real name: %{public}s", newInfo.mechName.c_str());
+    }
+}
+
+void MechConnectManager::SetMechType(int32_t mechId, MechType mechType)
+{
+    std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
+    auto it = std::find_if(mechInfos_.begin(), mechInfos_.end(),
+                           [mechId](const MechInfo &info) { return info.mechId == mechId; });
+    if (it != mechInfos_.end()) {
+        MechInfo newInfo = *it;
+        newInfo.mechType = mechType;
+        mechInfos_.erase(it);
+        mechInfos_.insert(newInfo);
+        HILOGI("set mechType: %{public}d for mechId: %{public}d", static_cast<int>(mechType), mechId);
     }
 }
 

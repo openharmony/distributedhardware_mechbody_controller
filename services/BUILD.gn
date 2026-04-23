@@ -88,6 +88,16 @@ ohos_shared_library("mechbody_service") {
       "src/transport/command/0x02/mc_normal_set_mech_rotation_to_location_cmd.cpp",
       "src/transport/command/0x02/mc_normal_set_mech_protocol_ver_cmd.cpp",
       "src/transport/command/0x02/mc_normal_set_mech_rotation_trace_cmd.cpp",
+      "src/transport/command/0x02/mc_normal_set_mech_phone_status_cmd.cpp",
+      "src/transport/command/0x03/mc_wheel_get_mech_capability_info_cmd.cpp",
+      "src/transport/command/0x03/mc_wheel_set_mech_rotation_to_base_cmd.cpp",
+      "src/transport/command/0x03/mc_wheel_set_mech_rotation_trace_cmd.cpp",
+      "src/transport/command/0x03/mc_wheel_set_mech_motion_control_cmd.cpp",
+      "src/transport/command/0x03/mc_wheel_set_mech_scene_control_cmd.cpp",
+      "src/transport/command/0x03/mc_wheel_set_mech_relative_position_cmd.cpp",
+      "src/transport/command/0x03/mc_register_mech_cliff_info_cmd.cpp",
+      "src/transport/command/0x03/mc_register_mech_obstacle_info_cmd.cpp",
+       "src/transport/command/mc_set_mech_device_pairing_info_cmd.cpp",
       "src/transport/mc_data_buffer.cpp",
       "src/transport/mc_protocol_convertor.cpp",
       "src/transport/mc_subscription_center.cpp",
@@ -95,6 +105,7 @@ ohos_shared_library("mechbody_service") {
       "src/utils/load_mechbody_adapter.cpp",
       "src/dotReport/hisysevent_utils.cpp",
       "src/utils/subscribe_event_utils.cpp",
+      "src/utils/resource_manager_utils.cpp",
     ]
  }
   include_dirs = [
@@ -107,6 +118,7 @@ ohos_shared_library("mechbody_service") {
     "include/transport/command",
     "include/transport/command/0x01",
     "include/transport/command/0x02",
+    "include/transport/command/0x03",
     "include/utils",
     "//foundation/distributedhardware/mechbody_controller/interface/inner_api",
   ]
@@ -150,6 +162,8 @@ ohos_shared_library("mechbody_service") {
     "hisysevent:libhisysevent",
     "drivers_interface_camera:metadata",
     "distributed_notification_service:ans_innerkits",
+    "ability_runtime:ability_manager",  
+    "ability_runtime:app_manager"
   ]
 
   install_images = [ system_base_dir ]

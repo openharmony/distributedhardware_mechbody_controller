@@ -105,6 +105,14 @@ int32_t AniMechManagerStub::SearchTargetCallback(MessageParcel &data,
     return AniMechManager::GetInstance().SearchTargetCallback(cmdId, targetsNum, result);
 }
 
+int32_t AniMechManagerStub::SubscribeCallback(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t mechId = data.ReadInt32();
+    MechEventType mechEventType = static_cast<MechEventType>(data.ReadInt32());
+    HILOGI("mech id: %{public}d, mechEventType: %{public}d", mechId, static_cast<int32_t>(mechEventType));
+    return AniMechManager::GetInstance().SubscribeCallback(mechId, mechEventType);
+}
+
 void AniMechManagerStub::InitMechManagerFunc()
 {
     mechManagerFuncMap_[IMechBodyControllerCode::ATTACH_STATE_CHANGE_CALLBACK] =
@@ -114,6 +122,7 @@ void AniMechManagerStub::InitMechManagerFunc()
         &AniMechManagerStub::RotationAxesStatusChangeCallback;
     mechManagerFuncMap_[IMechBodyControllerCode::ROTATE_CALLBACK] = &AniMechManagerStub::RotatePromiseFulfillment;
     mechManagerFuncMap_[IMechBodyControllerCode::SEARCH_TARGET_CALLBACK] = &AniMechManagerStub::SearchTargetCallback;
+    mechManagerFuncMap_[IMechBodyControllerCode::SUBSCRIBE_CALLBACK] = &AniMechManagerStub::SubscribeCallback;
 }
 
 AniMechManagerStub::AniMechManagerStub()

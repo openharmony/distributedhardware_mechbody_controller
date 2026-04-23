@@ -29,6 +29,11 @@ void CommandFactory::SetFactoryProtocolVer(uint8_t protocolVer)
     protocolVer_ = protocolVer;
 }
 
+void CommandFactory::SetFactoryDevType(uint8_t devType)
+{
+    devType_ = devType;
+}
+
 std::shared_ptr<GetMechCameraTrackingLayoutCmd> CommandFactory::CreateGetMechCameraTrackingLayoutCmd()
 {
     return std::make_shared<GetMechCameraTrackingLayoutCmd>();
@@ -58,6 +63,12 @@ std::shared_ptr<GetMechProtocolVerCmd> CommandFactory::CreateGetMechProtocolVerC
 std::shared_ptr<SetMechDisconnectCmd> CommandFactory::CreateSetMechDisconnectCmd(uint8_t reason)
 {
     return std::make_shared<SetMechDisconnectCmd>(reason);
+}
+
+std::shared_ptr<SetMechDevicePairingInfoCmd> CommandFactory::CreateSetMechDevicePairingInfoCmd(
+    uint32_t deviceIdentifier)
+{
+    return std::make_shared<SetMechDevicePairingInfoCmd>(deviceIdentifier);
 }
 
 std::shared_ptr<GetMechRealNameCmd> CommandFactory::CreateGetMechRealNameCmd()
@@ -181,6 +192,12 @@ std::shared_ptr<CommonSetMechRotationTraceCmd> CommandFactory::CreateSetMechRota
     }
 }
 
+std::shared_ptr<WheelSetMechRotationTraceCmd> CommandFactory::CreateSetWheelMechRotationTraceCmd(
+    uint16_t taskId, const std::vector<RotateParam>& params)
+{
+    return std::make_shared<WheelSetMechRotationTraceCmd>(taskId, params);
+}
+
 std::shared_ptr<SetMechStopCmd> CommandFactory::CreateSetMechStopCmd()
 {
     return std::make_shared<SetMechStopCmd>();
@@ -195,6 +212,23 @@ std::shared_ptr<NormalSetMechLocationReportCmd> CommandFactory::CreateSetMechLoc
     uint8_t reportSwitch, uint8_t reportFrequency)
 {
     return std::make_shared<NormalSetMechLocationReportCmd>(reportSwitch, reportFrequency);
+}
+
+std::shared_ptr<WheelSetMechSceneControlCmd> CommandFactory::CreateWheelSetMechSceneControlCmd(ActionType actionType)
+{
+    return std::make_shared<WheelSetMechSceneControlCmd>(actionType);
+}
+
+std::shared_ptr<WheelSetMechRelativePositionCmd> CommandFactory::CreateWheelSetMechRelativePositionCmd(
+    uint16_t taskId, const std::vector<WheelPositionInfo>& params)
+{
+    return std::make_shared<WheelSetMechRelativePositionCmd>(taskId, params);
+}
+
+std::shared_ptr<NormalSetMechPhoneStatusCmd> CommandFactory::CreateSetMechPhoneStatusCmd(
+    const ScreenInfoParams &screenInfo)
+{
+    return std::make_shared<NormalSetMechPhoneStatusCmd>(screenInfo);
 }
 
 std::shared_ptr<CommonRegisterMechKeyEventCmd> CommandFactory::CreateRegisterMechCameraKeyEventCmd()
@@ -240,6 +274,16 @@ std::shared_ptr<NormalRegisterMechGenericEventCmd> CommandFactory::CreateRegiste
     return std::make_shared<NormalRegisterMechGenericEventCmd>();
 }
 
+std::shared_ptr<RegisterMechCliffInfoCmd> CommandFactory::CreateRegisterMechCliffInfoCmd()
+{
+    return std::make_shared<RegisterMechCliffInfoCmd>();
+}
+
+std::shared_ptr<RegisterMechObstacleInfoCmd> CommandFactory::CreateRegisterMechObstacleInfoCmd()
+{
+    return std::make_shared<RegisterMechObstacleInfoCmd>();
+}
+
 std::shared_ptr<RegisterMechWheelDataCmd> CommandFactory::CreateRegisterMechWheelDataCmd()
 {
     return std::make_shared<RegisterMechWheelDataCmd>();
@@ -255,6 +299,23 @@ std::shared_ptr<ActionGimbalFeatureControlCmd> CommandFactory::CreateActionGimba
 {
     return std::make_shared<ActionGimbalFeatureControlCmd>(params);
 }
+
+std::shared_ptr<WheelGetMechCapabilityInfoCmd> CommandFactory::CreateWheelGetMechCapabilityInfoCmd()
+{
+    return std::make_shared<WheelGetMechCapabilityInfoCmd>();
+}
+
+std::shared_ptr<WheelSetMechRotationToBaseCmd> CommandFactory::CreateWheelSetMechRotationToBaseCmd(
+    const RotateToBaseParam& params)
+{
+    return std::make_shared<WheelSetMechRotationToBaseCmd>(params);
+}
+
+std::shared_ptr<WheelSetMechMotionControlCmd> CommandFactory::CreateWheelSetMechMotionControlCmd(ControlCommand action)
+{
+    return std::make_shared<WheelSetMechMotionControlCmd>(action);
+}
+
 
 std::shared_ptr<CommandBase> CommandFactory::CreateFromData(std::shared_ptr<MechDataBuffer> data)
 {
@@ -289,6 +350,10 @@ std::shared_ptr<CommandBase> CommandFactory::CreateFromData(std::shared_ptr<Mech
             return CreateAndUnmarshal<NormalRegisterMechPositionInfoCmd>(data);
         case CMD_TYPE_NORMAL_GENERIC_NOTIFY:
             return CreateAndUnmarshal<NormalRegisterMechGenericEventCmd>(data);
+        case CMD_TYPE_CLIFF_INFO_NOTIFY:
+            return CreateAndUnmarshal<RegisterMechCliffInfoCmd>(data);
+        case CMD_TYPE_OBSTACLE_INFO_NOTIFY:
+            return CreateAndUnmarshal<RegisterMechObstacleInfoCmd>(data);
         default:
             return nullptr;
     }

@@ -168,9 +168,9 @@ int32_t MechBodyControllerService::OnAttachStateChange(const AttachmentState &at
     std::lock_guard<std::mutex> lock(deviceAttachCallbackMutex);
     for (const auto &item: deviceAttachCallback_) {
         uint32_t tokenId = item.first;
-        HILOGI("start send callback data to tokenId: %{public}s; mech info: %{public}s",
+        HILOGI("start send callback data to tokenId: %{public}s; mech info: %{public}s, attachmentState: %{public}d",
             GetAnonymUint32(tokenId).c_str(),
-               mechInfo.ToString().c_str());
+            mechInfo.ToString().c_str(), static_cast<int32_t>(attachmentState));
         sptr <IRemoteObject> callback = item.second;
         MessageParcel data;
         if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
@@ -213,9 +213,9 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
                                                     const std::string &mac, const std::string &param)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
-    HILOGI("start,tokenId: %{public}s; user operation: %{public}d; mac: %{public}s;",
+    HILOGI("start,tokenId: %{public}s; user operation: %{public}d; mac: %{public}s; param: %{public}s;",
            GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(*operation),
-           GetAnonymStr(mac).c_str());
+           GetAnonymStr(mac).c_str(), param.c_str());
     int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
     if (ret != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
         HILOGE("%{public}s: PERMISSION_DENIED", PERMISSION_NAME.c_str());
@@ -237,12 +237,27 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
         return INVALID_PARAMETERS_ERR;
     }
     std::string deviceName = deviceNameJson->valuestring;
+    cJSON *deviceIdentifierJson = cJSON_GetObjectItemCaseSensitive(rootValue, "identifier");
+    uint32_t deviceIdentifier = 0x00000000;
+    if (deviceIdentifierJson != nullptr && cJSON_IsString(deviceIdentifierJson) &&
+        deviceIdentifierJson->valuestring != nullptr) {
+        char *endPtr = nullptr;
+        errno = 0;
+        unsigned long val = strtoul(deviceIdentifierJson->valuestring, &endPtr, 16);
+        if (errno == 0 && endPtr != deviceIdentifierJson->valuestring && *endPtr == '\0') {
+            deviceIdentifier = static_cast<uint32_t>(val);
+            HILOGI("device first connect.");
+        } else {
+            HILOGE("Invalid identifier string: %s", deviceIdentifierJson->valuestring);
+        }
+    }
     cJSON_Delete(rootValue);
-    BleSendManager::GetInstance().MechbodyConnect(mac, deviceName);
+    BleSendManager::GetInstance().MechbodyConnect(mac, deviceName, deviceIdentifier);
     return ERR_OK;
 }
 
-int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId)
+int32_t MechBodyControllerService::OnDeviceConnected(
+    int32_t mechId, bool isFirstConnect, const uint32_t &deviceIdentifier)
 {
     HILOGI("enter. mechId %{public}d", mechId);
     std::lock_guard<std::mutex> lock(motionManagersMutex);
@@ -252,7 +267,8 @@ int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId)
             sendAdapter_ = std::make_shared<TransportSendAdapter>();
             sendAdapter_->RegisterBluetoothListener();
         }
-        std::shared_ptr<MotionManager> manager = std::make_shared<MotionManager>(sendAdapter_, mechId);
+        std::shared_ptr<MotionManager> manager =
+            std::make_shared<MotionManager>(sendAdapter_, mechId, isFirstConnect, deviceIdentifier);
         int32_t result = manager->Init();
         if (result == MECH_CONNECT_FAILED) {
             return MECH_CONNECT_FAILED;
@@ -403,6 +419,48 @@ int32_t MechBodyControllerService::GetTrackingEnabledDevice(bool &isEnabled)
         }
     }
     isEnabled = deviceIsEnable;
+    return ERR_OK;
+}
+
+int32_t MechBodyControllerService::NotifyMechEvent(const int32_t &mechId, const MechEventType &mechEventType)
+{
+    HILOGI("start, mechEvent: %{public}d", static_cast<int32_t>(mechEventType));
+    std::lock_guard<std::mutex> lock(subscribeChannelMutex_);
+    for (const auto& it : subscribeChannels_) {
+        auto [tokenId, event] = it.first;
+        HILOGI("callback, tokenId: %{public}s; event: %{public}d;",
+            GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(event));
+        if (mechEventType == event) {
+            sptr<IRemoteObject> remote = it.second;
+            MessageParcel data;
+            if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+                HILOGE("Write interface token failed");
+                return SEND_CALLBACK_INFO_FAILED;
+            }
+    
+            if (!data.WriteInt32(static_cast<int32_t>(mechId))) {
+                HILOGE("Write result failed");
+                return SEND_CALLBACK_INFO_FAILED;
+            }
+
+            if (!data.WriteInt32(static_cast<int32_t>(event))) {
+                HILOGE("Write result failed");
+                return SEND_CALLBACK_INFO_FAILED;
+            }
+            MessageParcel reply;
+            MessageOption option;
+            {
+                if (remote == nullptr) {
+                    HILOGE("command channel is nullptr for tokenId: %{public}s", GetAnonymUint32(tokenId).c_str());
+                } else {
+                    int32_t error =
+                        remote->SendRequest(static_cast<uint32_t>(IMechBodyControllerCode::SUBSCRIBE_CALLBACK),
+                        data, reply, option);
+                    HILOGI("Send callback data %{public}s", error == ERR_NONE ? "success" : "failed");
+                }
+            }
+        }
+    }
     return ERR_OK;
 }
 
@@ -1037,5 +1095,229 @@ bool MechBodyControllerService::IsSystemApp()
     return OHOS::Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(accessTokenIDEx);
 }
 
+int32_t MechBodyControllerService::Move(const int32_t &mechId, std::string &cmdId,
+    const std::shared_ptr<MoveParams> &moveParams)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!IsSystemApp()) {
+        HILOGE("current app is not system app.");
+        return PERMISSION_DENIED;
+    }
+    if (mechId < 0) {
+        HILOGE("Invalid mech id");
+        return INVALID_MECH_ID;
+    }
+    if (moveParams == nullptr) {
+        HILOGE("moveParams is nullptr.");
+        return INVALID_ROTATE_PARAM;
+    }
+    HILOGI("start, tokenId: %{public}s; mechId: %{public}d; moveParams: %{public}s",
+        GetAnonymUint32(tokenId).c_str(), mechId, moveParams->ToString().c_str());
+    
+    std::lock_guard<std::mutex> lock(motionManagersMutex);
+    if (motionManagers_.empty()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    auto it = motionManagers_.find(mechId);
+    if (it == motionManagers_.end()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    std::shared_ptr<MotionManager> motionManager = it->second;
+    if (motionManager == nullptr) {
+        HILOGE("motionManager not exist. tokenId: %{public}s; mechId: %{public}d",
+            GetAnonymUint32(tokenId).c_str(), mechId);
+        return DEVICE_NOT_CONNECTED;
+    }
+    int32_t result = motionManager->Move(tokenId, cmdId, moveParams);
+    HILOGI("end. execute result: %{public}d.", result);
+    return result;
+}
+
+int32_t MechBodyControllerService::MoveBySpeed(const int32_t &mechId, std::string &cmdId, uint16_t duration,
+    const std::shared_ptr<SpeedParams > &speedParams)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!IsSystemApp()) {
+        HILOGE("current app is not system app.");
+        return PERMISSION_DENIED;
+    }
+    if (mechId < 0) {
+        HILOGE("Invalid mech id");
+        return INVALID_MECH_ID;
+    }
+    if (duration < 0) {
+        HILOGE("Invalid duration");
+        return INVALID_ROTATE_PARAM;
+    }
+    if (speedParams == nullptr) {
+        HILOGE("moveParams is nullptr.");
+        return INVALID_ROTATE_PARAM;
+    }
+    HILOGI("start, tokenId: %{public}s; mechId: %{public}d; duration: %{public}d moveParams: %{public}s",
+        GetAnonymUint32(tokenId).c_str(), mechId, duration, speedParams->ToString().c_str());
+    
+    std::lock_guard<std::mutex> lock(motionManagersMutex);
+    if (motionManagers_.empty()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    auto it = motionManagers_.find(mechId);
+    if (it == motionManagers_.end()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    std::shared_ptr<MotionManager> motionManager = it->second;
+    if (motionManager == nullptr) {
+        HILOGE("motionManager not exist. tokenId: %{public}s; mechId: %{public}d",
+            GetAnonymUint32(tokenId).c_str(), mechId);
+        return DEVICE_NOT_CONNECTED;
+    }
+    int32_t result = motionManager->MoveBySpeed(tokenId, cmdId, duration, speedParams);
+    HILOGI("end. execute result: %{public}d.", result);
+    return result;
+}
+
+int32_t MechBodyControllerService::TurnBySpeed(const int32_t &mechId, std::string &cmdId,
+    float angleSpeed, uint16_t duration)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!IsSystemApp()) {
+        HILOGE("current app is not system app.");
+        return PERMISSION_DENIED;
+    }
+    if (mechId < 0) {
+        HILOGE("Invalid mech id");
+        return INVALID_MECH_ID;
+    }
+    if (duration < 0) {
+        HILOGE("Invalid duration");
+        return INVALID_ROTATE_PARAM;
+    }
+    HILOGI("start, tokenId: %{public}s; mechId: %{public}d; duration: %{public}d, angleSpeed: %{public}s",
+        GetAnonymUint32(tokenId).c_str(), mechId, duration, std::to_string(angleSpeed).c_str());
+    
+    std::lock_guard<std::mutex> lock(motionManagersMutex);
+    if (motionManagers_.empty()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    auto it = motionManagers_.find(mechId);
+    if (it == motionManagers_.end()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    std::shared_ptr<MotionManager> motionManager = it->second;
+    if (motionManager == nullptr) {
+        HILOGE("motionManager not exist. tokenId: %{public}s; mechId: %{public}d",
+            GetAnonymUint32(tokenId).c_str(), mechId);
+        return DEVICE_NOT_CONNECTED;
+    }
+    int32_t result = motionManager->TurnBySpeed(tokenId, cmdId, angleSpeed, duration);
+    HILOGI("end. execute result: %{public}d.", result);
+    return result;
+}
+
+int32_t MechBodyControllerService::IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!IsSystemApp()) {
+        HILOGE("current app is not system app.");
+        return PERMISSION_DENIED;
+    }
+    if (mechId < 0) {
+        HILOGE("Invalid mech id");
+        return INVALID_MECH_ID;
+    }
+    HILOGI("start, tokenId: %{public}s; mechId: %{public}d, actionType: %{public}d",
+        GetAnonymUint32(tokenId).c_str(), mechId, static_cast<int32_t>(actionType));
+
+    std::lock_guard<std::mutex> lock(motionManagersMutex);
+    if (motionManagers_.empty()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    auto it = motionManagers_.find(mechId);
+    if (it == motionManagers_.end()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    std::shared_ptr<MotionManager> motionManager = it->second;
+    if (motionManager == nullptr) {
+        HILOGE("motionManager not exist. tokenId: %{public}s; mechId: %{public}d",
+            GetAnonymUint32(tokenId).c_str(), mechId);
+        return DEVICE_NOT_CONNECTED;
+    }
+    int32_t result = motionManager->IsSupportAction(tokenId, actionType, isSupport);
+    HILOGI("end. execute result: %{public}d.", result);
+    return result;
+}
+
+int32_t MechBodyControllerService::DoAction(const int32_t &mechId, std::string &cmdId,
+    ActionType actionType)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!IsSystemApp()) {
+        HILOGE("current app is not system app.");
+        return PERMISSION_DENIED;
+    }
+    if (mechId < 0) {
+        HILOGE("Invalid mech id");
+        return INVALID_MECH_ID;
+    }
+ 
+    HILOGI("start, tokenId: %{public}s; mechId: %{public}d; actionType: %{public}d",
+        GetAnonymUint32(tokenId).c_str(), mechId, static_cast<uint32_t>(actionType));
+    
+    std::lock_guard<std::mutex> lock(motionManagersMutex);
+    if (motionManagers_.empty()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    auto it = motionManagers_.find(mechId);
+    if (it == motionManagers_.end()) {
+        return DEVICE_NOT_CONNECTED;
+    }
+    std::shared_ptr<MotionManager> motionManager = it->second;
+    if (motionManager == nullptr) {
+        HILOGE("motionManager not exist. tokenId: %{public}s; mechId: %{public}d",
+            GetAnonymUint32(tokenId).c_str(), mechId);
+        return DEVICE_NOT_CONNECTED;
+    }
+    int32_t result = motionManager->DoAction(tokenId, cmdId, actionType);
+    HILOGI("end. execute result: %{public}d.", result);
+    return result;
+}
+
+int32_t MechBodyControllerService::SubscribeCallback(sptr <IRemoteObject> &callback, MechEventType mechEventType)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!IsSystemApp()) {
+        HILOGE("current app is not system app.");
+        return PERMISSION_DENIED;
+    }
+    if (callback == nullptr) {
+        HILOGE("callback is nullptr");
+        return INVALID_REMOTE_OBJECT;
+    }
+    HILOGI("start, tokenId: %{public}s; mechEventType: %{public}d;",
+        GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(mechEventType));
+    
+    sptr <MechControllerIpcDeathListener> diedListener = new MechControllerIpcDeathListener();
+    diedListener->tokenId_ = tokenId;
+    diedListener->objectType_ = RemoteObjectType::SUBSCRIBE_CALLBACK;
+    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
+    callback->AddDeathRecipient(diedListener);
+
+    std::lock_guard<std::mutex> lock(subscribeChannelMutex_);
+    subscribeChannels_[std::pair(tokenId, mechEventType)] = callback;
+    HILOGI(
+        "end, callback add success, tokenId: %{public}s; mechEventType: %{public}d;"
+        "subscribeChannels_ size: %{public}zu;",
+        GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(mechEventType), subscribeChannels_.size());
+    return ERR_OK;
+}
+
+int32_t MechBodyControllerService::UnSubscribeCallback(MechEventType mechEventType)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    HILOGI("start, tokenId: %{public}s; mechEventType: %{public}d;",
+        GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(mechEventType));
+    std::lock_guard<std::mutex> lock(subscribeChannelMutex_);
+    subscribeChannels_.erase(std::pair(tokenId, mechEventType));
+    return ERR_OK;
+}
 } // namespace MechBodyController
 } // namespace OHOS

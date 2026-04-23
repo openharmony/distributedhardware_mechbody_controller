@@ -37,6 +37,8 @@ private:
     SubscriptionCenter& operator= (const SubscriptionCenter&) = delete;
     SubscriptionCenter(SubscriptionCenter&&) = delete;
     SubscriptionCenter& operator= (SubscriptionCenter&&) = delete;
+    void DispatchToCallback(const std::shared_ptr<CommandBase> &cmd,
+        const std::shared_ptr<IMechEventListener> &callback);
 
 public:
     int32_t Subscribe(uint16_t type, const std::shared_ptr<IMechEventListener> &listener);

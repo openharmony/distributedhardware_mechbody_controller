@@ -29,6 +29,12 @@
 #include "key_event.h"
 #include "input_manager.h"
 #include "mc_command_factory.h"
+#include "ability_manager_client.h"
+#include "app_mgr_interface.h"
+#include "system_ability_definition.h"
+#include "iservice_registry.h"
+#include "string_wrapper.h"
+#include "int_wrapper.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -67,7 +73,8 @@ struct MechNapiCommandCallbackInfo {
 
 class MotionManager : public IMechEventListener, public std::enable_shared_from_this<MotionManager> {
 public:
-    MotionManager(const std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId);
+    MotionManager(const std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isFirstConnect = false,
+        const uint32_t &deviceIdentifier = 0x00000000);
     int32_t Init();
 
 public:
@@ -76,10 +83,15 @@ public:
     MotionManager& operator=(const MotionManager&) = delete;
 
     void RegisterEventListener();
+    void RegisterBaseEvents();
+    void RegisterExtendedAndTrackingEvents();
     void RegisterEventListenerV01();
     int32_t Rotate(std::shared_ptr<RotateParam> rotateParam, uint32_t &tokenId, std::string &napiCmdId);
     int32_t RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
                           uint32_t &tokenId, std::string &napiCmdId);
+    std::shared_ptr<CommandBase> ExecuteRotateCommand(const RotateParam &param, uint8_t taskId);
+    std::shared_ptr<CommonSetMechRotationBySpeedCmd> CreateAndSendRotateBySpeedCommand(
+        std::shared_ptr<RotateBySpeedParam> rotateSpeedParam, uint8_t responseTaskId);
     int32_t StopRotate(uint32_t &tokenId, std::string &napiCmdId);
 
     int32_t GetSpeedControlTimeLimit(std::shared_ptr<TimeLimit> &timeLimit);
@@ -92,6 +104,7 @@ public:
     int32_t SetMechCameraTrackingLayout(const std::shared_ptr<LayoutParams> layoutParams);
     int32_t GetMechCameraTrackingLayout(std::shared_ptr<LayoutParams> &layoutParams);
     int32_t SetMechCameraInfo(const CameraInfoParams &mechCameraInfo);
+    int32_t SetMechScreenInfo(const ScreenInfoParams &mechScreenInfo);
     int32_t GetMechBaseInfo(std::shared_ptr<MechBaseInfo> &mechBaseInfo);
     int32_t GetMechCapabilityInfo(std::shared_ptr<MechCapabilityInfo> &mechCapabilityInfo);
     int32_t GetRotationAxesStatus(const int32_t &mechId, RotationAxesStatus &axesStatus);
@@ -99,6 +112,8 @@ public:
     void MechAttitudeNotify(const std::shared_ptr<CommonRegisterMechPositionInfoCmd> &cmd);
     void MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd);
     void MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd> &cmd);
+    void MechCliffInfoNotify(const std::shared_ptr<RegisterMechCliffInfoCmd>& cmd);
+    void MechObstacleInfoNotify(const std::shared_ptr<RegisterMechObstacleInfoCmd>& cmd);
     void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd);
     void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd);
     void MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd);
@@ -107,6 +122,24 @@ public:
     int32_t ActionGimbalFeatureControl(const ActionControlParams &actionControlParams);
     const std::string &GetDeviceRealName() const;
     const std::string &TryGetDeviceRealNameSync(uint32_t timeoutMs);
+
+    int32_t Move(uint32_t tokenId, std::string &napiCmdId, const std::shared_ptr<MoveParams> &moveParams);
+    int32_t MoveBySpeed(uint32_t tokenId, std::string &napiCmdId, uint16_t duration,
+        const std::shared_ptr<SpeedParams> &speedParams);
+    int32_t TurnBySpeed(uint32_t tokenId, std::string &napiCmdId, float angleSpeed, uint16_t duration);
+    int32_t IsSupportAction(uint32_t tokenId, ActionType actionType, bool &isSupport);
+    int32_t DoAction(uint32_t tokenId, std::string &napiCmdId, ActionType actionType);
+    std::vector<RotateParam> ConvertMoveParamsToRotateParams(
+        const std::shared_ptr<MoveParams>& moveParams);
+    std::vector<RotateParam> ConvertSpeedParamsToRotateParams(
+        const std::shared_ptr<SpeedParams> &speedParams, int32_t duration);
+    int32_t SendRotateCommand(uint32_t tokenId, std::string& napiCmdId,
+        const std::vector<RotateParam>& rotateParams);
+    void SendRotateCommandImpl(uint8_t responseTaskId, uint16_t rotateTaskId,
+        const std::vector<RotateParam> &rotateParams);
+    void ScheduleCompletionCallback(const MechNapiCommandCallbackInfo& callbackInfo,
+        uint32_t totalDuration);
+    int32_t CheckWheelSpeedLimit(const std::vector<RotateParam>& rotateParams);
 
 private:
     void MMIKeyEvent(CameraKeyEvent eventType);
@@ -122,6 +155,10 @@ private:
     std::shared_ptr<MMI::KeyEvent> CreateKeyEvent(int32_t keyCode, int32_t keyAction);
     void StartEvent();
     void HandleMechPlacementChange(bool isPhoneOn);
+    void HandlePhoneOff(bool isPhoneOn);
+    void HandlePhoneOn(bool isPhoneOn);
+    void ProcessPhoneOffForegroundCheck();
+    void ProcessPhoneOnForegroundCheck();
     void HandelRotateParam(std::shared_ptr<RotateParam> &rotateParam, bool &willLimitChange);
     void CheckYawDegree(std::shared_ptr<RotateParam> &rotateParam, const RotateDegreeLimit &limit, float yawResult);
     void CheckRollDegree(std::shared_ptr<RotateParam> &rotateParam, const RotateDegreeLimit &limit, float rollResult);
@@ -140,11 +177,18 @@ private:
     void SetProtocolVer();
     void GetMechRealName();
     void GetMechLimitInfo();
-    void GetDeviceBaseInfo();
+    int32_t GetDeviceBaseInfo();
     void GetDeviceCapabilityInfo();
     void GetDeviceStateInfo();
     void UpdateTrackingTime();
     void SetDeviceRealName(const std::string &deviceRealName);
+    void GetWheelCapabilityInfo();
+    void SetDevicePairingInfo(const uint32_t deviceIdentifier);
+    bool IsDesktopScene(const std::vector<AppExecFwk::AppStateData> &list);
+    bool IsAiDispatchServiceInForeground(const std::vector<AppExecFwk::AppStateData> &list);
+    sptr<AppExecFwk::IAppMgr> GetAppManagerInstance();
+    void ConnectServiceExtension(AAFwk::WantParams wantParams);
+    int32_t ConnectAbility();
 
 private:
     std::shared_ptr<DeviceStatus> deviceStatus_;
@@ -186,8 +230,16 @@ private:
 
     DeviceBaseInfo deviceBaseInfo_;
     DeviceCapabilityInfo deviceCapabilityInfo_;
+    WheelCapabilityInfo wheelCapabilityInfo_;
     uint16_t taskId_ = 1;
     bool SetMechCameraInfo_ = false;
+    bool setMechScreenInfo_ = false;
+
+    std::mutex deviceBaseInfoMutex_;
+    std::condition_variable deviceBaseInfoCon_;
+    bool deviceBaseInfoReady_ = false;
+    bool isFirstConnect_ = false;
+    uint32_t deviceIdentifier_ = 0x00000000;
 };
 
 class MechEventListenerImpl : public IMechEventListener {
@@ -198,6 +250,8 @@ public:
     void MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd) override;
     void MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd) override;
     void MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd) override;
+    void MechCliffInfoNotify(const std::shared_ptr<RegisterMechCliffInfoCmd>& cmd) override;
+    void MechObstacleInfoNotify(const std::shared_ptr<RegisterMechObstacleInfoCmd>& cmd) override;
     void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd) override;
     void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd) override;
     void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd) override;

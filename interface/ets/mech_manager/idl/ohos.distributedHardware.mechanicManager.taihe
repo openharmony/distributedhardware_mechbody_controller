@@ -61,6 +61,68 @@ struct RotationAxesStatus {
     pitchLimited:  Optional<RotationAxisLimited>;
 }
 
+enum SpeedGear : i32 {
+    LOW_SPEED = 0,
+    MIDDLE_SPEED = 1,
+    HIGH_SPEED = 2
+}
+
+enum MarchingMode : i32 {
+    TURN_THEN_MOVE = 0,
+    TURNING_MOVING = 1,
+}
+
+enum ActionType : i32 {
+    LANDSCAPE_PORTRAIT_SWITCH = 0,
+    PATROL_MODE = 1,
+    GREET_MODE = 2,
+    HEAD_UP = 3,
+    HEAD_UP_SLIGHTLY = 4,
+    EYE_LEVEL = 5,
+    HEAD_DOWN_SLIGHTLY = 6,
+    HEAD_DOWN = 7,
+    HEAD_WIGGLE = 8,
+    NOD = 9,
+    HEAD_SHAKE = 10,
+    HAPPY = 1000,
+    ANGRY = 1001,
+    SAD = 1002,
+    SCARED = 1003,
+    DANCE = 2000,
+    ACTING_CUTE = 2001,
+    CELEBRATE = 2002,
+    WAKEUP = 2003,
+    SLEEP = 2004,
+    LOW_POWER = 2005,
+    THINKING = 2006
+}
+
+enum MechEventType : i32 {
+    DEVICE_ADSORBED = 0,
+    DEVICE_UNADSORBED = 1,
+    REACH_CLIFF = 2,
+    REACH_OBSTACLE = 3,
+    LOW_POWER = 4,
+}
+
+struct MoveParams {
+    distance: i32;
+    angle: f64;
+    speedGear: Optional<SpeedGear>;
+    mode: Optional<MarchingMode>;
+}
+
+struct SpeedParams {
+    speed: i32;
+    angle: f64;
+    mode: Optional<MarchingMode>;
+}
+
+struct MechEvent {
+    mechId: i32;
+    event: MechEventType;
+}
+
 enum RotationAxisLimited : i32 {
     NOT_LIMITED = 0,
     NEGATIVE_LIMITED = 1,
@@ -105,9 +167,13 @@ enum TrackingEvent : i32 {
 
 enum Result : i32 {
     COMPLETED = 0,
-    INTERRUPTED = 1,
-    LIMITED = 2,
-    TIMEOUT = 3,
+    PARA_ERROR = 1,
+    EXE_ERROR = 2,
+    LIMITED = 3,
+    TIMEOUT = 4,
+    INTERRUPTED = 5,
+    ERR_CLIFF = 6,
+    ERR_OBSTACLE = 7,
     SYSTEM_ERROR = 100
 }
 
@@ -201,3 +267,24 @@ function OffRotationAxesStatusChangeInner(callback: Optional<(info :RotationAxes
 
 @rename("searchTarget")
 function SearchTargetInner(target: TargetInfo, params: SearchParams):  @sts_type("Promise<SearchResult>") Opaque;
+
+@rename("move")
+function MoveInner(mechId: i32, moveParams: MoveParams): @sts_type("Promise<Result>") Opaque;
+
+@rename("moveBySpeed")
+function MoveBySpeedInner(mechId: i32, speedParams: SpeedParams, duration: i32): @sts_type("Promise<Result>") Opaque;
+
+@rename("turnBySpeed")
+function TurnBySpeedInner(mechId: i32, angleSpeed: f64, duration: i32): @sts_type("Promise<Result>") Opaque;
+
+@rename("isSupportAction")
+function IsSupportActionInner(mechId: i32, actionType: ActionType): bool;
+
+@rename("doAction")
+function DoActionInner(mechId: i32, actionType: ActionType): @sts_type("Promise<Result>") Opaque;
+
+@rename("subscribe")
+function SubscribeInner(events: Array<MechEventType>, callback: (info :MechEvent) => void): void;
+
+@rename("unSubscribe")
+function UnSubscribeInner(events: Array<MechEventType>, callback: (info :MechEvent) => void): void;

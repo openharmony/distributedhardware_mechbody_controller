@@ -27,7 +27,7 @@ public:
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.MechBodyController.IMechBodyController");
 
 public:
-    virtual int32_t OnDeviceConnected(int32_t mechId) = 0;
+    virtual int32_t OnDeviceConnected(int32_t mechId, bool isFirstConnect, const uint32_t &deviceIdentifier) = 0;
     virtual int32_t OnDeviceDisconnected(int32_t mechId) = 0;
 
     virtual int32_t RegisterAttachStateChangeCallback(const sptr<IRemoteObject> callback) = 0;
@@ -60,6 +60,18 @@ public:
     virtual int32_t UnRegisterRotationAxesStatusChangeCallback() = 0;
     virtual int32_t SearchTarget(std::string &napiCmdId, const std::shared_ptr<TargetInfo> &targetInfo,
         const std::shared_ptr<SearchParams> &searchParams) = 0;
+
+    virtual int32_t Move(const int32_t &mechId, std::string &cmdId,
+        const std::shared_ptr<MoveParams> &moveParams) = 0;
+    virtual int32_t MoveBySpeed(const int32_t &mechId, std::string &cmdId, uint16_t duration,
+        const std::shared_ptr<SpeedParams > &speedParams) = 0;
+    virtual int32_t TurnBySpeed(const int32_t &mechId, std::string &cmdId,
+        float angleSpeed, uint16_t duration) = 0;
+    virtual int32_t IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport) = 0;
+    virtual int32_t DoAction(const int32_t &mechId, std::string &cmdId,
+        ActionType actionType) = 0;
+    virtual int32_t SubscribeCallback(sptr <IRemoteObject> &callback, MechEventType mechEventType) = 0;
+    virtual int32_t UnSubscribeCallback(MechEventType mechEventType) = 0;
 };
 } // namespace MechBodyController
 } // namespace OHOS

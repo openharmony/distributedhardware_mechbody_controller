@@ -69,7 +69,7 @@ public:
     void OnCharacteristicChanged(const OHOS::Bluetooth::GattCharacteristic &characteristic);
     const std::string &getMac() const;
     void setMac(const std::string &mac);
-
+    void OnMtuUpdate(int mtu, int ret);
 private:
     std::string mac;
 };
@@ -178,7 +178,7 @@ public:
     int32_t UnRegisterTransportSendAdapter(const std::shared_ptr<BleReceviceListener> listener);
     int32_t OnGattReady(MechInfo &mechInfo);
     void OnGattDisconnect(MechInfo &mechInfo);
-    int32_t MechbodyConnect(std::string mac, std::string deviceName);
+    int32_t MechbodyConnect(std::string mac, std::string deviceName, uint32_t deviceIdentifier);
     int32_t MechbodyGattcConnect(std::string mac, std::string deviceName);
     int32_t MechbodyPair(std::string &mac, std::string &deviceName);
     int32_t MechbodyHidConnect(std::string &mac, std::string &deviceName);
@@ -207,6 +207,9 @@ public:
     uint16_t handle_ = 0;
     int32_t permissions_ = 0;
     int32_t properties_ = 0;
+    std::mutex mtuMutex_;
+    std::condition_variable mtuUpdateCv_;
+    bool isMtuUpdated_ = false;
 
 private:
     void InitScanPara();
@@ -215,6 +218,7 @@ private:
 
     // send
     int32_t MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t dataLen);
+    void ConnectMechbodyInternal(std::string mac, std::string deviceName, uint32_t deviceIdentifier);
 
 private:
     std::shared_ptr<Bluetooth::BleCentralManager> bleCentralManager_ = nullptr;

@@ -58,6 +58,8 @@ static constexpr int32_t BLUETOOTH_SERVICE_SERVICE_SA_ID = 1130;
 constexpr int32_t CONNECT_TIMEOUT_SECOND = 10;
 constexpr int32_t INIT_TIMEOUT_SECOND = 3;
 constexpr int32_t GET_REAL_NAME_TIMEOUT_SECOND = 2;
+constexpr int32_t MTU_UPDATE_TIMEOUT_SECOND = 2;
+constexpr int32_t MTU_UPDATE_SIZE = 247;
 constexpr uint32_t DOT_REPORT_GET_REAL_NAME_TIMEOUT_MS = 3000;
 
 UUID SERVICE_UUID = UUID::FromString("15f1e600-a277-43fc-a484-dd39ef8a9100"); // GATT Service uuid
@@ -517,6 +519,18 @@ int32_t BleSendManager::OnGattReady(MechInfo &mechInfo)
         MechConnectManager::GetInstance().SetMechanicGattState(mechInfo.mac, true);
         gattCv_.notify_all();
     }
+    gattClient_->RequestBleMtuSize(MTU_UPDATE_SIZE);
+    {
+        std::unique_lock<std::mutex> lock(mtuMutex_);
+        if (!mtuUpdateCv_.wait_for(lock, std::chrono::seconds(MTU_UPDATE_TIMEOUT_SECOND),
+                                   [this]() { return isMtuUpdated_; })) {
+            HILOGE("MECHBODY_EXEC_CONNECT wait for mtu update timeout");
+            return MECH_CONNECT_FAILED;
+        }
+
+        // 重置标志位（加锁）
+        isMtuUpdated_ = false;
+    }
     int32_t result = MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
     if (result == MECH_CONNECT_FAILED) {
         return MECH_CONNECT_FAILED;
@@ -525,6 +539,16 @@ int32_t BleSendManager::OnGattReady(MechInfo &mechInfo)
     McCameraTrackingController::GetInstance().Init();
     HILOGI("MECHBODY_EXEC_CONNECT Tracking init finish.");
     return ERR_OK;
+}
+
+void BleGattClientCallback::OnMtuUpdate(int mtu, int ret)
+{
+    HILOGI("MECHBODY_EXEC_CONNECT OnMtuUpdate mtu: %{public}d, ret: %{public}d", mtu, ret);
+    {
+        std::lock_guard<std::mutex> lock(bleSendManager.mtuMutex_);
+        bleSendManager.isMtuUpdated_ = true;
+    }
+    bleSendManager.mtuUpdateCv_.notify_all();
 }
 
 void BleSendManager::InitScanPara()
@@ -634,49 +658,9 @@ void DotReportMechKitStartEventHandlerInitFail(const std::string &deviceName)
     HisyseventUtils::DotReportMechKitStartEvent(mechKitStartReportInfo);
 }
 
-int32_t BleSendManager::MechbodyConnect(std::string mac, std::string deviceName)
+int32_t BleSendManager::MechbodyConnect(std::string mac, std::string deviceName, uint32_t deviceIdentifier)
 {
     HILOGI("MECHBODY_EXEC_CONNECT satrt");
-    // once connection may involve multiple calls to the NAPI interface.
-	// Mechkit employs a single-threaded task queue to ensure processing occurs only once
-    auto connFunc = [this, mac, deviceName]() {
-        if (MechConnectManager::GetInstance().IsConnect()) {
-            HILOGW("MECHBODY_EXEC_CONNECT mechInfos has connected.");
-            return;
-        }
-        MechInfo mechInfo;
-        mechInfo.mac = mac;
-        mechInfo.mechName = deviceName;
-        if (MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo) != ERR_OK) {
-            if (MechConnectManager::GetInstance().AddMechInfo(mechInfo) != ERR_OK) {
-                HILOGE("MECHBODY_EXEC_CONNECT save machInfo for mac: %{public}s", mechInfo.ToString().c_str());
-                return;
-            }
-        }
-
-        HILOGI("MECHBODY_EXEC_CONNECT async connect start, mech info for: %{public}s", mechInfo.ToString().c_str());
-        if (mechInfo.gattCoonectState) {
-            HILOGE("MECHBODY_EXEC_CONNECT mech has connected: %{public}s", GetAnonymStr(mechInfo.mac).c_str());
-            return;
-        }
-
-        do {
-            int32_t gattRet = MechbodyGattcConnect(mechInfo.mac, mechInfo.mechName);
-            HILOGE("MECHBODY_EXEC_CONNECT gatt connect result: %{public}d", gattRet);
-            if (gattRet != ERR_OK) {
-                MechbodyDisConnectSync(mechInfo);
-                DotReportMechKitStartGattConnectFail(mechInfo);
-                break;
-            }
-            // connect success
-            int32_t pairRet = MechbodyPair(mechInfo.mac, mechInfo.mechName);
-            int32_t hidRet = MechbodyHidConnect(mechInfo.mac, mechInfo.mechName);
-            HILOGE("MECHBODY_EXEC_CONNECT pair result: %{public}d; hid result: %{public}d", pairRet, hidRet);
-            DotReportMechKitStartGattSuccess(mechInfo);
-        } while (false);
-        HILOGI("MECHBODY_EXEC_CONNECT async connect end, mech info for: %{public}s", mechInfo.ToString().c_str());
-    };
-
     if (eventHandler_ == nullptr) {
         HILOGI("MECHBODY_EXEC_CONNECT eventHandler_ is nullptr.");
         std::unique_lock<std::mutex> lock(initMutex_);
@@ -687,9 +671,53 @@ int32_t BleSendManager::MechbodyConnect(std::string mac, std::string deviceName)
             return MECH_CONNECT_FAILED;
         }
     }
+    auto connFunc = [this, mac, deviceName, deviceIdentifier]() {
+        ConnectMechbodyInternal(mac, deviceName, deviceIdentifier);
+    };
     eventHandler_->PostTask(connFunc);
     HILOGI("MECHBODY_EXEC_CONNECT end");
     return ERR_OK;
+}
+
+void BleSendManager::ConnectMechbodyInternal(std::string mac, std::string deviceName, uint32_t deviceIdentifier)
+{
+    if (MechConnectManager::GetInstance().IsConnect()) {
+        HILOGW("MECHBODY_EXEC_CONNECT mechInfos has connected.");
+        return;
+    }
+    MechInfo mechInfo;
+    mechInfo.mac = mac;
+    mechInfo.mechName = deviceName;
+    mechInfo.isFirstConnect = (deviceIdentifier == 0) ? false : true;
+    mechInfo.deviceIdentifier = deviceIdentifier;
+    if (MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo) != ERR_OK) {
+        if (MechConnectManager::GetInstance().AddMechInfo(mechInfo) != ERR_OK) {
+            HILOGE("MECHBODY_EXEC_CONNECT save machInfo for mac: %{public}s", mechInfo.ToString().c_str());
+            return;
+        }
+    }
+
+    HILOGI("MECHBODY_EXEC_CONNECT async connect start, mech info for: %{public}s", mechInfo.ToString().c_str());
+    if (mechInfo.gattCoonectState) {
+        HILOGE("MECHBODY_EXEC_CONNECT mech has connected: %{public}s", GetAnonymStr(mechInfo.mac).c_str());
+        return;
+    }
+
+    do {
+        int32_t gattRet = MechbodyGattcConnect(mechInfo.mac, mechInfo.mechName);
+        HILOGE("MECHBODY_EXEC_CONNECT gatt connect result: %{public}d", gattRet);
+        if (gattRet != ERR_OK) {
+            MechbodyDisConnectSync(mechInfo);
+            DotReportMechKitStartGattConnectFail(mechInfo);
+            break;
+        }
+        // connect success
+        int32_t pairRet = MechbodyPair(mechInfo.mac, mechInfo.mechName);
+        int32_t hidRet = MechbodyHidConnect(mechInfo.mac, mechInfo.mechName);
+        HILOGE("MECHBODY_EXEC_CONNECT pair result: %{public}d; hid result: %{public}d", pairRet, hidRet);
+        DotReportMechKitStartGattSuccess(mechInfo);
+    } while (false);
+    HILOGI("MECHBODY_EXEC_CONNECT async connect end, mech info for: %{public}s", mechInfo.ToString().c_str());
 }
 
 int32_t BleSendManager::MechbodyGattcConnect(std::string mac, std::string deviceName)

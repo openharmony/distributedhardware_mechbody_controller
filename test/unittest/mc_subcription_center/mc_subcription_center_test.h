@@ -31,6 +31,8 @@ public:
     void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd) {};
     void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd) {};
     void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd) {};
+    void MechCliffInfoNotify(const std::shared_ptr<RegisterMechCliffInfoCmd>& cmd) {};
+    void MechObstacleInfoNotify(const std::shared_ptr<RegisterMechObstacleInfoCmd>& cmd) {};
 };
 
 class SubscriptionCenterTest : public testing::Test {

@@ -379,6 +379,11 @@ bool McCameraTrackingController::IsCurrentFocus()
     return FOCUS_MODE_WHITELIST.find(currentCameraInfo_->focusMode) == FOCUS_MODE_WHITELIST.end();
 }
 
+bool McCameraTrackingController::IsVertical(MobileRotation sensorRotation)
+{
+    return sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN;
+}
+
 int32_t McCameraTrackingController::UpdateMotionManagers()
 {
     HILOGI("start");
@@ -396,6 +401,10 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
     cameraInfoParams.isRecording = currentCameraInfo_->isRecording;
     cameraInfoParams.cameraType = currentCameraInfo_->cameraType;
 
+    ScreenInfoParams screenInfoParam;
+    screenInfoParam.isPortrait = IsVertical(sensorRotation_);
+    HILOGI("screenInfoParam isPortrait: %{public}d.", screenInfoParam.isPortrait);
+
     std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
     for (const auto &item : motionManagers) {
         int32_t mechId = item.first;
@@ -406,7 +415,9 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
         }
 
         int32_t result = motionManager->SetMechCameraInfo(cameraInfoParams);
-        HILOGI("mech id: %{public}d result code: %{public}d", mechId, result);
+        int32_t screenInfoResult = motionManager->SetMechScreenInfo(screenInfoParam);
+        HILOGI("mech id: %{public}d result code: %{public}d, screenInfoResult %{public}d:",
+            mechId, result, screenInfoResult);
         if (result != ERR_OK) {
             return result;
         }

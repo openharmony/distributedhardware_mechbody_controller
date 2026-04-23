@@ -35,10 +35,10 @@ public:
     int32_t AppendUint16(uint16_t value);
     int32_t AppendUint32(uint32_t value);
     int32_t AppendUint64(uint64_t value);
+    int32_t AppendInt16(int16_t value);
     int32_t AppendFloat(float value);
     int32_t AppendDouble(double value);
     int32_t AppendDataBuffer(std::shared_ptr<MechDataBuffer> data);
-
     int32_t ReadUint8(size_t offset, uint8_t& outValue);
     int32_t ReadUint16(size_t offset, uint16_t& outValue);
     int32_t ReadUint32(size_t offset, uint32_t& outValue);

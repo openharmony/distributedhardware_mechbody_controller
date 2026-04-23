@@ -103,6 +103,14 @@ int32_t JsMechManagerStub::SearchTargetCallback(MessageParcel &data,
     return JsMechManagerService::GetInstance().SearchTargetCallback(cmdId, targetsNum, result);
 }
 
+int32_t JsMechManagerStub::SubscribeCallback(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t mechId = data.ReadInt32();
+    MechEventType mechEventType = static_cast<MechEventType>(data.ReadInt32());
+    HILOGI("mech id: %{public}d, mechEventType: %{public}d", mechId, static_cast<int32_t>(mechEventType));
+    return JsMechManagerService::GetInstance().SubscribeCallbackInvoke(mechId, mechEventType);
+}
+
 void JsMechManagerStub::InitMechManagerFunc()
 {
     mechManagerFuncMap_[IMechBodyControllerCode::ATTACH_STATE_CHANGE_CALLBACK] =
@@ -112,6 +120,7 @@ void JsMechManagerStub::InitMechManagerFunc()
         &JsMechManagerStub::RotationAxesStatusChangeCallback;
     mechManagerFuncMap_[IMechBodyControllerCode::ROTATE_CALLBACK] = &JsMechManagerStub::RotatePromiseFulfillment;
     mechManagerFuncMap_[IMechBodyControllerCode::SEARCH_TARGET_CALLBACK] = &JsMechManagerStub::SearchTargetCallback;
+    mechManagerFuncMap_[IMechBodyControllerCode::SUBSCRIBE_CALLBACK] = &JsMechManagerStub::SubscribeCallback;
 }
 
 JsMechManagerStub::JsMechManagerStub()

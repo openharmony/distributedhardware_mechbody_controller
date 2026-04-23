@@ -39,10 +39,12 @@ namespace MechBodyController {
 #define ACH_STATE_CHANGE_INFO_CB  void(AttachStateChangeInfoTaihe const& info)
 #define TRACKING_EVENT_INFO_CB  void(TrackingEventInfoTaihe const& info)
 #define ROT_AXES_STATE_CHANGE_INFO_CB  void(RotationAxesStateChangeInfoTaihe const& info)
+#define SUBSCRIBE_INFO_CB  void(MechEventInfoTaihe const& info)
 
 using AttachStateChangeInfoTaihe = ::ohos::distributedHardware::mechanicManager::AttachStateChangeInfo;
 using TrackingEventInfoTaihe = ::ohos::distributedHardware::mechanicManager::TrackingEventInfo;
 using RotationAxesStateChangeInfoTaihe = ::ohos::distributedHardware::mechanicManager::RotationAxesStateChangeInfo;
+using MechEventInfoTaihe = ::ohos::distributedHardware::mechanicManager::MechEvent;
 using AttachStateTaihe = ::ohos::distributedHardware::mechanicManager::AttachState;
 using TrackingEventTaihe = ::ohos::distributedHardware::mechanicManager::TrackingEvent;
 using MechInfoTaihe = ::ohos::distributedHardware::mechanicManager::MechInfo;
@@ -60,9 +62,16 @@ using OperationTaihe = ::ohos::distributedHardware::mechanicManager::Operation;
 using MechDeviceTypeTaihe = ::ohos::distributedHardware::mechanicManager::MechDeviceType;
 using RotationAxisLimitedTaihe = ::ohos::distributedHardware::mechanicManager::RotationAxisLimited;
 using TrackingEventTaihe = ::ohos::distributedHardware::mechanicManager::TrackingEvent;
+using SpeedGearTaihe = ::ohos::distributedHardware::mechanicManager::SpeedGear;
+using MarchingModeTaihe = ::ohos::distributedHardware::mechanicManager::MarchingMode;
+using ActionTypeTaihe = ::ohos::distributedHardware::mechanicManager::ActionType;
+using MechEventTypeTaihe = ::ohos::distributedHardware::mechanicManager::MechEventType;
+using MoveParamsTaihe = ::ohos::distributedHardware::mechanicManager::MoveParams;
+using SpeedParamsTaihe = ::ohos::distributedHardware::mechanicManager::SpeedParams;
 using AttachStateCBTaihe = ::taihe::callback<ACH_STATE_CHANGE_INFO_CB>;
 using TrackingEventCBTaihe = ::taihe::callback<TRACKING_EVENT_INFO_CB>;
 using RotationAxesCBTaihe = ::taihe::callback<ROT_AXES_STATE_CHANGE_INFO_CB>;
+using SubscribeCBTaihe = ::taihe::callback<SUBSCRIBE_INFO_CB>;
 
 struct AniRotatePrimiseFulfillmentParam {
     std::string cmdId;
@@ -92,11 +101,14 @@ public:
     int32_t RotatePromiseFulfillment(const std::string &cmdId,
         const int32_t &result);
     int32_t SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result);
+    int32_t SubscribeCallback(const int32_t &mechId, const MechEventType &mechEvent);
+    void ExecuteCallbackTask(const SubscribeCBTaihe& callback, int32_t mechId, MechEventType mechEventType);
 
     void OnAttachStateChangeRemoteDied(const wptr <IRemoteObject> &object);
     void OnTrackingEventRemoteDied(const wptr <IRemoteObject> &object);
     void OnRotationAxesStatusChangeRemoteDied(const wptr <IRemoteObject> &object);
     void OnCmdChannelRemoteDied(const wptr <IRemoteObject> &object);
+    void OnBaseChannelRemoteDied(const wptr <IRemoteObject> &object);
 
     void OnAttachStateChange(const AttachStateCBTaihe &callback);
     void OffAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callbck);
@@ -120,6 +132,13 @@ public:
     void OnRotationAxesStatusChange(const RotationAxesCBTaihe &callback);
     void OffRotationAxesStatusChange(const ::taihe::optional_view<RotationAxesCBTaihe> &callback);
     void SearchTarget(const TargetInfoTaihe &target, const SearchParamsTaihe &params, uintptr_t &promise);
+    void Move(int32_t mechId, const MoveParamsTaihe &moveParamsTaihe, uintptr_t &promise);
+    void MoveBySpeed(int32_t mechId, const SpeedParamsTaihe &speedParamsTaihe, int32_t duration, uintptr_t &promise);
+    void TurnBySpeed(int32_t mechId, float angleSpeed, int32_t duration, uintptr_t &promise);
+    void IsSupportAction(int32_t mechId, const ActionTypeTaihe &actionTypeTaihe, bool &isSupport);
+    void DoAction(int32_t mechId, const ActionTypeTaihe &actionTypeTaihe, uintptr_t &promise);
+    void Subscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback);
+    void UnSubscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback);
 private:
     int32_t ExecuteOnForAttachStateChange(const AttachStateCBTaihe &callback);
     int32_t ExecuteOffForAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callbck);
@@ -127,10 +146,14 @@ private:
     int32_t ExecuteOffForTrackingEvent(const ::taihe::optional_view<TrackingEventCBTaihe> &callback);
     int32_t ExecuteOnForRotationAxesStatusChange(const RotationAxesCBTaihe &callback);
     int32_t ExecuteOffForRotationAxesStatusChange(const ::taihe::optional_view<RotationAxesCBTaihe> &callback);
+    int32_t ExecuteSubscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback);
+    int32_t ExecuteUnSubscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes,
+        const SubscribeCBTaihe &callback);
 
     bool InitAttachStateChangeStub();
     bool InitTrackingEventStub();
     bool InitRotationAxesStatusChangeStub();
+    bool InitBaseChannel();
 
     void ProcessOnResultCode(int32_t &result);
     void ProcessOffResultCode(int32_t &result);
@@ -162,6 +185,8 @@ private:
     sptr<AniMechManagerStub> rotationAxesStatusChangeStub_  { nullptr };;
     std::mutex cmdChannelMutex_;
     sptr<AniMechManagerStub> cmdChannel_  { nullptr };;
+    std::mutex baseChannelMutex_;
+    sptr<AniMechManagerStub> baseChannel_  { nullptr };;
     std::mutex mechClientMutex_;
     std::shared_ptr<AniMechClient> mechClient_  { nullptr };
 
@@ -177,6 +202,9 @@ private:
     std::map<std::string, std::shared_ptr<AniRotatePrimiseFulfillmentParam>> searchTargetPromiseParam_;
     std::mutex mainHandlerMutex_;
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainHandler_ { nullptr };
+    
+    std::mutex subscribeCallbackMutex_;
+    std::map<MechEventType, std::vector<SubscribeCBTaihe>> subscribeCallback_;
 
     class AniAttachStateChangeStubDeathListener : public IRemoteObject::DeathRecipient {
     public:
@@ -194,6 +222,11 @@ private:
     };
 
     class AniCmdChannelDeathListener : public IRemoteObject::DeathRecipient {
+    public:
+        void OnRemoteDied(const wptr<IRemoteObject> &object) override;
+    };
+    
+    class AniBaseChannelDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
     };

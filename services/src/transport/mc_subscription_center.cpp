@@ -87,7 +87,6 @@ int32_t SubscriptionCenter::Notify(const std::shared_ptr<CommandBase> &cmd)
 {
     CHECK_POINTER_RETURN_VALUE(cmd, INVALID_PARAMETERS_ERR, "cmd");
     HILOGD("cmdType : 0x%{public}x, cmdId: %{public}d", cmd->GetCmdType(), cmd->GetCmdId());
-
     std::vector<std::shared_ptr<IMechEventListener>> callbacks;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -101,41 +100,53 @@ int32_t SubscriptionCenter::Notify(const std::shared_ptr<CommandBase> &cmd)
         if (callback == nullptr) {
             continue;
         }
-        switch (cmd->GetCmdType()) {
-            case CMD_TYPE_BUTTON_EVENT_NOTIFY:
-                callback->MechButtonEventNotify(std::static_pointer_cast<RegisterMechCameraKeyEventCmd>(cmd));
-                break;
-            case CMD_TYPE_PARAM_NOTIFY:
-                callback->MechParamNotify(std::static_pointer_cast<RegisterMechStateInfoCmd>(cmd));
-                break;
-            case CMD_TYPE_ATTITUDE_NOTIFY:
-                callback->MechAttitudeNotify(std::static_pointer_cast<RegisterMechPositionInfoCmd>(cmd));
-                break;
-            case CMD_TYPE_EXE_RESULT_NOTIFY:
-                callback->MechExecutionResultNotify(std::static_pointer_cast<RegisterMechControlResultCmd>(cmd));
-                break;
-            case CMD_TYPE_WHEEL_DATA_NOTIFY:
-                callback->MechWheelZoomNotify(std::static_pointer_cast<RegisterMechWheelDataCmd>(cmd));
-                break;
-            case CMD_TYPE_TRACKING_ENABLED_NOTIFY:
-                callback->MechTrackingStatusNotify(std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(cmd));
-                break;
-            case CMD_TYPE_NORMAL_BUTTON_EVENT_NOTIFY:
-                callback->MechButtonEventNotify(std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(cmd));
-                break;
-            case CMD_TYPE_NORMAL_ATTITUDE_NOTIFY:
-                callback->MechAttitudeNotify(std::static_pointer_cast<NormalRegisterMechPositionInfoCmd>(cmd));
-                break;
-            case CMD_TYPE_NORMAL_GENERIC_NOTIFY:
-                callback->MechGenericEventNotify(std::static_pointer_cast<NormalRegisterMechGenericEventCmd>(cmd));
-                break;
-            default:
-                HILOGD("Not found cmdType : 0x%{public}x, cmdId: %{public}d", cmd->GetCmdType(), cmd->GetCmdId());
-                break;
-        }
+        DispatchToCallback(cmd, callback);   // 调用新方法
     }
     HILOGD("end");
     return ERR_OK;
+}
+
+void SubscriptionCenter::DispatchToCallback(const std::shared_ptr<CommandBase> &cmd,
+                                            const std::shared_ptr<IMechEventListener> &callback)
+{
+    switch (cmd->GetCmdType()) {
+        case CMD_TYPE_BUTTON_EVENT_NOTIFY:
+            callback->MechButtonEventNotify(std::static_pointer_cast<RegisterMechCameraKeyEventCmd>(cmd));
+            break;
+        case CMD_TYPE_PARAM_NOTIFY:
+            callback->MechParamNotify(std::static_pointer_cast<RegisterMechStateInfoCmd>(cmd));
+            break;
+        case CMD_TYPE_ATTITUDE_NOTIFY:
+            callback->MechAttitudeNotify(std::static_pointer_cast<RegisterMechPositionInfoCmd>(cmd));
+            break;
+        case CMD_TYPE_EXE_RESULT_NOTIFY:
+            callback->MechExecutionResultNotify(std::static_pointer_cast<RegisterMechControlResultCmd>(cmd));
+            break;
+        case CMD_TYPE_WHEEL_DATA_NOTIFY:
+            callback->MechWheelZoomNotify(std::static_pointer_cast<RegisterMechWheelDataCmd>(cmd));
+            break;
+        case CMD_TYPE_TRACKING_ENABLED_NOTIFY:
+            callback->MechTrackingStatusNotify(std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(cmd));
+            break;
+        case CMD_TYPE_NORMAL_BUTTON_EVENT_NOTIFY:
+            callback->MechButtonEventNotify(std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(cmd));
+            break;
+        case CMD_TYPE_NORMAL_ATTITUDE_NOTIFY:
+            callback->MechAttitudeNotify(std::static_pointer_cast<NormalRegisterMechPositionInfoCmd>(cmd));
+            break;
+        case CMD_TYPE_NORMAL_GENERIC_NOTIFY:
+            callback->MechGenericEventNotify(std::static_pointer_cast<NormalRegisterMechGenericEventCmd>(cmd));
+            break;
+        case CMD_TYPE_CLIFF_INFO_NOTIFY:
+            callback->MechCliffInfoNotify(std::static_pointer_cast<RegisterMechCliffInfoCmd>(cmd));
+            break;
+        case CMD_TYPE_OBSTACLE_INFO_NOTIFY:
+            callback->MechObstacleInfoNotify(std::static_pointer_cast<RegisterMechObstacleInfoCmd>(cmd));
+            break;
+        default:
+            HILOGD("Not found cmdType : 0x%{public}x, cmdId: %{public}d", cmd->GetCmdType(), cmd->GetCmdId());
+            break;
+    }
 }
 }  // namespace MechBodyController
 }  // namespace OHOS

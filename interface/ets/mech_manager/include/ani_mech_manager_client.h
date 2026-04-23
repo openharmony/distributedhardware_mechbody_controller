@@ -38,6 +38,8 @@ public:
 
     void SetRotationAxesStatusCallback(const sptr<AniMechManagerStub> &rotationAxesStatusCallback);
 
+    void SetSubscribeCallback(const sptr<AniMechManagerStub> &stub, MechEventType mechEventType);
+
     int32_t SendAttachStateChangeListenOn(sptr<AniMechManagerStub> callback);
 
     int32_t SendTrackingEventListenOn(sptr<AniMechManagerStub> callback);
@@ -45,6 +47,10 @@ public:
     int32_t SendRegisterCmdChannel(sptr<AniMechManagerStub> stub);
 
     int32_t SendRotationAxesStatusChangeListenOn(sptr<AniMechManagerStub> callback);
+
+    int32_t SendSubscribeCallbackStub(sptr<AniMechManagerStub> &callback, MechEventType mechEventType);
+    
+    void RemoveSubscribeCallback(MechEventType mechEventType);
 
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string& deviceId) override;
 
@@ -58,6 +64,8 @@ public:
     sptr<AniMechManagerStub> trackingEventCallback_;
     sptr<AniMechManagerStub> cmdChannel_;
     sptr<AniMechManagerStub> rotationAxesStatusCallback_;
+    std::mutex subscribeCallbackMutex_;
+    std::map<MechEventType, sptr<AniMechManagerStub>> subscribeCallback_;
 };
 
 class AniMechClient : public std::enable_shared_from_this<AniMechClient>  {
@@ -110,6 +118,22 @@ public:
     int32_t RotationAxesStatusChangeListenOff();
 
     int32_t SearchTarget(const std::string &cmdId, const TargetInfo &targetInfo, const SearchParams &searchParams);
+
+    int32_t Move(const int32_t &mechId, const std::string &cmdId, MoveParams &moveParams);
+ 
+    int32_t MoveBySpeed(const int32_t &mechId, const std::string &cmdId,
+        SpeedParams &speedParams, int32_t duration);
+ 
+    int32_t TurnBySpeed(const int32_t &mechId, const std::string &cmdId,
+        float angleSpeed, int32_t duration);
+
+    int32_t IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport);
+
+    int32_t DoAction(const int32_t &mechId, const std::string &cmdId, ActionType actionType);
+
+    int32_t RegisterSubscribeChannel(sptr<AniMechManagerStub> &stub, MechEventType mechEventType);
+
+    int32_t UnRegisterSubscribeChannel(MechEventType mechEventType);
 
 private:
     sptr <IRemoteObject> GetDmsProxy();

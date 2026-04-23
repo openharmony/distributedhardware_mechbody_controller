@@ -62,6 +62,16 @@
 #include "mc_normal_set_mech_rotation_trace_cmd.h"
 #include "mc_get_mech_protocol_ver_cmd.h"
 #include "mc_set_mech_disconnect_cmd.h"
+#include "mc_wheel_get_mech_capability_info_cmd.h"
+#include "mc_wheel_set_mech_rotation_to_base_cmd.h"
+#include "mc_wheel_set_mech_rotation_trace_cmd.h"
+#include "mc_wheel_set_mech_motion_control_cmd.h"
+#include "mc_wheel_set_mech_scene_control_cmd.h"
+#include "mc_wheel_set_mech_relative_position_cmd.h"
+#include "mc_register_mech_cliff_info_cmd.h"
+#include "mc_register_mech_obstacle_info_cmd.h"
+#include "mc_normal_set_mech_phone_status_cmd.h"
+#include "mc_set_mech_device_pairing_info_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -69,11 +79,13 @@ namespace MechBodyController {
 class CommandFactory {
 public:
     void SetFactoryProtocolVer(uint8_t protocolVer);
+    void SetFactoryDevType(uint8_t devType);
     std::shared_ptr<GetMechCameraTrackingLayoutCmd> CreateGetMechCameraTrackingLayoutCmd();
     std::shared_ptr<CommonGetMechLimitInfoCmd> CreateGetMechLimitInfoCmd();
     std::shared_ptr<NormalGetMechCapabilityInfoCmd> CreateGetMechCapabilityInfoCmd();
     std::shared_ptr<GetMechProtocolVerCmd> CreateGetMechProtocolVerCmd();
     std::shared_ptr<SetMechDisconnectCmd> CreateSetMechDisconnectCmd(uint8_t reason);
+    std::shared_ptr<SetMechDevicePairingInfoCmd> CreateSetMechDevicePairingInfoCmd(uint32_t deviceIdentifier);
     std::shared_ptr<GetMechRealNameCmd> CreateGetMechRealNameCmd();
     std::shared_ptr<NormalGetMechBaseInfoCmd> CreateGetMechBaseInfoCmd();
     std::shared_ptr<NormalGetMechPoseInfoCmd> CreateGetMechPoseInfoCmd();
@@ -99,21 +111,35 @@ public:
         const RotateParam& params);
     std::shared_ptr<CommonSetMechRotationTraceCmd> CreateSetMechRotationTraceCmd(
         uint16_t taskId, const std::vector<RotateParam>& params);
+    std::shared_ptr<WheelSetMechRotationTraceCmd> CreateSetWheelMechRotationTraceCmd(
+        uint16_t taskId, const std::vector<RotateParam>& params);
     std::shared_ptr<SetMechStopCmd> CreateSetMechStopCmd();
     std::shared_ptr<NormalSetMechMotionControlCmd> CreateSetMechMotionControlCmd(ControlCommand action);
     std::shared_ptr<NormalSetMechLocationReportCmd> CreateSetMechLocationReportCmd(
         uint8_t reportSwitch, uint8_t reportFrequency);
+    std::shared_ptr<WheelSetMechSceneControlCmd> CreateWheelSetMechSceneControlCmd(
+        ActionType actionType);
+    std::shared_ptr<WheelSetMechRelativePositionCmd> CreateWheelSetMechRelativePositionCmd(
+        uint16_t taskId, const std::vector<WheelPositionInfo>& params);
+    std::shared_ptr<NormalSetMechPhoneStatusCmd> CreateSetMechPhoneStatusCmd(
+        const ScreenInfoParams& screenInfo);
     std::shared_ptr<CommonRegisterMechKeyEventCmd> CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<RegisterMechControlResultCmd> CreateRegisterMechControlResultCmd();
     std::shared_ptr<CommonRegisterMechPositionInfoCmd> CreateRegisterMechPositionInfoCmd();
     std::shared_ptr<CommonRegisterMechStateInfoCmd> CreateRegisterMechStateInfoCmd();
     std::shared_ptr<NormalRegisterMechGenericEventCmd> CreateRegisterMechGenericEventCmd();
+    std::shared_ptr<RegisterMechCliffInfoCmd> CreateRegisterMechCliffInfoCmd();
+    std::shared_ptr<RegisterMechObstacleInfoCmd> CreateRegisterMechObstacleInfoCmd();
     std::shared_ptr<RegisterMechWheelDataCmd> CreateRegisterMechWheelDataCmd();
     std::shared_ptr<CommonRegisterMechTrackingEnableCmd> CreateRegisterMechTrackingEnableCmd();
 
     std::shared_ptr<CommandBase> CreateFromData(std::shared_ptr<MechDataBuffer> data);
     std::shared_ptr<ActionGimbalFeatureControlCmd> CreateActionGimbalFeatureControlCmd(
         const ActionControlParams& params);
+    std::shared_ptr<WheelGetMechCapabilityInfoCmd> CreateWheelGetMechCapabilityInfoCmd();
+    std::shared_ptr<WheelSetMechRotationToBaseCmd> CreateWheelSetMechRotationToBaseCmd(
+        const RotateToBaseParam& params);
+    std::shared_ptr<WheelSetMechMotionControlCmd> CreateWheelSetMechMotionControlCmd(ControlCommand action);
 
 private:
     template<typename CmdT>
@@ -126,6 +152,7 @@ private:
         return cmd;
     }
     uint8_t protocolVer_;
+    uint8_t devType_;
 };
 
 } // namespace MechBodyController

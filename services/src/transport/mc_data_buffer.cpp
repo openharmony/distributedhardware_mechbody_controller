@@ -125,6 +125,18 @@ int32_t MechDataBuffer::AppendUint64(uint64_t value)
     return ERR_OK;
 }
 
+int32_t MechDataBuffer::AppendInt16(int16_t value)
+{
+    if (data_ == nullptr || rangeOffset_ + rangeLength_ + sizeof(value) > capacity_) {
+        return INVALID_PARAMETERS_ERR;
+    }
+    if (memcpy_s(Data() + rangeLength_, capacity_ - rangeOffset_ - rangeLength_, &value, sizeof(value)) != 0) {
+        return INVALID_PARAMETERS_ERR;
+    }
+    rangeLength_ += sizeof(value);
+    return ERR_OK;
+}
+
 int32_t MechDataBuffer::AppendFloat(float value)
 {
     if (data_ == nullptr || rangeOffset_ + rangeLength_ + sizeof(value) > capacity_) {

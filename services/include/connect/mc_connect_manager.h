@@ -74,6 +74,7 @@ public:
     int32_t SetMechanicHidState(std::string &mac, bool state);
     int32_t GetMechanicHidState(std::string &mac, bool &state);
     void SetRealMechName(int32_t mechId, std::string &name);
+    void SetMechType(int32_t mechId, MechType mechType);
 
 private:
     std::shared_ptr<AppExecFwk::EventHandler> eventHandler_;

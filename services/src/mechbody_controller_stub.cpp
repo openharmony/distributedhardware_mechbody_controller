@@ -61,6 +61,12 @@ void MechBodyControllerStub::InitFuncsInner()
             &MechBodyControllerStub::GetCameraTrackingLayoutInner;
     funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::REGISTER_CMD_CHANNEL)] =
             &MechBodyControllerStub::RegisterCmdChannelInner;
+    
+    InitFuncsInnerPart2();
+}
+
+void MechBodyControllerStub::InitFuncsInnerPart2()
+{
     funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_BY_DEGREE)] =
             &MechBodyControllerStub::RotateByDegreeInner;
     funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_TO_EULER_ANGLES)] =
@@ -85,6 +91,20 @@ void MechBodyControllerStub::InitFuncsInner()
             &MechBodyControllerStub::RotationAxesStatusChangeListenOffInner;
     funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::SEARCH_TARGET)] =
             &MechBodyControllerStub::SearchTargetInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::MOVE)] =
+            &MechBodyControllerStub::MoveInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::MOVE_BY_SPEED)] =
+            &MechBodyControllerStub::MoveBySpeedInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::TURN_BY_SPEED)] =
+            &MechBodyControllerStub::TurnBySpeedInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::IS_SUPPORT_ACTION)] =
+            &MechBodyControllerStub::IsSupportActionInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::DO_ACTION)] =
+            &MechBodyControllerStub::DoActionInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::SUBSCRIBE_CALLBACK)] =
+            &MechBodyControllerStub::SubscribeCallbackInner;
+    funcsMap_[static_cast<uint32_t>(IMechBodyControllerCode::UN_SUBSCRIBE_CALLBACK)] =
+            &MechBodyControllerStub::UnSubscribeCallbackInner;
 }
 
 int32_t MechBodyControllerStub::OnRemoteRequest(
@@ -370,6 +390,91 @@ int32_t MechBodyControllerStub::SearchTargetInner(MessageParcel &data, MessagePa
     int32_t result = MechBodyControllerService::GetInstance().SearchTarget(napiCmdId, targetInfo, searchParams);
     bool writeResult = reply.WriteInt32(result);
     HILOGI("%{public}d", writeResult);
+    return result;
+}
+
+int32_t MechBodyControllerStub::MoveInner(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t mechId = data.ReadInt32();
+    std::string cmdId = data.ReadString();
+    std::shared_ptr<MoveParams> moveParams(data.ReadParcelable<MoveParams>());
+    int32_t result = MechBodyControllerService::GetInstance().Move(mechId, cmdId, moveParams);
+    bool writeResult = reply.WriteInt32(result);
+    HILOGI("%{public}d", writeResult);
+    return result;
+}
+
+int32_t MechBodyControllerStub::MoveBySpeedInner(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t mechId = data.ReadInt32();
+    std::string cmdId = data.ReadString();
+    uint16_t duration = data.ReadUint16();
+    std::shared_ptr<SpeedParams> speedParams(data.ReadParcelable<SpeedParams>());
+    sptr <IRemoteObject> callback = data.ReadRemoteObject();
+    int32_t result = MechBodyControllerService::GetInstance().MoveBySpeed(mechId, cmdId, duration, speedParams);
+    bool writeResult = reply.WriteInt32(result);
+    HILOGI("%{public}d", writeResult);
+    return result;
+}
+
+int32_t MechBodyControllerStub::TurnBySpeedInner(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t mechId = data.ReadInt32();
+    std::string cmdId = data.ReadString();
+    float angleSpeed = data.ReadFloat();
+    uint16_t duration = data.ReadUint16();
+    sptr <IRemoteObject> callback = data.ReadRemoteObject();
+    int32_t result = MechBodyControllerService::GetInstance().TurnBySpeed(mechId, cmdId, angleSpeed, duration);
+    bool writeResult = reply.WriteInt32(result);
+    HILOGI("%{public}d", writeResult);
+    return result;
+}
+
+int32_t MechBodyControllerStub::IsSupportActionInner(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t mechId = data.ReadInt32();
+    ActionType actionType = static_cast<ActionType>(data.ReadInt32());
+    bool isSupport = 0;
+    int32_t result = MechBodyControllerService::GetInstance().IsSupportAction(mechId, actionType, isSupport);
+    bool writeResult = reply.WriteInt32(result);
+    if (result == ERR_OK) {
+        HILOGI("isSupport: %{public}d", isSupport);
+        writeResult = reply.WriteBool(isSupport);
+    }
+    HILOGI("%{public}d", writeResult);
+    return result;
+}
+ 
+int32_t MechBodyControllerStub::DoActionInner(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t mechId = data.ReadInt32();
+    std::string cmdId = data.ReadString();
+    ActionType actionType = static_cast<ActionType>(data.ReadInt32());
+    sptr <IRemoteObject> callback = data.ReadRemoteObject();
+    int32_t result = MechBodyControllerService::GetInstance().DoAction(mechId, cmdId, actionType);
+    bool writeResult = reply.WriteInt32(result);
+    HILOGI("%{public}d", writeResult);
+    return result;
+}
+
+int32_t MechBodyControllerStub::SubscribeCallbackInner(MessageParcel &data, MessageParcel &reply)
+{
+    MechEventType mechEventType = static_cast<MechEventType>(data.ReadInt32());
+    sptr <IRemoteObject> callback = data.ReadRemoteObject();
+    int32_t result = MechBodyControllerService::GetInstance().SubscribeCallback(callback, mechEventType);
+    bool writeResult = reply.WriteInt32(result);
+    HILOGI("result %{public}d", result);
+    HILOGI("writeResult %{public}d", writeResult);
+    return result;
+}
+
+int32_t MechBodyControllerStub::UnSubscribeCallbackInner(MessageParcel &data, MessageParcel &reply)
+{
+    MechEventType mechEventType = static_cast<MechEventType>(data.ReadInt32());
+    int32_t result = MechBodyControllerService::GetInstance().UnSubscribeCallback(mechEventType);
+    bool writeResult = reply.WriteInt32(result);
+    HILOGI("result %{public}d", result);
+    HILOGI("writeResult %{public}d", writeResult);
     return result;
 }
 } // namespace MechBodyController

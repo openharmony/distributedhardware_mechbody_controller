@@ -37,6 +37,8 @@ public:
     void SetCmdChannel(const sptr<JsMechManagerStub> &cmdChannel);
 
     void SetRotationAxesStatusCallback(const sptr<JsMechManagerStub> &rotationAxesStatusCallback);
+    
+    void SetSubscribeCallback(const sptr<JsMechManagerStub> &stub, MechEventType mechEventType);
 
     int32_t SendAttachStateChangeListenOn(sptr<JsMechManagerStub> callback);
 
@@ -45,6 +47,10 @@ public:
     int32_t SendRegisterCmdChannel(sptr<JsMechManagerStub> stub);
 
     int32_t SendRotationAxesStatusChangeListenOn(sptr<JsMechManagerStub> callback);
+
+    int32_t SendSubscribeCallbackStub(sptr<JsMechManagerStub> &callback, MechEventType mechEventType);
+    
+    void RemoveSubscribeCallback(MechEventType mechEventType);
 
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string& deviceId) override;
 
@@ -58,6 +64,8 @@ public:
     sptr<JsMechManagerStub> trackingEventCallback_;
     sptr<JsMechManagerStub> cmdChannel_;
     sptr<JsMechManagerStub> rotationAxesStatusCallback_;
+    std::mutex subscribeCallbackMutex_;
+    std::map<MechEventType, sptr<JsMechManagerStub>> subscribeCallback_;
 };
 
 class MechClient : public std::enable_shared_from_this<MechClient>  {
@@ -114,6 +122,24 @@ public:
     int32_t CheckAnyDeviceControlSupported(bool &isSupported);
 
     int32_t IsControlSupported(MechDeviceType mechDeviceType, bool &isSupported);
+
+    int32_t Move(const int32_t &mechId, const std::string &cmdId, const MoveParams &moveParams);
+
+    int32_t MoveBySpeed(const int32_t &mechId, const std::string &cmdId,
+        const SpeedParams &speedParams, uint16_t duration);
+        
+    int32_t TurnBySpeed(const int32_t &mechId, const std::string &cmdId,
+        const float &angleSpeed, uint16_t duration);
+
+    int32_t IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport);
+
+    int32_t DoAction(const int32_t &mechId, const std::string &cmdId,
+        ActionType actionType);
+ 
+    int32_t RegisterSubscribeChannel(sptr<JsMechManagerStub> &stub,
+        MechEventType mechEventType);
+
+    int32_t UnRegisterSubscribeChannel(MechEventType mechEventType);
 private:
     sptr <IRemoteObject> GetDmsProxy();
 

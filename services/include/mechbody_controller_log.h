@@ -273,12 +273,22 @@ enum {
     LOAD_MECH_ADAPTER_FUNCTION_ERROR,
 
     /**
-    * Result(96469024) for metadata info is empty.
+     * Result(96469024) for wheel speed exceed limit.
+     */
+    WHEEL_SPEED_EXCEED_LIMIT,
+
+    /**
+     * Result(96469025) for device not need screen info.
+     */
+    DEVICE_NOT_NEED_SCREEN_INFO,
+
+    /**
+    * Result(96469026) for metadata info is empty.
     */
     METADATA_INFO_IS_EMPTY,
     
     /**
-    * Result(96469025) for get fov info tag failed.
+    * Result(96469027) for get fov info tag failed.
     */
     GET_FOV_INFO_TAG_FAILED,
 };
