@@ -695,6 +695,216 @@ int32_t MechClient::SearchTarget(const std::string &cmdId, const TargetInfo &tar
     return reply.ReadInt32();
 }
 
+int32_t MechClient::Move(const int32_t &mechId, const std::string &cmdId, const MoveParams &moveParams)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(mechId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteString(cmdId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteParcelable(&moveParams)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::MOVE),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+ 
+    return reply.ReadInt32();
+}
+
+int32_t MechClient::MoveBySpeed(const int32_t &mechId, const std::string &cmdId,
+    const SpeedParams &speedParams, uint16_t duration)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(mechId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteString(cmdId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteUint16(duration)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteParcelable(&speedParams)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::MOVE_BY_SPEED),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+ 
+    return reply.ReadInt32();
+}
+
+int32_t MechClient::TurnBySpeed(const int32_t &mechId, const std::string &cmdId,
+    const float &angleSpeed, uint16_t duration)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(mechId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteString(cmdId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteFloat(angleSpeed)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteUint16(duration)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+ 
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::TURN_BY_SPEED),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+ 
+    return reply.ReadInt32();
+}
+
+int32_t MechClient::IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(mechId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(static_cast<int32_t>(actionType))) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::IS_SUPPORT_ACTION),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    int result = reply.ReadInt32();
+    if (result == ERR_OK) {
+        isSupport = reply.ReadBool();
+    }
+ 
+    return result;
+}
+
+int32_t MechClient::DoAction(const int32_t &mechId, const std::string &cmdId,
+    ActionType actionType)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(mechId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteString(cmdId)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(static_cast<int32_t>(actionType))) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+ 
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::DO_ACTION),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+ 
+    return reply.ReadInt32();
+}
+
+int32_t MechClient::RegisterSubscribeChannel(sptr<JsMechManagerStub> &stub,
+    MechEventType mechEventType)
+{
+    sptr<IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr || SubscribeMechAbility() != ERR_OK) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    int32_t res = systemAbilityStatusChangeListener_->SendSubscribeCallbackStub(stub, mechEventType);
+    if (res == ERR_OK) {
+        systemAbilityStatusChangeListener_->SetSubscribeCallback(stub, mechEventType);
+    }
+    return res;
+}
+
+int32_t MechClient::UnRegisterSubscribeChannel(MechEventType mechEventType)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(static_cast<int32_t>(mechEventType))) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::UN_SUBSCRIBE_CALLBACK),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+ 
+    int32_t unRegisterResult = reply.ReadInt32();
+    if (unRegisterResult == ERR_OK) {
+        systemAbilityStatusChangeListener_->RemoveSubscribeCallback(mechEventType);
+    }
+    return unRegisterResult;
+}
+
 sptr <IRemoteObject> MechClient::GetDmsProxy()
 {
     auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -754,6 +964,17 @@ void SystemAbilityStatusChangeListener::OnAddSystemAbility(int32_t systemAbility
         int32_t result = SendRotationAxesStatusChangeListenOn(rotationAxesStatusCallback_);
         HILOGI("SendRotationAxesStatusChangeListenOn result: %{public}d", result);
     }
+
+    std::lock_guard<std::mutex> lock(subscribeCallbackMutex_);
+    for (const auto& pair : subscribeCallback_) {
+        MechEventType mechEventType = pair.first;
+        sptr<JsMechManagerStub> stub = pair.second;
+        if (stub != nullptr) {
+            int32_t result = SendSubscribeCallbackStub(stub, mechEventType);
+            HILOGI("SendSubscribeCallbackStub result: %{public}d, mechEventType: %{public}d",
+                result, static_cast<int32_t>(mechEventType));
+        }
+    }
 }
 
 void SystemAbilityStatusChangeListener::OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
@@ -787,6 +1008,13 @@ void SystemAbilityStatusChangeListener::SetRotationAxesStatusCallback(
     const sptr<JsMechManagerStub> &rotationAxesStatusCallback)
 {
     rotationAxesStatusCallback_ = rotationAxesStatusCallback;
+}
+
+void SystemAbilityStatusChangeListener::SetSubscribeCallback(const sptr<JsMechManagerStub> &stub,
+    MechEventType mechEventType)
+{
+    std::lock_guard<std::mutex> lock(subscribeCallbackMutex_);
+    subscribeCallback_[mechEventType] = stub;
 }
 
 int32_t SystemAbilityStatusChangeListener::SendAttachStateChangeListenOn(sptr<JsMechManagerStub> callback)
@@ -889,6 +1117,42 @@ int32_t SystemAbilityStatusChangeListener::SendRotationAxesStatusChangeListenOn(
     }
 
     return reply.ReadInt32();
+}
+
+int32_t SystemAbilityStatusChangeListener::SendSubscribeCallbackStub(sptr<JsMechManagerStub> &callback,
+    MechEventType mechEventType)
+{
+    sptr <IRemoteObject> remote = GetDmsProxy();
+    if (remote == nullptr) {
+        return MECH_GET_SAMGR_EXCEPTION;
+    }
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    if (!data.WriteInt32(static_cast<int32_t>(mechEventType))) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    // 设置callback的stub信息
+    CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
+    if (!data.WriteRemoteObject(callback->AsObject())) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t error = remote->SendRequest(
+        static_cast<int32_t>(IMechBodyControllerCode::SUBSCRIBE_CALLBACK),
+        data, reply, option);
+    if (error != ERR_NONE) {
+        return NAPI_SEND_DATA_FAIL;
+    }
+    return reply.ReadInt32();
+}
+
+void SystemAbilityStatusChangeListener::RemoveSubscribeCallback(MechEventType mechEventType)
+{
+    std::lock_guard<std::mutex> lock(subscribeCallbackMutex_);
+    subscribeCallback_.erase(mechEventType);
 }
 
 sptr <IRemoteObject> SystemAbilityStatusChangeListener::GetDmsProxy()

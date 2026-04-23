@@ -80,15 +80,17 @@ void OnAttachStateChangeFuzzTest(const uint8_t *data, size_t size)
 
 void OnDeviceConnectedFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size == 0)) {
+    if ((data == nullptr) || (size < (sizeof(uint32_t)))) {
         return;
     }
 
     FuzzedDataProvider fdp(data, size);
     int32_t mechId = fdp.ConsumeIntegral<int32_t>();
+    bool isFirstConnect = fdp.ConsumeBool();
+    uint32_t identifier = fdp.ConsumeIntegral<uint32_t>();
 
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.OnDeviceConnected(mechId);
+    mechBodyControllerService.OnDeviceConnected(mechId, isFirstConnect, identifier);
 }
 
 void GetAttachedDevicesFuzzTest(const uint8_t *data, size_t size)

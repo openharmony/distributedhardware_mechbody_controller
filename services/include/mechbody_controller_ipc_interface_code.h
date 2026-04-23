@@ -55,6 +55,16 @@ enum class IMechBodyControllerCode : uint32_t {
     ROTATION_AXES_STATUS_CHANGE_CALLBACK = 26,
     ROTATE_CALLBACK = 27,
     SEARCH_TARGET_CALLBACK = 28,
+    
+    MOVE = 29,
+    MOVE_BY_SPEED = 30,
+    TURN_BY_SPEED = 31,
+    IS_SUPPORT_ACTION = 32,
+    DO_ACTION = 33,
+    SUBSCRIBE = 34,
+    UN_SUBSCRIBE = 35,
+    SUBSCRIBE_CALLBACK = 36,
+    UN_SUBSCRIBE_CALLBACK = 37,
 };
 } // namespace MechBodyController
 } // namespace OHOS

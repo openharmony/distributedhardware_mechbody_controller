@@ -33,6 +33,7 @@ ohos_fuzztest("MechBodyControllerServiceTwoFuzzTest") {
     "${mechbody_path}/services/include/transport/command",
     "${mechbody_path}/services/include/transport/command/0x01",
     "${mechbody_path}/services/include/transport/command/0x02",
+    "${mechbody_path}/services/include/transport/command/0x03",
     "${mechbody_path}/interface/inner_api",
     "${mechbody_path}/services/include/utils",
   ]
@@ -76,6 +77,8 @@ ohos_fuzztest("MechBodyControllerServiceTwoFuzzTest") {
     "hisysevent:libhisysevent",
     "bluetooth:btcommon",
     "distributed_notification_service:ans_innerkits",
+    "ability_runtime:ability_manager",  
+    "ability_runtime:app_manager",
   ]
 }
 

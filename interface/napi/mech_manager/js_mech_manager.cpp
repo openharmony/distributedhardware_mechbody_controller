@@ -61,6 +61,8 @@ std::mutex MechManager::rotationAxesStatusChangeMutex_;
 sptr<JsMechManagerStub> MechManager::rotationAxesStatusChangeStub_ = nullptr;
 std::mutex MechManager::cmdChannelMutex_;
 sptr<JsMechManagerStub> MechManager::cmdChannel_ = nullptr;
+std::mutex MechManager::baseChannelMutex_;
+sptr<JsMechManagerStub> MechManager::baseChannel_ = nullptr;
 std::mutex MechManager::mechClientMutex_;
 std::shared_ptr<MechClient> MechManager::mechClient_ = std::make_shared<MechClient>();
 
@@ -1506,6 +1508,408 @@ napi_value MechManager::IsControlSupported(napi_env env, napi_callback_info info
     return isSupportedResult;
 }
 
+napi_value MechManager::Move(napi_env env, napi_callback_info info)
+{
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
+    if (!IsSystemApp()) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+        return nullptr;
+    }
+    MoveParams moveParams;
+    int32_t mechId;
+    if (!GetMoveParams(env, info, moveParams, mechId)) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "create param failed.");
+        return nullptr;
+    }
+ 
+    napi_deferred deferred;
+    napi_value promise;
+    napi_create_promise(env, &deferred, &promise);
+ 
+    std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
+        std::make_shared<RotatePrimiseFulfillmentParam>();
+    rotatePromiseParam->cmdId = GenerateUniqueID();
+    rotatePromiseParam->deferred = deferred;
+    rotatePromiseParam->env = env;
+    {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("RegisterCmdChannel failed;");
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    int32_t result = mechClient_->Move(mechId, rotatePromiseParam->cmdId, moveParams);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
+        return nullptr;
+    }
+    // not ok, throw error
+    if (result != ERR_OK) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    return promise;
+}
+ 
+napi_value MechManager::MoveBySpeed(napi_env env, napi_callback_info info)
+{
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
+    if (!IsSystemApp()) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+        return nullptr;
+    }
+    SpeedParams speedParams;
+    int32_t mechId;
+    int32_t duration;
+    if (!GetMoveBySpeedParams(env, info, speedParams, mechId, duration)) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "create param failed.");
+        return nullptr;
+    }
+ 
+    napi_deferred deferred;
+    napi_value promise;
+    napi_create_promise(env, &deferred, &promise);
+ 
+    std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
+        std::make_shared<RotatePrimiseFulfillmentParam>();
+    rotatePromiseParam->cmdId = GenerateUniqueID();
+    rotatePromiseParam->deferred = deferred;
+    rotatePromiseParam->env = env;
+    {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("RegisterCmdChannel failed;");
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    int32_t result = mechClient_->MoveBySpeed(mechId, rotatePromiseParam->cmdId, speedParams, duration);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
+        return nullptr;
+    }
+    // not ok, throw error
+    if (result != ERR_OK) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    return promise;
+}
+
+napi_value MechManager::TurnBySpeed(napi_env env, napi_callback_info info)
+{
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
+    if (!IsSystemApp()) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+        return nullptr;
+    }
+    int32_t mechId;
+    float angleSpeed;
+    int32_t duration;
+    if (!GetTurnBySpeedParams(env, info, mechId, angleSpeed, duration)) {
+        return nullptr;
+    }
+ 
+    napi_deferred deferred;
+    napi_value promise;
+    napi_create_promise(env, &deferred, &promise);
+ 
+    std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
+        std::make_shared<RotatePrimiseFulfillmentParam>();
+    rotatePromiseParam->cmdId = GenerateUniqueID();
+    rotatePromiseParam->deferred = deferred;
+    rotatePromiseParam->env = env;
+    {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("RegisterCmdChannel failed;");
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    int32_t result = mechClient_->TurnBySpeed(mechId, rotatePromiseParam->cmdId, angleSpeed, duration);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
+        return nullptr;
+    }
+    // not ok, throw error
+    if (result != ERR_OK) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    return promise;
+}
+
+bool MechManager::ParseIsSupportActionArgs(napi_env env, napi_callback_info info,
+    int32_t &mechId, ActionType &actionType)
+{
+    constexpr size_t paramSize = 2;
+    size_t argc = paramSize;
+    napi_value args[paramSize];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+    if (argc < paramSize) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                         "Wrong number of arguments");
+        return false;
+    }
+
+    napi_status status = napi_get_value_int32(env, args[0], &mechId);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                              "mechId must be a number");
+        return false;
+    }
+
+    int32_t actionTypeValue;
+    status = napi_get_value_int32(env, args[1], &actionTypeValue);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                              "actionType must be a number");
+        return false;
+    }
+
+    actionType = static_cast<ActionType>(actionTypeValue);
+    return true;
+}
+
+napi_value MechManager::IsSupportAction(napi_env env, napi_callback_info info)
+{
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
+    if (!IsSystemApp()) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+        return nullptr;
+    }
+
+    int32_t mechId;
+    ActionType actionType;
+    if (!ParseIsSupportActionArgs(env, info, mechId, actionType)) {
+        return nullptr;
+    }
+
+    if (!InitMechClient()) {
+        HILOGE("InitMechClient failed;");
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+
+    bool isSupport = false;
+    int32_t result = mechClient_->IsSupportAction(mechId, actionType, isSupport);
+    HILOGI("result code: %{public}d ", result);
+
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
+        return nullptr;
+    }
+    if (result != ERR_OK) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+
+    napi_value resultNapiValue;
+    napi_get_boolean(env, isSupport, &resultNapiValue);
+    return resultNapiValue;
+}
+
+napi_value MechManager::DoAction(napi_env env, napi_callback_info info)
+{
+    if (CheckDeviceL1(env)) {
+        return nullptr;
+    }
+    if (!IsSystemApp()) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PERMISSION_DENIED).c_str(), "Not system application");
+        return nullptr;
+    }
+    int32_t mechId;
+    ActionType actionType;
+    if (!GetDoActionParams(env, info, mechId, actionType)) {
+        napi_throw_type_error(env,
+            std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(), "create param failed.");
+        return nullptr;
+    }
+ 
+    napi_deferred deferred;
+    napi_value promise;
+    napi_create_promise(env, &deferred, &promise);
+ 
+    std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
+        std::make_shared<RotatePrimiseFulfillmentParam>();
+    rotatePromiseParam->cmdId = GenerateUniqueID();
+    rotatePromiseParam->deferred = deferred;
+    rotatePromiseParam->env = env;
+    {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("RegisterCmdChannel failed;");
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    int32_t result = mechClient_->DoAction(mechId, rotatePromiseParam->cmdId, actionType);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        JsMechManagerService::GetInstance().promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::DEVICE_NOT_CONNECTED).c_str(), "Device not connected");
+        return nullptr;
+    }
+    if (result != ERR_OK) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY).c_str(), "System exception");
+        return nullptr;
+    }
+    return promise;
+}
+
+bool MechManager::ParseSubscribeParams(
+    napi_env env, napi_callback_info info, std::vector<MechEventType>& outEvents, napi_ref& outCallbackRef)
+{
+    constexpr int32_t paramSize = 2;
+    size_t argc = paramSize;
+    napi_value args[paramSize];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    if (argc < paramSize) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                         "Wrong number of arguments");
+        HILOGE("Wrong number of arguments.");
+        return false;
+    }
+
+    if (!ParseEventsArray(env, args[0], outEvents)) {
+        return false;
+    }
+
+    napi_valuetype type;
+    constexpr int callbackParamIndex = 1;
+    napi_typeof(env, args[callbackParamIndex], &type);
+    if (type != napi_function) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                         "third argument must be a function");
+        HILOGE("third argument must be a function.");
+        return false;
+    }
+    napi_status status = napi_create_reference(env, args[callbackParamIndex], 1, &outCallbackRef);
+    if (status != napi_ok || outCallbackRef == nullptr) {
+        HILOGE("Failed to create reference to callback");
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                         "Failed to create callback reference");
+        return false;
+    }
+    return true;
+}
+
+bool MechManager::ParseUnsubscribeParams(napi_env env, napi_callback_info info, std::vector<MechEventType>& outEvents)
+{
+    constexpr int32_t paramSize = 1;
+    size_t argc = paramSize;
+    napi_value args[paramSize];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    if (argc < paramSize) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                         "Wrong number of arguments");
+        HILOGE("Wrong number of arguments.");
+        return false;
+    }
+
+    if (!ParseEventsArray(env, args[0], outEvents)) {
+        return false;
+    }
+    return true;
+}
+
+bool MechManager::ParseEventsArray(napi_env env, napi_value eventsArray, std::vector<MechEventType>& outEvents)
+{
+    bool isArray;
+    napi_status status = napi_is_array(env, eventsArray, &isArray);
+    if (!isArray) {
+        HILOGE("params is not array.");
+        return false;
+    }
+
+    uint32_t arrayLength;
+    napi_get_array_length(env, eventsArray, &arrayLength);
+    for (uint32_t i = 0; i < arrayLength; ++i) {
+        napi_value value;
+        napi_get_element(env, eventsArray, i, &value);
+        int32_t mechEventType;
+        status = napi_get_value_int32(env, value, &mechEventType);
+        if (status != napi_ok) {
+            napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                                  "mechEventType must be a number");
+            return false;
+        }
+        outEvents.push_back(static_cast<MechEventType>(mechEventType));
+    }
+    return true;
+}
+
+napi_value MechManager::Subscribe(napi_env env, napi_callback_info info)
+{
+    if (CheckControlL1(env)) {
+        return nullptr;
+    }
+    HILOGI("Start to Subscribe the callback function.");
+
+    std::vector<MechEventType> mechEventTypes;
+    napi_ref callbackRef = nullptr;
+    if (!ParseSubscribeParams(env, info, mechEventTypes, callbackRef)) {
+        return nullptr;
+    }
+
+    CallbackFunctionInfo callbackFunctionInfo = {env, callbackRef};
+    int32_t result = ExecuteSubscribe(mechEventTypes, callbackFunctionInfo);
+    ProcessOnResultCode(env, result);
+    return nullptr;
+}
+
+napi_value MechManager::UnSubscribe(napi_env env, napi_callback_info info)
+{
+    if (CheckControlL1(env)) {
+        return nullptr;
+    }
+    HILOGI("Start to UnSubscribe the callback function.");
+
+    std::vector<MechEventType> mechEventTypes;
+    if (!ParseUnsubscribeParams(env, info, mechEventTypes)) {
+        return nullptr;
+    }
+
+    int32_t result = ExecuteUnSubscribe(mechEventTypes);
+    ProcessOffResultCode(env, result);
+    return nullptr;
+}
+
 bool MechManager::GetSearchTargetParam(napi_env env, napi_callback_info info,
     TargetInfo &targetInfo, SearchParams &searchParams)
 {
@@ -1687,6 +2091,237 @@ std::string MechManager::GenerateUniqueID()
     return ss.str();
 }
 
+bool MechManager::GetMoveParams(napi_env env, napi_callback_info info,
+    MoveParams &moveParams, int32_t &mechId)
+{
+    size_t argc = 2;
+    napi_value args[2];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+ 
+    if (argc < PARAM_COUNT_TWO) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "Wrong number of arguments");
+        return false;
+    }
+ 
+    napi_status status = napi_get_value_int32(env, args[0], &mechId);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "mechId must be a number");
+        return false;
+    }
+ 
+    napi_value moveParamsNapiObj = args[1];
+    napi_value distanceNapiValue;
+    napi_value angleNapiValue;
+    napi_value speedNapiValue;
+    napi_value modeNapiValue;
+    if (napi_get_named_property(env, moveParamsNapiObj, "distance", &distanceNapiValue) == napi_ok) {
+        int32_t value = 0;
+        napi_get_value_int32(env, distanceNapiValue, &value);
+        moveParams.distance = value;
+    }
+    if (napi_get_named_property(env, moveParamsNapiObj, "angle", &angleNapiValue) == napi_ok) {
+        double value = 0.0f;
+        napi_get_value_double(env, angleNapiValue, &value);
+        moveParams.angle = static_cast<float>(value);
+    }
+    if (napi_get_named_property(env, moveParamsNapiObj, "speedGear", &speedNapiValue) == napi_ok) {
+        int32_t value = 0;
+        napi_get_value_int32(env, speedNapiValue, &value);
+        moveParams.speedGear = static_cast<SpeedGear>(value);
+    }
+    if (napi_get_named_property(env, moveParamsNapiObj, "mode", &modeNapiValue) == napi_ok) {
+        int32_t value = 0;
+        napi_get_value_int32(env, modeNapiValue, &value);
+        moveParams.mode = static_cast<MarchingMode>(value);
+    }
+    return true;
+}
+
+bool MechManager::GetMoveBySpeedParams(napi_env env, napi_callback_info info,
+    SpeedParams &speedParams, int32_t &mechId, int32_t &duration)
+{
+    size_t argc = 3;
+    napi_value args[3];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+ 
+    if (argc < THREE) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "Wrong number of arguments");
+        return false;
+    }
+ 
+    napi_status status = napi_get_value_int32(env, args[0], &mechId);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "mechId must be a number");
+        return false;
+    }
+ 
+    status = napi_get_value_int32(env, args[PARAM_COUNT_TWO], &duration);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "duration must be a number");
+        return false;
+    }
+ 
+    napi_value speedParamsNapiObj = args[1];
+    napi_value speedNapiValue;
+    napi_value angleNapiValue;
+    napi_value modeNapiValue;
+    if (napi_get_named_property(env, speedParamsNapiObj, "speed", &speedNapiValue) == napi_ok) {
+        int32_t value = 0;
+        napi_get_value_int32(env, speedNapiValue, &value);
+        speedParams.speed = value;
+    }
+    if (napi_get_named_property(env, speedParamsNapiObj, "angle", &angleNapiValue) == napi_ok) {
+        double value = 0.0f;
+        napi_get_value_double(env, angleNapiValue, &value);
+        speedParams.angle = static_cast<float>(value);
+    }
+    if (napi_get_named_property(env, speedParamsNapiObj, "mode", &modeNapiValue) == napi_ok) {
+        int32_t value = 0;
+        napi_get_value_int32(env, modeNapiValue, &value);
+        speedParams.mode = static_cast<MarchingMode>(value);
+    }
+    return true;
+}
+
+bool MechManager::GetTurnBySpeedParams(napi_env env, napi_callback_info info,
+    int32_t &mechId, float &angleSpeed, int32_t &duration)
+{
+    size_t argc = 3;
+    napi_value args[3];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+ 
+    if (argc < THREE) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "Wrong number of arguments");
+        return false;
+    }
+ 
+    napi_status status = napi_get_value_int32(env, args[0], &mechId);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "mechId must be a number");
+        return false;
+    }
+ 
+    double value = 0.0f;
+    status = napi_get_value_double(env, args[1], &value);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "angleSpeed must be a number");
+        return false;
+    }
+    angleSpeed = static_cast<float>(value);
+ 
+    status = napi_get_value_int32(env, args[PARAM_COUNT_TWO], &duration);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "duration must be a number");
+        return false;
+    }
+    return true;
+}
+
+bool MechManager::GetDoActionParams(napi_env env, napi_callback_info info,
+    int32_t &mechId, ActionType &actionType)
+{
+    size_t argc = 2;
+    napi_value args[2];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+ 
+    if (argc < PARAM_COUNT_TWO) {
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "Wrong number of arguments");
+        return false;
+    }
+ 
+    napi_status status = napi_get_value_int32(env, args[0], &mechId);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "mechId must be a number");
+        return false;
+    }
+ 
+    int32_t value = 0;
+    status = napi_get_value_int32(env, args[1], &value);
+    if (status != napi_ok) {
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "actionType must be a number");
+        return false;
+    }
+    actionType = static_cast<ActionType>(value);
+    return true;
+}
+ 
+int32_t MechManager::ExecuteSubscribe(
+    std::vector<MechEventType> &mechEventTypes, CallbackFunctionInfo &callbackFunctionInfo)
+{
+    HILOGI("ExecuteSubscribe the callback function, mechEvents size: %{public}zu;", mechEventTypes.size());
+
+    int32_t registerResult = ERR_OK;
+    std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().subscribeCallbackMutex_);
+    for (const MechEventType& mechEventType : mechEventTypes) {
+        std::set<CallbackFunctionInfo> callbackSet;
+        auto it = JsMechManagerService::GetInstance().subscribeCallback_.find(mechEventType);
+        if (it != JsMechManagerService::GetInstance().subscribeCallback_.end()) {
+            callbackSet = it->second;
+            callbackSet.insert(callbackFunctionInfo);
+            HILOGI("Add callback for existing mechEventType: %{public}d;", static_cast<int32_t>(mechEventType));
+        } else {
+            HILOGI("Init channel begin, mechEventType: %{public}d;", static_cast<int32_t>(mechEventType));
+            if (!InitMechClient()) {
+                HILOGE("Init Mech Client failed.");
+                napi_delete_reference(callbackFunctionInfo.env, callbackFunctionInfo.callbackRef);
+                return MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY;
+            }
+            if (!InitBaseChannel()) {
+                napi_delete_reference(callbackFunctionInfo.env, callbackFunctionInfo.callbackRef);
+                return false;
+            }
+            registerResult = mechClient_->RegisterSubscribeChannel(baseChannel_, mechEventType);
+            if (registerResult != ERR_OK) {
+                HILOGE("RegisterSubscribeChannel failed.");
+                napi_delete_reference(callbackFunctionInfo.env, callbackFunctionInfo.callbackRef);
+                return registerResult;
+            }
+            callbackSet.insert(callbackFunctionInfo);
+            JsMechManagerService::GetInstance().subscribeCallback_[mechEventType] = callbackSet;
+            HILOGI("Init channel end and add new callback.");
+        }
+    }
+    return registerResult;
+}
+
+void MechManager::ProcessUnsubscribeForEvent(MechEventType mechEventType, int32_t &registerResult)
+{
+    std::set<CallbackFunctionInfo> callbackSet;
+    auto it = JsMechManagerService::GetInstance().subscribeCallback_.find(mechEventType);
+    if (it != JsMechManagerService::GetInstance().subscribeCallback_.end()) {
+        callbackSet = it->second;   // 拷贝副本
+        HILOGI("unSubscribe callback, remove callback, mechEventType: %{public}d; callback size: %{public}zu.",
+            static_cast<int32_t>(mechEventType), callbackSet.size());
+        JsMechManagerService::GetInstance().subscribeCallback_.erase(mechEventType);
+    } else {
+        HILOGE("not found callback mechEventType: %{public}d.", static_cast<int32_t>(mechEventType));
+    }
+}
+
+int32_t MechManager::ExecuteUnSubscribe(std::vector<MechEventType> &mechEventTypes)
+{
+    HILOGI("ExecuteUnSubscribe the callback function, mechEventTypes size: %{public}zu;", mechEventTypes.size());
+    
+    int32_t registerResult = ERR_OK;
+    std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().subscribeCallbackMutex_);
+    for (const MechEventType& mechEventType : mechEventTypes) {
+        ProcessUnsubscribeForEvent(mechEventType, registerResult);
+    }
+    return registerResult;
+}
+
 void MechManager::AttachStateChangeStubDeathListener::OnRemoteDied(const wptr <IRemoteObject> &object)
 {
     HILOGE("AttachStateChangeStub RemoteObject dead; ");
@@ -1715,10 +2350,101 @@ void MechManager::CmdChannelDeathListener::OnRemoteDied(const wptr <IRemoteObjec
     cmdChannel_ = nullptr;
 }
 
+void MechManager::BaseChannelDeathListener::OnRemoteDied(const wptr <IRemoteObject> &object)
+{
+    HILOGE("Channel RemoteObject dead; ");
+    std::lock_guard<std::mutex> lock(baseChannelMutex_);
+    baseChannel_ = nullptr;
+}
+
+bool MechManager::InitBaseChannel()
+{
+    if (baseChannel_ != nullptr) {
+        return true;
+    }
+    {
+        std::lock_guard<std::mutex> lock(baseChannelMutex_);
+        if (baseChannel_ != nullptr) {
+            return true;
+        }
+        if (!InitMechClient()) {
+            return false;
+        }
+        sptr<JsMechManagerStub> stub = new JsMechManagerStub();
+        sptr<IRemoteObject::DeathRecipient> deathListener = new BaseChannelDeathListener();
+        stub->SetDeathRecipient(deathListener);
+        baseChannel_ = stub;
+        return baseChannel_ != nullptr;
+    }
+}
+
+static napi_value DefineEnums(napi_env env, napi_value exports)
+{
+    CreateAndSetEnumProperty(env, exports);
+    napi_value rotationAxisLimitedEnum =
+        CreateEnumObject(env, {{"NOT_LIMITED", 0}, {"NEGATIVE_LIMITED", 1}, {"POSITIVE_LIMITED", 2}});
+    napi_set_named_property(env, exports, "RotationAxisLimited", rotationAxisLimitedEnum);
+
+    napi_value operationEnum = CreateEnumObject(env, {{"CONNECT", 0}, {"DISCONNECT", 1}});
+    napi_set_named_property(env, exports, "Operation", operationEnum);
+
+    napi_value trackingEventEnum =
+        CreateEnumObject(env, {{"CAMERA_TRACKING_USER_ENABLED", 0}, {"CAMERA_TRACKING_USER_DISABLED", 1},
+                               {"CAMERA_TRACKING_LAYOUT_CHANGED", 2}});
+    napi_set_named_property(env, exports, "TrackingEvent", trackingEventEnum);
+
+    napi_value resultEnum =
+        CreateEnumObject(env, {{"COMPLETED", 0}, {"PARA_ERROR", 1}, {"EXE_ERROR", 2}, {"LIMITED", 3},
+                               {"TIMEOUT", 4}, {"INTERRUPTED", 5}, {"ERR_CLIFF", 6}, {"ERR_OBSTACLE", 7},
+                               {"SYSTEM_ERROR", 100}});
+    napi_set_named_property(env, exports, "Result", resultEnum);
+
+    napi_value mechDeviceTypeEnum = CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}});
+    napi_set_named_property(env, exports, "MechDeviceType", mechDeviceTypeEnum);
+
+    napi_value attachStateEnum = CreateEnumObject(env, {{"ATTACHED", 0}, {"DETACHED", 1}});
+    napi_set_named_property(env, exports, "AttachState", attachStateEnum);
+
+    napi_value cameraTrackingLayoutEnum =
+        CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFT", 1}, {"MIDDLE", 2}, {"RIGHT", 3}});
+    napi_set_named_property(env, exports, "CameraTrackingLayout", cameraTrackingLayoutEnum);
+
+    napi_value targetTypeEnum = CreateEnumObject(env, {{"HUMAN_FACE", 0}});
+    napi_set_named_property(env, exports, "TargetType", targetTypeEnum);
+
+    napi_value searchDirectionEnum = CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFTWARD", 1}, {"RIGHTWARD", 2}});
+    napi_set_named_property(env, exports, "SearchDirection", searchDirectionEnum);
+
+    napi_value speedGearEnum =
+        CreateEnumObject(env, {{"LOW_SPEED", 0}, {"MIDDLE_SPEED", 1}, {"HIGH_SPEED", 2}});
+    napi_set_named_property(env, exports, "SpeedGear", speedGearEnum);
+
+    napi_value marchingModeEnum =
+        CreateEnumObject(env, {{"TURN_THEN_MOVE", 0}, {"TURNING_MOVING", 1}});
+    napi_set_named_property(env, exports, "MarchingMode", marchingModeEnum);
+
+    napi_value actionTypeEnum =
+        CreateEnumObject(env, {{"LANDSCAPE_PORTRAIT_SWITCH", 0}, {"PATROL_MODE", 1}, {"GREET_MODE", 2},
+                               {"HEAD_UP", 3}, {"HEAD_UP_SLIGHTLY", 4}, {"EYE_LEVEL", 5},
+                               {"HEAD_DOWN_SLIGHTLY", 6}, {"HEAD_DOWN", 7}, {"HEAD_WIGGLE", 8},
+                               {"NOD", 9}, {"HEAD_SHAKE", 10}, {"HAPPY", 1000}, {"ANGRY", 1001},
+                               {"SAD", 1002}, {"SCARED", 1003}, {"DANCE", 2000}, {"ACTING_CUTE", 2001},
+                               {"CELEBRATE", 2002}, {"WAKEUP", 2003}, {"SLEEP", 2004}, {"LOW_POWER", 2005},
+                               {"THINKING", 2006}});
+    napi_set_named_property(env, exports, "ActionType", actionTypeEnum);
+
+    napi_value mechEventTypeEnum = CreateEnumObject(env,
+        {{"DEVICE_ADSORBED", 0}, {"DEVICE_UNADSORBED", 1}, {"REACH_CLIFF", 2},
+        {"REACH_OBSTACLE", 3}, {"LOW_POWER", 4}});
+    napi_set_named_property(env, exports, "MechEventType", mechEventTypeEnum);
+
+    return exports;
+}
 
 napi_value Init(napi_env env, napi_value exports)
 {
-    CreateAndSetEnumProperty(env, exports);
+    DefineEnums(env, exports);
+
     napi_value MechManager;
     napi_create_object(env, &MechManager);
     napi_property_descriptor desc[] = {
@@ -1741,6 +2467,13 @@ napi_value Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getRotationAxesStatus", MechManager::GetRotationAxesStatus),
         DECLARE_NAPI_FUNCTION("searchTarget", MechManager::SearchTarget),
         DECLARE_NAPI_FUNCTION("isControlSupported", MechManager::IsControlSupported),
+        DECLARE_NAPI_FUNCTION("move", MechManager::Move),
+        DECLARE_NAPI_FUNCTION("moveBySpeed", MechManager::MoveBySpeed),
+        DECLARE_NAPI_FUNCTION("turnBySpeed", MechManager::TurnBySpeed),
+        DECLARE_NAPI_FUNCTION("isSupportAction", MechManager::IsSupportAction),
+        DECLARE_NAPI_FUNCTION("doAction", MechManager::DoAction),
+        DECLARE_NAPI_FUNCTION("subscribe", MechManager::Subscribe),
+        DECLARE_NAPI_FUNCTION("unSubscribe", MechManager::UnSubscribe),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;
@@ -1758,8 +2491,9 @@ void CreateAndSetEnumProperty(napi_env env, napi_value exports)
                                {"CAMERA_TRACKING_LAYOUT_CHANGED", 2}});
     napi_set_named_property(env, exports, "TrackingEvent", trackingEventEnum);
     napi_value resultEnum =
-        CreateEnumObject(env, {{"COMPLETED", 0}, {"INTERRUPTED", 1}, {"LIMITED", 2},
-                                {"TIMEOUT", 3}, {"SYSTEM_ERROR", 100}});
+        CreateEnumObject(env, {{"COMPLETED", 0}, {"PARA_ERROR", 1}, {"EXE_ERROR", 2}, {"LIMITED", 3},
+                                {"TIMEOUT", 4}, {"INTERRUPTED", 5}, {"ERR_CLIFF", 6}, {"ERR_OBSTACLE", 7},
+                                {"SYSTEM_ERROR", 100}});
     napi_set_named_property(env, exports, "Result", resultEnum);
     napi_value mechDeviceTypeEnum = CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}});
     napi_set_named_property(env, exports, "MechDeviceType", mechDeviceTypeEnum);

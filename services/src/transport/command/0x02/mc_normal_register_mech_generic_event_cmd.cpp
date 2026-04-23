@@ -190,5 +190,9 @@ uint8_t NormalRegisterMechGenericEventCmd::GetResult() const
 {
     return result_;
 }
+uint8_t NormalRegisterMechGenericEventCmd::GetLowPower() const
+{
+    return lowPower;
+}
 } // namespace MechBodyController
 } // namespace OHOS

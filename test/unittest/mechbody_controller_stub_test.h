@@ -45,7 +45,8 @@ MechBodyControllerService::~MechBodyControllerService()
 {
 }
 
-int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId)
+int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId, bool isFirstConnect,
+    const uint32_t &deviceIdentifier)
 {
     return 0;
 }

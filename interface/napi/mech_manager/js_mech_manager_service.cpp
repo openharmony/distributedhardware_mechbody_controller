@@ -257,5 +257,61 @@ int32_t JsMechManagerService::SearchTargetCallback(std::string &cmdId, const int
 
     return ERR_OK;
 }
+
+void JsMechManagerService::InvokeCallbackTask(
+    const CallbackFunctionInfo &item, int32_t mechId, MechEventType mechEventType)
+{
+    napi_handle_scope scope;
+    napi_status res = napi_open_handle_scope(item.env, &scope);
+    if (res != napi_ok || scope == nullptr) {
+        HILOGE("open handle scope failed!");
+        return;
+    }
+
+    napi_value jsMechEvent;
+    napi_create_object(item.env, &jsMechEvent);
+    
+    // 创建第一个参数：mechId
+    napi_value jsMechId;
+    napi_create_int32(item.env, mechId, &jsMechId);
+    napi_set_named_property(item.env, jsMechEvent, "mechId", jsMechId);
+
+    // 创建第二个参数：mechEventType
+    napi_value jsMechEventType;
+    napi_create_int32(item.env, static_cast<int32_t>(mechEventType), &jsMechEventType);
+    napi_set_named_property(item.env, jsMechEvent, "event", jsMechEventType);
+
+    // // 获得回调方法
+    napi_value callback;
+    napi_get_reference_value(item.env, item.callbackRef, &callback);
+
+    napi_value global;
+    napi_get_global(item.env, &global);
+
+    // 执行回调方法，传递一个参数
+    napi_call_function(item.env, global, callback, 1, &jsMechEvent, nullptr); // 原代码中 result 未使用，传 nullptr 等效
+
+    napi_close_handle_scope(item.env, scope);
+}
+
+int32_t JsMechManagerService::SubscribeCallbackInvoke(const int32_t &mechId, const MechEventType &mechEventType)
+{
+    HILOGI("start. mechId: %{public}d, mechEventType: %{public}d", mechId, static_cast<int32_t>(mechEventType));
+
+    auto it = subscribeCallback_.find(mechEventType);
+    if (it != subscribeCallback_.end()) {
+        std::set<CallbackFunctionInfo> callbackSet = it->second;
+        for (const auto &item : callbackSet) {
+            auto task = [item, mechId, mechEventType]() {
+                InvokeCallbackTask(item, mechId, mechEventType);
+            };
+            napi_send_event(item.env, task, napi_eprio_high, "MechbodyTask");
+        }
+    } else {
+        HILOGW("No callback found for mechEventType: %{public}d", static_cast<int32_t>(mechEventType));
+    }
+    HILOGI("end");
+    return ERR_OK;
+}
 } // namespace MechManager
 } // namespace OHOS

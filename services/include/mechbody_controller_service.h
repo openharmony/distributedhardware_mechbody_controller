@@ -39,7 +39,7 @@ public:
     MechBodyControllerService();
     ~MechBodyControllerService();
 
-    int32_t OnDeviceConnected(int32_t mechId) override;
+    int32_t OnDeviceConnected(int32_t mechId, bool isFirstConnect, const uint32_t &deviceIdentifier) override;
     int32_t OnDeviceDisconnected(int32_t mechId) override;
     int32_t CleanMotionManagers();
 
@@ -78,6 +78,17 @@ public:
                          const std::shared_ptr<SearchParams> &searchParams) override;
     int32_t SearchTargetEnd(const uint32_t &tokenId, const std::string &napiCmdId, const int32_t &targetNum);
     int32_t GetTrackingEnabledDevice(bool &isEnabled);
+    int32_t NotifyMechEvent(const int32_t &mechId, const MechEventType &mechEventType);
+
+    int32_t Move(const int32_t &mechId, std::string &cmdId,
+        const std::shared_ptr<MoveParams> &moveParams) override;
+    int32_t MoveBySpeed(const int32_t &mechId, std::string &cmdId, uint16_t duration,
+        const std::shared_ptr<SpeedParams > &speedParams) override;
+    int32_t TurnBySpeed(const int32_t &mechId, std::string &cmdId, float angleSpeed, uint16_t duration) override;
+    int32_t IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport) override;
+    int32_t DoAction(const int32_t &mechId, std::string &cmdId, ActionType actionType) override;
+    int32_t SubscribeCallback(sptr <IRemoteObject> &callback, MechEventType mechEventType) override;
+    int32_t UnSubscribeCallback(MechEventType mechEventType) override;
 
 private:
     bool IsSystemApp();
@@ -96,6 +107,8 @@ public:
     std::map<uint32_t, sptr<IRemoteObject>> rotationAxesStatusChangeCallback_;
     std::mutex cmdChannelMutex_;
     std::map<uint32_t, sptr<IRemoteObject>> cmdChannels_;
+    std::mutex subscribeChannelMutex_;
+    std::map<std::pair<uint32_t, MechEventType>, sptr<IRemoteObject>> subscribeChannels_;
     std::shared_ptr<TransportSendAdapter> sendAdapter_;
 };
 } // namespace MechBodyController

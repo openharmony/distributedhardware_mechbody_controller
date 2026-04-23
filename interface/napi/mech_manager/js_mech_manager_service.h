@@ -43,20 +43,31 @@ struct RotatePrimiseFulfillmentParam {
 };
 
 struct CallbackFunctionInfo {
+    uintptr_t envId;
     napi_env env;
     napi_ref callbackRef;
 
+    CallbackFunctionInfo(const napi_env &env, const napi_ref &callbackRef) : env(env), callbackRef(callbackRef)
+    {
+        envId = reinterpret_cast<uintptr_t>(env);
+    }
+
     bool operator<(const CallbackFunctionInfo &other) const
     {
-        napi_value storedCallback;
-        napi_get_reference_value(env, callbackRef, &storedCallback);
+        if (envId != other.envId) {
+            return envId < other.envId;
+        }
 
-        napi_value compareCallback;
-        napi_get_reference_value(env, other.callbackRef, &compareCallback);
-
-        bool isSame = false;
-        napi_strict_equals(env, storedCallback, compareCallback, &isSame);
-        return !isSame && (callbackRef < other.callbackRef);
+        napi_value val1;
+        napi_value val2;
+        napi_get_reference_value(env, callbackRef, &val1);
+        napi_get_reference_value(env, other.callbackRef, &val2);
+        bool isEqual = false;
+        napi_strict_equals(env, val1, val2, &isEqual);
+        if (isEqual) {
+            return false;
+        }
+        return callbackRef < other.callbackRef;
     }
 };
 
@@ -88,6 +99,11 @@ public:
 
     int32_t SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result);
 
+    int32_t SubscribeCallbackInvoke(const int32_t &mechId, const MechEventType &mechEventType);
+
+private:
+    static void InvokeCallbackTask(const CallbackFunctionInfo &item, int32_t mechId, MechEventType mechEventType);
+
 public:
     std::mutex attachStateChangeCallbackMutex_;
     std::set<CallbackFunctionInfo> attachStateChangeCallback_;
@@ -99,6 +115,8 @@ public:
     std::map<std::string, std::shared_ptr<RotatePrimiseFulfillmentParam>> promiseParams_;
     std::mutex searchTargetCallbackMutex_;
     std::map<std::string, std::shared_ptr<RotatePrimiseFulfillmentParam>> searchTargetCallback_;
+    std::mutex subscribeCallbackMutex_;
+    std::map<MechEventType, std::set<CallbackFunctionInfo>> subscribeCallback_;
 };
 } // namespace MechManager
 } // namespace OHOS

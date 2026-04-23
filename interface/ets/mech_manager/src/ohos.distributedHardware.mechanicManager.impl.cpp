@@ -160,6 +160,60 @@ uintptr_t SearchTargetInner(TargetInfoTaihe const& target, SearchParamsTaihe con
     AniMechManager::GetInstance().SearchTarget(target, params, promise);
     return promise;
 }
+
+uintptr_t MoveInner(int32_t mechId, MoveParamsTaihe const& moveParamsTaihe)
+{
+    HILOGI("move inner begin!");
+    uintptr_t promise = 0;
+    AniMechManager::GetInstance().Move(mechId, moveParamsTaihe, promise);
+    return promise;
+}
+
+uintptr_t MoveBySpeedInner(int32_t mechId, SpeedParamsTaihe const& speedParamsTaihe, int32_t duration)
+{
+    HILOGI("moveBySpeed inner begin!");
+    uintptr_t promise = 0;
+    AniMechManager::GetInstance().MoveBySpeed(mechId, speedParamsTaihe, duration, promise);
+    return promise;
+}
+
+uintptr_t TurnBySpeedInner(int32_t mechId, float angleSpeed, int32_t duration)
+{
+    HILOGI("turnBySpeed inner begin!");
+    uintptr_t promise = 0;
+    AniMechManager::GetInstance().TurnBySpeed(mechId, angleSpeed, duration, promise);
+    return promise;
+}
+
+bool IsSupportActionInner(int32_t mechId, ActionTypeTaihe const& actionTypeTaihe)
+{
+    HILOGI("isSupportAction inner begin!");
+    bool isSupport = false;
+    AniMechManager::GetInstance().IsSupportAction(mechId, actionTypeTaihe, isSupport);
+    return isSupport;
+}
+
+uintptr_t DoActionInner(int32_t mechId, ActionTypeTaihe const& actionTypeTaihe)
+{
+    HILOGI("doAction inner begin!");
+    uintptr_t promise = 0;
+    AniMechManager::GetInstance().DoAction(mechId, actionTypeTaihe, promise);
+    return promise;
+}
+
+void SubscribeInner(::taihe::array_view<MechEventTypeTaihe> events,
+    ::taihe::callback_view<void(MechEventInfoTaihe const&)> callback)
+{
+    HILOGI("subscribe inner begin!");
+    AniMechManager::GetInstance().Subscribe(events, callback);
+}
+
+void UnSubscribeInner(::taihe::array_view<MechEventTypeTaihe> events,
+    ::taihe::callback_view<void(MechEventInfoTaihe const&)> callback)
+{
+    HILOGI("unSubscribe inner begin!");
+    AniMechManager::GetInstance().UnSubscribe(events, callback);
+}
 }  // namespace
 
 // Since these macros are auto-generate, lint will cause false positive.
@@ -186,5 +240,13 @@ TH_EXPORT_CPP_API_GetRotationAxesStatusInner(GetRotationAxesStatusInner);
 TH_EXPORT_CPP_API_OnRotationAxesStatusChangeInner(OnRotationAxesStatusChangeInner);
 TH_EXPORT_CPP_API_OffRotationAxesStatusChangeInner(OffRotationAxesStatusChangeInner);
 TH_EXPORT_CPP_API_SearchTargetInner(SearchTargetInner);
+
+TH_EXPORT_CPP_API_MoveInner(MoveInner);
+TH_EXPORT_CPP_API_MoveBySpeedInner(MoveBySpeedInner);
+TH_EXPORT_CPP_API_TurnBySpeedInner(TurnBySpeedInner);
+TH_EXPORT_CPP_API_IsSupportActionInner(IsSupportActionInner);
+TH_EXPORT_CPP_API_DoActionInner(DoActionInner);
+TH_EXPORT_CPP_API_SubscribeInner(SubscribeInner);
+TH_EXPORT_CPP_API_UnSubscribeInner(UnSubscribeInner);
 // NOLINTEND
 

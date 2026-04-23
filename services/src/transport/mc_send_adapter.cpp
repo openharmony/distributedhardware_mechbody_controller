@@ -279,7 +279,6 @@ int32_t TransportSendAdapter::OnReceive(bool isAck, uint16_t seqNo, std::shared_
         recvEventHandler_->PostTask(recvTask);
         return ERR_OK;
     }
-
     auto responseTask = [this, seqNo, dataBuffer]() {
         ExeResponseTask(seqNo, dataBuffer);
     };

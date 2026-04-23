@@ -41,6 +41,7 @@ public:
 
     DeviceStateInfo GetParams() const;
     uint8_t GetResult() const;
+    uint8_t GetLowPower() const;
 
 private:
     DeviceStateInfo params_;

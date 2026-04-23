@@ -31,6 +31,7 @@ public:
 
 private:
     void InitFuncsInner();
+    void InitFuncsInnerPart2();
 
     int32_t AttachStateChangeListenOnInner(MessageParcel &data, MessageParcel &reply);
     int32_t AttachStateChangeListenOffInner(MessageParcel &data, MessageParcel &reply);
@@ -57,6 +58,13 @@ private:
     int32_t RotationAxesStatusChangeListenOnInner(MessageParcel &data, MessageParcel &reply);
     int32_t RotationAxesStatusChangeListenOffInner(MessageParcel &data, MessageParcel &reply);
     int32_t SearchTargetInner(MessageParcel &data, MessageParcel &reply);
+    int32_t MoveInner(MessageParcel &data, MessageParcel &reply);
+    int32_t MoveBySpeedInner(MessageParcel &data, MessageParcel &reply);
+    int32_t TurnBySpeedInner(MessageParcel &data, MessageParcel &reply);
+    int32_t IsSupportActionInner(MessageParcel &data, MessageParcel &reply);
+    int32_t DoActionInner(MessageParcel &data, MessageParcel &reply);
+    int32_t SubscribeCallbackInner(MessageParcel &data, MessageParcel &reply);
+    int32_t UnSubscribeCallbackInner(MessageParcel &data, MessageParcel &reply);
 
 private:
     using MechBodyControllerFunc = int32_t(MechBodyControllerStub::*)(MessageParcel& data, MessageParcel& reply);

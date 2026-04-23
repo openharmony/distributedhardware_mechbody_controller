@@ -683,6 +683,249 @@ void AniMechManager::SearchTarget(const TargetInfoTaihe &target, const SearchPar
     promise = reinterpret_cast<uintptr_t>(searchTargetPromiseParam->promise);
 }
 
+void AniMechManager::Move(int32_t mechId, const MoveParamsTaihe &moveParamsTaihe, uintptr_t &promise)
+{
+    HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
+    if (!IsSystemApp()) {
+        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+        return;
+    }
+ 
+    MoveParams moveParams;
+    moveParams.distance = moveParamsTaihe.distance;
+    moveParams.angle = moveParamsTaihe.angle;
+    moveParams.speedGear = moveParamsTaihe.speedGear.has_value() ?
+        static_cast<SpeedGear>(static_cast<int32_t>(moveParamsTaihe.speedGear.value())) : SpeedGear::LOW_SPEED;
+    moveParams.mode = moveParamsTaihe.mode.has_value() ?
+        static_cast<MarchingMode>(static_cast<int32_t>(moveParamsTaihe.mode.value())) : MarchingMode::TURN_THEN_MOVE;
+
+    // async callback
+    auto rotatePromiseParam = std::make_shared<AniRotatePrimiseFulfillmentParam>();
+    if (!InitRotatePrimiseFulfillmentParam(*rotatePromiseParam)) {
+        HILOGE("InitRotatePrimiseFulfillmentParam failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("InitMechClient or RegisterCmdChannel failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+ 
+    int32_t result = mechClient_->Move(mechId, rotatePromiseParam->cmdId, moveParams);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
+        return;
+    }
+    if (result != ERR_OK) {
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
+}
+
+void AniMechManager::MoveBySpeed(
+    int32_t mechId, const SpeedParamsTaihe &speedParamsTaihe, int32_t duration, uintptr_t &promise)
+{
+    HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
+    if (!IsSystemApp()) {
+        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+        return;
+    }
+ 
+    SpeedParams speedParams;
+    speedParams.speed = speedParamsTaihe.speed;
+    speedParams.angle = speedParamsTaihe.angle;
+    speedParams.mode = speedParamsTaihe.mode.has_value() ?
+        static_cast<MarchingMode>(static_cast<int32_t>(speedParamsTaihe.mode.value())) : MarchingMode::TURN_THEN_MOVE;
+ 
+    // async callback
+    auto rotatePromiseParam = std::make_shared<AniRotatePrimiseFulfillmentParam>();
+    if (!InitRotatePrimiseFulfillmentParam(*rotatePromiseParam)) {
+        HILOGE("InitRotatePrimiseFulfillmentParam failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("InitMechClient or RegisterCmdChannel failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+ 
+    int32_t result = mechClient_->MoveBySpeed(mechId, rotatePromiseParam->cmdId, speedParams, duration);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
+        return;
+    }
+    if (result != ERR_OK) {
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
+}
+ 
+void AniMechManager::TurnBySpeed(int32_t mechId, float angleSpeed, int32_t duration, uintptr_t &promise)
+{
+    HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
+    if (!IsSystemApp()) {
+        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+        return;
+    }
+ 
+    // async callback
+    auto rotatePromiseParam = std::make_shared<AniRotatePrimiseFulfillmentParam>();
+    if (!InitRotatePrimiseFulfillmentParam(*rotatePromiseParam)) {
+        HILOGE("InitRotatePrimiseFulfillmentParam failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("InitMechClient or RegisterCmdChannel failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+ 
+    int32_t result = mechClient_->TurnBySpeed(mechId, rotatePromiseParam->cmdId, angleSpeed, duration);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
+        return;
+    }
+    if (result != ERR_OK) {
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
+}
+ 
+void AniMechManager::IsSupportAction(int32_t mechId, const ActionTypeTaihe &actionTypeTaihe, bool &isSupport)
+{
+    HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
+    if (!IsSystemApp()) {
+        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+        return;
+    }
+ 
+    int32_t actionTypeValue = static_cast<int32_t>(actionTypeTaihe);
+    ActionType localActionType = static_cast<ActionType>(actionTypeValue);
+    int32_t result = mechClient_->IsSupportAction(mechId, localActionType, isSupport);
+    HILOGI("result code: %{public}d ", result);
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
+        return;
+    }
+    if (result != ERR_OK) {
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+}
+ 
+void AniMechManager::DoAction(int32_t mechId, const ActionTypeTaihe &actionTypeTaihe, uintptr_t &promise)
+{
+    HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
+    if (!IsSystemApp()) {
+        ::taihe::set_business_error(MechNapiErrorCode::PERMISSION_DENIED, "Not system application");
+        return;
+    }
+ 
+    // async callback
+    auto rotatePromiseParam = std::make_shared<AniRotatePrimiseFulfillmentParam>();
+    if (!InitRotatePrimiseFulfillmentParam(*rotatePromiseParam)) {
+        HILOGE("InitRotatePrimiseFulfillmentParam failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    if (!InitMechClient() || !RegisterCmdChannel()) {
+        HILOGE("InitMechClient or RegisterCmdChannel failed;");
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_[rotatePromiseParam->cmdId] = rotatePromiseParam;
+    }
+ 
+    int32_t actionTypeValue = static_cast<int32_t>(actionTypeTaihe);
+    ActionType localActionType = static_cast<ActionType>(actionTypeValue);
+    int32_t result = mechClient_->DoAction(mechId, rotatePromiseParam->cmdId, localActionType);
+    HILOGI("result code: %{public}d ", result);
+    if (result != ERR_OK) {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+    }
+    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
+        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
+        return;
+    }
+    if (result != ERR_OK) {
+        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        return;
+    }
+    promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
+}
+
+void AniMechManager::Subscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback)
+{
+    HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
+    int32_t result = ExecuteSubscribe(mechEventTypes, callback);
+    ProcessOffResultCode(result);
+}
+
+void AniMechManager::UnSubscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes,
+    const SubscribeCBTaihe &callback)
+{
+    HILOGI("start");
+    if (CheckDeviceL1()) {
+        return;
+    }
+    int32_t result = ExecuteUnSubscribe(mechEventTypes, callback);
+    ProcessOffResultCode(result);
+}
+
 int32_t AniMechManager::ExecuteOnForAttachStateChange(const AttachStateCBTaihe &callback)
 {
     HILOGE("ATTACH_STATE_CHANGE_EVENT");
@@ -841,6 +1084,31 @@ bool AniMechManager::InitRotationAxesStatusChangeStub()
     }
 }
 
+bool AniMechManager::InitBaseChannel()
+{
+    if (baseChannel_ != nullptr) {
+        return true;
+    }
+    {
+        std::lock_guard<std::mutex> lock(baseChannelMutex_);
+        if (baseChannel_ != nullptr) {
+            return true;
+        }
+        if (!InitMechClient()) {
+            return false;
+        }
+        sptr<AniMechManagerStub> stub = new AniMechManagerStub();
+        sptr<IRemoteObject::DeathRecipient> deathListener = new AniBaseChannelDeathListener();
+        if (stub == nullptr ||  deathListener == nullptr) {
+            HILOGE("stub or deathListener is null");
+            return false;
+        }
+        stub->SetDeathRecipient(deathListener);
+        baseChannel_ = stub;
+        return baseChannel_ != nullptr;
+    }
+}
+
 int32_t AniMechManager::ExecuteOffForAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callback)
 {
     if (!InitMechClient()) {
@@ -924,6 +1192,90 @@ int32_t AniMechManager::ExecuteOffForRotationAxesStatusChange(
         return ERR_OK;
     }
     return ERR_OK;
+}
+
+int32_t AniMechManager::ExecuteSubscribe(
+    ::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback)
+{
+    HILOGI("enter");
+    int32_t registerResult = ERR_OK;
+    if (callback.is_error()) {
+        HILOGE("Callback error");
+        return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    }
+    std::lock_guard<std::mutex> lock(subscribeCallbackMutex_);
+    for (const MechEventTypeTaihe& mechEventTypeTaihe : mechEventTypes) {
+        int32_t mechEventTypeValue = static_cast<int32_t>(mechEventTypeTaihe);
+        MechEventType mechEventType = static_cast<MechEventType>(mechEventTypeValue);
+
+        std::vector<SubscribeCBTaihe> subscribeCallback;
+        auto itEvent = subscribeCallback_.find(mechEventType);
+        if (itEvent != subscribeCallback_.end()) {
+            subscribeCallback = itEvent->second;
+        } else {
+            HILOGI("Init channel begin, mechEventType: %{public}d;", mechEventTypeValue);
+            if (!InitMechClient()) {
+                HILOGE("Init Mech Client failed.");
+                return SYSTEM_WORK_ABNORMALLY;
+            }
+            if (!InitBaseChannel()) {
+                return SYSTEM_WORK_ABNORMALLY;
+            }
+            registerResult = mechClient_->RegisterSubscribeChannel(baseChannel_, mechEventType);
+        }
+        if (registerResult != ERR_OK) {
+            HILOGE("RegisterSubscribeChannel failed.");
+            return registerResult;
+        }
+        auto it = std::find(subscribeCallback.begin(), subscribeCallback.end(), callback);
+        if (it != subscribeCallback.end()) {
+            HILOGI("Already exists");
+        } else {
+            subscribeCallback.push_back(callback);
+            subscribeCallback_[mechEventType] = subscribeCallback;
+            HILOGI("Add callback for existing mechEventType: %{public}d;", mechEventTypeValue);
+        }
+    }
+    return registerResult;
+}
+
+int32_t AniMechManager::ExecuteUnSubscribe(
+    ::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback)
+{
+    HILOGI("enter");
+    int32_t registerResult = ERR_OK;
+    if (callback.is_error()) {
+        HILOGE("Callback error");
+        return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    }
+    std::lock_guard<std::mutex> lock(subscribeCallbackMutex_);
+    for (const MechEventTypeTaihe& mechEventTypeTaihe : mechEventTypes) {
+        int32_t mechEventTypeValue = static_cast<int32_t>(mechEventTypeTaihe);
+        MechEventType mechEventType = static_cast<MechEventType>(mechEventTypeValue);
+
+        std::vector<SubscribeCBTaihe> subscribeCallback;
+        auto itEvent = subscribeCallback_.find(mechEventType);
+        if (itEvent != subscribeCallback_.end()) {
+            subscribeCallback = itEvent->second;
+            auto it = std::find(subscribeCallback.begin(), subscribeCallback.end(), callback);
+            if (it == subscribeCallback.end()) {
+                HILOGI("No found callback info.");
+                return registerResult;
+            }
+            subscribeCallback.erase(it);
+            HILOGI("unSubscribe callback, remove callback, mechEventType: %{public}d; callback size: %{public}zu.",
+                mechEventTypeValue, subscribeCallback.size());
+            if (subscribeCallback.size() <= 0) {
+                registerResult = mechClient_->UnRegisterSubscribeChannel(mechEventType);
+                subscribeCallback_.erase(mechEventType);
+                return registerResult;
+            }
+        } else {
+            HILOGE("not found callback mechEventType: %{public}d.", mechEventTypeValue);
+            return registerResult;
+        }
+    }
+    return registerResult;
 }
 
 void AniMechManager::ProcessOffResultCode(int32_t &result)
@@ -1219,7 +1571,7 @@ ani_enum_item AniMechManager::GetResultAni(ani_env *env, int32_t idx)
     }
     ani_enum enumType;
     ani_status status = ANI_OK;
-    status = env->FindEnum("L@ohos/distributedHardware/mechanicManager/mechanicManager/Result;", &enumType);
+    status = env->FindEnum("@ohos.distributedHardware.mechanicManager.mechanicManager.Result", &enumType);
     if (status != ANI_OK) {
         HILOGE("FindEnum error:%{public}d!", status);
         return nullptr;
@@ -1356,6 +1708,38 @@ int32_t AniMechManager::SearchTargetCallback(std::string &cmdId, const int32_t &
     return ERR_OK;
 }
 
+void AniMechManager::ExecuteCallbackTask(const SubscribeCBTaihe& callback, int32_t mechId, MechEventType mechEventType)
+{
+    auto task = [this, callback, mechId, mechEventType]() {
+        MechEventTypeTaihe mechEventTypeTaihe = MechEventTypeTaihe::from_value(static_cast<int32_t>(mechEventType));
+        MechEventInfoTaihe taiheItem {
+            .mechId = mechId,
+            .event = mechEventTypeTaihe,
+        };
+        callback(taiheItem);
+    };
+    AniSendEvent(task);
+}
+
+int32_t AniMechManager::SubscribeCallback(const int32_t &mechId, const MechEventType &mechEventType)
+{
+    HILOGI("start. mechId: %{public}d, mechEventType: %{public}d", mechId, static_cast<int32_t>(mechEventType));
+
+    std::lock_guard<std::mutex> lock(subscribeCallbackMutex_);
+    auto it = subscribeCallback_.find(mechEventType);
+    if (it != subscribeCallback_.end()) {
+        const auto& subscribeCallbackList = it->second;
+        for (const auto& callback : subscribeCallbackList) {
+            ExecuteCallbackTask(callback, mechId, mechEventType);
+        }
+    } else {
+        HILOGW("No callback found for mechEventType: %{public}d", static_cast<int32_t>(mechEventType));
+    }
+
+    HILOGI("end");
+    return ERR_OK;
+}
+
 void AniMechManager::AniAttachStateChangeStubDeathListener::OnRemoteDied(const wptr <IRemoteObject> &object)
 {
     AniMechManager::GetInstance().OnAttachStateChangeRemoteDied(object);
@@ -1374,6 +1758,11 @@ void AniMechManager::AniRotationAxesStatusChangeStubDeathListener::OnRemoteDied(
 void AniMechManager::AniCmdChannelDeathListener::OnRemoteDied(const wptr <IRemoteObject> &object)
 {
     AniMechManager::GetInstance().OnCmdChannelRemoteDied(object);
+}
+
+void AniMechManager::AniBaseChannelDeathListener::OnRemoteDied(const wptr <IRemoteObject> &object)
+{
+    AniMechManager::GetInstance().OnBaseChannelRemoteDied(object);
 }
 
 void AniMechManager::OnAttachStateChangeRemoteDied(const wptr <IRemoteObject> &object)
@@ -1402,6 +1791,13 @@ void AniMechManager::OnCmdChannelRemoteDied(const wptr <IRemoteObject> &object)
     HILOGE("CmdChannel RemoteObject dead; ");
     std::lock_guard<std::mutex> lock(cmdChannelMutex_);
     cmdChannel_ = nullptr;
+}
+
+void AniMechManager::OnBaseChannelRemoteDied(const wptr <IRemoteObject> &object)
+{
+    HILOGE("BaseChannel RemoteObject dead; ");
+    std::lock_guard<std::mutex> lock(baseChannelMutex_);
+    baseChannel_ = nullptr;
 }
 } // namespace MechBodyController
 } // namespace OHOS

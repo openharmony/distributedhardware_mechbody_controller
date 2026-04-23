@@ -44,6 +44,8 @@ struct MechInfo : public OHOS::Parcelable {
     bool gattCoonectState = false;
     bool pairState = false;
     bool hidState = false;
+    bool isFirstConnect = false;
+    uint32_t deviceIdentifier = 0x00000000;
 
 public:
     MechInfo() = default;
@@ -81,6 +83,8 @@ public:
                ", gattCoonectState=" + std::to_string(gattCoonectState) +
                ", pairState=" + std::to_string(pairState) +
                ", hidState=" + std::to_string(hidState) +
+               ", isFirstConnect=" + std::to_string(isFirstConnect) +
+               ", deviceIdentifier=" + std::to_string(deviceIdentifier) +
                " }";
     }
 
@@ -225,6 +229,8 @@ struct RotateParam {
     int32_t duration = 0;
     bool isRelative = false;
     uint8_t taskId = 0;
+    int16_t forwardSpeed = 0;
+    float turningSpeed = 0;
 
     RotateParam() = default;
     RotateParam(const EulerAngles &deg, int32_t dur = 0, bool isRel = false)
@@ -233,6 +239,9 @@ struct RotateParam {
           isRelative(isRel)
     {
     }
+
+    RotateParam(int32_t dur, int16_t forwardSpeed, float turningSpeed)  // 无默认值
+        : duration(dur), forwardSpeed(forwardSpeed), turningSpeed(turningSpeed) {}
 
 public:
     std::string ToString() const
@@ -322,6 +331,94 @@ struct RotateToLocationParam : public OHOS::Parcelable {
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
         return true;
+    }
+};
+
+struct MoveParams : public OHOS::Parcelable {
+    int32_t distance = 0;
+    float angle = 0.0;
+    SpeedGear speedGear = SpeedGear::LOW_SPEED;
+    MarchingMode mode = MarchingMode::TURN_THEN_MOVE;
+ 
+    bool Marshalling(OHOS::Parcel &parcel) const override
+    {
+        return parcel.WriteInt32(distance) &&
+            parcel.WriteFloat(angle) &&
+            parcel.WriteInt32(static_cast<int32_t>(speedGear)) &&
+            parcel.WriteInt32(static_cast<int32_t>(mode));
+    }
+ 
+    static MoveParams *Unmarshalling(OHOS::Parcel &parcel)
+    {
+        auto obj = new MoveParams();
+        int32_t distance;
+        if (!parcel.ReadInt32(distance)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->distance = distance;
+ 
+        float angle;
+        if (!parcel.ReadFloat(angle)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->angle = angle;
+ 
+        int32_t speedGear;
+        if (!parcel.ReadInt32(speedGear)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->speedGear = static_cast<SpeedGear>(speedGear);
+        
+        int32_t mode;
+        if (!parcel.ReadInt32(mode)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->mode = static_cast<MarchingMode>(mode);
+        return obj;
+    }
+ 
+    std::string ToString() const
+    {
+        std::string str;
+        str.append("MoveParam {")
+            .append(std::to_string(distance)).append(",")
+            .append(std::to_string(angle)).append(",")
+            .append(std::to_string(static_cast<int32_t>(speedGear))).append(",")
+            .append(std::to_string(static_cast<int32_t>(mode)))
+            .append("}");
+        return str;
+    }
+};
+
+struct RotateToBaseParam : public OHOS::Parcelable {
+    uint16_t taskId = 0;
+    uint8_t reservedFlags = 0;
+    uint16_t rotateTime = 0;
+    int16_t forwardSpeed = 0;
+    float turningSpeed = 0;
+ 
+    bool Marshalling(OHOS::Parcel &parcel) const override
+    {
+        return true;
+    }
+ 
+    RotateToBaseParam(uint16_t id, uint16_t dur, int16_t forwardSpeed, float turningSpeed)
+        : taskId(id), rotateTime(dur), forwardSpeed(forwardSpeed), turningSpeed(turningSpeed) {}
+ 
+    std::string ToString() const
+    {
+        std::string str;
+        str.append("RotateToBaseParam {taskId=")
+            .append(std::to_string(taskId)).append(", rotateTime=")
+            .append(std::to_string(rotateTime)).append(", forwardSpeed=")
+            .append(std::to_string(forwardSpeed)).append(", turningSpeed=")
+            .append(std::to_string(turningSpeed))
+            .append("}");
+        return str;
     }
 };
 
@@ -532,6 +629,10 @@ struct CameraInfoParams {
     CameraType cameraType;
 };
 
+struct ScreenInfoParams {
+    bool isPortrait = false;
+};
+
 struct MechBaseInfo {
     bool obtainable = false;
     std::string mechType;
@@ -672,6 +773,59 @@ struct SearchResult : public OHOS::Parcelable {
     int32_t targetsNum = 0;
 };
 
+struct SpeedParams : public OHOS::Parcelable {
+    int16_t speed;
+    float angle;
+    MarchingMode mode;
+
+    SpeedParams(int16_t speed = 0, float angle = 0.0,
+        MarchingMode mode = MarchingMode::TURN_THEN_MOVE):speed(speed), angle(angle), mode(mode) {}
+
+    bool Marshalling(OHOS::Parcel &parcel) const override
+    {
+        return parcel.WriteInt16(speed) &&
+        parcel.WriteFloat(angle) &&
+        parcel.WriteInt32(static_cast<int32_t>(mode));
+    }
+
+    static SpeedParams *Unmarshalling(OHOS::Parcel &parcel)
+    {
+        auto obj = new SpeedParams();
+        int16_t speed;
+        if (!parcel.ReadInt16(speed)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->speed = speed;
+
+        float angle;
+        if (!parcel.ReadFloat(angle)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->angle = angle;
+        
+        int32_t mode;
+        if (!parcel.ReadInt32(mode)) {
+            delete obj;
+            return nullptr;
+        }
+        obj->mode = static_cast<MarchingMode>(mode);
+        return obj;
+    }
+
+    std::string ToString() const
+    {
+        std::string str;
+        str.append("SpeedParams {")
+            .append(std::to_string(speed)).append(",")
+            .append(std::to_string(angle)).append(",")
+            .append(std::to_string(static_cast<int32_t>(mode)))
+            .append("}");
+        return str;
+    }
+};
+
 struct ActionControlParams {
     uint8_t controlReq = 0;
     uint16_t timeOut = 0;
@@ -736,6 +890,47 @@ struct DeviceCoordinateInfo {
     float pitchPose;
 };
 
+struct WheelCapabilityInfo {
+    uint8_t velocityControlCap = 0;
+    uint8_t relativePosSupport = 0;
+    uint8_t chassisCenteringCap = 0;
+    uint8_t followPersonMode = 0;
+    uint8_t tablePatrolMode = 0;
+    uint8_t reservedFlags2 = 0; //保留
+    uint8_t sequenceCount = 0;
+    uint8_t directionSupport = 0;
+    uint8_t reservedFlags5 = 0; //保留
+    int16_t maxForwardSpeed = 0;
+    int16_t maxBackwardSpeed = 0;
+    int16_t maxLateralSpeed = 0;
+    int16_t maxLinearSpeed = 0;
+    float maxRotationSpeed = 0.0f;
+    uint16_t maxWheelCtrlTime = 0;
+};
+
+struct WheelPositionInfo {
+    int16_t xCoordinates;
+    int16_t yCoordinates;
+};
+
+struct CliffInfo {
+    int16_t cliffDirection;
+    uint8_t cliffInfoLen;
+    uint16_t info;
+};
+
+struct ObstacleDetail {
+    uint8_t detailType;
+    uint8_t dataLen;
+    std::string detailData;
+};
+
+struct ObstacleInfo {
+    int16_t direction;
+    int16_t pitchAngle;
+    uint8_t detailLenth;
+    std::vector<ObstacleDetail> details;
+};
 }  // namespace MechBodyController
 }  // namespace OHOS
 #endif  // MECHBODY_CONTROLLER_MECHBODY_CONTROLLER_TYPES_H

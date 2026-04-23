@@ -27,6 +27,7 @@ enum class RemoteObjectType : int32_t {
     TRACKING_EVENT_CALLBACK = 1,
     ROTATION_AXES_STATUS_CALLBACK = 2,
     COMMAND_CHANNEL = 3,
+    SUBSCRIBE_CALLBACK = 4,
 };
 class MechControllerIpcDeathListener : public IRemoteObject::DeathRecipient {
 public:

@@ -72,6 +72,20 @@ public:
 
     static napi_value IsControlSupported(napi_env env, napi_callback_info info);
 
+    static napi_value Move(napi_env env, napi_callback_info info);
+
+    static napi_value MoveBySpeed(napi_env env, napi_callback_info info);
+
+    static napi_value TurnBySpeed(napi_env env, napi_callback_info info);
+
+    static napi_value IsSupportAction(napi_env env, napi_callback_info info);
+
+    static napi_value DoAction(napi_env env, napi_callback_info info);
+
+    static napi_value Subscribe(napi_env env, napi_callback_info info);
+
+    static napi_value UnSubscribe(napi_env env, napi_callback_info info);
+
 private:
     static int32_t CheckControlL1(napi_env env);
     static int32_t CheckDeviceL1(napi_env env);
@@ -128,6 +142,29 @@ private:
 
     static std::string GenerateUniqueID();
 
+    static bool GetMoveParams(napi_env env, napi_callback_info info,
+        MoveParams &moveParams, int32_t &mechId);
+    static bool GetMoveBySpeedParams(napi_env env, napi_callback_info info,
+        SpeedParams &speedParams, int32_t &mechId, int32_t &duration);
+    static bool GetTurnBySpeedParams(napi_env env, napi_callback_info info,
+        int32_t &mechId, float &angleSpeed, int32_t &duration);
+    static bool GetDoActionParams(napi_env env, napi_callback_info info,
+        int32_t &mechId, ActionType &actionType);
+    static int32_t ExecuteSubscribe(
+        std::vector<MechEventType> &mechEventTypes, CallbackFunctionInfo &callbackFunctionInfo);
+    static int32_t ExecuteUnSubscribe(std::vector<MechEventType> &mechEventTypes);
+    static bool InitBaseChannel();
+    static void ProcessUnsubscribeForEvent(MechEventType mechEventType, int32_t &registerResult);
+    static bool ParseIsSupportActionArgs(napi_env env, napi_callback_info info,
+        int32_t &mechId, ActionType &actionType);
+
+    static bool ParseSubscribeParams(napi_env env, napi_callback_info info,
+        std::vector<MechEventType>& outEvents, napi_ref& outCallbackRef);
+    static bool ParseUnsubscribeParams(napi_env env, napi_callback_info info,
+        std::vector<MechEventType>& outEvents);
+    static bool ParseEventsArray(napi_env env, napi_value eventsArray,
+        std::vector<MechEventType>& outEvents);
+
 private:
     static std::mutex attachStateChangeStubMutex_;
     static sptr<JsMechManagerStub> attachStateChangeStub_;
@@ -139,6 +176,8 @@ private:
     static sptr<JsMechManagerStub> cmdChannel_;
     static std::mutex mechClientMutex_;
     static std::shared_ptr<MechClient> mechClient_;
+    static std::mutex baseChannelMutex_;
+    static sptr<JsMechManagerStub> baseChannel_;
 
     class AttachStateChangeStubDeathListener : public IRemoteObject::DeathRecipient {
     public:
@@ -156,6 +195,11 @@ private:
     };
 
     class CmdChannelDeathListener : public IRemoteObject::DeathRecipient {
+    public:
+        void OnRemoteDied(const wptr<IRemoteObject> &object) override;
+    };
+    
+    class BaseChannelDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
     };
