@@ -166,11 +166,11 @@ static void TestBoundaryConditions(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
 
-    constexpr uint32_t ZERO_CAPACITY = 0;
-    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(ZERO_CAPACITY);
+    constexpr uint32_t zeroCapacity = 0;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(zeroCapacity);
     if (dataBuffer != nullptr) {
-        dataBuffer->SetRange(ZERO_CAPACITY, ZERO_CAPACITY);
-        dataBuffer->AppendUint8(ZERO_CAPACITY);
+        dataBuffer->SetRange(zeroCapacity, zeroCapacity);
+        dataBuffer->AppendUint8(zeroCapacity);
     }
 
     dataBuffer = std::make_shared<MechDataBuffer>(TEST_BUFFER_SIZE);
