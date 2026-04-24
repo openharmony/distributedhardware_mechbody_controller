@@ -29,6 +29,11 @@ using namespace OHOS::MechBodyController;
 namespace {
     const std::string TAG = "McProtocolConvertorFuzzTest";
     const uint32_t MAX_DATA_SIZE = 512;
+    const size_t MAX_SERVICE_NAME_LENGTH = 255;
+    const uint8_t TEST_FUNCTION_COUNT = 4;
+    const uint32_t ZERO_VALUE = 0;
+    const uint8_t MAX_OPT_TYPE_VALUE = 3;
+    const size_t MIN_INPUT_SIZE = 1;
 
     enum class TestFunctionId {
         FUZZ_VALIDATE = 0,
@@ -43,10 +48,10 @@ static void TestValidate(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
 
     const uint8_t *dataPtr = nullptr;
-    uint32_t dataLen = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
+    uint32_t dataLen = provider.ConsumeIntegralInRange<uint32_t>(ZERO_VALUE, MAX_DATA_SIZE);
 
     bool shouldBeNull = provider.ConsumeBool();
-    if (!shouldBeNull && dataLen > 0) {
+    if (!shouldBeNull && dataLen > ZERO_VALUE) {
         std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataLen);
         if (!testData.empty()) {
             dataPtr = testData.data();
@@ -57,28 +62,38 @@ static void TestValidate(const uint8_t *data, size_t size)
     protocolConverter.Validate(dataPtr, dataLen);
 }
 
+static std::shared_ptr<MechDataBuffer> CreateDataBufferWithData(FuzzedDataProvider &provider)
+{
+    uint32_t dataSize = provider.ConsumeIntegralInRange<uint32_t>(ZERO_VALUE, MAX_DATA_SIZE);
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+
+    if (dataBuffer == nullptr || dataSize == ZERO_VALUE) {
+        return dataBuffer;
+    }
+
+    std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataSize);
+    if (testData.empty()) {
+        return dataBuffer;
+    }
+
+    dataBuffer->SetRange(ZERO_VALUE, dataSize);
+    if (memcpy_s(dataBuffer->Data(), dataBuffer->Size(), testData.data(), dataSize) != 0) {
+        return nullptr;
+    }
+
+    return dataBuffer;
+}
+
 static void TestConvert(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
 
-    OptType optType = static_cast<OptType>(provider.ConsumeIntegralInRange<uint8_t>(0, 3));
+    OptType optType = static_cast<OptType>(provider.ConsumeIntegralInRange<uint8_t>(ZERO_VALUE, MAX_OPT_TYPE_VALUE));
     uint16_t seqNo = provider.ConsumeIntegral<uint16_t>();
 
-    bool shouldBeNull = provider.ConsumeBool();
     std::shared_ptr<MechDataBuffer> dataBuffer = nullptr;
-
-    if (!shouldBeNull) {
-        uint32_t dataSize = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
-        dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
-        if (dataBuffer != nullptr && dataSize > 0) {
-            std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataSize);
-            if (!testData.empty()) {
-                dataBuffer->SetRange(0, dataSize);
-                if (memcpy_s(dataBuffer->Data(), dataBuffer->Size(), testData.data(), dataSize) != 0) {
-                    return;
-                }
-            }
-        }
+    if (!provider.ConsumeBool()) {
+        dataBuffer = CreateDataBufferWithData(provider);
     }
 
     std::string serviceName = provider.ConsumeRandomLengthString();
@@ -92,28 +107,16 @@ static void TestGetData(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
 
     std::string serviceName = provider.ConsumeRandomLengthString();
-    if (serviceName.length() > 255) {
-        serviceName = serviceName.substr(0, 255);
+    if (serviceName.length() > MAX_SERVICE_NAME_LENGTH) {
+        serviceName = serviceName.substr(ZERO_VALUE, MAX_SERVICE_NAME_LENGTH);
     }
 
-    bool shouldBeNull = provider.ConsumeBool();
     std::shared_ptr<MechDataBuffer> pclData = nullptr;
-
-    if (!shouldBeNull) {
-        uint32_t dataSize = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
-        pclData = std::make_shared<MechDataBuffer>(dataSize);
-        if (pclData != nullptr && dataSize > 0) {
-            std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataSize);
-            if (!testData.empty()) {
-                pclData->SetRange(0, dataSize);
-                if (memcpy_s(pclData->Data(), pclData->Size(), testData.data(), dataSize) != 0) {
-                    return;
-                }
-            }
-        }
+    if (!provider.ConsumeBool()) {
+        pclData = CreateDataBufferWithData(provider);
     }
 
-    uint16_t seqNo = 0;
+    uint16_t seqNo = ZERO_VALUE;
     bool isAck = false;
 
     ProtocolConverter protocolConverter;
@@ -124,15 +127,15 @@ static void TestDataBufferOperations(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
 
-    uint32_t bufferSize = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
+    uint32_t bufferSize = provider.ConsumeIntegralInRange<uint32_t>(ZERO_VALUE, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> mechDataBuffer = std::make_shared<MechDataBuffer>(bufferSize);
 
     if (mechDataBuffer == nullptr) {
         return;
     }
 
-    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(0, bufferSize);
-    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(0, bufferSize - rangeOffset);
+    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(ZERO_VALUE, bufferSize);
+    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(ZERO_VALUE, bufferSize - rangeOffset);
     mechDataBuffer->SetRange(rangeOffset, rangeSize);
 
     mechDataBuffer->Size();
@@ -143,12 +146,12 @@ static void TestDataBufferOperations(const uint8_t *data, size_t size)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < 1) {
+    if (data == nullptr || size < MIN_INPUT_SIZE) {
         return 0;
     }
 
     FuzzedDataProvider provider(data, size);
-    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % 4;
+    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % TEST_FUNCTION_COUNT;
 
     switch (static_cast<TestFunctionId>(testType)) {
         case TestFunctionId::FUZZ_VALIDATE:

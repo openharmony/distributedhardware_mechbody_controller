@@ -53,7 +53,7 @@ public:
 
 class MockBleReceviceListener : public BleReceviceListener {
 public:
-    MockBleReceviceListener(std::shared_ptr<MockTransportSendAdapter> adapter)
+    explicit MockBleReceviceListener(std::shared_ptr<MockTransportSendAdapter> adapter)
         : adapter_(adapter) {}
     ~MockBleReceviceListener() = default;
 

@@ -35,6 +35,24 @@ namespace {
         FUZZ_BOUNDARY_CONDITIONS = 3,
         FUZZ_LARGE_CAPACITY = 4
     };
+
+    constexpr uint32_t TEST_BUFFER_SIZE = 10;
+    constexpr uint8_t TEST_VALUE_UINT8 = 1;
+    constexpr uint16_t TEST_VALUE_UINT16 = 2;
+    constexpr uint32_t TEST_VALUE_UINT32 = 3;
+    constexpr uint64_t TEST_VALUE_UINT64 = 4;
+    constexpr int16_t TEST_VALUE_INT16 = 5;
+    constexpr float TEST_VALUE_FLOAT = 6.0f;
+
+    constexpr uint32_t OFFSET_UINT8 = 0;
+    constexpr uint32_t OFFSET_UINT16 = 1;
+    constexpr uint32_t OFFSET_UINT32 = 3;
+    constexpr uint32_t OFFSET_UINT64 = 7;
+    constexpr uint32_t OFFSET_INT16 = 15;
+    constexpr uint32_t OFFSET_FLOAT = 17;
+
+    constexpr uint8_t TEST_FUNCTION_COUNT = 5;
+    constexpr size_t MIN_INPUT_SIZE = 1;
 }
 
 static void TestConstructorAndBasicOps(const uint8_t *data, size_t size)
@@ -148,21 +166,22 @@ static void TestBoundaryConditions(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
 
-    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(0);
+    constexpr uint32_t ZERO_CAPACITY = 0;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(ZERO_CAPACITY);
     if (dataBuffer != nullptr) {
-        dataBuffer->SetRange(0, 0);
-        dataBuffer->AppendUint8(0);
+        dataBuffer->SetRange(ZERO_CAPACITY, ZERO_CAPACITY);
+        dataBuffer->AppendUint8(ZERO_CAPACITY);
     }
 
-    dataBuffer = std::make_shared<MechDataBuffer>(10);
+    dataBuffer = std::make_shared<MechDataBuffer>(TEST_BUFFER_SIZE);
     if (dataBuffer != nullptr) {
-        dataBuffer->SetRange(0, 10);
-        dataBuffer->AppendUint8(1);
-        dataBuffer->AppendUint16(2);
-        dataBuffer->AppendUint32(3);
-        dataBuffer->AppendUint64(4);
-        dataBuffer->AppendInt16(5);
-        dataBuffer->AppendFloat(6.0f);
+        dataBuffer->SetRange(OFFSET_UINT8, TEST_BUFFER_SIZE);
+        dataBuffer->AppendUint8(TEST_VALUE_UINT8);
+        dataBuffer->AppendUint16(TEST_VALUE_UINT16);
+        dataBuffer->AppendUint32(TEST_VALUE_UINT32);
+        dataBuffer->AppendUint64(TEST_VALUE_UINT64);
+        dataBuffer->AppendInt16(TEST_VALUE_INT16);
+        dataBuffer->AppendFloat(TEST_VALUE_FLOAT);
 
         uint8_t val8 = 0;
         uint16_t val16 = 0;
@@ -171,12 +190,12 @@ static void TestBoundaryConditions(const uint8_t *data, size_t size)
         int16_t valI16 = 0;
         float valF = 0.0f;
 
-        dataBuffer->ReadUint8(0, val8);
-        dataBuffer->ReadUint16(1, val16);
-        dataBuffer->ReadUint32(3, val32);
-        dataBuffer->ReadUint64(7, val64);
-        dataBuffer->ReadInt16(15, valI16);
-        dataBuffer->ReadFloat(17, valF);
+        dataBuffer->ReadUint8(OFFSET_UINT8, val8);
+        dataBuffer->ReadUint16(OFFSET_UINT16, val16);
+        dataBuffer->ReadUint32(OFFSET_UINT32, val32);
+        dataBuffer->ReadUint64(OFFSET_UINT64, val64);
+        dataBuffer->ReadInt16(OFFSET_INT16, valI16);
+        dataBuffer->ReadFloat(OFFSET_FLOAT, valF);
     }
 }
 
@@ -199,12 +218,12 @@ static void TestLargeCapacity(const uint8_t *data, size_t size)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < 1) {
+    if (data == nullptr || size < MIN_INPUT_SIZE) {
         return 0;
     }
 
     FuzzedDataProvider provider(data, size);
-    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % 5;
+    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % TEST_FUNCTION_COUNT;
 
     switch (static_cast<TestFunctionId>(testType)) {
         case TestFunctionId::FUZZ_CONSTRUCTOR_AND_BASIC_OPS:
