@@ -32,6 +32,7 @@ constexpr uint8_t FUZZ_MIN_VALUE = 1;
 constexpr uint8_t FUZZ_MIN_MULTI_VALUE = 2;
 constexpr size_t FUZZ_ZERO = 0;
 constexpr size_t FUZZ_CLIFF_INFO_SIZE = 1;
+constexpr int32_t FUZZ_MAX_BASIC_TEST_ID = 4;
 constexpr int32_t FUZZ_MAX_UNMARSHAL_TEST_ID = 12;
 
 enum class TestFunctionId {
@@ -425,7 +426,7 @@ void RunFuzzTest(FuzzedDataProvider &provider)
 {
     int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
 
-    if (testFunctionId <= 4) {
+    if (testFunctionId <= FUZZ_MAX_BASIC_TEST_ID) {
         RunBasicFuzzTests(provider, testFunctionId);
     } else if (testFunctionId <= FUZZ_MAX_UNMARSHAL_TEST_ID) {
         RunUnmarshalFuzzTests(provider, testFunctionId);
