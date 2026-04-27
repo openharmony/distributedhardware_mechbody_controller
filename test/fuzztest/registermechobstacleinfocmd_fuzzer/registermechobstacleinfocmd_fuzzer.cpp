@@ -32,6 +32,7 @@ constexpr uint8_t FUZZ_MIN_VALUE = 1;
 constexpr uint8_t FUZZ_MIN_MULTI_VALUE = 2;
 constexpr size_t FUZZ_ZERO = 0;
 constexpr size_t FUZZ_OBSTACLE_INFO_SIZE = 1;
+constexpr int32_t FUZZ_MAX_UNMARSHAL_TEST_ID = 12;
 
 enum class TestFunctionId {
     FUZZ_CONSTRUCTOR = 0,
@@ -317,7 +318,8 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
         cmd.TriggerResponse(nullptr);
     } else {
         uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(FUZZ_ZERO, FUZZ_SMALL_BUFFER_SIZE);
-        size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
+            size_t totalSize = RPT_SIZE + BIT_OFFSET_2 +
+            obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
 
         auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
         if (buffer != nullptr) {
@@ -434,7 +436,7 @@ void RunFuzzTest(FuzzedDataProvider &provider)
 
     if (testFunctionId <= 4) {
         RunBasicFuzzTests(provider, testFunctionId);
-    } else if (testFunctionId <= 12) {
+    } else if (testFunctionId <= FUZZ_MAX_UNMARSHAL_TEST_ID) {
         RunUnmarshalFuzzTests(provider, testFunctionId);
     } else {
         RunTriggerResponseFuzzTests(provider, testFunctionId);
