@@ -32,5 +32,9 @@ group("fuzztest") {
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerutils_fuzzer:MechBodyControllerUtilsFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/jsmechmanager_fuzzer:JsMechManagerFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechmanagerinner_fuzzer:MechManagerInnerFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/loadmechbodyadapter_fuzzer:LoadmechbodyadapterFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/notificationutils_fuzzer:NotificationutilsFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/resourcemanagerutils_fuzzer:ResourcemanagerutilsFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/subscribeeventutils_fuzzer:SubscribeeventutilsFuzzTest",
   ]
 }
