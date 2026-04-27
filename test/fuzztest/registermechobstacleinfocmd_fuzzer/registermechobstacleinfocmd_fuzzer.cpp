@@ -26,6 +26,12 @@ namespace {
 constexpr size_t RPT_SIZE = 1;
 constexpr size_t BIT_OFFSET_2 = 2;
 constexpr size_t MAX_OBSTACLE_NUMS = 255;
+constexpr size_t FUZZ_SMALL_BUFFER_SIZE = 10;
+constexpr size_t FUZZ_BUFFER_SIZE = 20;
+constexpr uint8_t FUZZ_MIN_VALUE = 1;
+constexpr uint8_t FUZZ_MIN_MULTI_VALUE = 2;
+constexpr size_t FUZZ_ZERO = 0;
+constexpr size_t FUZZ_OBSTACLE_INFO_SIZE = 1;
 
 enum class TestFunctionId {
     FUZZ_CONSTRUCTOR = 0,
@@ -70,7 +76,7 @@ void FuzzUnmarshalWithNull(FuzzedDataProvider &provider)
 void FuzzUnmarshalWithSmallBuffer(FuzzedDataProvider &provider)
 {
     RegisterMechObstacleInfoCmd cmd;
-    size_t bufferSize = provider.ConsumeIntegralInRange<size_t>(0, 10);
+    size_t bufferSize = provider.ConsumeIntegralInRange<size_t>(FUZZ_ZERO, FUZZ_SMALL_BUFFER_SIZE);
     auto buffer = std::make_shared<MechDataBuffer>(bufferSize);
     if (buffer != nullptr) {
         bool result = cmd.Unmarshal(buffer);
@@ -84,7 +90,7 @@ void FuzzUnmarshalWithZeroObstacle(FuzzedDataProvider &provider)
 
     size_t totalSize = RPT_SIZE + BIT_OFFSET_2;
 
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + 10);
+    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
     if (buffer == nullptr) {
         return;
     }
@@ -92,7 +98,7 @@ void FuzzUnmarshalWithZeroObstacle(FuzzedDataProvider &provider)
     buffer->AppendUint8(0x03);
     buffer->AppendUint8(0x41);
 
-    for (size_t i = 0; i < BIT_OFFSET_2; i++) {
+    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
         buffer->AppendUint8(0x00);
     }
 
@@ -106,9 +112,9 @@ void FuzzUnmarshalWithOneObstacle(FuzzedDataProvider &provider)
 {
     RegisterMechObstacleInfoCmd cmd;
 
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + BIT_OFFSET_2 + 1;
+    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE;
 
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + 10);
+    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
     if (buffer == nullptr) {
         return;
     }
@@ -116,7 +122,7 @@ void FuzzUnmarshalWithOneObstacle(FuzzedDataProvider &provider)
     buffer->AppendUint8(0x03);
     buffer->AppendUint8(0x41);
 
-    for (size_t i = 0; i < BIT_OFFSET_2; i++) {
+    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
         buffer->AppendUint8(0x00);
     }
 
@@ -135,10 +141,10 @@ void FuzzUnmarshalWithMultipleObstacles(FuzzedDataProvider &provider)
 {
     RegisterMechObstacleInfoCmd cmd;
 
-    uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(2, 10);
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + 1);
+    uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(FUZZ_MIN_MULTI_VALUE, FUZZ_SMALL_BUFFER_SIZE);
+    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
 
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + 10);
+    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
     if (buffer == nullptr) {
         return;
     }
@@ -146,13 +152,13 @@ void FuzzUnmarshalWithMultipleObstacles(FuzzedDataProvider &provider)
     buffer->AppendUint8(0x03);
     buffer->AppendUint8(0x41);
 
-    for (size_t i = 0; i < BIT_OFFSET_2; i++) {
+    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
         buffer->AppendUint8(0x00);
     }
 
     buffer->AppendUint8(obstacleNums);
 
-    for (uint8_t i = 0; i < obstacleNums; i++) {
+    for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
         int16_t direction = provider.ConsumeIntegral<int16_t>();
         int16_t pitchAngle = provider.ConsumeIntegral<int16_t>();
         buffer->AppendInt16(direction);
@@ -170,9 +176,9 @@ void FuzzUnmarshalWithMaxObstacles(FuzzedDataProvider &provider)
     RegisterMechObstacleInfoCmd cmd;
 
     uint8_t obstacleNums = MAX_OBSTACLE_NUMS;
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + 1);
+    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
 
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + 10);
+    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
     if (buffer == nullptr) {
         return;
     }
@@ -180,13 +186,13 @@ void FuzzUnmarshalWithMaxObstacles(FuzzedDataProvider &provider)
     buffer->AppendUint8(0x03);
     buffer->AppendUint8(0x41);
 
-    for (size_t i = 0; i < BIT_OFFSET_2; i++) {
+    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
         buffer->AppendUint8(0x00);
     }
 
     buffer->AppendUint8(obstacleNums);
 
-    for (uint8_t i = 0; i < obstacleNums; i++) {
+    for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
         buffer->AppendInt16(0x0000);
         buffer->AppendInt16(0x0000);
         buffer->AppendUint8(0x00);
@@ -200,9 +206,9 @@ void FuzzUnmarshalWithInvalidLength(FuzzedDataProvider &provider)
 {
     RegisterMechObstacleInfoCmd cmd;
 
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + BIT_OFFSET_2 + 1;
+    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE;
 
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + 10);
+    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
     if (buffer == nullptr) {
         return;
     }
@@ -210,14 +216,14 @@ void FuzzUnmarshalWithInvalidLength(FuzzedDataProvider &provider)
     buffer->AppendUint8(0x03);
     buffer->AppendUint8(0x41);
 
-    for (size_t i = 0; i < BIT_OFFSET_2; i++) {
+    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
         buffer->AppendUint8(0x00);
     }
 
     buffer->AppendUint8(0x01);
     buffer->AppendInt16(0x0000);
     buffer->AppendInt16(0x0000);
-    buffer->AppendUint8(provider.ConsumeIntegralInRange<uint8_t>(1, 255));
+    buffer->AppendUint8(provider.ConsumeIntegralInRange<uint8_t>(FUZZ_MIN_VALUE, MAX_OBSTACLE_NUMS));
 
     bool result = cmd.Unmarshal(buffer);
     (void)result;
@@ -228,9 +234,9 @@ void FuzzUnmarshalWithRandomData(FuzzedDataProvider &provider)
     RegisterMechObstacleInfoCmd cmd;
 
     uint8_t obstacleNums = provider.ConsumeIntegral<uint8_t>();
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + 1);
+    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
 
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + 10);
+    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
     if (buffer == nullptr) {
         return;
     }
@@ -238,13 +244,13 @@ void FuzzUnmarshalWithRandomData(FuzzedDataProvider &provider)
     buffer->AppendUint8(0x03);
     buffer->AppendUint8(0x41);
 
-    for (size_t i = 0; i < BIT_OFFSET_2; i++) {
+    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
         buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
     }
 
     buffer->AppendUint8(obstacleNums);
 
-    for (uint8_t i = 0; i < obstacleNums; i++) {
+    for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
         buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
         buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
         buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
@@ -265,7 +271,7 @@ void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
 {
     RegisterMechObstacleInfoCmd cmd;
 
-    auto buffer = std::make_shared<MechDataBuffer>(20);
+    auto buffer = std::make_shared<MechDataBuffer>(FUZZ_BUFFER_SIZE);
     if (buffer == nullptr) {
         return;
     }
@@ -310,21 +316,21 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
         cmd.Unmarshal(nullptr);
         cmd.TriggerResponse(nullptr);
     } else {
-        uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(0, 10);
-        size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + 1);
+        uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(FUZZ_ZERO, FUZZ_SMALL_BUFFER_SIZE);
+        size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
 
-        auto buffer = std::make_shared<MechDataBuffer>(totalSize + 10);
+        auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
         if (buffer != nullptr) {
             buffer->AppendUint8(0x03);
             buffer->AppendUint8(0x41);
 
-            for (size_t i = 0; i < BIT_OFFSET_2; i++) {
+            for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
                 buffer->AppendUint8(0x00);
             }
 
             buffer->AppendUint8(obstacleNums);
 
-            for (uint8_t i = 0; i < obstacleNums; i++) {
+            for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
                 buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
                 buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
                 buffer->AppendUint8(0x00);
@@ -338,7 +344,7 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
             (void)obstacles;
             (void)obstacleNumsResult;
 
-            auto responseBuffer = std::make_shared<MechDataBuffer>(20);
+            auto responseBuffer = std::make_shared<MechDataBuffer>(FUZZ_BUFFER_SIZE);
             if (responseBuffer != nullptr) {
                 responseBuffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
                 cmd.TriggerResponse(responseBuffer);
@@ -350,10 +356,8 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
     }
 }
 
-void RunFuzzTest(FuzzedDataProvider &provider)
+void RunBasicFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
 {
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
-
     switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_CONSTRUCTOR:
             FuzzConstructor(provider);
@@ -361,6 +365,23 @@ void RunFuzzTest(FuzzedDataProvider &provider)
         case TestFunctionId::FUZZ_MARSHAL:
             FuzzMarshal(provider);
             break;
+        case TestFunctionId::FUZZ_GET_OBSTACLES:
+            FuzzGetObstacles(provider);
+            break;
+        case TestFunctionId::FUZZ_GET_OBSTACLE_NUMS:
+            FuzzGetObstacleNums(provider);
+            break;
+        case TestFunctionId::FUZZ_GET_RESULT:
+            FuzzGetResult(provider);
+            break;
+        default:
+            break;
+    }
+}
+
+void RunUnmarshalFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
+{
+    switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_UNMARSHAL_WITH_NULL:
             FuzzUnmarshalWithNull(provider);
             break;
@@ -385,26 +406,38 @@ void RunFuzzTest(FuzzedDataProvider &provider)
         case TestFunctionId::FUZZ_UNMARSHAL_WITH_RANDOM_DATA:
             FuzzUnmarshalWithRandomData(provider);
             break;
+        default:
+            break;
+    }
+}
+
+void RunTriggerResponseFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
+{
+    switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_TRIGGER_RESPONSE_WITH_NULL:
             FuzzTriggerResponseWithNull(provider);
             break;
         case TestFunctionId::FUZZ_TRIGGER_RESPONSE_WITH_VALID_DATA:
             FuzzTriggerResponseWithValidData(provider);
             break;
-        case TestFunctionId::FUZZ_GET_OBSTACLES:
-            FuzzGetObstacles(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_OBSTACLE_NUMS:
-            FuzzGetObstacleNums(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_RESULT:
-            FuzzGetResult(provider);
-            break;
         case TestFunctionId::FUZZ_FULL_WORKFLOW:
             FuzzFullWorkflow(provider);
             break;
         default:
             break;
+    }
+}
+
+void RunFuzzTest(FuzzedDataProvider &provider)
+{
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
+
+    if (testFunctionId <= 4) {
+        RunBasicFuzzTests(provider, testFunctionId);
+    } else if (testFunctionId <= 12) {
+        RunUnmarshalFuzzTests(provider, testFunctionId);
+    } else {
+        RunTriggerResponseFuzzTests(provider, testFunctionId);
     }
 }
 
