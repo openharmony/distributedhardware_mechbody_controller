@@ -193,6 +193,15 @@ void FuzzInitRunResetClear(FuzzedDataProvider &provider)
     MechbodyAdapterUtils::Clear();
 }
 
+void RunTrackingCoreWithValues(const float testValues[], size_t testValueCount, size_t i, size_t j, PushXYFn push)
+{
+    for (size_t k = 0; k < testValueCount; k++) {
+        for (size_t m = 0; m < testValueCount; m++) {
+            MechbodyAdapterUtils::RunTrackingCore(testValues[i], testValues[j], testValues[k], testValues[m], push);
+        }
+    }
+}
+
 void FuzzRunWithExtremeValues(FuzzedDataProvider &provider)
 {
     MechbodyAdapterUtils::InitTrackingCore();
@@ -207,11 +216,7 @@ void FuzzRunWithExtremeValues(FuzzedDataProvider &provider)
 
     for (size_t i = 0; i < testValueCount; i++) {
         for (size_t j = 0; j < testValueCount; j++) {
-            for (size_t k = 0; k < testValueCount; k++) {
-                for (size_t m = 0; m < testValueCount; m++) {
-                    MechbodyAdapterUtils::RunTrackingCore(testValues[i], testValues[j], testValues[k], testValues[m], push);
-                }
-            }
+            RunTrackingCoreWithValues(testValues, testValueCount, i, j, push);
         }
     }
 
@@ -266,39 +271,9 @@ void FuzzRunWithVaryingCallbacks(FuzzedDataProvider &provider)
     MechbodyAdapterUtils::Clear();
 }
 
-} // namespace
-
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+void RunFuzzTest(FuzzedDataProvider &provider, int32_t testFunctionId)
 {
-    FuzzedDataProvider provider(data, size);
-
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
-
     switch (static_cast<TestFunctionId>(testFunctionId)) {
-        case TestFunctionId::FUZZ_INIT_TRACKING_CORE:
-            FuzzInitTrackingCore(provider);
-            break;
-        case TestFunctionId::FUZZ_RESET_TRACKING_CORE:
-            FuzzResetTrackingCore(provider);
-            break;
-        case TestFunctionId::FUZZ_CLEAR:
-            FuzzClear(provider);
-            break;
-        case TestFunctionId::FUZZ_RUN_TRACKING_CORE:
-            FuzzRunTrackingCore(provider);
-            break;
-        case TestFunctionId::FUZZ_INIT_AND_CLEAR:
-            FuzzInitAndClear(provider);
-            break;
-        case TestFunctionId::FUZZ_INIT_RESET_AND_CLEAR:
-            FuzzInitResetAndClear(provider);
-            break;
-        case TestFunctionId::FUZZ_MULTIPLE_INIT:
-            FuzzMultipleInit(provider);
-            break;
-        case TestFunctionId::FUZZ_RUN_WITH_CALLBACK:
-            FuzzRunWithCallback(provider);
-            break;
         case TestFunctionId::FUZZ_RUN_WITH_NULL_CALLBACK:
             FuzzRunWithNullCallback(provider);
             break;
@@ -326,6 +301,42 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         default:
             break;
     }
+}
 
+} // namespace
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
+    FuzzedDataProvider provider(data, size);
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
+    switch (static_cast<TestFunctionId>(testFunctionId)) {
+        case TestFunctionId::FUZZ_INIT_TRACKING_CORE:
+            FuzzInitTrackingCore(provider);
+            break;
+        case TestFunctionId::FUZZ_RESET_TRACKING_CORE:
+            FuzzResetTrackingCore(provider);
+            break;
+        case TestFunctionId::FUZZ_CLEAR:
+            FuzzClear(provider);
+            break;
+        case TestFunctionId::FUZZ_RUN_TRACKING_CORE:
+            FuzzRunTrackingCore(provider);
+            break;
+        case TestFunctionId::FUZZ_INIT_AND_CLEAR:
+            FuzzInitAndClear(provider);
+            break;
+        case TestFunctionId::FUZZ_INIT_RESET_AND_CLEAR:
+            FuzzInitResetAndClear(provider);
+            break;
+        case TestFunctionId::FUZZ_MULTIPLE_INIT:
+            FuzzMultipleInit(provider);
+            break;
+        case TestFunctionId::FUZZ_RUN_WITH_CALLBACK:
+            FuzzRunWithCallback(provider);
+            break;
+        default:
+            RunFuzzTest(provider, testFunctionId);
+            break;
+    }
     return 0;
 }
