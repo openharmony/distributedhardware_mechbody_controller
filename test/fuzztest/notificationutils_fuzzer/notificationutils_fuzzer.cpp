@@ -121,7 +121,8 @@ void FuzzSubscriberCallbacks(FuzzedDataProvider &provider)
     subscriber.OnDied();
 
     int32_t notificationId = provider.ConsumeIntegral<int32_t>();
-    sptr<OHOS::Notification::NotificationButtonOption> buttonOption = new OHOS::Notification::NotificationButtonOption();
+    sptr<OHOS::Notification::NotificationButtonOption> buttonOption =
+        new OHOS::Notification::NotificationButtonOption();
     subscriber.OnResponse(notificationId, buttonOption);
 }
 
