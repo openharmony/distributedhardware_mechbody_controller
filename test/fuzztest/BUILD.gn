@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Copyright (c) 2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -30,6 +30,14 @@ group("fuzztest") {
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubfour_fuzzer:MechBodyControllerStubFourFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerstubfive_fuzzer:MechBodyControllerStubFiveFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerutils_fuzzer:MechBodyControllerUtilsFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/registermechcliffinfocmd_fuzzer:RegisterMechCliffInfoCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/registermechobstacleinfocmd_fuzzer:RegisterMechObstacleInfoCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelgetmechcapabilityinfocmd_fuzzer:WheelGetMechCapabilityInfoCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechmotioncontrolcmd_fuzzer:WheelSetMechMotionControlCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechrelativepositioncmd_fuzzer:WheelSetMechRelativePositionCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechrotationtobasecmd_fuzzer:WheelSetMechRotationToBaseCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechrotationtracecmd_fuzzer:WheelSetMechRotationTraceCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechscenecontrolcmd_fuzzer:WheelSetMechSceneControlCmdFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/hisyseventutils_fuzzer:HisyseventUtilsFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcdatabuffer_fuzzer:McDataBufferFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcprotocolconvertor_fuzzer:McProtocolConvertorFuzzTest",
