@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Copyright (c) 2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -38,7 +38,22 @@ group("fuzztest") {
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechrotationtobasecmd_fuzzer:WheelSetMechRotationToBaseCmdFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechrotationtracecmd_fuzzer:WheelSetMechRotationTraceCmdFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/wheelsetmechscenecontrolcmd_fuzzer:WheelSetMechSceneControlCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/hisyseventutils_fuzzer:HisyseventUtilsFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcdatabuffer_fuzzer:McDataBufferFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcprotocolconvertor_fuzzer:McProtocolConvertorFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcsubscriptioncenter_fuzzer:McSubscriptionCenterFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mccommandbase_fuzzer:McCommandBaseFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mccommandfactory_fuzzer:McCommandFactoryFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcsendadapter_fuzzer:McSendAdapterFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcgetmechprotocolvercmd_fuzzer:McGetMechProtocolVerCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcsetmechdevicepairinginfocmd_fuzzer:McSetMechDevicePairingInfoCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mcsetmechdisconnectcmd_fuzzer:McSetMechDisconnectCmdFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/jsmechmanager_fuzzer:JsMechManagerFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechmanagerinner_fuzzer:MechManagerInnerFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechrotationbyspeedcmd_fuzzer:NormalSetMechRotationBySpeedCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechrotationtolocationcmd_fuzzer:NormalSetMechRotationToLocationCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechrotationtracecmd_fuzzer:NormalSetMechRotationTraceCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechphonestatuscmd_fuzzer:NormalSetMechPhoneStatusCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechprotocolvercmd_fuzzer:NormalSetMechProtocolVerCmdFuzzTest",
   ]
 }
