@@ -103,13 +103,11 @@ public:
     int32_t SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result);
     int32_t SubscribeCallback(const int32_t &mechId, const MechEventType &mechEvent);
     void ExecuteCallbackTask(const SubscribeCBTaihe& callback, int32_t mechId, MechEventType mechEventType);
-
     void OnAttachStateChangeRemoteDied(const wptr <IRemoteObject> &object);
     void OnTrackingEventRemoteDied(const wptr <IRemoteObject> &object);
     void OnRotationAxesStatusChangeRemoteDied(const wptr <IRemoteObject> &object);
     void OnCmdChannelRemoteDied(const wptr <IRemoteObject> &object);
     void OnBaseChannelRemoteDied(const wptr <IRemoteObject> &object);
-
     void OnAttachStateChange(const AttachStateCBTaihe &callback);
     void OffAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callbck);
     ::taihe::array<MechInfoTaihe> GetAttachedDevices();
@@ -139,6 +137,8 @@ public:
     void DoAction(int32_t mechId, const ActionTypeTaihe &actionTypeTaihe, uintptr_t &promise);
     void Subscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback);
     void UnSubscribe(::taihe::array_view<MechEventTypeTaihe> mechEventTypes, const SubscribeCBTaihe &callback);
+    void IsControlSupported(
+        const ::taihe::optional_view<MechDeviceTypeTaihe> &mechDeviceTypeTaihe, bool &isControlSupported);
 private:
     int32_t ExecuteOnForAttachStateChange(const AttachStateCBTaihe &callback);
     int32_t ExecuteOffForAttachStateChange(const ::taihe::optional_view<AttachStateCBTaihe> &callbck);

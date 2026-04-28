@@ -288,3 +288,6 @@ function SubscribeInner(events: Array<MechEventType>, callback: (info :MechEvent
 
 @rename("unSubscribe")
 function UnSubscribeInner(events: Array<MechEventType>, callback: (info :MechEvent) => void): void;
+
+@rename("isControlSupported")
+function IsControlSupportedInner(mechDeviceType: Optional<MechDeviceType>): bool;

@@ -938,6 +938,30 @@ void AniMechManager::UnSubscribe(::taihe::array_view<MechEventTypeTaihe> mechEve
     ProcessOffResultCode(result);
 }
 
+void AniMechManager::IsControlSupported(
+    const ::taihe::optional_view<MechDeviceTypeTaihe> &mechDeviceTypeTaihe, bool &isControlSupported)
+{
+    HILOGI("start");
+    if (CheckControlL1()) {
+        return;
+    }
+
+    if (!InitMechClient()) {
+        return;
+    }
+    if (!mechDeviceTypeTaihe.has_value()) {
+        mechClient_->CheckAnyDeviceControlSupported(isControlSupported);
+        return;
+    }
+    int32_t mechDeviceTypeValue = static_cast<int32_t>(mechDeviceTypeTaihe.value());
+    MechDeviceType mechDeviceType = static_cast<MechDeviceType>(mechDeviceTypeValue);
+    int32_t result = mechClient_->IsControlSupported(mechDeviceType, isControlSupported);
+    if (result != ERR_OK) {
+        HILOGI("result code: %{public}d ", result);
+    }
+    return;
+}
+
 int32_t AniMechManager::ExecuteOnForAttachStateChange(const AttachStateCBTaihe &callback)
 {
     HILOGE("ATTACH_STATE_CHANGE_EVENT");

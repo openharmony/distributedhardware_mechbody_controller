@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <fstream>
 
 #include "iremote_object.h"
 #include "ipc_skeleton.h"
@@ -23,6 +24,7 @@
 #include "mechbody_controller_ipc_interface_code.h"
 #include "ani_mech_manager_client.h"
 #include  "ani_mech_manager.h"
+#include "parameters.h"
 
 
 namespace OHOS {
@@ -1167,6 +1169,39 @@ void AniMechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbili
     if (mechClient == nullptr) {
         return;
     }
+}
+
+int32_t AniMechClient::CheckAnyDeviceControlSupported(bool &isControlSupported)
+{
+    isControlSupported = DetectGimbalSupport();
+    return ERR_OK;
+}
+
+int32_t AniMechClient::IsControlSupported(MechDeviceType mechDeviceType, bool &isControlSupported)
+{
+    switch (mechDeviceType) {
+        case MechDeviceType::GIMBAL_DEVICE:
+            isControlSupported = DetectGimbalSupport();
+            break;
+        default:
+            HILOGE("Invalid device type");
+            return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    }
+    return ERR_OK;
+}
+
+bool AniMechClient::DetectGimbalSupport()
+{
+    // verifying the CCM configuration
+    std::string getDeviceTypes = OHOS::system::GetParameter("persist.mechbody.unsupported_mechdevicetype", "");
+    if (getDeviceTypes.empty()) {
+        return true;
+    }
+    std::string gimbalType = std::to_string(static_cast<int32_t>(MechDeviceType::GIMBAL_DEVICE));
+    if (getDeviceTypes.find(gimbalType) != std::string::npos) {
+        return false;
+    }
+    return true;
 }
 
 AniMechBodyServiceLoadCallback::AniMechBodyServiceLoadCallback(const std::weak_ptr<AniMechClient> &client,

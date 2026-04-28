@@ -214,6 +214,14 @@ void UnSubscribeInner(::taihe::array_view<MechEventTypeTaihe> events,
     HILOGI("unSubscribe inner begin!");
     AniMechManager::GetInstance().UnSubscribe(events, callback);
 }
+
+bool IsControlSupportedInner(::taihe::optional_view<MechDeviceTypeTaihe> mechDeviceTypeTaihe)
+{
+    HILOGI("isControlSupported inner begin!");
+    bool isControlSupported = false;
+    AniMechManager::GetInstance().IsControlSupported(mechDeviceTypeTaihe, isControlSupported);
+    return isControlSupported;
+}
 }  // namespace
 
 // Since these macros are auto-generate, lint will cause false positive.
@@ -248,5 +256,6 @@ TH_EXPORT_CPP_API_IsSupportActionInner(IsSupportActionInner);
 TH_EXPORT_CPP_API_DoActionInner(DoActionInner);
 TH_EXPORT_CPP_API_SubscribeInner(SubscribeInner);
 TH_EXPORT_CPP_API_UnSubscribeInner(UnSubscribeInner);
+TH_EXPORT_CPP_API_IsControlSupportedInner(IsControlSupportedInner);
 // NOLINTEND
 

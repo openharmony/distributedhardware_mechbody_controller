@@ -135,10 +135,16 @@ public:
 
     int32_t UnRegisterSubscribeChannel(MechEventType mechEventType);
 
+    int32_t CheckAnyDeviceControlSupported(bool &isSupported);
+
+    int32_t IsControlSupported(MechDeviceType mechDeviceType, bool &isSupported);
+
 private:
     sptr <IRemoteObject> GetDmsProxy();
 
     int32_t SubscribeMechAbility();
+
+    bool DetectGimbalSupport();
 
 private:
     std::condition_variable producerCon_;
