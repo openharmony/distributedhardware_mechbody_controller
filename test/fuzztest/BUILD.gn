@@ -55,5 +55,8 @@ group("fuzztest") {
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechrotationtracecmd_fuzzer:NormalSetMechRotationTraceCmdFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechphonestatuscmd_fuzzer:NormalSetMechPhoneStatusCmdFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/normalsetmechprotocolvercmd_fuzzer:NormalSetMechProtocolVerCmdFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/loadmechbodyadapter_fuzzer:LoadmechbodyadapterFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/resourcemanagerutils_fuzzer:ResourcemanagerutilsFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/subscribeeventutils_fuzzer:SubscribeeventutilsFuzzTest",
   ]
 }
