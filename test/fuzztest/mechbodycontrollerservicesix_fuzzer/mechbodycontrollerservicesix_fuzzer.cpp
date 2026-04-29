@@ -308,12 +308,8 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
     service.CleanMotionManagers();
 }
 
-} // namespace
-
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+void RunFuzzTest(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-    
     int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 18);
     
     switch (static_cast<TestFunctionId>(testFunctionId)) {
@@ -377,6 +373,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         default:
             break;
     }
-    
+}
+
+} // namespace
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
+    FuzzedDataProvider provider(data, size);
+    RunFuzzTest(provider);
     return 0;
 }
