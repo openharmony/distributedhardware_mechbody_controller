@@ -48,7 +48,8 @@ enum class TestFunctionId {
     FUZZ_FULL_WORKFLOW = 18
 };
 
-constexpr int32_t TEST_FUNCTION_GROUP1_END = static_cast<int32_t>(TestFunctionId::FUZZ_UNREGISTER_ROTATION_AXES_STATUS_CHANGE_CALLBACK);
+constexpr int32_t TEST_FUNCTION_GROUP1_END =
+    static_cast<int32_t>(TestFunctionId::FUZZ_UNREGISTER_ROTATION_AXES_STATUS_CHANGE_CALLBACK);
 constexpr int32_t TEST_FUNCTION_MAX_ID = static_cast<int32_t>(TestFunctionId::FUZZ_FULL_WORKFLOW);
 
 void FuzzRegisterAttachStateChangeCallback(FuzzedDataProvider &provider)
