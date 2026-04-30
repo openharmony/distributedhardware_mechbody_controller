@@ -107,6 +107,10 @@ struct DeviceConnectPage {
     }
   }
 
+  aboutToDisappear() {
+    connection.off('bondStateChange');
+  }
+
   getDeviceName(deviceId: string): string {
     logger.info(TAG + 'getDeviceName in. deviceId = ' + deviceId);
     try {

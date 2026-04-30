@@ -197,6 +197,10 @@ struct GattClientPage {
     }
   }
 
+  aboutToDisappear() {
+    connection.off('bluetoothDeviceFind');
+  }
+
   // 客户端(手机)发起连接远端蓝牙低功耗设备（云台）  通路传数据
   // connect() {
   //   logger.info(TAG + 'connect in. deviceId = ' + this.deviceId);
