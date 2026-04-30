@@ -240,10 +240,8 @@ void FuzzUpdateCurrentCameraInfo(FuzzedDataProvider &provider)
     g_cameraTrackingController->UpdateCurrentCameraInfoByCaptureSessionInfo(captureSessionInfo);
 }
 
-void RunFuzzTest(FuzzedDataProvider &provider)
+void RunFuzzTestGroup1(FuzzedDataProvider &provider, int32_t testFunctionId)
 {
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 23);
-
     switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_INIT:
             FuzzInit(provider);
@@ -269,6 +267,14 @@ void RunFuzzTest(FuzzedDataProvider &provider)
         case TestFunctionId::FUZZ_ON_CONNECT_CHANGE:
             FuzzOnConnectChange(provider);
             break;
+        default:
+            break;
+    }
+}
+
+void RunFuzzTestGroup2(FuzzedDataProvider &provider, int32_t testFunctionId)
+{
+    switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_USER_ID_CHANGE_CALLBACK:
             FuzzUserIdChangeCallback(provider);
             break;
@@ -293,6 +299,14 @@ void RunFuzzTest(FuzzedDataProvider &provider)
         case TestFunctionId::FUZZ_SEARCH_TARGET:
             FuzzSearchTarget(provider);
             break;
+        default:
+            break;
+    }
+}
+
+void RunFuzzTestGroup3(FuzzedDataProvider &provider, int32_t testFunctionId)
+{
+    switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_ON_SESSION_STATUS_CHANGE:
             FuzzOnSessionStatusChange(provider);
             break;
@@ -319,6 +333,19 @@ void RunFuzzTest(FuzzedDataProvider &provider)
             break;
         default:
             break;
+    }
+}
+
+void RunFuzzTest(FuzzedDataProvider &provider)
+{
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 23);
+
+    if (testFunctionId < 8) {
+        RunFuzzTestGroup1(provider, testFunctionId);
+    } else if (testFunctionId < 16) {
+        RunFuzzTestGroup2(provider, testFunctionId);
+    } else {
+        RunFuzzTestGroup3(provider, testFunctionId);
     }
 }
 

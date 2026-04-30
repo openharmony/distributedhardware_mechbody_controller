@@ -308,10 +308,8 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
     service.CleanMotionManagers();
 }
 
-void RunFuzzTest(FuzzedDataProvider &provider)
+void RunFuzzTestGroup1(FuzzedDataProvider &provider, int32_t testFunctionId)
 {
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 18);
-    
     switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_REGISTER_ATTACH_STATE_CHANGE_CALLBACK:
             FuzzRegisterAttachStateChangeCallback(provider);
@@ -340,6 +338,14 @@ void RunFuzzTest(FuzzedDataProvider &provider)
         case TestFunctionId::FUZZ_UNREGISTER_ROTATION_AXES_STATUS_CHANGE_CALLBACK:
             FuzzUnRegisterRotationAxesStatusChangeCallback(provider);
             break;
+        default:
+            break;
+    }
+}
+
+void RunFuzzTestGroup2(FuzzedDataProvider &provider, int32_t testFunctionId)
+{
+    switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_SEARCH_TARGET:
             FuzzSearchTarget(provider);
             break;
@@ -372,6 +378,17 @@ void RunFuzzTest(FuzzedDataProvider &provider)
             break;
         default:
             break;
+    }
+}
+
+void RunFuzzTest(FuzzedDataProvider &provider)
+{
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 18);
+
+    if (testFunctionId < 9) {
+        RunFuzzTestGroup1(provider, testFunctionId);
+    } else {
+        RunFuzzTestGroup2(provider, testFunctionId);
     }
 }
 
