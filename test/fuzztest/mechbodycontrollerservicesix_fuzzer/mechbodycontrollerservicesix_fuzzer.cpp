@@ -48,6 +48,9 @@ enum class TestFunctionId {
     FUZZ_FULL_WORKFLOW = 18
 };
 
+constexpr int32_t TEST_FUNCTION_GROUP1_END = static_cast<int32_t>(TestFunctionId::FUZZ_UNREGISTER_ROTATION_AXES_STATUS_CHANGE_CALLBACK);
+constexpr int32_t TEST_FUNCTION_MAX_ID = static_cast<int32_t>(TestFunctionId::FUZZ_FULL_WORKFLOW);
+
 void FuzzRegisterAttachStateChangeCallback(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
@@ -383,9 +386,9 @@ void RunFuzzTestGroup2(FuzzedDataProvider &provider, int32_t testFunctionId)
 
 void RunFuzzTest(FuzzedDataProvider &provider)
 {
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 18);
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, TEST_FUNCTION_MAX_ID);
 
-    if (testFunctionId < 9) {
+    if (testFunctionId <= TEST_FUNCTION_GROUP1_END) {
         RunFuzzTestGroup1(provider, testFunctionId);
     } else {
         RunFuzzTestGroup2(provider, testFunctionId);

@@ -54,6 +54,10 @@ enum class TestFunctionId {
     FUZZ_UPDATE_CURRENT_CAMERA_INFO = 23
 };
 
+constexpr int32_t TEST_FUNCTION_GROUP1_END = static_cast<int32_t>(TestFunctionId::FUZZ_ON_CONNECT_CHANGE);
+constexpr int32_t TEST_FUNCTION_GROUP2_END = static_cast<int32_t>(TestFunctionId::FUZZ_SEARCH_TARGET);
+constexpr int32_t TEST_FUNCTION_MAX_ID = static_cast<int32_t>(TestFunctionId::FUZZ_UPDATE_CURRENT_CAMERA_INFO);
+
 McCameraTrackingController* g_cameraTrackingController = nullptr;
 
 void InitCameraTrackingController()
@@ -338,11 +342,11 @@ void RunFuzzTestGroup3(FuzzedDataProvider &provider, int32_t testFunctionId)
 
 void RunFuzzTest(FuzzedDataProvider &provider)
 {
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 23);
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, TEST_FUNCTION_MAX_ID);
 
-    if (testFunctionId < 8) {
+    if (testFunctionId <= TEST_FUNCTION_GROUP1_END) {
         RunFuzzTestGroup1(provider, testFunctionId);
-    } else if (testFunctionId < 16) {
+    } else if (testFunctionId <= TEST_FUNCTION_GROUP2_END) {
         RunFuzzTestGroup2(provider, testFunctionId);
     } else {
         RunFuzzTestGroup3(provider, testFunctionId);
