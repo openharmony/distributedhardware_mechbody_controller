@@ -19,6 +19,7 @@ group("fuzztest") {
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanagerone_fuzzer:BleSendManagerOneFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanagertwo_fuzzer:BleSendManagerTwoFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanagerthree_fuzzer:BleSendManagerThreeFuzzTest",
+    "//foundation/distributedhardware/mechbody_controller/test/fuzztest/blesendmanagerfour_fuzzer:BleSendManagerFourFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mccameratrackingcontroller_fuzzer:McCameraTrackingControllerFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerserviceone_fuzzer:MechBodyControllerServiceOneFuzzTest",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/mechbodycontrollerservicetwo_fuzzer:MechBodyControllerServiceTwoFuzzTest",
