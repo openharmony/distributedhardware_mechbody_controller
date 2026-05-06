@@ -28,6 +28,11 @@ using namespace OHOS::Bluetooth;
 
 namespace {
 
+// Fuzz test string length constants
+constexpr size_t MAC_ADDRESS_LENGTH = 32;
+constexpr size_t DEVICE_NAME_LENGTH = 64;
+constexpr int32_t BLE_TRANSPORT = 1;
+
 enum class TestFunctionId {
     FUZZ_INIT = 0,
     FUZZ_UNINIT = 1,
@@ -91,8 +96,8 @@ void FuzzOnPairStateChanged(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
-    mechInfo.mac = provider.ConsumeRandomLengthString(32);
-    mechInfo.mechName = provider.ConsumeRandomLengthString(64);
+    mechInfo.mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    mechInfo.mechName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     int32_t pairState = provider.ConsumeIntegral<int32_t>();
     int32_t cause = provider.ConsumeIntegral<int32_t>();
     bleSendManager.OnPairStateChanged(pairState, cause, mechInfo);
@@ -102,8 +107,8 @@ void FuzzGetRealName(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
-    mechInfo.mac = provider.ConsumeRandomLengthString(32);
-    mechInfo.mechName = provider.ConsumeRandomLengthString(64);
+    mechInfo.mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    mechInfo.mechName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     mechInfo.mechId = provider.ConsumeIntegral<int32_t>();
     bleSendManager.GetRealName(mechInfo);
 }
@@ -118,8 +123,8 @@ void FuzzOnHidStateChanged(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
-    mechInfo.mac = provider.ConsumeRandomLengthString(32);
-    mechInfo.mechName = provider.ConsumeRandomLengthString(64);
+    mechInfo.mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    mechInfo.mechName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     int32_t hidState = provider.ConsumeIntegral<int32_t>();
     int32_t cause = provider.ConsumeIntegral<int32_t>();
     bleSendManager.OnHidStateChanged(hidState, cause, mechInfo);
@@ -128,8 +133,8 @@ void FuzzOnHidStateChanged(FuzzedDataProvider &provider)
 void FuzzMechbodyConnect(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
-    std::string mac = provider.ConsumeRandomLengthString(32);
-    std::string deviceName = provider.ConsumeRandomLengthString(64);
+    std::string mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    std::string deviceName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     uint32_t deviceIdentifier = provider.ConsumeIntegral<uint32_t>();
     bleSendManager.MechbodyConnect(mac, deviceName, deviceIdentifier);
 }
@@ -137,16 +142,16 @@ void FuzzMechbodyConnect(FuzzedDataProvider &provider)
 void FuzzMechbodyPair(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
-    std::string mac = provider.ConsumeRandomLengthString(32);
-    std::string deviceName = provider.ConsumeRandomLengthString(64);
+    std::string mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    std::string deviceName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     bleSendManager.MechbodyPair(mac, deviceName);
 }
 
 void FuzzMechbodyHidConnect(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
-    std::string mac = provider.ConsumeRandomLengthString(32);
-    std::string deviceName = provider.ConsumeRandomLengthString(64);
+    std::string mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    std::string deviceName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     bleSendManager.MechbodyHidConnect(mac, deviceName);
 }
 
@@ -154,8 +159,8 @@ void FuzzMechbodyDisconnect(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
-    mechInfo.mac = provider.ConsumeRandomLengthString(32);
-    mechInfo.mechName = provider.ConsumeRandomLengthString(64);
+    mechInfo.mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    mechInfo.mechName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     mechInfo.gattCoonectState = provider.ConsumeBool();
     bleSendManager.MechbodyDisConnect(mechInfo);
 }
@@ -190,8 +195,8 @@ void FuzzCleanAllLocalInfo(FuzzedDataProvider &provider)
 
 void FuzzRemoteDeviceObserverPair(FuzzedDataProvider &provider)
 {
-    std::string address = provider.ConsumeRandomLengthString(32);
-    BluetoothRemoteDevice device(address, 1);
+    std::string address = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    BluetoothRemoteDevice device(address, BLE_TRANSPORT);
     int32_t status = provider.ConsumeIntegral<int32_t>();
     int32_t cause = provider.ConsumeIntegral<int32_t>();
 
@@ -201,8 +206,8 @@ void FuzzRemoteDeviceObserverPair(FuzzedDataProvider &provider)
 
 void FuzzHidObserverConnection(FuzzedDataProvider &provider)
 {
-    std::string address = provider.ConsumeRandomLengthString(32);
-    BluetoothRemoteDevice device(address, 1);
+    std::string address = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    BluetoothRemoteDevice device(address, BLE_TRANSPORT);
     int32_t state = provider.ConsumeIntegral<int32_t>();
     int32_t cause = provider.ConsumeIntegral<int32_t>();
 
@@ -222,7 +227,7 @@ void FuzzHostObserverState(FuzzedDataProvider &provider)
 void FuzzBluetoothServiceAdd(FuzzedDataProvider &provider)
 {
     int32_t systemAbilityId = provider.ConsumeIntegral<int32_t>();
-    std::string deviceId = provider.ConsumeRandomLengthString(64);
+    std::string deviceId = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
 
     BluetoothServiceStatusChangeListener listener;
     listener.OnAddSystemAbility(systemAbilityId, deviceId);
@@ -231,7 +236,7 @@ void FuzzBluetoothServiceAdd(FuzzedDataProvider &provider)
 void FuzzBluetoothServiceRemove(FuzzedDataProvider &provider)
 {
     int32_t systemAbilityId = provider.ConsumeIntegral<int32_t>();
-    std::string deviceId = provider.ConsumeRandomLengthString(64);
+    std::string deviceId = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
 
     BluetoothServiceStatusChangeListener listener;
     listener.OnRemoveSystemAbility(systemAbilityId, deviceId);
@@ -241,8 +246,8 @@ void FuzzMechbodyDisconnectForStart(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
-    mechInfo.mac = provider.ConsumeRandomLengthString(32);
-    mechInfo.mechName = provider.ConsumeRandomLengthString(64);
+    mechInfo.mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    mechInfo.mechName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     mechInfo.gattCoonectState = provider.ConsumeBool();
     bleSendManager.MechbodyDisConnectForMechbotyStart(mechInfo);
 }
@@ -251,8 +256,8 @@ void FuzzMechbodyGattDisconnectForStart(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
-    mechInfo.mac = provider.ConsumeRandomLengthString(32);
-    mechInfo.mechName = provider.ConsumeRandomLengthString(64);
+    mechInfo.mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    mechInfo.mechName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     mechInfo.gattCoonectState = provider.ConsumeBool();
     bleSendManager.MechbodyGattcDisconnectForMechbotyStart(mechInfo);
 }
@@ -261,8 +266,8 @@ void FuzzMechbodyHidDisconnectForStart(FuzzedDataProvider &provider)
 {
     BleSendManager &bleSendManager = BleSendManager::GetInstance();
     MechInfo mechInfo;
-    mechInfo.mac = provider.ConsumeRandomLengthString(32);
-    mechInfo.mechName = provider.ConsumeRandomLengthString(64);
+    mechInfo.mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    mechInfo.mechName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     mechInfo.gattCoonectState = provider.ConsumeBool();
     bleSendManager.MechbodyHidDisconnectForMechbotyStart(mechInfo);
 }
@@ -275,8 +280,8 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
     bleSendManager.Init();
 
     // Connect workflow
-    std::string mac = provider.ConsumeRandomLengthString(32);
-    std::string deviceName = provider.ConsumeRandomLengthString(64);
+    std::string mac = provider.ConsumeRandomLengthString(MAC_ADDRESS_LENGTH);
+    std::string deviceName = provider.ConsumeRandomLengthString(DEVICE_NAME_LENGTH);
     MechInfo mechInfo;
     mechInfo.mac = mac;
     mechInfo.mechName = deviceName;
