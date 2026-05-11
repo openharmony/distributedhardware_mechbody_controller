@@ -36,30 +36,18 @@ namespace {
         FUZZ_LARGE_CAPACITY = 4
     };
 
-    constexpr uint32_t TEST_BUFFER_SIZE = 10;
-    constexpr uint8_t TEST_VALUE_UINT8 = 1;
-    constexpr uint16_t TEST_VALUE_UINT16 = 2;
-    constexpr uint32_t TEST_VALUE_UINT32 = 3;
-    constexpr uint64_t TEST_VALUE_UINT64 = 4;
-    constexpr int16_t TEST_VALUE_INT16 = 5;
-    constexpr float TEST_VALUE_FLOAT = 6.0f;
-
-    constexpr uint32_t OFFSET_UINT8 = 0;
-    constexpr uint32_t OFFSET_UINT16 = 1;
-    constexpr uint32_t OFFSET_UINT32 = 3;
-    constexpr uint32_t OFFSET_UINT64 = 7;
-    constexpr uint32_t OFFSET_INT16 = 15;
-    constexpr uint32_t OFFSET_FLOAT = 17;
-
     constexpr uint8_t TEST_FUNCTION_COUNT = 5;
     constexpr size_t MIN_INPUT_SIZE = 1;
+    constexpr uint32_t MIN_BUFFER_SIZE = 1;
+    constexpr uint32_t MIN_STRING_LENGTH = 1;
+    constexpr uint32_t MIN_OFFSET = 0;
 }
 
 static void TestConstructorAndBasicOps(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
 
-    uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
+    uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(capacity);
 
     if (dataBuffer == nullptr) {
@@ -71,8 +59,8 @@ static void TestConstructorAndBasicOps(const uint8_t *data, size_t size)
     dataBuffer->Capacity();
     dataBuffer->Data();
 
-    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(0, capacity);
-    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(0, capacity - rangeOffset);
+    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, capacity);
+    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, capacity - rangeOffset);
     dataBuffer->SetRange(rangeOffset, rangeSize);
 }
 
@@ -80,7 +68,7 @@ static void TestAppendOperations(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
 
-    uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
+    uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(capacity);
 
     if (dataBuffer == nullptr) {
@@ -103,10 +91,10 @@ static void TestAppendOperations(const uint8_t *data, size_t size)
 
     bool shouldAppendBuffer = provider.ConsumeBool();
     if (shouldAppendBuffer) {
-        uint32_t bufferCapacity = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
+        uint32_t bufferCapacity = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
         std::shared_ptr<MechDataBuffer> appendBuffer = std::make_shared<MechDataBuffer>(bufferCapacity);
         if (appendBuffer != nullptr && bufferCapacity > 0) {
-            appendBuffer->SetRange(0, bufferCapacity);
+            appendBuffer->SetRange(MIN_OFFSET, bufferCapacity);
             dataBuffer->AppendDataBuffer(appendBuffer);
         }
     }
@@ -116,22 +104,22 @@ static void TestReadOperations(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
 
-    uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
+    uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(capacity);
 
     if (dataBuffer == nullptr) {
         return;
     }
 
-    if (capacity == 0) {
+    if (capacity == MIN_OFFSET) {
         return;
     }
 
-    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(0, capacity);
-    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(0, capacity - rangeOffset);
+    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, capacity);
+    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, capacity - rangeOffset);
     dataBuffer->SetRange(rangeOffset, rangeSize);
 
-    if (rangeSize == 0) {
+    if (rangeSize == MIN_OFFSET) {
         return;
     }
 
@@ -142,7 +130,7 @@ static void TestReadOperations(const uint8_t *data, size_t size)
     int16_t int16Val = 0;
     float floatVal = 0.0f;
 
-    uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(0, rangeSize - 1);
+    uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, rangeSize - MIN_BUFFER_SIZE);
 
     dataBuffer->ReadUint8(readOffset, uint8Val);
     dataBuffer->ReadUint16(readOffset, uint16Val);
@@ -153,7 +141,7 @@ static void TestReadOperations(const uint8_t *data, size_t size)
 
     bool shouldReadString = provider.ConsumeBool();
     if (shouldReadString) {
-        uint32_t strLen = provider.ConsumeIntegralInRange<uint32_t>(1, rangeSize - readOffset);
+        uint32_t strLen = provider.ConsumeIntegralInRange<uint32_t>(MIN_STRING_LENGTH, rangeSize - readOffset);
         char *strBuffer = new char[strLen];
         if (strBuffer != nullptr) {
             dataBuffer->ReadString(readOffset, strBuffer, strLen);
@@ -173,29 +161,42 @@ static void TestBoundaryConditions(const uint8_t *data, size_t size)
         dataBuffer->AppendUint8(zeroCapacity);
     }
 
-    dataBuffer = std::make_shared<MechDataBuffer>(TEST_BUFFER_SIZE);
+    uint32_t bufferSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_BUFFER_SIZE, MAX_DATA_SIZE);
+    dataBuffer = std::make_shared<MechDataBuffer>(bufferSize);
     if (dataBuffer != nullptr) {
-        dataBuffer->SetRange(OFFSET_UINT8, TEST_BUFFER_SIZE);
-        dataBuffer->AppendUint8(TEST_VALUE_UINT8);
-        dataBuffer->AppendUint16(TEST_VALUE_UINT16);
-        dataBuffer->AppendUint32(TEST_VALUE_UINT32);
-        dataBuffer->AppendUint64(TEST_VALUE_UINT64);
-        dataBuffer->AppendInt16(TEST_VALUE_INT16);
-        dataBuffer->AppendFloat(TEST_VALUE_FLOAT);
+    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, bufferSize - MIN_BUFFER_SIZE);
+    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_BUFFER_SIZE, bufferSize - rangeOffset);
+    dataBuffer->SetRange(rangeOffset, rangeSize);
+
+        uint8_t uint8Val = provider.ConsumeIntegral<uint8_t>();
+        uint16_t uint16Val = provider.ConsumeIntegral<uint16_t>();
+        uint32_t uint32Val = provider.ConsumeIntegral<uint32_t>();
+        uint64_t uint64Val = provider.ConsumeIntegral<uint64_t>();
+        int16_t int16Val = provider.ConsumeIntegral<int16_t>();
+        float floatVal = provider.ConsumeFloatingPoint<float>();
+
+        dataBuffer->AppendUint8(uint8Val);
+        dataBuffer->AppendUint16(uint16Val);
+        dataBuffer->AppendUint32(uint32Val);
+        dataBuffer->AppendUint64(uint64Val);
+        dataBuffer->AppendInt16(int16Val);
+        dataBuffer->AppendFloat(floatVal);
 
         uint8_t val8 = 0;
         uint16_t val16 = 0;
         uint32_t val32 = 0;
         uint64_t val64 = 0;
-        int16_t valI16 = 0;
-        float valF = 0.0f;
+int16_t valI16 = 0;
+    float valF = 0.0f;
 
-        dataBuffer->ReadUint8(OFFSET_UINT8, val8);
-        dataBuffer->ReadUint16(OFFSET_UINT16, val16);
-        dataBuffer->ReadUint32(OFFSET_UINT32, val32);
-        dataBuffer->ReadUint64(OFFSET_UINT64, val64);
-        dataBuffer->ReadInt16(OFFSET_INT16, valI16);
-        dataBuffer->ReadFloat(OFFSET_FLOAT, valF);
+uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, rangeSize - MIN_BUFFER_SIZE);
+
+    dataBuffer->ReadUint8(readOffset, val8);
+        dataBuffer->ReadUint16(readOffset, val16);
+        dataBuffer->ReadUint32(readOffset, val32);
+        dataBuffer->ReadUint64(readOffset, val64);
+        dataBuffer->ReadInt16(readOffset, valI16);
+        dataBuffer->ReadFloat(readOffset, valF);
     }
 }
 

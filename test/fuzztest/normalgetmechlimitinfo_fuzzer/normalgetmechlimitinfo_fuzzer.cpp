@@ -14,8 +14,8 @@
  */
 
 #include <fuzzer/FuzzedDataProvider.h>
-#include "mcgetmechprotocolvercmd_fuzzer.h"
-#include "mc_get_mech_protocol_ver_cmd.h"
+#include "normalgetmechlimitinfo_fuzzer.h"
+#include "mc_normal_get_mech_limit_info_cmd.h"
 #include "mc_data_buffer.h"
 
 using namespace OHOS;
@@ -23,7 +23,7 @@ using namespace OHOS::MechBodyController;
 
 namespace {
 
-constexpr size_t RSP_SIZE = 3;
+constexpr size_t RSP_SIZE = 25;
 constexpr size_t BIT_OFFSET_2 = 2;
 
 // Fuzz test constants
@@ -32,7 +32,8 @@ constexpr uint32_t MAX_COUNT = 5;
 constexpr size_t MIN_BUFFER_SIZE = 0;
 constexpr size_t MAX_SMALL_BUFFER_SIZE = 10;
 constexpr size_t EXTRA_BUFFER_SIZE = 10;
-constexpr uint8_t HEADER_BYTE = 0x02;
+constexpr uint8_t HEADER_BYTE1 = 0x02;
+constexpr uint8_t HEADER_BYTE2 = 0x08;
 constexpr int32_t MIN_TEST_ID = 0;
 constexpr int32_t MAX_TEST_ID = 7;
 
@@ -49,37 +50,33 @@ enum class TestFunctionId {
 
 void FuzzConstructor(FuzzedDataProvider &provider)
 {
-    // Use fuzz data to create multiple instances
     uint32_t count = provider.ConsumeIntegralInRange<uint32_t>(MIN_COUNT, MAX_COUNT);
     for (uint32_t i = 0; i < count; i++) {
-        GetMechProtocolVerCmd cmd;
+        NormalGetMechLimitInfoCmd cmd;
     }
 }
 
 void FuzzMarshal(FuzzedDataProvider &provider)
 {
-    // Use fuzz data to control number of marshal calls
     uint32_t count = provider.ConsumeIntegralInRange<uint32_t>(MIN_COUNT, MAX_COUNT);
     for (uint32_t i = 0; i < count; i++) {
-        GetMechProtocolVerCmd cmd;
+        NormalGetMechLimitInfoCmd cmd;
         auto buffer = cmd.Marshal();
-        (void)buffer;
     }
 }
 
 void FuzzTriggerResponseWithNull(FuzzedDataProvider &provider)
 {
-    // Use fuzz data to control number of null trigger calls
     uint32_t count = provider.ConsumeIntegralInRange<uint32_t>(MIN_COUNT, MAX_COUNT);
     for (uint32_t i = 0; i < count; i++) {
-        GetMechProtocolVerCmd cmd;
+        NormalGetMechLimitInfoCmd cmd;
         cmd.TriggerResponse(nullptr);
     }
 }
 
 void FuzzTriggerResponseWithSmallBuffer(FuzzedDataProvider &provider)
 {
-    GetMechProtocolVerCmd cmd;
+    NormalGetMechLimitInfoCmd cmd;
     size_t bufferSize = provider.ConsumeIntegralInRange<size_t>(MIN_BUFFER_SIZE, MAX_SMALL_BUFFER_SIZE);
     auto buffer = std::make_shared<MechDataBuffer>(bufferSize);
     if (buffer != nullptr) {
@@ -89,7 +86,7 @@ void FuzzTriggerResponseWithSmallBuffer(FuzzedDataProvider &provider)
 
 void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
 {
-    GetMechProtocolVerCmd cmd;
+    NormalGetMechLimitInfoCmd cmd;
 
     size_t totalSize = RSP_SIZE + BIT_OFFSET_2;
 
@@ -98,8 +95,8 @@ void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
         return;
     }
 
-    buffer->AppendUint8(HEADER_BYTE);
-    buffer->AppendUint8(HEADER_BYTE);
+    buffer->AppendUint8(HEADER_BYTE1);
+    buffer->AppendUint8(HEADER_BYTE2);
 
     for (size_t i = 0; i < RSP_SIZE; ++i) {
         buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
@@ -110,21 +107,19 @@ void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
 
 void FuzzGetParams(FuzzedDataProvider &provider)
 {
-    // Use fuzz data to control number of GetParams calls
     uint32_t count = provider.ConsumeIntegralInRange<uint32_t>(MIN_COUNT, MAX_COUNT);
     for (uint32_t i = 0; i < count; i++) {
-        GetMechProtocolVerCmd cmd;
-        uint8_t params = cmd.GetParams();
+        NormalGetMechLimitInfoCmd cmd;
+        const RotateDegreeLimit& params = cmd.GetParams();
         (void)params;
     }
 }
 
 void FuzzGetResult(FuzzedDataProvider &provider)
 {
-    // Use fuzz data to control number of GetResult calls
     uint32_t count = provider.ConsumeIntegralInRange<uint32_t>(MIN_COUNT, MAX_COUNT);
     for (uint32_t i = 0; i < count; i++) {
-        GetMechProtocolVerCmd cmd;
+        NormalGetMechLimitInfoCmd cmd;
         uint8_t result = cmd.GetResult();
         (void)result;
     }
@@ -132,7 +127,7 @@ void FuzzGetResult(FuzzedDataProvider &provider)
 
 void FuzzFullWorkflow(FuzzedDataProvider &provider)
 {
-    GetMechProtocolVerCmd cmd;
+    NormalGetMechLimitInfoCmd cmd;
 
     auto marshalBuffer = cmd.Marshal();
 
@@ -144,15 +139,15 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
 
         auto buffer = std::make_shared<MechDataBuffer>(totalSize + EXTRA_BUFFER_SIZE);
         if (buffer != nullptr) {
-            buffer->AppendUint8(HEADER_BYTE);
-            buffer->AppendUint8(HEADER_BYTE);
+            buffer->AppendUint8(HEADER_BYTE1);
+            buffer->AppendUint8(HEADER_BYTE2);
 
             for (size_t i = 0; i < RSP_SIZE; ++i) {
                 buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
             }
 
             cmd.TriggerResponse(buffer);
-            uint8_t params = cmd.GetParams();
+            const RotateDegreeLimit& params = cmd.GetParams();
             uint8_t result = cmd.GetResult();
             (void)params;
             (void)result;

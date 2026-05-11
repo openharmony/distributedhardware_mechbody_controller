@@ -52,6 +52,12 @@ constexpr int32_t TEST_FUNCTION_GROUP1_END =
     static_cast<int32_t>(TestFunctionId::FUZZ_UNREGISTER_ROTATION_AXES_STATUS_CHANGE_CALLBACK);
 constexpr int32_t TEST_FUNCTION_MAX_ID = static_cast<int32_t>(TestFunctionId::FUZZ_FULL_WORKFLOW);
 
+// Fuzz test constants
+constexpr int32_t MIN_CALL_TIMES = 1;
+constexpr int32_t MAX_CALL_TIMES = 3;
+constexpr int32_t MIN_TEST_FUNCTION_ID = 0;
+constexpr size_t MAX_STRING_LENGTH = 64;
+
 void FuzzRegisterAttachStateChangeCallback(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
@@ -65,17 +71,21 @@ void FuzzRegisterAttachStateChangeCallback(FuzzedDataProvider &provider)
 
 void FuzzCleanMotionManagers(FuzzedDataProvider &provider)
 {
-    (void)provider;
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
-    service.CleanMotionManagers();
+    int32_t callTimes = provider.ConsumeIntegralInRange<int32_t>(MIN_CALL_TIMES, MAX_CALL_TIMES);
+    for (int32_t i = 0; i < callTimes; i++) {
+        service.CleanMotionManagers();
+    }
 }
 
 void FuzzGetTrackingEnabledDevice(FuzzedDataProvider &provider)
 {
-    (void)provider;
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     bool isEnabled = false;
-    service.GetTrackingEnabledDevice(isEnabled);
+    int32_t callTimes = provider.ConsumeIntegralInRange<int32_t>(MIN_CALL_TIMES, MAX_CALL_TIMES);
+    for (int32_t i = 0; i < callTimes; i++) {
+        service.GetTrackingEnabledDevice(isEnabled);
+    }
 }
 
 void FuzzNotifyMechEvent(FuzzedDataProvider &provider)
@@ -100,9 +110,11 @@ void FuzzRegisterTrackingEventCallback(FuzzedDataProvider &provider)
 
 void FuzzUnRegisterTrackingEventCallback(FuzzedDataProvider &provider)
 {
-    (void)provider;
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
-    service.UnRegisterTrackingEventCallback();
+    int32_t callTimes = provider.ConsumeIntegralInRange<int32_t>(MIN_CALL_TIMES, MAX_CALL_TIMES);
+    for (int32_t i = 0; i < callTimes; i++) {
+        service.UnRegisterTrackingEventCallback();
+    }
 }
 
 void FuzzRegisterCmdChannel(FuzzedDataProvider &provider)
@@ -129,15 +141,17 @@ void FuzzRegisterRotationAxesStatusChangeCallback(FuzzedDataProvider &provider)
 
 void FuzzUnRegisterRotationAxesStatusChangeCallback(FuzzedDataProvider &provider)
 {
-    (void)provider;
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
-    service.UnRegisterRotationAxesStatusChangeCallback();
+    int32_t callTimes = provider.ConsumeIntegralInRange<int32_t>(MIN_CALL_TIMES, MAX_CALL_TIMES);
+    for (int32_t i = 0; i < callTimes; i++) {
+        service.UnRegisterRotationAxesStatusChangeCallback();
+    }
 }
 
 void FuzzSearchTarget(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
-    std::string napiCmdId = provider.ConsumeRandomLengthString(64);
+    std::string napiCmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     
     auto targetInfo = std::make_shared<TargetInfo>();
     if (targetInfo != nullptr) {
@@ -156,7 +170,7 @@ void FuzzSearchTargetEnd(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
-    std::string napiCmdId = provider.ConsumeRandomLengthString(64);
+    std::string napiCmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     int32_t targetNum = provider.ConsumeIntegral<int32_t>();
     service.SearchTargetEnd(tokenId, napiCmdId, targetNum);
 }
@@ -165,7 +179,7 @@ void FuzzMove(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     int32_t mechId = provider.ConsumeIntegral<int32_t>();
-    std::string cmdId = provider.ConsumeRandomLengthString(64);
+    std::string cmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     
     auto moveParams = std::make_shared<MoveParams>();
     if (moveParams != nullptr) {
@@ -182,7 +196,7 @@ void FuzzMoveBySpeed(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     int32_t mechId = provider.ConsumeIntegral<int32_t>();
-    std::string cmdId = provider.ConsumeRandomLengthString(64);
+    std::string cmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     uint16_t duration = provider.ConsumeIntegral<uint16_t>();
     
     auto speedParams = std::make_shared<SpeedParams>();
@@ -199,7 +213,7 @@ void FuzzTurnBySpeed(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     int32_t mechId = provider.ConsumeIntegral<int32_t>();
-    std::string cmdId = provider.ConsumeRandomLengthString(64);
+    std::string cmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     float angleSpeed = provider.ConsumeFloatingPoint<float>();
     uint16_t duration = provider.ConsumeIntegral<uint16_t>();
     service.TurnBySpeed(mechId, cmdId, angleSpeed, duration);
@@ -219,7 +233,7 @@ void FuzzDoAction(FuzzedDataProvider &provider)
 {
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     int32_t mechId = provider.ConsumeIntegral<int32_t>();
-    std::string cmdId = provider.ConsumeRandomLengthString(64);
+    std::string cmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     int32_t actionTypeId = provider.ConsumeIntegral<int32_t>();
     ActionType actionType = static_cast<ActionType>(actionTypeId);
     service.DoAction(mechId, cmdId, actionType);
@@ -267,7 +281,7 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
     MechEventType mechEventType = static_cast<MechEventType>(eventTypeId);
     service.NotifyMechEvent(mechId, mechEventType);
     
-    std::string napiCmdId = provider.ConsumeRandomLengthString(64);
+    std::string napiCmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     auto targetInfo = std::make_shared<TargetInfo>();
     auto searchParams = std::make_shared<SearchParams>();
     service.SearchTarget(napiCmdId, targetInfo, searchParams);
@@ -276,7 +290,7 @@ void FuzzFullWorkflow(FuzzedDataProvider &provider)
     int32_t targetNum = provider.ConsumeIntegral<int32_t>();
     service.SearchTargetEnd(tokenId, napiCmdId, targetNum);
     
-    std::string cmdId = provider.ConsumeRandomLengthString(64);
+    std::string cmdId = provider.ConsumeRandomLengthString(MAX_STRING_LENGTH);
     auto moveParams = std::make_shared<MoveParams>();
     if (moveParams != nullptr) {
         moveParams->distance = provider.ConsumeIntegral<int32_t>();
@@ -387,7 +401,7 @@ void RunFuzzTestGroup2(FuzzedDataProvider &provider, int32_t testFunctionId)
 
 void RunFuzzTest(FuzzedDataProvider &provider)
 {
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, TEST_FUNCTION_MAX_ID);
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(MIN_TEST_FUNCTION_ID, TEST_FUNCTION_MAX_ID);
 
     if (testFunctionId <= TEST_FUNCTION_GROUP1_END) {
         RunFuzzTestGroup1(provider, testFunctionId);
