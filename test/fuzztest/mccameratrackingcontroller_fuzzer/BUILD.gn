@@ -67,6 +67,7 @@ ohos_fuzztest("McCameraTrackingControllerFuzzTest") {
     "//foundation/distributedhardware/mechbody_controller/services/src/utils/subscribe_event_utils.cpp",
     "//foundation/distributedhardware/mechbody_controller/services/src/transport/command/0x01/mc_action_gimbal_feature_control_cmd.cpp",
     "//foundation/distributedhardware/mechbody_controller/services/src/transport/command/0x01/mc_get_mech_camera_tracking_layout_cmd.cpp",
+    "//foundation/distributedhardware/mechbody_controller/services/src/transport/command/0x01/mc_set_mech_motion_control_cmd.cpp",
     "//foundation/distributedhardware/mechbody_controller/services/src/transport/command/0x01/mc_get_mech_limit_info_cmd.cpp",
     "//foundation/distributedhardware/mechbody_controller/services/src/transport/command/0x01/mc_get_mech_real_name_cmd.cpp",
     "//foundation/distributedhardware/mechbody_controller/services/src/transport/command/0x01/mc_register_mech_camera_key_event_cmd.cpp",
