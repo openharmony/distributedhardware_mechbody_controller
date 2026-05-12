@@ -29,6 +29,11 @@ using namespace OHOS::MechBodyController;
 
 namespace {
     const std::string TAG = "McSubscriptionCenterFuzzTest";
+    const uint8_t TEST_FUNCTION_COUNT = 5;
+    const size_t MIN_INPUT_SIZE = 1;
+    const uint32_t MIN_LISTENER_COUNT = 1;
+    const uint32_t MAX_LISTENER_COUNT = 10;
+    const uint32_t MIN_INDEX = 0;
 
     enum class TestFunctionId {
         FUZZ_SUBSCRIBE = 0,
@@ -71,10 +76,8 @@ public:
     void SetCmdId(uint8_t cmdId) { cmdId_ = cmdId; }
 };
 
-static void TestSubscribe(const uint8_t *data, size_t size)
+static void TestSubscribe(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     SubscriptionCenter &subscriptionCenter = SubscriptionCenter::GetInstance();
 
     bool shouldBeNull = provider.ConsumeBool();
@@ -88,10 +91,8 @@ static void TestSubscribe(const uint8_t *data, size_t size)
     subscriptionCenter.Subscribe(type, listener);
 }
 
-static void TestUnSubscribe(const uint8_t *data, size_t size)
+static void TestUnSubscribe(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     SubscriptionCenter &subscriptionCenter = SubscriptionCenter::GetInstance();
 
     bool shouldBeNull = provider.ConsumeBool();
@@ -105,10 +106,8 @@ static void TestUnSubscribe(const uint8_t *data, size_t size)
     subscriptionCenter.UnSubscribe(type, listener);
 }
 
-static void TestNotify(const uint8_t *data, size_t size)
+static void TestNotify(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     SubscriptionCenter &subscriptionCenter = SubscriptionCenter::GetInstance();
 
     bool shouldBeNull = provider.ConsumeBool();
@@ -126,10 +125,8 @@ static void TestNotify(const uint8_t *data, size_t size)
     subscriptionCenter.Notify(cmd);
 }
 
-static void TestSubscribeUnSubscribeCycle(const uint8_t *data, size_t size)
+static void TestSubscribeUnSubscribeCycle(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     SubscriptionCenter &subscriptionCenter = SubscriptionCenter::GetInstance();
 
     auto listener = std::make_shared<MockMechEventListener>();
@@ -143,17 +140,15 @@ static void TestSubscribeUnSubscribeCycle(const uint8_t *data, size_t size)
     subscriptionCenter.UnSubscribe(type, listener);
 }
 
-static void TestMultipleListeners(const uint8_t *data, size_t size)
+static void TestMultipleListeners(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     SubscriptionCenter &subscriptionCenter = SubscriptionCenter::GetInstance();
 
     uint16_t type = provider.ConsumeIntegral<uint16_t>();
-    uint32_t listenerCount = provider.ConsumeIntegralInRange<uint32_t>(1, 10);
+    uint32_t listenerCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_LISTENER_COUNT, MAX_LISTENER_COUNT);
 
     std::vector<std::shared_ptr<IMechEventListener>> listeners;
-    for (uint32_t i = 0; i < listenerCount; ++i) {
+    for (uint32_t i = MIN_INDEX; i < listenerCount; ++i) {
         auto listener = std::make_shared<MockMechEventListener>();
         if (listener != nullptr) {
             listeners.push_back(listener);
@@ -168,28 +163,28 @@ static void TestMultipleListeners(const uint8_t *data, size_t size)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < 1) {
+    if (data == nullptr || size < MIN_INPUT_SIZE) {
         return 0;
     }
 
     FuzzedDataProvider provider(data, size);
-    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % 5;
+    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % TEST_FUNCTION_COUNT;
 
     switch (static_cast<TestFunctionId>(testType)) {
         case TestFunctionId::FUZZ_SUBSCRIBE:
-            TestSubscribe(data, size);
+            TestSubscribe(provider);
             break;
         case TestFunctionId::FUZZ_UNSUBSCRIBE:
-            TestUnSubscribe(data, size);
+            TestUnSubscribe(provider);
             break;
         case TestFunctionId::FUZZ_NOTIFY:
-            TestNotify(data, size);
+            TestNotify(provider);
             break;
         case TestFunctionId::FUZZ_SUBSCRIBE_UNSUBSCRIBE_CYCLE:
-            TestSubscribeUnSubscribeCycle(data, size);
+            TestSubscribeUnSubscribeCycle(provider);
             break;
         case TestFunctionId::FUZZ_MULTIPLE_LISTENERS:
-            TestMultipleListeners(data, size);
+            TestMultipleListeners(provider);
             break;
         default:
             break;

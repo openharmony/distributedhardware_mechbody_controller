@@ -39,10 +39,8 @@ namespace {
     };
 }
 
-static void TestFactorySettings(const uint8_t *data, size_t size)
+static void TestFactorySettings(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     CommandFactory factory;
     uint8_t protocolVer = provider.ConsumeIntegral<uint8_t>();
     uint8_t devType = provider.ConsumeIntegral<uint8_t>();
@@ -51,10 +49,8 @@ static void TestFactorySettings(const uint8_t *data, size_t size)
     factory.SetFactoryDevType(devType);
 }
 
-static void TestFactoryCreateCommands(const uint8_t *data, size_t size)
+static void TestFactoryCreateCommands(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     CommandFactory factory;
     uint8_t protocolVer = provider.ConsumeIntegralInRange<uint8_t>(0, 3);
     factory.SetFactoryProtocolVer(protocolVer);
@@ -81,10 +77,8 @@ static void TestFactoryCreateCommands(const uint8_t *data, size_t size)
     factory.CreateWheelGetMechCapabilityInfoCmd();
 }
 
-static void TestFactoryCreateCommandsWithParams(const uint8_t *data, size_t size)
+static void TestFactoryCreateCommandsWithParams(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     CommandFactory factory;
     uint8_t protocolVer = provider.ConsumeIntegralInRange<uint8_t>(0, 3);
     factory.SetFactoryProtocolVer(protocolVer);
@@ -181,7 +175,10 @@ static void TestRotationCommands(FuzzedDataProvider &provider, CommandFactory &f
     rotateParam.forwardSpeed = provider.ConsumeIntegral<int16_t>();
     rotateParam.turningSpeed = provider.ConsumeFloatingPoint<float>();
     factory.CreateSetMechRotationCmd(rotateParam);
+}
 
+static void TestRotationTraceCommands(FuzzedDataProvider &provider, CommandFactory &factory)
+{
     uint16_t taskId = provider.ConsumeIntegral<uint16_t>();
     uint32_t vectorSize = provider.ConsumeIntegralInRange<uint32_t>(0, 5);
     std::vector<RotateParam> params;
@@ -198,6 +195,7 @@ static void TestRotationCommands(FuzzedDataProvider &provider, CommandFactory &f
         params.push_back(param);
     }
     factory.CreateSetMechRotationTraceCmd(taskId, params);
+    factory.CreateSetWheelMechRotationTraceCmd(taskId, params);
 }
 
 static void TestWheelCommands(FuzzedDataProvider &provider, CommandFactory &factory)
@@ -238,24 +236,21 @@ static void TestOtherCommands(FuzzedDataProvider &provider, CommandFactory &fact
     factory.CreateActionGimbalFeatureControlCmd(actionParams);
 }
 
-static void TestFactoryCreateCommandsWithComplexParams(const uint8_t *data, size_t size)
+static void TestFactoryCreateCommandsWithComplexParams(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     CommandFactory factory;
     uint8_t protocolVer = provider.ConsumeIntegralInRange<uint8_t>(0, 3);
     factory.SetFactoryProtocolVer(protocolVer);
 
     TestCameraCommands(provider, factory);
     TestRotationCommands(provider, factory);
+    TestRotationTraceCommands(provider, factory);
     TestWheelCommands(provider, factory);
     TestOtherCommands(provider, factory);
 }
 
-static void TestFactoryCreateFromData(const uint8_t *data, size_t size)
+static void TestFactoryCreateFromData(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     CommandFactory factory;
 
     uint32_t dataSize = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
@@ -289,19 +284,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     switch (static_cast<TestFunctionId>(testType)) {
         case TestFunctionId::FUZZ_FACTORY_SETTINGS:
-            TestFactorySettings(data, size);
+            TestFactorySettings(provider);
             break;
         case TestFunctionId::FUZZ_FACTORY_CREATE_COMMANDS:
-            TestFactoryCreateCommands(data, size);
+            TestFactoryCreateCommands(provider);
             break;
         case TestFunctionId::FUZZ_FACTORY_CREATE_COMMANDS_WITH_PARAMS:
-            TestFactoryCreateCommandsWithParams(data, size);
+            TestFactoryCreateCommandsWithParams(provider);
             break;
         case TestFunctionId::FUZZ_FACTORY_CREATE_COMMANDS_WITH_COMPLEX_PARAMS:
-            TestFactoryCreateCommandsWithComplexParams(data, size);
+            TestFactoryCreateCommandsWithComplexParams(provider);
             break;
         case TestFunctionId::FUZZ_FACTORY_CREATE_FROM_DATA:
-            TestFactoryCreateFromData(data, size);
+            TestFactoryCreateFromData(provider);
             break;
         default:
             break;

@@ -43,10 +43,8 @@ namespace {
     constexpr uint32_t MIN_OFFSET = 0;
 }
 
-static void TestConstructorAndBasicOps(const uint8_t *data, size_t size)
+static void TestConstructorAndBasicOps(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(capacity);
 
@@ -64,10 +62,8 @@ static void TestConstructorAndBasicOps(const uint8_t *data, size_t size)
     dataBuffer->SetRange(rangeOffset, rangeSize);
 }
 
-static void TestAppendOperations(const uint8_t *data, size_t size)
+static void TestAppendOperations(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(capacity);
 
@@ -100,10 +96,8 @@ static void TestAppendOperations(const uint8_t *data, size_t size)
     }
 }
 
-static void TestReadOperations(const uint8_t *data, size_t size)
+static void TestReadOperations(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(capacity);
 
@@ -150,10 +144,8 @@ static void TestReadOperations(const uint8_t *data, size_t size)
     }
 }
 
-static void TestBoundaryConditions(const uint8_t *data, size_t size)
+static void TestBoundaryConditions(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     constexpr uint32_t zeroCapacity = 0;
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(zeroCapacity);
     if (dataBuffer != nullptr) {
@@ -164,9 +156,9 @@ static void TestBoundaryConditions(const uint8_t *data, size_t size)
     uint32_t bufferSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_BUFFER_SIZE, MAX_DATA_SIZE);
     dataBuffer = std::make_shared<MechDataBuffer>(bufferSize);
     if (dataBuffer != nullptr) {
-    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, bufferSize - MIN_BUFFER_SIZE);
-    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_BUFFER_SIZE, bufferSize - rangeOffset);
-    dataBuffer->SetRange(rangeOffset, rangeSize);
+        uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, bufferSize - MIN_BUFFER_SIZE);
+        uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_BUFFER_SIZE, bufferSize - rangeOffset);
+        dataBuffer->SetRange(rangeOffset, rangeSize);
 
         uint8_t uint8Val = provider.ConsumeIntegral<uint8_t>();
         uint16_t uint16Val = provider.ConsumeIntegral<uint16_t>();
@@ -186,12 +178,12 @@ static void TestBoundaryConditions(const uint8_t *data, size_t size)
         uint16_t val16 = 0;
         uint32_t val32 = 0;
         uint64_t val64 = 0;
-int16_t valI16 = 0;
-    float valF = 0.0f;
+        int16_t valI16 = 0;
+        float valF = 0.0f;
 
-uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, rangeSize - MIN_BUFFER_SIZE);
+        uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, rangeSize - MIN_BUFFER_SIZE);
 
-    dataBuffer->ReadUint8(readOffset, val8);
+        dataBuffer->ReadUint8(readOffset, val8);
         dataBuffer->ReadUint16(readOffset, val16);
         dataBuffer->ReadUint32(readOffset, val32);
         dataBuffer->ReadUint64(readOffset, val64);
@@ -200,10 +192,8 @@ uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, rang
     }
 }
 
-static void TestLargeCapacity(const uint8_t *data, size_t size)
+static void TestLargeCapacity(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     uint32_t capacity = provider.ConsumeIntegralInRange<uint32_t>(MAX_DATA_SIZE, MAX_DATA_SIZE * 2);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(capacity);
 
@@ -228,19 +218,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     switch (static_cast<TestFunctionId>(testType)) {
         case TestFunctionId::FUZZ_CONSTRUCTOR_AND_BASIC_OPS:
-            TestConstructorAndBasicOps(data, size);
+            TestConstructorAndBasicOps(provider);
             break;
         case TestFunctionId::FUZZ_APPEND_OPERATIONS:
-            TestAppendOperations(data, size);
+            TestAppendOperations(provider);
             break;
         case TestFunctionId::FUZZ_READ_OPERATIONS:
-            TestReadOperations(data, size);
+            TestReadOperations(provider);
             break;
         case TestFunctionId::FUZZ_BOUNDARY_CONDITIONS:
-            TestBoundaryConditions(data, size);
+            TestBoundaryConditions(provider);
             break;
         case TestFunctionId::FUZZ_LARGE_CAPACITY:
-            TestLargeCapacity(data, size);
+            TestLargeCapacity(provider);
             break;
         default:
             break;

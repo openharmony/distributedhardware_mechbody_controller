@@ -37,6 +37,9 @@ constexpr uint32_t MIN_CHECK_COUNT = 1;
 constexpr uint32_t MAX_CHECK_COUNT = 10;
 constexpr uint32_t MIN_CLEAN_COUNT = 1;
 constexpr uint32_t MAX_CLEAN_COUNT = 5;
+constexpr uint32_t OPT_SIZE = 80;
+
+constexpr uint8_t FUZZ_TEST_COUNT = 23;
 }
 
 // Mock listener for testing
@@ -370,15 +373,12 @@ void McConnectManagerCombinedFuzzTest(const uint8_t *data, size_t size)
     }
 
     FuzzedDataProvider fdp(data, size);
-    
-    // Initialize
+
     MechConnectManager::GetInstance().Init();
-    
-    // Update BLE status
+
     bool isBLEActive = fdp.ConsumeBool();
     MechConnectManager::GetInstance().UpdateBleStatus(isBLEActive);
-    
-    // Add mech info
+
     MechInfo mechInfo;
     mechInfo.mechId = fdp.ConsumeIntegral<int32_t>();
     mechInfo.mechType = static_cast<MechType>(fdp.ConsumeIntegral<int32_t>());
@@ -389,69 +389,83 @@ void McConnectManagerCombinedFuzzTest(const uint8_t *data, size_t size)
     mechInfo.pairState = fdp.ConsumeBool();
     mechInfo.hidState = fdp.ConsumeBool();
     MechConnectManager::GetInstance().AddMechInfo(mechInfo);
-    
-    // Get mech info
+
     MechInfo resultInfo;
     MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, resultInfo);
-    
-    // Set various states
+
     bool state = fdp.ConsumeBool();
     MechConnectManager::GetInstance().SetMechanicGattState(mechInfo.mac, state);
     MechConnectManager::GetInstance().SetMechanicPairState(mechInfo.mac, state);
     MechConnectManager::GetInstance().SetMechanicHidState(mechInfo.mac, state);
-    
-    // Get various states
+
     bool resultState = false;
     MechConnectManager::GetInstance().GetMechanicGattState(mechInfo.mac, resultState);
     MechConnectManager::GetInstance().GetMechanicPairState(mechInfo.mac, resultState);
     MechConnectManager::GetInstance().GetMechanicHidState(mechInfo.mac, resultState);
-    
-    // Check connection status
+
     MechConnectManager::GetInstance().IsConnect();
     MechConnectManager::GetInstance().GetLocalDeviceBleStatus();
-    
-    // Get mech state
+
     MechConnectManager::GetInstance().GetMechState(mechInfo.mechId);
-    
-    // Set real name
+
     std::string name = fdp.ConsumeRandomLengthString();
     MechConnectManager::GetInstance().SetRealMechName(mechInfo.mechId, name);
-    
-    // Remove mech info
+
     MechConnectManager::GetInstance().RemoveMechInfoByMac(mechInfo.mac);
-    
-    // Clean up
+
     MechConnectManager::GetInstance().CleanMechInfo();
     MechConnectManager::GetInstance().UnInit();
+}
+
+using FuzzTestFunc = void (*)(const uint8_t *, size_t);
+
+FuzzTestFunc GetFuzzTestFunc(uint8_t selector)
+{
+    static const FuzzTestFunc fuzzTestFuncs[] = {
+        InitFuzzTest,
+        UpdateBleStatusFuzzTest,
+        GetLocalDeviceBleStatusFuzzTest,
+        IsConnectFuzzTest,
+        AddMechInfoFuzzTest,
+        RemoveMechInfoByMacFuzzTest,
+        CleanMechInfoFuzzTest,
+        GetMechInfoFuzzTest,
+        SetRealMechNameFuzzTest,
+        SetMechanicGattStateFuzzTest,
+        GetMechanicGattStateFuzzTest,
+        SetMechanicPairStateFuzzTest,
+        GetMechanicPairStateFuzzTest,
+        SetMechanicHidStateFuzzTest,
+        GetMechanicHidStateFuzzTest,
+        GetMechBasicInfoFuzzTest,
+        GetConnectMechListFuzzTest,
+        NotifyMechStateFuzzTest,
+        GetMechStateFuzzTest,
+        AddDeviceChangeListenerFuzzTest,
+        RemoveDeviceChangeListenerFuzzTest,
+        GetMechInfosFuzzTest,
+        McConnectManagerCombinedFuzzTest
+    };
+
+    if (selector >= FUZZ_TEST_COUNT) {
+        return nullptr;
+    }
+    return fuzzTestFuncs[selector];
 }
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    /* Run your code on data */
-    OHOS::InitFuzzTest(data, size);
-    OHOS::UpdateBleStatusFuzzTest(data, size);
-    OHOS::GetLocalDeviceBleStatusFuzzTest(data, size);
-    OHOS::IsConnectFuzzTest(data, size);
-    OHOS::AddMechInfoFuzzTest(data, size);
-    OHOS::RemoveMechInfoByMacFuzzTest(data, size);
-    OHOS::CleanMechInfoFuzzTest(data, size);
-    OHOS::GetMechInfoFuzzTest(data, size);
-    OHOS::SetRealMechNameFuzzTest(data, size);
-    OHOS::SetMechanicGattStateFuzzTest(data, size);
-    OHOS::GetMechanicGattStateFuzzTest(data, size);
-    OHOS::SetMechanicPairStateFuzzTest(data, size);
-    OHOS::GetMechanicPairStateFuzzTest(data, size);
-    OHOS::SetMechanicHidStateFuzzTest(data, size);
-    OHOS::GetMechanicHidStateFuzzTest(data, size);
-    OHOS::GetMechBasicInfoFuzzTest(data, size);
-    OHOS::GetConnectMechListFuzzTest(data, size);
-    OHOS::NotifyMechStateFuzzTest(data, size);
-    OHOS::GetMechStateFuzzTest(data, size);
-    OHOS::AddDeviceChangeListenerFuzzTest(data, size);
-    OHOS::RemoveDeviceChangeListenerFuzzTest(data, size);
-    OHOS::GetMechInfosFuzzTest(data, size);
-    OHOS::McConnectManagerCombinedFuzzTest(data, size);
+    if (size < OHOS::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::OPT_SIZE, OHOS::OPT_SIZE);
+    uint8_t selector = fdp.ConsumeIntegral<uint8_t>() % FUZZ_TEST_COUNT;
+
+    FuzzTestFunc func = GetFuzzTestFunc(selector);
+    if (func != nullptr) {
+        func(data, size - OHOS::OPT_SIZE);
+    }
     return 0;
 }
 } // namespace OHOS
