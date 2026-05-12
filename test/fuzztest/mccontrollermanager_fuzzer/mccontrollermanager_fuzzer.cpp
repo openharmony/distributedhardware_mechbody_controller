@@ -238,7 +238,7 @@ void RunFuzzTest(FuzzedDataProvider &provider, int32_t testFunctionId)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0,
         static_cast<int32_t>(TestFunctionId::TEST_FUNCTION_ID_MAX));
     switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_SET_TRACKING_ENABLED:
