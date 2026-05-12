@@ -74,34 +74,47 @@ constexpr int32_t MAX_TRACKING_EVENT = 3;
 
 McCameraTrackingController* g_cameraTrackingController = nullptr;
 
-void InitCameraTrackingController()
+void InitCameraTrackingController(FuzzedDataProvider &provider)
 {
-    if (g_cameraTrackingController == nullptr) {
+    if (provider.ConsumeBool() && g_cameraTrackingController == nullptr) {
         g_cameraTrackingController = &McCameraTrackingController::GetInstance();
     }
 }
 
 void FuzzInit(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t initCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_INIT_COUNT, MAX_INIT_COUNT);
     for (uint32_t i = 0; i < initCount; i++) {
-        g_cameraTrackingController->Init();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->Init();
+        }
     }
 }
 
 void FuzzUnInit(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t uninitCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_INIT_COUNT, MAX_INIT_COUNT);
     for (uint32_t i = 0; i < uninitCount; i++) {
-        g_cameraTrackingController->UnInit();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->UnInit();
+        }
     }
 }
 
 void FuzzSetTrackingEnabled(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
     bool isEnabled = provider.ConsumeBool();
     g_cameraTrackingController->SetTrackingEnabled(tokenId, isEnabled);
@@ -109,7 +122,10 @@ void FuzzSetTrackingEnabled(FuzzedDataProvider &provider)
 
 void FuzzGetTrackingEnabled(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
     bool isEnabled = false;
     g_cameraTrackingController->GetTrackingEnabled(tokenId, isEnabled);
@@ -117,7 +133,10 @@ void FuzzGetTrackingEnabled(FuzzedDataProvider &provider)
 
 void FuzzSetTrackingLayout(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     CameraTrackingLayout layout = static_cast<CameraTrackingLayout>(
         provider.ConsumeIntegralInRange<int32_t>(MIN_LAYOUT_TYPE, MAX_LAYOUT_TYPE));
     g_cameraTrackingController->SetTrackingLayout(layout);
@@ -125,17 +144,25 @@ void FuzzSetTrackingLayout(FuzzedDataProvider &provider)
 
 void FuzzGetTrackingLayout(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     CameraTrackingLayout layout;
     uint32_t getCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_GET_COUNT, MAX_GET_COUNT);
     for (uint32_t i = 0; i < getCount; i++) {
-        g_cameraTrackingController->GetTrackingLayout(layout);
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->GetTrackingLayout(layout);
+        }
     }
 }
 
 void FuzzSetStickOffset(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     int16_t stickX = provider.ConsumeIntegral<int16_t>();
     int16_t stickY = provider.ConsumeIntegral<int16_t>();
     g_cameraTrackingController->SetStickOffset(stickX, stickY);
@@ -143,50 +170,76 @@ void FuzzSetStickOffset(FuzzedDataProvider &provider)
 
 void FuzzOnConnectChange(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t changeCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_GET_COUNT, MAX_GET_COUNT);
     for (uint32_t i = 0; i < changeCount; i++) {
-        g_cameraTrackingController->OnConnectChange();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->OnConnectChange();
+        }
     }
 }
 
 void FuzzUserIdChangeCallback(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t callbackCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_GET_COUNT, MAX_GET_COUNT);
     for (uint32_t i = 0; i < callbackCount; i++) {
-        g_cameraTrackingController->UserIdChangeCallback();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->UserIdChangeCallback();
+        }
     }
 }
 
 void FuzzGetTokenIdOfCurrentCameraInfo(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t getCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_GET_COUNT, MAX_GET_COUNT);
     for (uint32_t i = 0; i < getCount; i++) {
-        g_cameraTrackingController->GetTokenIdOfCurrentCameraInfo();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->GetTokenIdOfCurrentCameraInfo();
+        }
     }
 }
 
 void FuzzSearchTargetRotateFinish(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     std::string cmdId = provider.ConsumeRandomLengthString(64);
     g_cameraTrackingController->SearchTargetRotateFinish(cmdId);
 }
 
 void FuzzSearchTargetStop(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t stopCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_GET_COUNT, MAX_GET_COUNT);
     for (uint32_t i = 0; i < stopCount; i++) {
-        g_cameraTrackingController->SearchTargetStop();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->SearchTargetStop();
+        }
     }
 }
 
 void FuzzRegisterTrackingEventCallback(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
     sptr<IRemoteObject> callback = nullptr;
     g_cameraTrackingController->RegisterTrackingEventCallback(tokenId, callback);
@@ -194,14 +247,20 @@ void FuzzRegisterTrackingEventCallback(FuzzedDataProvider &provider)
 
 void FuzzUnRegisterTrackingEventCallback(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
     g_cameraTrackingController->UnRegisterTrackingEventCallback(tokenId);
 }
 
 void FuzzSetTrackingLayoutWithToken(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
     CameraTrackingLayout layout = static_cast<CameraTrackingLayout>(
         provider.ConsumeIntegralInRange<int32_t>(MIN_LAYOUT_TYPE, MAX_LAYOUT_TYPE));
@@ -210,7 +269,10 @@ void FuzzSetTrackingLayoutWithToken(FuzzedDataProvider &provider)
 
 void FuzzSearchTarget(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     std::string napiCmdId = provider.ConsumeRandomLengthString(64);
     uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
     auto targetInfo = std::make_shared<TargetInfo>();
@@ -220,7 +282,10 @@ void FuzzSearchTarget(FuzzedDataProvider &provider)
 
 void FuzzOnSessionStatusChange(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     int32_t sessionid = provider.ConsumeIntegral<int32_t>();
     bool status = provider.ConsumeBool();
     g_cameraTrackingController->OnSessionStatusChange(sessionid, status);
@@ -228,7 +293,10 @@ void FuzzOnSessionStatusChange(FuzzedDataProvider &provider)
 
 void FuzzOnTrackingEvent(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     int32_t mechId = provider.ConsumeIntegral<int32_t>();
     TrackingEvent event = static_cast<TrackingEvent>(
         provider.ConsumeIntegralInRange<int32_t>(MIN_TRACKING_EVENT, MAX_TRACKING_EVENT));
@@ -237,16 +305,24 @@ void FuzzOnTrackingEvent(FuzzedDataProvider &provider)
 
 void FuzzUpdateActionControl(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t updateCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_GET_COUNT, MAX_GET_COUNT);
     for (uint32_t i = 0; i < updateCount; i++) {
-        g_cameraTrackingController->UpdateActionControl();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->UpdateActionControl();
+        }
     }
 }
 
 void FuzzOnZoomInfoChange(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     int32_t sessionid = provider.ConsumeIntegral<int32_t>();
     CameraStandard::ZoomInfo zoomInfo;
     zoomInfo.zoomValue = provider.ConsumeFloatingPoint<float>();
@@ -258,16 +334,24 @@ void FuzzOnZoomInfoChange(FuzzedDataProvider &provider)
 
 void FuzzGetCurrentCameraInfo(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     uint32_t getCount = provider.ConsumeIntegralInRange<uint32_t>(MIN_GET_COUNT, MAX_GET_COUNT);
     for (uint32_t i = 0; i < getCount; i++) {
-        g_cameraTrackingController->GetCurrentCameraInfo();
+        if (provider.ConsumeBool()) {
+            g_cameraTrackingController->GetCurrentCameraInfo();
+        }
     }
 }
 
 void FuzzOnCaptureSessionConfiged(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     CameraStandard::CaptureSessionInfo captureSessionInfo;
     captureSessionInfo.sessionId = provider.ConsumeIntegral<int32_t>();
     g_cameraTrackingController->OnCaptureSessionConfiged(captureSessionInfo);
@@ -275,7 +359,10 @@ void FuzzOnCaptureSessionConfiged(FuzzedDataProvider &provider)
 
 void FuzzOnMetadataInfo(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     // Use fuzz data to decide whether to pass nullptr
     bool passNull = provider.ConsumeBool();
     if (passNull) {
@@ -291,7 +378,10 @@ void FuzzOnMetadataInfo(FuzzedDataProvider &provider)
 
 void FuzzUpdateCurrentCameraInfo(FuzzedDataProvider &provider)
 {
-    InitCameraTrackingController();
+    InitCameraTrackingController(provider);
+    if (!provider.ConsumeBool()) {
+        return;
+    }
     CameraStandard::CaptureSessionInfo captureSessionInfo;
     captureSessionInfo.sessionId = provider.ConsumeIntegral<int32_t>();
     g_cameraTrackingController->UpdateCurrentCameraInfoByCaptureSessionInfo(captureSessionInfo);

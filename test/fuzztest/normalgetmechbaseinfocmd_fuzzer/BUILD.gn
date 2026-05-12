@@ -1,0 +1,157 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/features.gni")
+import("//build/ohos.gni")
+import("//build/test.gni")
+import(
+    "//foundation/distributedhardware/mechbody_controller/mechbody.gni")
+
+ohos_fuzztest("NormalGetMechBaseInfoCmdFuzzTest") {
+  module_out_path = "mechbody_controller/mechbody_controller/"
+  mechbody_path =
+      "//foundation/distributedhardware/mechbody_controller"
+  fuzz_config_file = "${mechbody_path}/test/fuzztest/normalgetmechbaseinfocmd_fuzzer"
+  include_dirs = [
+    "${mechbody_path}/services/include",
+    "${mechbody_path}/services/include/dotReport",
+    "${mechbody_path}/services/include/connect",
+    "${mechbody_path}/services/include/controller",
+    "${mechbody_path}/services/include/motion",
+    "${mechbody_path}/services/include/transport",
+    "${mechbody_path}/services/include/transport/command",
+    "${mechbody_path}/services/include/transport/command/0x01",
+    "${mechbody_path}/services/include/transport/command/0x02",
+    "${mechbody_path}/services/include/transport/command/0x03",
+    "${mechbody_path}/interface/napi/mech_manager",
+    "${mechbody_path}/services/include/utils",
+  ]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+  sources = [
+    "${mechbody_path}/services/src/connect/bluetooth_state_adapter.cpp",
+    "${mechbody_path}/services/src/connect/bluetooth_state_listener.cpp",
+    "${mechbody_path}/services/src/connect/mc_connect_manager.cpp",
+    "${mechbody_path}/services/src/controller/mc_camera_tracking_controller.cpp",
+    "${mechbody_path}/services/src/controller/mc_controller_ipc_death_listener.cpp",
+    "${mechbody_path}/services/src/controller/mc_controller_manager.cpp",
+    "${mechbody_path}/services/src/transport/mc_send_adapter.cpp",
+    "${mechbody_path}/services/src/mechbody_controller_service.cpp",
+    "${mechbody_path}/services/src/mechbody_controller_stub.cpp",
+    "${mechbody_path}/services/src/mechbody_controller_utils.cpp",
+    "${mechbody_path}/services/src/motion/mc_motion_manager.cpp",
+    "${mechbody_path}/services/src/transport/command/mc_command_base.cpp",
+    "${mechbody_path}/services/src/transport/command/mc_command_factory.cpp",
+    "${mechbody_path}/services/src/transport/command/mc_get_mech_protocol_ver_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/mc_set_mech_disconnect_cmd.cpp",
+    "${mechbody_path}/services/src/transport/mc_data_buffer.cpp",
+    "${mechbody_path}/services/src/transport/mc_protocol_convertor.cpp",
+    "${mechbody_path}/services/src/transport/mc_subscription_center.cpp",
+    "${mechbody_path}/services/src/ble_send_manager.cpp",
+    "${mechbody_path}/services/src/utils/load_mechbody_adapter.cpp",
+    "${mechbody_path}/services/src/dotReport/hisysevent_utils.cpp",
+    "${mechbody_path}/services/src/utils/subscribe_event_utils.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_action_gimbal_feature_control_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_get_mech_camera_tracking_layout_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_get_mech_limit_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_get_mech_real_name_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_register_mech_camera_key_event_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_register_mech_control_result_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_register_mech_position_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_register_mech_state_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_register_mech_tracking_enable_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_register_mech_wheel_data_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_camera_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_camera_tracking_enable_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_camera_tracking_frame_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_camera_tracking_layout_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_config_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_hid_preemptive_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_rotation_by_speed_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_rotation_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_rotation_trace_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_stop_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_get_mech_base_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_get_mech_capability_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_get_mech_coordinate_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_get_mech_limit_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_get_mech_pose_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_get_mech_state_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_register_mech_generic_event_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_register_mech_key_event_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_register_mech_position_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_register_mech_state_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_register_mech_tracking_enable_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_camera_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_camera_tracking_enable_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_camera_tracking_frame_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_location_report_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_motion_control_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_rotation_by_speed_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_rotation_to_location_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_protocol_ver_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_rotation_trace_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x02/mc_normal_set_mech_phone_status_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_wheel_get_mech_capability_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_wheel_set_mech_rotation_to_base_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_wheel_set_mech_rotation_trace_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_wheel_set_mech_motion_control_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_wheel_set_mech_scene_control_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_wheel_set_mech_relative_position_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_register_mech_cliff_info_cmd.cpp",
+    "${mechbody_path}/services/src/transport/command/0x03/mc_register_mech_obstacle_info_cmd.cpp",
+    "${mechbody_path}/test/fuzztest/normalgetmechbaseinfocmd_fuzzer/normalgetmechbaseinfocmd_fuzzer.cpp",
+  ]
+
+  deps = [ "${mechbody_path}/services:mechbody_service" ]
+
+  external_deps = [
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtokenid_sdk",
+    "access_token:libtoken_setproc",
+    "bluetooth:btframework",
+    "bluetooth:btcommon",
+    "camera_framework:camera_framework",
+    "drivers_interface_camera:metadata",
+    "cJSON:cjson_static",
+    "c_utils:utils",
+    "eventhandler:libeventhandler",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "input:libmmi-client",
+    "input:oh_input_manager",
+    "ipc:ipc_single",
+    "os_account:libaccountkits",
+    "os_account:os_account_innerkits",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "sensor:sensor_interface_native",
+    "window_manager:libdm_lite",
+    "hisysevent:libhisysevent",
+    "distributed_notification_service:ans_innerkits",
+    "resource_management:global_resmgr",
+    "ability_runtime:ability_manager",  
+    "ability_runtime:app_manager",
+  ]
+}
+
+group("fuzztest") {
+  testonly = true
+  deps = [ ":NormalGetMechBaseInfoCmdFuzzTest" ]
+}

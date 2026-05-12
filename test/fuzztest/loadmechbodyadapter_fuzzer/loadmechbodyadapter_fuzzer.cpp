@@ -39,24 +39,28 @@ enum class TestFunctionId {
     FUZZ_CLEAR_MULTIPLE_TIMES = 13,
     FUZZ_RESET_MULTIPLE_TIMES = 14,
     FUZZ_RUN_WITH_VARYING_CALLBACKS = 15,
+    TEST_FUNCTION_ID_MAX = 15,
 };
 
 void FuzzInitTrackingCore(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    MechbodyAdapterUtils::InitTrackingCore();
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::InitTrackingCore();
+    }
 }
 
 void FuzzResetTrackingCore(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    MechbodyAdapterUtils::ResetTrackingCore();
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::ResetTrackingCore();
+    }
 }
 
 void FuzzClear(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    MechbodyAdapterUtils::Clear();
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::Clear();
+    }
 }
 
 void FuzzRunTrackingCore(FuzzedDataProvider &provider)
@@ -76,17 +80,25 @@ void FuzzRunTrackingCore(FuzzedDataProvider &provider)
 
 void FuzzInitAndClear(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    MechbodyAdapterUtils::InitTrackingCore();
-    MechbodyAdapterUtils::Clear();
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::InitTrackingCore();
+    }
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::Clear();
+    }
 }
 
 void FuzzInitResetAndClear(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    MechbodyAdapterUtils::InitTrackingCore();
-    MechbodyAdapterUtils::ResetTrackingCore();
-    MechbodyAdapterUtils::Clear();
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::InitTrackingCore();
+    }
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::ResetTrackingCore();
+    }
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::Clear();
+    }
 }
 
 void FuzzMultipleInit(FuzzedDataProvider &provider)
@@ -204,6 +216,10 @@ void RunTrackingCoreWithValues(const float testValues[], size_t testValueCount, 
 
 void FuzzRunWithExtremeValues(FuzzedDataProvider &provider)
 {
+    if (!provider.ConsumeBool()) {
+        return;
+    }
+
     MechbodyAdapterUtils::InitTrackingCore();
 
     PushXYFn push = [](float px, float py) {
@@ -214,13 +230,19 @@ void FuzzRunWithExtremeValues(FuzzedDataProvider &provider)
     float testValues[] = {FLT_MIN, FLT_MAX, -FLT_MAX, 0.0f, 1.0f, -1.0f, 100.0f, -100.0f};
     size_t testValueCount = sizeof(testValues) / sizeof(testValues[0]);
 
-    for (size_t i = 0; i < testValueCount; i++) {
-        for (size_t j = 0; j < testValueCount; j++) {
+    size_t startI = provider.ConsumeIntegralInRange<size_t>(0, testValueCount - 1);
+    size_t startJ = provider.ConsumeIntegralInRange<size_t>(0, testValueCount - 1);
+    size_t iterations = provider.ConsumeIntegralInRange<size_t>(1, testValueCount);
+
+    for (size_t i = startI; i < startI + iterations && i < testValueCount; i++) {
+        for (size_t j = startJ; j < startJ + iterations && j < testValueCount; j++) {
             RunTrackingCoreWithValues(testValues, testValueCount, i, j, push);
         }
     }
 
-    MechbodyAdapterUtils::Clear();
+    if (provider.ConsumeBool()) {
+        MechbodyAdapterUtils::Clear();
+    }
 }
 
 void FuzzClearMultipleTimes(FuzzedDataProvider &provider)
@@ -308,7 +330,8 @@ void RunFuzzTest(FuzzedDataProvider &provider, int32_t testFunctionId)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
+    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0,
+        static_cast<int32_t>(TestFunctionId::TEST_FUNCTION_ID_MAX));
     switch (static_cast<TestFunctionId>(testFunctionId)) {
         case TestFunctionId::FUZZ_INIT_TRACKING_CORE:
             FuzzInitTrackingCore(provider);

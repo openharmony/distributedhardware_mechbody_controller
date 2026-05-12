@@ -74,7 +74,9 @@ void FuzzCleanMotionManagers(FuzzedDataProvider &provider)
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     int32_t callTimes = provider.ConsumeIntegralInRange<int32_t>(MIN_CALL_TIMES, MAX_CALL_TIMES);
     for (int32_t i = 0; i < callTimes; i++) {
-        service.CleanMotionManagers();
+        if (provider.ConsumeBool()) {
+            service.CleanMotionManagers();
+        }
     }
 }
 
@@ -84,7 +86,9 @@ void FuzzGetTrackingEnabledDevice(FuzzedDataProvider &provider)
     bool isEnabled = false;
     int32_t callTimes = provider.ConsumeIntegralInRange<int32_t>(MIN_CALL_TIMES, MAX_CALL_TIMES);
     for (int32_t i = 0; i < callTimes; i++) {
-        service.GetTrackingEnabledDevice(isEnabled);
+        if (provider.ConsumeBool()) {
+            service.GetTrackingEnabledDevice(isEnabled);
+        }
     }
 }
 
@@ -102,9 +106,13 @@ void FuzzRegisterTrackingEventCallback(FuzzedDataProvider &provider)
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     bool shouldUseNull = provider.ConsumeBool();
     if (shouldUseNull) {
-        service.RegisterTrackingEventCallback(nullptr);
+        if (provider.ConsumeBool()) {
+            service.RegisterTrackingEventCallback(nullptr);
+        }
     } else {
-        service.RegisterTrackingEventCallback(static_cast<sptr<IRemoteObject>>(nullptr));
+        if (provider.ConsumeBool()) {
+            service.RegisterTrackingEventCallback(static_cast<sptr<IRemoteObject>>(nullptr));
+        }
     }
 }
 
@@ -144,7 +152,9 @@ void FuzzUnRegisterRotationAxesStatusChangeCallback(FuzzedDataProvider &provider
     MechBodyControllerService &service = MechBodyControllerService::GetInstance();
     int32_t callTimes = provider.ConsumeIntegralInRange<int32_t>(MIN_CALL_TIMES, MAX_CALL_TIMES);
     for (int32_t i = 0; i < callTimes; i++) {
-        service.UnRegisterRotationAxesStatusChangeCallback();
+        if (provider.ConsumeBool()) {
+            service.UnRegisterRotationAxesStatusChangeCallback();
+        }
     }
 }
 
