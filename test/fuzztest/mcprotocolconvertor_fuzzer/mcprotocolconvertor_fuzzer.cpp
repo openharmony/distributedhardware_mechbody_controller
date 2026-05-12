@@ -43,10 +43,8 @@ namespace {
     };
 }
 
-static void TestValidate(const uint8_t *data, size_t size)
+static void TestValidate(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     const uint8_t *dataPtr = nullptr;
     uint32_t dataLen = provider.ConsumeIntegralInRange<uint32_t>(ZERO_VALUE, MAX_DATA_SIZE);
 
@@ -84,10 +82,8 @@ static std::shared_ptr<MechDataBuffer> CreateDataBufferWithData(FuzzedDataProvid
     return dataBuffer;
 }
 
-static void TestConvert(const uint8_t *data, size_t size)
+static void TestConvert(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     OptType optType = static_cast<OptType>(provider.ConsumeIntegralInRange<uint8_t>(ZERO_VALUE, MAX_OPT_TYPE_VALUE));
     uint16_t seqNo = provider.ConsumeIntegral<uint16_t>();
 
@@ -102,10 +98,8 @@ static void TestConvert(const uint8_t *data, size_t size)
     protocolConverter.Convert(optType, seqNo, dataBuffer, serviceName);
 }
 
-static void TestGetData(const uint8_t *data, size_t size)
+static void TestGetData(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     std::string serviceName = provider.ConsumeRandomLengthString();
     if (serviceName.length() > MAX_SERVICE_NAME_LENGTH) {
         serviceName = serviceName.substr(ZERO_VALUE, MAX_SERVICE_NAME_LENGTH);
@@ -123,10 +117,8 @@ static void TestGetData(const uint8_t *data, size_t size)
     protocolConverter.GetData(pclData, seqNo, isAck);
 }
 
-static void TestDataBufferOperations(const uint8_t *data, size_t size)
+static void TestDataBufferOperations(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     uint32_t bufferSize = provider.ConsumeIntegralInRange<uint32_t>(ZERO_VALUE, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> mechDataBuffer = std::make_shared<MechDataBuffer>(bufferSize);
 
@@ -155,16 +147,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     switch (static_cast<TestFunctionId>(testType)) {
         case TestFunctionId::FUZZ_VALIDATE:
-            TestValidate(data, size);
+            TestValidate(provider);
             break;
         case TestFunctionId::FUZZ_CONVERT:
-            TestConvert(data, size);
+            TestConvert(provider);
             break;
         case TestFunctionId::FUZZ_GET_DATA:
-            TestGetData(data, size);
+            TestGetData(provider);
             break;
         case TestFunctionId::FUZZ_DATA_BUFFER_OPERATIONS:
-            TestDataBufferOperations(data, size);
+            TestDataBufferOperations(provider);
             break;
         default:
             break;

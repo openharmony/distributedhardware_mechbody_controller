@@ -56,10 +56,8 @@ public:
     void SetRetryTimes(int32_t retryTimes) { retryTimes_ = retryTimes; }
 };
 
-static void TestCommandBaseGetters(const uint8_t *data, size_t size)
+static void TestCommandBaseGetters(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     MockCommandBase cmd;
     cmd.SetCmdSet(provider.ConsumeIntegral<uint8_t>());
     cmd.SetCmdId(provider.ConsumeIntegral<uint8_t>());
@@ -79,10 +77,8 @@ static void TestCommandBaseGetters(const uint8_t *data, size_t size)
     cmd.GetRetryTimes();
 }
 
-static void TestCommandBaseCallbacks(const uint8_t *data, size_t size)
+static void TestCommandBaseCallbacks(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     MockCommandBase cmd;
 
     bool shouldSetCallbacks = provider.ConsumeBool();
@@ -96,10 +92,8 @@ static void TestCommandBaseCallbacks(const uint8_t *data, size_t size)
     cmd.TriggerTimeoutReset();
 }
 
-static void TestCommandBaseTimestamp(const uint8_t *data, size_t size)
+static void TestCommandBaseTimestamp(FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-
     MockCommandBase cmd;
     int64_t timestamp = provider.ConsumeIntegral<int64_t>();
     cmd.SetTimestamp(timestamp);
@@ -117,13 +111,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     switch (static_cast<TestFunctionId>(testType)) {
         case TestFunctionId::FUZZ_COMMAND_BASE_GETTERS:
-            TestCommandBaseGetters(data, size);
+            TestCommandBaseGetters(provider);
             break;
         case TestFunctionId::FUZZ_COMMAND_BASE_CALLBACKS:
-            TestCommandBaseCallbacks(data, size);
+            TestCommandBaseCallbacks(provider);
             break;
         case TestFunctionId::FUZZ_COMMAND_BASE_TIMESTAMP:
-            TestCommandBaseTimestamp(data, size);
+            TestCommandBaseTimestamp(provider);
             break;
         default:
             break;
