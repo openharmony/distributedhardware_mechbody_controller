@@ -67,7 +67,6 @@ ohos_fuzztest("NormalGetMechBaseInfoCmdFuzzTest") {
     "${mechbody_path}/services/src/utils/subscribe_event_utils.cpp",
     "${mechbody_path}/services/src/transport/command/0x01/mc_action_gimbal_feature_control_cmd.cpp",
     "${mechbody_path}/services/src/transport/command/0x01/mc_get_mech_camera_tracking_layout_cmd.cpp",
-    "${mechbody_path}/services/src/transport/command/0x01/mc_set_mech_motion_control_cmd.cpp",
     "${mechbody_path}/services/src/transport/command/0x01/mc_get_mech_limit_info_cmd.cpp",
     "${mechbody_path}/services/src/transport/command/0x01/mc_get_mech_real_name_cmd.cpp",
     "${mechbody_path}/services/src/transport/command/0x01/mc_register_mech_camera_key_event_cmd.cpp",
