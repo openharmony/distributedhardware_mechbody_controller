@@ -102,7 +102,6 @@ static void TestFactoryCreateCommandsWithParams(FuzzedDataProvider &provider)
     factory.CreateSetMechHidPreemptiveCmd(isPreemptive);
 
     ControlCommand action = static_cast<ControlCommand>(provider.ConsumeIntegral<uint8_t>());
-    factory.CreateSetMechMotionControlCmd01(action);
     factory.CreateSetMechMotionControlCmd(action);
 
     uint8_t reportSwitch = provider.ConsumeIntegral<uint8_t>();
@@ -220,8 +219,6 @@ static void TestWheelCommands(FuzzedDataProvider &provider, CommandFactory &fact
         wheelParams.push_back(wheelParam);
     }
     factory.CreateWheelSetMechRelativePositionCmd(taskId, wheelParams);
-
-    factory.CreateWheelGetMechMovementCapabilityCmd();
 }
 
 static void TestOtherCommands(FuzzedDataProvider &provider, CommandFactory &factory)
