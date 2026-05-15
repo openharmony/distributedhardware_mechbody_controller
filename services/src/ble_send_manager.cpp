@@ -354,10 +354,19 @@ void BleSendManager::OnConnectionStateChanged(int connectionState, int ret, Mech
         return;
     } else if (connectionState == (int)BTConnectState::DISCONNECTED) {
         HILOGI("MECHBODY_EXEC_CONNECT connectionState is DISCONNECTED");
+
+        // 设置失败标志，唤醒等待的线程
+        connectFailed_.store(true);
         {
             std::unique_lock<std::mutex> lock(gattDisconnMutex_);
             MechConnectManager::GetInstance().SetMechanicGattState(mechInfo.mac, false);
             gattDisconnCv_.notify_all();
+        }
+
+        // 唤醒等待 GATT 连接的线程，避免不必要的超时等待
+        {
+            std::unique_lock<std::mutex> lock(gattMutex_);
+            gattCv_.notify_all();
         }
         HILOGI("MECHBODY_EXEC_CONNECT Tracking uninit start.");
         McCameraTrackingController::GetInstance().UnInit();
@@ -671,6 +680,7 @@ int32_t BleSendManager::MechbodyConnect(std::string mac, std::string deviceName,
             return MECH_CONNECT_FAILED;
         }
     }
+    connectFailed_.store(false);
     auto connFunc = [this, mac, deviceName, deviceIdentifier]() {
         ConnectMechbodyInternal(mac, deviceName, deviceIdentifier);
     };
@@ -711,6 +721,10 @@ void BleSendManager::ConnectMechbodyInternal(std::string mac, std::string device
             DotReportMechKitStartGattConnectFail(mechInfo);
             break;
         }
+        if (connectFailed_.load()) {
+            HILOGE("MECHBODY_EXEC_CONNECT gatt connect failed");
+            return;
+        }
         // connect success
         int32_t pairRet = MechbodyPair(mechInfo.mac, mechInfo.mechName);
         int32_t hidRet = MechbodyHidConnect(mechInfo.mac, mechInfo.mechName);
@@ -741,7 +755,7 @@ int32_t BleSendManager::MechbodyGattcConnect(std::string mac, std::string device
                           [this, mac]() mutable {
                               bool gattState = false;
                               MechConnectManager::GetInstance().GetMechanicGattState(mac, gattState);
-                              return gattState;
+                              return gattState || connectFailed_.load();
                           })) {
         HILOGE("MECHBODY_EXEC_CONNECT wait for gatt connect timeout");
         return MECHBODY_GATT_CONNECT_FAILED;

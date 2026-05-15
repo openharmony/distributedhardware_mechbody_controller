@@ -252,6 +252,7 @@ private:
     std::condition_variable initCv_;
     std::mutex getRealNameMutex_;
     std::condition_variable getRealNameCv_;
+    std::atomic<bool> connectFailed_{false};
 };
 
 class BleCentralManagerCallbackImpl : public Bluetooth::BleCentralManagerCallback {
