@@ -84,7 +84,8 @@ ohos_unittest("mc_montion_manager_test") {
     debug = false
   }
 
-  sources = [ "motion/mc_motion_manager_test.cpp" ]
+  sources = [ "motion/mc_motion_manager_test.cpp",
+              "motion/mc_motion_manager_two_test.cpp" ]
 
   configs = [
     ":mech_test_config",
@@ -398,6 +399,37 @@ ohos_unittest("mc_camera_tracking_controller_test") {
   }
 
   sources = [ "controller/mc_camera_tracking_controller_test.cpp" ]
+
+  configs = [
+    ":mech_test_config",
+    "${mechbody_path}/test/resource:coverage_flags",
+  ]
+
+  external_deps = mech_external_deps
+  deps = mech_public_deps
+
+  part_name = "mechbody_controller"
+  subsystem_name = "distributedhardware"
+}
+
+ohos_unittest("load_mechbody_adapter_test") {
+  visibility = [ ":*" ]
+
+  module_out_path = mechbody_module_output_path
+
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  sanitize = {
+    blocklist = "./cfi_blocklist.txt"
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  sources = [ "utils/load_mechbody_adapter_test.cpp" ]
 
   configs = [
     ":mech_test_config",
