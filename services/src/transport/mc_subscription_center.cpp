@@ -87,6 +87,7 @@ int32_t SubscriptionCenter::Notify(const std::shared_ptr<CommandBase> &cmd)
 {
     CHECK_POINTER_RETURN_VALUE(cmd, INVALID_PARAMETERS_ERR, "cmd");
     HILOGD("cmdType : 0x%{public}x, cmdId: %{public}d", cmd->GetCmdType(), cmd->GetCmdId());
+
     std::vector<std::shared_ptr<IMechEventListener>> callbacks;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -106,8 +107,9 @@ int32_t SubscriptionCenter::Notify(const std::shared_ptr<CommandBase> &cmd)
     return ERR_OK;
 }
 
+
 void SubscriptionCenter::DispatchToCallback(const std::shared_ptr<CommandBase> &cmd,
-                                            const std::shared_ptr<IMechEventListener> &callback)
+    const std::shared_ptr<IMechEventListener> &callback)
 {
     switch (cmd->GetCmdType()) {
         case CMD_TYPE_BUTTON_EVENT_NOTIFY:

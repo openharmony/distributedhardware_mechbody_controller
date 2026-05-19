@@ -141,13 +141,6 @@ private:
     static bool InitMechClient();
 
     static std::string GenerateUniqueID();
-    
-    static bool ParseOnParams(napi_env env, napi_callback_info info,
-        std::string& outEventType, napi_ref& outCallbackRef);
-    static bool ParseOffParams(napi_env env, napi_callback_info info,
-        std::string& outEventType, napi_ref& outCallbackRef);
-    static bool ParseSetCameraTrackingLayoutParams(napi_env env, napi_callback_info info,
-        int32_t &jsLayout);
 
     static bool GetMoveParams(napi_env env, napi_callback_info info,
         MoveParams &moveParams, int32_t &mechId);
@@ -171,6 +164,13 @@ private:
         std::vector<MechEventType>& outEvents);
     static bool ParseEventsArray(napi_env env, napi_value eventsArray,
         std::vector<MechEventType>& outEvents);
+
+    static bool ParseOnParams(napi_env env, napi_callback_info info,
+        std::string& outEventType, napi_ref& outCallbackRef);
+    static bool ParseOffParams(napi_env env, napi_callback_info info,
+        std::string& outEventType, napi_ref& outCallbackRef);
+    static bool ParseSetCameraTrackingLayoutParams(napi_env env, napi_callback_info info,
+        int32_t &jsLayout);
 
 private:
     static std::mutex attachStateChangeStubMutex_;
@@ -205,7 +205,7 @@ private:
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
     };
-    
+
     class BaseChannelDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
@@ -213,7 +213,6 @@ private:
 };
 
 napi_value Init(napi_env env, napi_value exports);
-void CreateAndSetEnumProperty(napi_env env, napi_value exports);
 
 } // namespace MechManager
 } // namespace OHOS

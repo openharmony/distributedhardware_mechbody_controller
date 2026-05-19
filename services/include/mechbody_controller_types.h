@@ -26,6 +26,8 @@
 #include "mechbody_controller_enums.h"
 #include "mechbody_controller_utils.h"
 
+#define MAX_CAPABILITY_BIT_NUM (2006 / 32 + 1)
+extern uint32_t g_capabilityInfo[MAX_CAPABILITY_BIT_NUM];
 namespace OHOS {
 namespace MechBodyController {
 
@@ -403,7 +405,11 @@ struct RotateToBaseParam : public OHOS::Parcelable {
  
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
-        return true;
+        return parcel.WriteUint16(taskId) &&
+            parcel.WriteUint8(reservedFlags) &&
+            parcel.WriteUint16(rotateTime) &&
+            parcel.WriteInt16(forwardSpeed) &&
+            parcel.WriteFloat(turningSpeed);
     }
  
     RotateToBaseParam(uint16_t id, uint16_t dur, int16_t forwardSpeed, float turningSpeed)
@@ -778,8 +784,8 @@ struct SpeedParams : public OHOS::Parcelable {
     float angle;
     MarchingMode mode;
 
-    SpeedParams(int16_t speed = 0, float angle = 0.0,
-        MarchingMode mode = MarchingMode::TURN_THEN_MOVE):speed(speed), angle(angle), mode(mode) {}
+    SpeedParams(int16_t speed = 0, float angle = 0.0, MarchingMode mode = MarchingMode::TURN_THEN_MOVE)
+        :speed(speed), angle(angle), mode(mode) {}
 
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
@@ -913,23 +919,23 @@ struct WheelPositionInfo {
     int16_t yCoordinates;
 };
 
-struct CliffInfo {
-    int16_t cliffDirection;
-    uint8_t cliffInfoLen;
-    uint16_t info;
-};
-
-struct ObstacleDetail {
+struct ExtraDetail {
     uint8_t detailType;
     uint8_t dataLen;
     std::string detailData;
+};
+
+struct CliffInfo {
+    int16_t cliffDirection;
+    uint8_t cliffInfoLen;
+    std::vector<ExtraDetail> details;
 };
 
 struct ObstacleInfo {
     int16_t direction;
     int16_t pitchAngle;
     uint8_t detailLenth;
-    std::vector<ObstacleDetail> details;
+    std::vector<ExtraDetail> details;
 };
 }  // namespace MechBodyController
 }  // namespace OHOS

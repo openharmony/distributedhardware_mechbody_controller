@@ -64,10 +64,16 @@ bool RegisterMechObstacleInfoCmd::Unmarshal(std::shared_ptr<MechDataBuffer> data
     CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, obstacleNums_), false, "read obstacle num");
     offset++;
 
-    // 没有悬崖传感器的情况
+    // 没有障碍物的情况
     if (obstacleNums_ == BIT_0) {
-        HILOGI("Cliff sensor num is 0");
+        HILOGI("obstacle num is 0");
         return true;
+    }
+
+        // 按照读取到的悬崖数量信息，重新校验最小长度
+    if (data->Size() < offset + obstacleNums_* BIT_OFFSET_5) {
+        HILOGE("Invalid input data for unmarshal");
+        return false;
     }
 
     for (int i = 1; i <= obstacleNums_; i++) {
@@ -82,14 +88,46 @@ bool RegisterMechObstacleInfoCmd::Unmarshal(std::shared_ptr<MechDataBuffer> data
 
         // 解析障碍物额外信息长度,当前不上报额外信息，长度按0处理
         CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, obstacleInfo.detailLenth), false, "read obstacle detail lenth");
-        if (obstacleInfo.detailLenth != BIT_0) {
-            HILOGE("obstacleInfo.detailLenth is not 0");
+        if (obstacleInfo.detailLenth == BIT_OFFSET_0) {
+            offset++;
+            obstacleInfos_.push_back(obstacleInfo);
+            continue;
+        }
+        HILOGW("obstacle info len is not zero, obstacle len %{public}d", obstacleInfo.detailLenth);
+        // 重新校验长度
+        if (obstacleInfo.detailLenth > data->Size() - offset) {
+            HILOGE("obstacle info len is invalid");
             return false;
         }
         offset++;
+
+         // 解析额外信息的值
+        obstacleInfo.details = GetObstacleDetails(data, offset, obstacleInfo.detailLenth);
+        offset += obstacleInfo.detailLenth;
         obstacleInfos_.push_back(obstacleInfo);
     }
     return true;
+}
+
+std::vector<ExtraDetail> RegisterMechObstacleInfoCmd::GetObstacleDetails(
+    std::shared_ptr<MechDataBuffer> data, size_t offset, uint8_t detailLen)
+{
+    std::vector<ExtraDetail> details;
+    HILOGD("start.");
+    
+    size_t endOffset = offset + detailLen;
+    
+    do {
+        ExtraDetail detail;
+        CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, detail.detailType), details, "read cliff extra info type");
+        offset++;
+        
+        CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, detail.dataLen), details, "read cliff extra info data len");
+        offset++;
+        offset += detail.dataLen;
+        details.push_back(detail);
+    } while (offset < endOffset);
+    return details;
 }
 
 void RegisterMechObstacleInfoCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> data)

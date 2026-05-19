@@ -1584,11 +1584,9 @@ napi_value MechManager::Move(napi_env env, napi_callback_info info)
             "create param failed.");
         return nullptr;
     }
- 
     napi_deferred deferred;
     napi_value promise;
     napi_create_promise(env, &deferred, &promise);
- 
     std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
         std::make_shared<RotatePrimiseFulfillmentParam>();
     rotatePromiseParam->cmdId = GenerateUniqueID();
@@ -1620,7 +1618,6 @@ napi_value MechManager::Move(napi_env env, napi_callback_info info)
     }
     return promise;
 }
- 
 napi_value MechManager::MoveBySpeed(napi_env env, napi_callback_info info)
 {
     if (CheckDeviceL1(env)) {
@@ -1638,11 +1635,9 @@ napi_value MechManager::MoveBySpeed(napi_env env, napi_callback_info info)
             "create param failed.");
         return nullptr;
     }
- 
     napi_deferred deferred;
     napi_value promise;
     napi_create_promise(env, &deferred, &promise);
- 
     std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
         std::make_shared<RotatePrimiseFulfillmentParam>();
     rotatePromiseParam->cmdId = GenerateUniqueID();
@@ -1690,11 +1685,9 @@ napi_value MechManager::TurnBySpeed(napi_env env, napi_callback_info info)
     if (!GetTurnBySpeedParams(env, info, mechId, angleSpeed, duration)) {
         return nullptr;
     }
- 
     napi_deferred deferred;
     napi_value promise;
     napi_create_promise(env, &deferred, &promise);
- 
     std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
         std::make_shared<RotatePrimiseFulfillmentParam>();
     rotatePromiseParam->cmdId = GenerateUniqueID();
@@ -1812,15 +1805,13 @@ napi_value MechManager::DoAction(napi_env env, napi_callback_info info)
     int32_t mechId;
     ActionType actionType;
     if (!GetDoActionParams(env, info, mechId, actionType)) {
-        napi_throw_type_error(env,
-            std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(), "create param failed.");
+        napi_throw_type_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "create param failed.");
         return nullptr;
     }
- 
     napi_deferred deferred;
     napi_value promise;
     napi_create_promise(env, &deferred, &promise);
- 
     std::shared_ptr<RotatePrimiseFulfillmentParam> rotatePromiseParam =
         std::make_shared<RotatePrimiseFulfillmentParam>();
     rotatePromiseParam->cmdId = GenerateUniqueID();
@@ -2440,7 +2431,6 @@ bool MechManager::InitBaseChannel()
 
 static napi_value DefineEnums(napi_env env, napi_value exports)
 {
-    CreateAndSetEnumProperty(env, exports);
     napi_value rotationAxisLimitedEnum =
         CreateEnumObject(env, {{"NOT_LIMITED", 0}, {"NEGATIVE_LIMITED", 1}, {"POSITIVE_LIMITED", 2}});
     napi_set_named_property(env, exports, "RotationAxisLimited", rotationAxisLimitedEnum);
@@ -2454,12 +2444,13 @@ static napi_value DefineEnums(napi_env env, napi_value exports)
     napi_set_named_property(env, exports, "TrackingEvent", trackingEventEnum);
 
     napi_value resultEnum =
-        CreateEnumObject(env, {{"COMPLETED", 0}, {"PARA_ERROR", 1}, {"EXE_ERROR", 2}, {"LIMITED", 3},
-                               {"TIMEOUT", 4}, {"INTERRUPTED", 5}, {"ERR_CLIFF", 6}, {"ERR_OBSTACLE", 7},
-                               {"SYSTEM_ERROR", 100}});
+        CreateEnumObject(env, {{"COMPLETED", 0}, {"INTERRUPTED", 1}, {"LIMITED", 2},
+                                {"TIMEOUT", 3}, {"TERMINATE_OBSTACLE", 4}, {"TERMINATE_CLIFF", 5},
+                                {"SYSTEM_ERROR", 100}});
     napi_set_named_property(env, exports, "Result", resultEnum);
 
-    napi_value mechDeviceTypeEnum = CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}});
+    napi_value mechDeviceTypeEnum =
+        CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}, {"DESKTOP_GIMBAL_DEVICE", 1}, {"WHEELED_BASE_DEVICE", 2}});
     napi_set_named_property(env, exports, "MechDeviceType", mechDeviceTypeEnum);
 
     napi_value attachStateEnum = CreateEnumObject(env, {{"ATTACHED", 0}, {"DETACHED", 1}});
@@ -2537,35 +2528,6 @@ napi_value Init(napi_env env, napi_value exports)
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;
-}
-
-void CreateAndSetEnumProperty(napi_env env, napi_value exports)
-{
-    napi_value rotationAxisLimitedEnum =
-    CreateEnumObject(env, {{"NOT_LIMITED", 0}, {"NEGATIVE_LIMITED", 1}, {"POSITIVE_LIMITED", 2}});
-    napi_set_named_property(env, exports, "RotationAxisLimited", rotationAxisLimitedEnum);
-    napi_value operationEnum = CreateEnumObject(env, {{"CONNECT", 0}, {"DISCONNECT", 1}});
-    napi_set_named_property(env, exports, "Operation", operationEnum);
-    napi_value trackingEventEnum =
-        CreateEnumObject(env, {{"CAMERA_TRACKING_USER_ENABLED", 0}, {"CAMERA_TRACKING_USER_DISABLED", 1},
-                               {"CAMERA_TRACKING_LAYOUT_CHANGED", 2}});
-    napi_set_named_property(env, exports, "TrackingEvent", trackingEventEnum);
-    napi_value resultEnum =
-        CreateEnumObject(env, {{"COMPLETED", 0}, {"PARA_ERROR", 1}, {"EXE_ERROR", 2}, {"LIMITED", 3},
-                                {"TIMEOUT", 4}, {"INTERRUPTED", 5}, {"ERR_CLIFF", 6}, {"ERR_OBSTACLE", 7},
-                                {"SYSTEM_ERROR", 100}});
-    napi_set_named_property(env, exports, "Result", resultEnum);
-    napi_value mechDeviceTypeEnum = CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}});
-    napi_set_named_property(env, exports, "MechDeviceType", mechDeviceTypeEnum);
-    napi_value attachStateEnum = CreateEnumObject(env, {{"ATTACHED", 0}, {"DETACHED", 1}});
-    napi_set_named_property(env, exports, "AttachState", attachStateEnum);
-    napi_value cameraTrackingLayoutEnum =
-        CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFT", 1}, {"MIDDLE", 2}, {"RIGHT", 3}});
-    napi_set_named_property(env, exports, "CameraTrackingLayout", cameraTrackingLayoutEnum);
-    napi_value targetTypeEnum = CreateEnumObject(env, {{"HUMAN_FACE", 0}});
-    napi_set_named_property(env, exports, "TargetType", targetTypeEnum);
-    napi_value searchDirectionEnum = CreateEnumObject(env, {{"DEFAULT", 0}, {"LEFTWARD", 1}, {"RIGHTWARD", 2}});
-    napi_set_named_property(env, exports, "SearchDirection", searchDirectionEnum);
 }
 
 static napi_module mechManagerModule = {

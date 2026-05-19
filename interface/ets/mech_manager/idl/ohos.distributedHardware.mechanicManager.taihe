@@ -167,18 +167,18 @@ enum TrackingEvent : i32 {
 
 enum Result : i32 {
     COMPLETED = 0,
-    PARA_ERROR = 1,
-    EXE_ERROR = 2,
-    LIMITED = 3,
-    TIMEOUT = 4,
-    INTERRUPTED = 5,
-    ERR_CLIFF = 6,
-    ERR_OBSTACLE = 7,
+    INTERRUPTED = 1,
+    LIMITED = 2,
+    TIMEOUT = 3,
+    TERMINATE_OBSTACLE  = 4,
+    TERMINATE_CLIFF = 5,
     SYSTEM_ERROR = 100
 }
 
 enum MechDeviceType : i32 {
-    GIMBAL_DEVICE = 0
+    GIMBAL_DEVICE = 0,
+    DESKTOP_GIMBAL_DEVICE = 1,
+    WHEELED_BASE_DEVICE = 2
 }
 
 enum AttachState : i32 {

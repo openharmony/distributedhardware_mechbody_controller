@@ -202,7 +202,6 @@ private:
     std::map<std::string, std::shared_ptr<AniRotatePrimiseFulfillmentParam>> searchTargetPromiseParam_;
     std::mutex mainHandlerMutex_;
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainHandler_ { nullptr };
-    
     std::mutex subscribeCallbackMutex_;
     std::map<MechEventType, std::vector<SubscribeCBTaihe>> subscribeCallback_;
 
@@ -225,7 +224,6 @@ private:
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;
     };
-    
     class AniBaseChannelDeathListener : public IRemoteObject::DeathRecipient {
     public:
         void OnRemoteDied(const wptr<IRemoteObject> &object) override;

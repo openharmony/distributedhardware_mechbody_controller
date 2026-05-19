@@ -173,7 +173,7 @@ bool MechConnectManager::GetConnectMechList(std::set<MechInfo>& mechInfos)
     return true;
 }
 
-bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached)
+bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached, bool forceDisconnect)
 {
     HILOGI("called, mechId: %{public}d. isAttached %{public}d", mechId, isAttached);
     std::lock_guard<std::mutex> autoLock(mechInfosMutex_);
@@ -188,16 +188,20 @@ bool MechConnectManager::NotifyMechState(int32_t mechId, bool isAttached)
     mechInfos_.erase(it);
     mechInfos_.insert(newMechInfo);
 
-    if (!isAttached) {
-        HILOGI("newMechInfo mechType: %{public}d, newMechInfo isFirstConnect %{public}d",
-            newMechInfo.mechType, newMechInfo.isFirstConnect);
-        if (newMechInfo.mechType == MechType::WHEEL_BASE && newMechInfo.isFirstConnect) {
-            newMechInfo.isFirstConnect = false;
-            mechInfos_.erase(it);
+    HILOGI("newMechInfo mechType: %{public}d, newMechInfo isFirstConnect %{public}d",
+        newMechInfo.mechType, newMechInfo.isFirstConnect);
+    if (newMechInfo.mechType == MechType::WHEEL_BASE && newMechInfo.isFirstConnect && !forceDisconnect) {
+        newMechInfo.isFirstConnect = false;
+        auto newIt = std::find_if(mechInfos_.begin(), mechInfos_.end(),
+            [&](const MechInfo& mechInfo) { return mechInfo.mechId == newMechInfo.mechId; });
+        if (newIt != mechInfos_.end()) {
+            mechInfos_.erase(newIt);
             mechInfos_.insert(newMechInfo);
-            HILOGI("WHEEL_BASE first connect, keep connection but update isFirstConnect");
-            return true;
         }
+        HILOGI("WHEEL_BASE first connect, keep connection but update isFirstConnect");
+        return true;
+    }
+    if (!isAttached) {
         auto disconnectTask = [this, newMechInfo]() mutable {
             BleSendManager::GetInstance().MechbodyDisConnect(newMechInfo);
         };

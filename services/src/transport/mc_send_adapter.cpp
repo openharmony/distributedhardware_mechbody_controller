@@ -31,7 +31,7 @@ namespace {
     const std::string TAG = "TransportSendAdapter";
     const std::string RESPONSE_TIMEOUT_TASK = "transport_send_task";
     const std::string RESPONSE_TIMEOUT_RESET_TASK = "transport_send_task_reset";
-    constexpr int32_t RESPONSE_TIMEOUT = 10000;
+    constexpr int32_t RESPONSE_TIMEOUT = 300000;
     constexpr int32_t RESPONSE_TIMEOUT_RESET = 2000;
     constexpr int32_t CMD_RETRY_INTERVAL = 10; //ms
     constexpr int32_t CMD_DROP_INTERVAL = 70000; //us

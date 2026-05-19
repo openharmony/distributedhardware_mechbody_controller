@@ -175,6 +175,9 @@ private:
     int32_t GetTrackingTarget(CameraStandard::Rect &trackingRegion,
         std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects, int32_t trackingObjectId,
         sptr<CameraStandard::MetadataObject> &targetObject);
+    sptr<CameraStandard::MetadataObject> SelectBestObjectByRegion(
+        const CameraStandard::Rect& trackingRegion,
+        const std::vector<sptr<CameraStandard::MetadataObject>>& detectedObjects);
     float CalculateIOU(const CameraStandard::Rect& rect1, const CameraStandard::Rect& rect2);
     sptr<CameraStandard::MetadataObject> FindBestFaceOrHeadForBody(
         CameraStandard::MetadataObject& bodyObject,
@@ -252,6 +255,7 @@ private:
     float targetHorizontal_ = 0.0f;
     std::chrono::steady_clock::time_point lastStickTime_;
     bool isStick_ = false;
+    bool isSalientDetectionLocked_ = false;
 };
 } // namespace MechBodyController
 } // namespace OHOS

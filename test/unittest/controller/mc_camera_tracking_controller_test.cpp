@@ -2017,5 +2017,238 @@ HWTEST_F(McCameraTrackingControllerTest, SetStickOffset_005, TestSize.Level1)
 
     DTEST_LOG << "McCameraTrackingControllerTest SetStickOffset_005 end" << std::endl;
 }
+
+
+/**
+ * @tc.name  : GetTrackingTargetFallback_002
+ * @tc.number: GetTrackingTargetFallback_002
+ * @tc.desc  : Testing GetTrackingTargetFallback with SALIENT_DETECTION and isLockFocusTracked true.
+ */
+HWTEST_F(McCameraTrackingControllerTest, GetTrackingTargetFallback_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_002 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.3f;
+    objectRect.topLeftY = 0.3f;
+    objectRect.width = 0.4f;
+    objectRect.height = 0.4f;
+
+    CameraStandard::MetaObjectParms parms;
+    parms.type = CameraStandard::MetadataObjectType::SALIENT_DETECTION;
+    parms.timestamp = 0;
+    parms.box = objectRect;
+    parms.objectId = 100;
+    parms.confidence = 0;
+    parms.isLockFocusTracked = true;
+
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(parms);
+
+    detectedObjects.push_back(mockObject);
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->targetId = 100;
+
+    int32_t ret = mcCameraTrackingController.GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_TRUE(mcCameraTrackingController.isSalientDetectionLocked_);
+    EXPECT_NE(targetObject, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : GetTrackingTargetFallback_003
+ * @tc.number: GetTrackingTargetFallback_003
+ * @tc.desc  : Testing GetTrackingTargetFallback without SALIENT_DETECTION with isLockFocusTracked true.
+ */
+HWTEST_F(McCameraTrackingControllerTest, GetTrackingTargetFallback_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_003 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.3f;
+    objectRect.topLeftY = 0.3f;
+    objectRect.width = 0.4f;
+    objectRect.height = 0.4f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE, timestamp, objectRect, 100, 0);
+
+    detectedObjects.push_back(mockObject);
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->targetId = 100;
+
+    int32_t ret = mcCameraTrackingController.GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_FALSE(mcCameraTrackingController.isSalientDetectionLocked_);
+    EXPECT_NE(targetObject, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : GetTrackingTargetFallback_004
+ * @tc.number: GetTrackingTargetFallback_004
+ * @tc.desc  : Testing GetTrackingTargetFallback with SALIENT_DETECTION but isLockFocusTracked false.
+ */
+HWTEST_F(McCameraTrackingControllerTest, GetTrackingTargetFallback_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_004 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.3f;
+    objectRect.topLeftY = 0.3f;
+    objectRect.width = 0.4f;
+    objectRect.height = 0.4f;
+
+    CameraStandard::MetaObjectParms parms;
+    parms.type = CameraStandard::MetadataObjectType::SALIENT_DETECTION;
+    parms.timestamp = 0;
+    parms.box = objectRect;
+    parms.objectId = 100;
+    parms.confidence = 0;
+    parms.isLockFocusTracked = false;
+
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(parms);
+
+    detectedObjects.push_back(mockObject);
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->targetId = 100;
+
+    int32_t ret = mcCameraTrackingController.GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_FALSE(mcCameraTrackingController.isSalientDetectionLocked_);
+    EXPECT_NE(targetObject, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTest GetTrackingTargetFallback_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CinematicVideoModeTrackingTargetFilter_004
+ * @tc.number: CinematicVideoModeTrackingTargetFilter_004
+ * @tc.desc  : Testing CinematicVideoModeTrackingTargetFilter with isSalientDetectionLocked false.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CinematicVideoModeTrackingTargetFilter_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_004 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.isSalientDetectionLocked_ = false;
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode = 0;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+    std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
+
+    int32_t ret = mcCameraTrackingController.CinematicVideoModeTrackingTargetFilter(info, trackingParams);
+
+    EXPECT_EQ(ret, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CinematicVideoModeTrackingTargetFilter_005
+ * @tc.number: CinematicVideoModeTrackingTargetFilter_005
+ * @tc.desc  : Testing with isSalientDetectionLocked true and CINEMATIC_VIDEO mode.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CinematicVideoModeTrackingTargetFilter_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_005 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.isSalientDetectionLocked_ = true;
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode = 0;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+    std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
+
+    int32_t ret = mcCameraTrackingController.CinematicVideoModeTrackingTargetFilter(info, trackingParams);
+
+    EXPECT_EQ(ret, ERR_OK);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_005 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CinematicVideoModeTrackingTargetFilter_006
+ * @tc.number: CinematicVideoModeTrackingTargetFilter_006
+ * @tc.desc  : Testing with isSalientDetectionLocked true and CINEMATIC_VIDEO mode with locked tracking.
+ */
+HWTEST_F(McCameraTrackingControllerTest, CinematicVideoModeTrackingTargetFilter_006, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_006 begin" << std::endl;
+
+    McCameraTrackingController &mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    mcCameraTrackingController.isSalientDetectionLocked_ = true;
+    mcCameraTrackingController.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    mcCameraTrackingController.currentCameraInfo_->sessionMode =
+        static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO);
+    mcCameraTrackingController.currentCameraInfo_->pauseFrameCount = 0;
+
+    mcCameraTrackingController.lastTrackingFrame_ = std::make_shared<TrackingFrameParams>();
+    mcCameraTrackingController.lastTrackingFrame_->targetId = 100;
+    mcCameraTrackingController.lastTrackingFrame_->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
+
+    std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
+    trackingParams->targetId = 200;
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+
+    CameraStandard::Rect trackingRect;
+    trackingRect.topLeftX = 0.3f;
+    trackingRect.topLeftY = 0.3f;
+    trackingRect.width = 0.4f;
+    trackingRect.height = 0.4f;
+    mcCameraTrackingController.trackingRect_ = trackingRect;
+
+    CameraStandard::Rect lastTrackingRect;
+    lastTrackingRect.topLeftX = 0.32f;
+    lastTrackingRect.topLeftY = 0.32f;
+    lastTrackingRect.width = 0.38f;
+    lastTrackingRect.height = 0.38f;
+    mcCameraTrackingController.lastTrackingRect_ = lastTrackingRect;
+
+    CameraStandard::FocusTrackingMetaInfo info;
+
+    int32_t ret = mcCameraTrackingController.CinematicVideoModeTrackingTargetFilter(info, trackingParams);
+
+    EXPECT_TRUE(ret == ERR_OK || ret == INVALID_TRACKING_TARGET);
+
+    DTEST_LOG << "McCameraTrackingControllerTest CinematicVideoModeTrackingTargetFilter_006 end" << std::endl;
+}
 }
 }

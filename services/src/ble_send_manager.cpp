@@ -691,14 +691,22 @@ int32_t BleSendManager::MechbodyConnect(std::string mac, std::string deviceName,
 
 void BleSendManager::ConnectMechbodyInternal(std::string mac, std::string deviceName, uint32_t deviceIdentifier)
 {
+    bool isFirstConnect = (deviceIdentifier == 0) ? false : true;
     if (MechConnectManager::GetInstance().IsConnect()) {
         HILOGW("MECHBODY_EXEC_CONNECT mechInfos has connected.");
-        return;
+        if (!isFirstConnect) {
+            return;
+        }
+        HILOGI("MECHBODY_EXEC_CONNECT, new device first connect, disconnect old device");
+        int32_t ret = DisConnectOldDevice();
+        if (ret != ERR_OK) {
+            HILOGW("MECHBODY_EXEC_CONNECT, disconnect old device failed, ret: %{public}d", ret);
+        }
     }
     MechInfo mechInfo;
     mechInfo.mac = mac;
     mechInfo.mechName = deviceName;
-    mechInfo.isFirstConnect = (deviceIdentifier == 0) ? false : true;
+    mechInfo.isFirstConnect = isFirstConnect;
     mechInfo.deviceIdentifier = deviceIdentifier;
     if (MechConnectManager::GetInstance().GetMechInfo(mechInfo.mac, mechInfo) != ERR_OK) {
         if (MechConnectManager::GetInstance().AddMechInfo(mechInfo) != ERR_OK) {
@@ -732,6 +740,24 @@ void BleSendManager::ConnectMechbodyInternal(std::string mac, std::string device
         DotReportMechKitStartGattSuccess(mechInfo);
     } while (false);
     HILOGI("MECHBODY_EXEC_CONNECT async connect end, mech info for: %{public}s", mechInfo.ToString().c_str());
+}
+ 
+int32_t BleSendManager::DisConnectOldDevice()
+{
+    HILOGI("MECHBODY_EXEC_CONNECT, new device first connect, disconnect old device");
+    std::set<MechInfo> mechInfos;
+    if (!MechConnectManager::GetInstance().GetConnectMechList(mechInfos)) {
+        HILOGW("MECHBODY_EXEC_CONNECT, get connect devices faild");
+        return ERR_OK;
+    }
+    int32_t ret = ERR_OK;
+    for (auto mechInfo :mechInfos) {
+        if (mechInfo.gattCoonectState) {
+            ret = MechbodyDisConnectSync(mechInfo);
+            HILOGI("MECHBODY_EXEC_CONNECT, mechId %{public}d, ret %{public}d", mechInfo.mechId, ret);
+        }
+    }
+    return ret;
 }
 
 int32_t BleSendManager::MechbodyGattcConnect(std::string mac, std::string deviceName)

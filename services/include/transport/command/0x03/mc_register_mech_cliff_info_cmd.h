@@ -42,6 +42,9 @@ public:
     uint8_t GetResult() const;
 
 private:
+    std::vector<ExtraDetail> GetCliffDetails(std::shared_ptr<MechDataBuffer> data, size_t offset, uint8_t detailLen);
+
+private:
     uint8_t cliffNums_ = 0;
     uint8_t result_ = 0;
     std::vector<CliffInfo> cliffInfos_;

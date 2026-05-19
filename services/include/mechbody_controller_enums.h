@@ -50,6 +50,15 @@ constexpr size_t BIT_OFFSET_7 = 7;
 constexpr size_t BIT_OFFSET_8 = 8;
 constexpr size_t BIT_OFFSET_10 = 10;
 constexpr size_t BIT_OFFSET_13 = 13;
+constexpr uint8_t CODENUM_0 = 0;
+constexpr uint8_t CODENUM_1 = 1;
+constexpr uint8_t CODENUM_2 = 2;
+constexpr uint8_t CODENUM_3 = 3;
+constexpr uint8_t CODENUM_4 = 4;
+constexpr uint8_t CODENUM_5 = 5;
+constexpr uint8_t CODENUM_6 = 6;
+constexpr uint8_t CODENUM_7 = 7;
+constexpr uint16_t CODENUM_100 = 100;
 constexpr float FLOAT_EPSILON = 0.01f;
 constexpr int32_t CMD_PRIORITY_HIGH = 5;
 constexpr int32_t CMD_PRIORITY_MIDDLE = 3;
@@ -114,13 +123,11 @@ enum class TrackingEvent : int32_t {
 
 enum class ExecResult : int32_t {
     COMPLETED = 0,
-    PARA_ERROR = 1,
-    EXE_ERROR = 2,
-    LIMITED = 3,
-    TIMEOUT = 4,
-    INTERRUPTED = 5,
-    ERR_CLIFF = 6,
-    ERR_OBSTACLE = 7,
+    INTERRUPTED = 1,
+    LIMITED = 2,
+    TIMEOUT = 3,
+    TERMINATE_OBSTACLE  = 4,
+    TERMINATE_CLIFF = 5,
     SYSTEM_ERROR = 100
 };
 
@@ -216,7 +223,9 @@ enum class ProtocolVersion : int8_t {
 };
 
 enum class MechDeviceType : int32_t {
-    GIMBAL_DEVICE = 0
+    GIMBAL_DEVICE = 0,
+    DESKTOP_GIMBAL_DEVICE = 1,
+    WHEELED_BASE_DEVICE = 2
 };
 
 enum class SpeedGear: int32_t {

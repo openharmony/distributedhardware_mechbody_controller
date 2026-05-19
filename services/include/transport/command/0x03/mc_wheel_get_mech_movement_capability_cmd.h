@@ -13,43 +13,37 @@
  * limitations under the License.
  */
 
-#ifndef MC_REGISTER_MECH_OBSTACLE_INFO_CMD_H
-#define MC_REGISTER_MECH_OBSTACLE_INFO_CMD_H
+#ifndef MC_WHEEL_GET_MECH_MOVEMENT_CAPABILITY_CMD_H
+#define MC_WHEEL_GET_MECH_MOVEMENT_CAPABILITY_CMD_H
 
 #include "mc_command_base.h"
 #include "mechbody_controller_types.h"
+#include <string>
 
 namespace OHOS {
 namespace MechBodyController {
 
-class RegisterMechObstacleInfoCmd : public CommandBase {
+class WheelGetMechMovementCapabilityCmd : public CommandBase {
 public:
     static constexpr uint8_t CMD_SET = 0x03;
-    static constexpr uint8_t CMD_ID = 0x41;
-    static constexpr uint16_t REQ_SIZE = 0;
-    static constexpr uint16_t RSP_SIZE = 0;
-    static constexpr uint16_t RPT_SIZE = 1;
+    static constexpr uint8_t CMD_ID = 0x01;
+    static constexpr uint16_t REQ_SIZE = 2;
+    static constexpr uint16_t RSP_SIZE = 20;
 
-    explicit RegisterMechObstacleInfoCmd();
-    ~RegisterMechObstacleInfoCmd() override = default;
+    explicit WheelGetMechMovementCapabilityCmd();
+    ~WheelGetMechMovementCapabilityCmd() override = default;
 
     std::shared_ptr<MechDataBuffer> Marshal() const override;
-    bool Unmarshal(std::shared_ptr<MechDataBuffer> data);
     void TriggerResponse(std::shared_ptr<MechDataBuffer> data) override;
-
-    const std::vector<ObstacleInfo> GetObstacles() const;
-    uint8_t GetObstacleNums() const;
     uint8_t GetResult() const;
+    void SetCapability(uint32_t cap);
+    void SetCapabilityBitValue(uint32_t start, uint8_t value, uint8_t index);
+    void OnDataReceive(uint8_t *data);
 private:
-    std::vector<ExtraDetail> GetObstacleDetails(std::shared_ptr<MechDataBuffer> data, size_t offset, uint8_t detailLen);
-
-private:
-    uint8_t obstacleNums_ = 0;
     uint8_t result_ = 0;
-    std::vector<ObstacleInfo> obstacleInfos_;
 };
 
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // MC_REGISTER_MECH_OBSTACLE_INFO_CMD_H
+#endif // MC_WHEEL_GET_MECH_MOVEMENT_CAPABILITY_CMD_H

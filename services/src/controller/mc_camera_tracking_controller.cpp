@@ -441,7 +441,7 @@ void PrintOnFocusTrackingLog(CameraStandard::FocusTrackingMetaInfo &info)
         oss << "Detected object ID: " << obj->GetObjectId() << ", Type: " << static_cast<int>(obj->GetType())
             << ", BBox: [" << obj->GetBoundingBox().topLeftX << ", " << obj->GetBoundingBox().topLeftY << ", "
             << obj->GetBoundingBox().width << ", " << obj->GetBoundingBox().height << "]" << ", Confidence: "
-            << obj->GetConfidence();
+            << obj->GetConfidence() << ", isLockFocusTracked: " << (obj->IsLockFocusTracked() ? "true" : "false");
     }
     HILOGI("tracking object info: %{public}s", oss.str().c_str());
 }
@@ -533,11 +533,11 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
         trackingFrameParams->targetId = targetObject->GetObjectId();
         CameraStandard::MetadataObjectType objectType = targetObject->GetType();
         ConvertObjectType(objectType, trackingFrameParams->objectType);
-        HILOGI("trackingFrameParams param: %{public}s", trackingFrameParams->ToString().c_str());
         CameraStandard::Rect targetRect = targetObject->GetBoundingBox();
         trackingRect_ = targetRect;
         UpdateROI(trackingFrameParams, targetRect);
     }
+    HILOGI("trackingFrameParams param: %{public}s", trackingFrameParams->ToString().c_str());
     uint64_t lastTrackingTargetNum = currentCameraInfo_->trackingTargetNum;
     currentCameraInfo_->trackingTargetNum = detectedObjects.size();
     if (currentCameraInfo_->searchingTarget && currentCameraInfo_->trackingTargetNum > 0) {
@@ -588,9 +588,39 @@ int32_t McCameraTrackingController::GetTrackingTarget(CameraStandard::Rect &trac
         currentCameraInfo_->sessionMode == static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO) &&
         trackingObjectId >= 0) {
         HILOGW("CinematicVideo mode: trackingObjectId %{public}d not found in current frame", trackingObjectId);
+        sptr<CameraStandard::MetadataObject> matchedObj = SelectBestObjectByRegion(trackingRegion, detectedObjects);
+        if (matchedObj != nullptr) {
+            return ProcessTargetByType(matchedObj, detectedObjects, targetObject);
+        }
     }
     return GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
 }
+
+sptr<CameraStandard::MetadataObject> McCameraTrackingController::SelectBestObjectByRegion(
+    const CameraStandard::Rect& trackingRegion,
+    const std::vector<sptr<CameraStandard::MetadataObject>>& detectedObjects)
+{
+    sptr<CameraStandard::MetadataObject> bestObject = nullptr;
+    float bestIou = IOU_THRESHOLD;
+    for (const auto& obj : detectedObjects) {
+        auto type = obj->GetType();
+        if (type == CameraStandard::MetadataObjectType::FACE ||
+            type == CameraStandard::MetadataObjectType::BASE_FACE_DETECTION ||
+            type == CameraStandard::MetadataObjectType::HUMAN_HEAD) {
+            float iou = CalculateIOU(trackingRegion, obj->GetBoundingBox());
+            if (iou > bestIou) {
+                bestIou = iou;
+                bestObject = obj;
+            }
+        }
+    }
+    if (bestObject != nullptr) {
+        HILOGI("SelectBestObjectByRegion: found object id=%{public}d, type=%{public}d, IOU=%{public}f",
+               bestObject->GetObjectId(), static_cast<int>(bestObject->GetType()), bestIou);
+    }
+    return bestObject;
+}
+
 int32_t McCameraTrackingController::ProcessTargetByType(
     const sptr<CameraStandard::MetadataObject> &selectedObject,
     const std::vector<sptr<CameraStandard::MetadataObject>> &detectedObjects,
@@ -713,11 +743,23 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
     sptr<CameraStandard::MetadataObject> &targetObject)
 {
     sptr<CameraStandard::MetadataObject> selectedObject = nullptr;
+
+    for (const auto &item : detectedObjects) {
+        if (item->GetType() == CameraStandard::MetadataObjectType::SALIENT_DETECTION && item->IsLockFocusTracked()) {
+            HILOGI("found SALIENT_DETECTION with isLockFocusTracked true");
+            selectedObject = item;
+            isSalientDetectionLocked_ = true;
+            return ProcessTargetByType(selectedObject, detectedObjects, targetObject);
+        }
+    }
+    isSalientDetectionLocked_ = false;
+
     if (lastTrackingFrame_ != nullptr && lastTrackingFrame_->targetId >= 0) {
         for (const auto &item : detectedObjects) {
             if (item->GetObjectId() == lastTrackingFrame_->targetId) {
                 HILOGI("got detected object for id: %{public}d", lastTrackingFrame_->targetId);
                 selectedObject = item;
+                ProcessTargetByType(selectedObject, detectedObjects, targetObject);
                 return ERR_OK;
             }
         }
@@ -729,6 +771,7 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
             std::abs(itemRect.topLeftY - trackingRegion.topLeftY) <= TRACKING_LOST_CHECK) {
             HILOGI("got detected object which is same as trackingRegion");
             selectedObject = item;
+            ProcessTargetByType(selectedObject, detectedObjects, targetObject);
             return ERR_OK;
         }
     }
@@ -775,7 +818,8 @@ float McCameraTrackingController::CalculateIOU(const CameraStandard::Rect &rect1
 int32_t McCameraTrackingController::CinematicVideoModeTrackingTargetFilter(
     CameraStandard::FocusTrackingMetaInfo &info, std::shared_ptr<TrackingFrameParams> &trackingParams)
 {
-    if (currentCameraInfo_->sessionMode != static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO)) {
+    if (currentCameraInfo_->sessionMode != static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO) ||
+        !isSalientDetectionLocked_) {
         return ERR_OK;
     }
     HILOGI("current is CINEMATIC_VIDEO mode; last target id: %{public}d; original target id: %{public}d;"

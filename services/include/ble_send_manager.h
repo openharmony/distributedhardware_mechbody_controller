@@ -219,6 +219,7 @@ private:
     // send
     int32_t MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t dataLen);
     void ConnectMechbodyInternal(std::string mac, std::string deviceName, uint32_t deviceIdentifier);
+    int32_t DisConnectOldDevice();
 
 private:
     std::shared_ptr<Bluetooth::BleCentralManager> bleCentralManager_ = nullptr;
