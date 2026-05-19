@@ -44,6 +44,7 @@
 namespace {
 constexpr int32_t TEST_MECH_ID = 1;
 constexpr int32_t MAX_ACTION_TYPE_VALUE = 2006;
+constexpr int32_t MAX_MECH_MODE_VALUE = 4;
 }
 
 using namespace OHOS;
@@ -85,7 +86,7 @@ void FuzzMechParamNotifyWithAllModes(FuzzedDataProvider &provider)
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
     
-    for (uint8_t mechMode = 0; mechMode <= 4; mechMode++) {
+    for (uint8_t mechMode = 0; mechMode <= MAX_MECH_MODE_VALUE; mechMode++) {
         auto cmd = std::make_shared<RegisterMechStateInfoCmd>();
         auto data = std::make_shared<MechDataBuffer>(5);
         if (data != nullptr) {

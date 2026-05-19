@@ -190,7 +190,6 @@ void FuzzCreateKeyEvent(const uint8_t *data, size_t size)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    // FuzzInit(data, size);
     FuzzMechTrackingStatusNotify(data, size);
     FuzzRotateWithExtremeValues(data, size);
     FuzzMoveWithZeroParams(data, size);

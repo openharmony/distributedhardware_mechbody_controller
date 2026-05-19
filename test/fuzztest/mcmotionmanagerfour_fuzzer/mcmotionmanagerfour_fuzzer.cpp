@@ -170,8 +170,8 @@ void FuzzMechButtonEventNotifyWithAllEvents(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
-    for (uint8_t event = 0; event <= 5; event++) {
+    int32_t eventMaxValue = 5;
+    for (uint8_t event = 0; event <= eventMaxValue; event++) {
         auto cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
         auto data = std::make_shared<MechDataBuffer>(8);
         if (data != nullptr) {

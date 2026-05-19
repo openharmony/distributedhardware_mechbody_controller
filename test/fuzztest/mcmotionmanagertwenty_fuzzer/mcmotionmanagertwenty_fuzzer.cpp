@@ -44,6 +44,7 @@
 namespace {
 constexpr int32_t TEST_MECH_ID = 1;
 constexpr int32_t MAX_ACTION_TYPE_VALUE = 2006;
+constexpr int32_t TWO_VALUE = 2;
 }
 
 using namespace OHOS;
@@ -188,9 +189,9 @@ void FuzzLimitCalculationLocked(FuzzedDataProvider &provider)
     position.pitch = provider.ConsumeFloatingPointInRange<float>(-6.28f, 6.28f);
     
     RotationAxesStatus status;
-    status.yawLimited = static_cast<RotationAxisLimited>(provider.ConsumeIntegralInRange<int32_t>(0, 2));
-    status.rollLimited = static_cast<RotationAxisLimited>(provider.ConsumeIntegralInRange<int32_t>(0, 2));
-    status.pitchLimited = static_cast<RotationAxisLimited>(provider.ConsumeIntegralInRange<int32_t>(0, 2));
+    status.yawLimited = static_cast<RotationAxisLimited>(provider.ConsumeIntegralInRange<int32_t>(0, TWO_VALUE));
+    status.rollLimited = static_cast<RotationAxisLimited>(provider.ConsumeIntegralInRange<int32_t>(0, TWO_VALUE));
+    status.pitchLimited = static_cast<RotationAxisLimited>(provider.ConsumeIntegralInRange<int32_t>(0, TWO_VALUE));
     
     bool callback = provider.ConsumeBool();
     g_motionManager->LimitCalculationLocked(position, status, callback);

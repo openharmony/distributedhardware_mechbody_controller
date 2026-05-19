@@ -29,6 +29,7 @@ ohos_fuzztest("McMotionManagerSevenFuzzTest") {
     "//foundation/distributedhardware/mechbody_controller/services/include/transport/command/0x03",
     "//foundation/distributedhardware/mechbody_controller/services/include/controller",
     "//foundation/distributedhardware/mechbody_controller/services/include/connect",
+    "//foundation/distributedhardware/mechbody_controller/services/include/swing",
     "//foundation/distributedhardware/mechbody_controller/services/include/utils",
     "//foundation/distributedhardware/mechbody_controller/interface/inner_api",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/common",
