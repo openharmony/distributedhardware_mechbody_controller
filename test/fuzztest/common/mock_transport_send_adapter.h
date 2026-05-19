@@ -30,7 +30,7 @@
 
 namespace OHOS {
 namespace MechBodyController {
-
+const std::string TAG = "MockTransportSendAdapter";
 class MockTransportSendAdapter : public TransportSendAdapter {
 public:
     MockTransportSendAdapter() = default;
