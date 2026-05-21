@@ -26,6 +26,19 @@ using namespace testing::ext;
 namespace OHOS {
 namespace MechBodyController {
 
+namespace {
+    constexpr uint8_t CMD_SET = 0x03;
+    constexpr uint8_t CMD_ID = 0x21;
+    constexpr uint8_t CONTROL_BYTE = 0x00;
+    constexpr uint8_t RESERVE_BYTE = 0x00;
+    constexpr uint16_t DEFAULT_DURATION = 1000;
+    constexpr int16_t DEFAULT_FORWARD_SPEED = 500;
+    constexpr float DEFAULT_TURNING_SPEED = 1.0f;
+    constexpr uint16_t ROTATE_PARAM_SIZE = 8;
+    constexpr uint16_t HEADER_SIZE = 8;
+    constexpr uint16_t MAX_POINT_SIZE = 16;
+}
+
 class WheelSetMechRotationTraceCmdTest : public testing::Test {
 public:
     static void SetUpTestCase()
@@ -43,6 +56,56 @@ public:
     void TearDown()
     {
     }
+
+protected:
+    void VerifyRotateParamInBuffer(const std::shared_ptr<MechDataBuffer>& buffer,
+        uint16_t offset, uint16_t expectedDuration, int16_t expectedForwardSpeed,
+        float expectedTurningSpeed)
+    {
+        uint16_t duration = 0;
+        int16_t forwardSpeed = 0;
+        float turningSpeed = 0.0f;
+        EXPECT_EQ(buffer->ReadUint16(offset, duration), ERR_OK);
+        EXPECT_EQ(buffer->ReadInt16(offset + 2, forwardSpeed), ERR_OK);
+        EXPECT_EQ(buffer->ReadFloat(offset + 4, turningSpeed), ERR_OK);
+        EXPECT_EQ(duration, expectedDuration);
+        EXPECT_EQ(forwardSpeed, expectedForwardSpeed);
+        EXPECT_FLOAT_EQ(turningSpeed, expectedTurningSpeed);
+    }
+
+    void VerifyBufferHeader(const std::shared_ptr<MechDataBuffer>& buffer,
+        uint16_t expectedTaskId, uint8_t expectedPointNum)
+    {
+        uint8_t cmdSet = 0;
+        uint8_t cmdId = 0;
+        uint16_t taskId = 0;
+        uint8_t controlByte = 0;
+        uint8_t reserve1 = 0;
+        uint8_t reserve2 = 0;
+        uint8_t pointNum = 0;
+        EXPECT_EQ(buffer->ReadUint8(0, cmdSet), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(1, cmdId), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint16(2, taskId), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(4, controlByte), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(5, reserve1), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(6, reserve2), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(7, pointNum), ERR_OK);
+        EXPECT_EQ(cmdSet, CMD_SET);
+        EXPECT_EQ(cmdId, CMD_ID);
+        EXPECT_EQ(taskId, expectedTaskId);
+        EXPECT_EQ(controlByte, CONTROL_BYTE);
+        EXPECT_EQ(reserve1, RESERVE_BYTE);
+        EXPECT_EQ(reserve2, RESERVE_BYTE);
+        EXPECT_EQ(pointNum, expectedPointNum);
+    }
+
+    void CreateRotateParam(RotateParam& param, uint16_t duration, int16_t forwardSpeed,
+        float turningSpeed)
+    {
+        param.duration = duration;
+        param.forwardSpeed = forwardSpeed;
+        param.turningSpeed = turningSpeed;
+    }
 };
 
 /**
@@ -52,24 +115,26 @@ public:
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Constructor_001, TestSize.Level1)
 {
+    // Given: 创建包含单个点的参数
     std::vector<RotateParam> params;
     RotateParam param;
-    param.duration = 1000;
-    param.forwardSpeed = 500;
-    param.turningSpeed = 1.0f;
+    CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
     params.push_back(param);
 
+    // When: 创建命令对象
     WheelSetMechRotationTraceCmd cmd(100, params);
-    EXPECT_EQ(cmd.GetCmdSet(), 0x03);
-    EXPECT_EQ(cmd.GetCmdId(), 0x21);
-    EXPECT_EQ(cmd.GetReqSize(), 14); // 6 + 1 * 8
+
+    // Then: 验证命令属性
+    EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
+    EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
+    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE + ROTATE_PARAM_SIZE);
     EXPECT_EQ(cmd.GetRspSize(), 3);
 
     const auto& cmdParams = cmd.GetParams();
     EXPECT_EQ(cmdParams.size(), 1);
-    EXPECT_EQ(cmdParams[0].duration, 1000);
-    EXPECT_EQ(cmdParams[0].forwardSpeed, 500);
-    EXPECT_FLOAT_EQ(cmdParams[0].turningSpeed, 1.0f);
+    EXPECT_EQ(cmdParams[0].duration, DEFAULT_DURATION);
+    EXPECT_EQ(cmdParams[0].forwardSpeed, DEFAULT_FORWARD_SPEED);
+    EXPECT_FLOAT_EQ(cmdParams[0].turningSpeed, DEFAULT_TURNING_SPEED);
 }
 
 /**
@@ -79,19 +144,22 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Constructor_002, TestSize.Level1)
 {
+    // Given: 创建包含多个点的参数
     std::vector<RotateParam> params;
     for (int i = 0; i < 3; i++) {
         RotateParam param;
-        param.duration = 1000 + i * 500;
-        param.forwardSpeed = 500 + i * 100;
-        param.turningSpeed = 1.0f + i * 0.5f;
+        CreateRotateParam(param, DEFAULT_DURATION + i * 500, DEFAULT_FORWARD_SPEED + i * 100,
+            DEFAULT_TURNING_SPEED + i * 0.5f);
         params.push_back(param);
     }
 
+    // When: 创建命令对象
     WheelSetMechRotationTraceCmd cmd(200, params);
-    EXPECT_EQ(cmd.GetCmdSet(), 0x03);
-    EXPECT_EQ(cmd.GetCmdId(), 0x21);
-    EXPECT_EQ(cmd.GetReqSize(), 30); // 6 + 3 * 8
+
+    // Then: 验证命令属性
+    EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
+    EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
+    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE + 3 * ROTATE_PARAM_SIZE);
     EXPECT_EQ(cmd.GetRspSize(), 3);
 
     const auto& cmdParams = cmd.GetParams();
@@ -105,21 +173,22 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Constructor_003, TestSize.Level1)
 {
+    // Given: 创建超过最大点数的参数
     std::vector<RotateParam> params;
-    for (int i = 0; i < 17; i++) { // CMD_MAX_POINT_SIZE = 16
+    for (int i = 0; i < MAX_POINT_SIZE + 1; i++) {
         RotateParam param;
-        param.duration = 1000;
-        param.forwardSpeed = 500;
-        param.turningSpeed = 1.0f;
+        CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
         params.push_back(param);
     }
 
+    // When: 创建命令对象
     WheelSetMechRotationTraceCmd cmd(300, params);
-    EXPECT_EQ(cmd.GetCmdSet(), 0x03);
-    EXPECT_EQ(cmd.GetCmdId(), 0x21);
-    // reqSize_ should not be set when params exceed max size
+
+    // Then: 验证命令属性
+    EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
+    EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
     const auto& cmdParams = cmd.GetParams();
-    EXPECT_EQ(cmdParams.size(), 17);
+    EXPECT_EQ(cmdParams.size(), MAX_POINT_SIZE + 1);
 }
 
 /**
@@ -129,12 +198,16 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Constructor_004, TestSize.Level1)
 {
+    // Given: 创建空参数
     std::vector<RotateParam> params;
 
+    // When: 创建命令对象
     WheelSetMechRotationTraceCmd cmd(400, params);
-    EXPECT_EQ(cmd.GetCmdSet(), 0x03);
-    EXPECT_EQ(cmd.GetCmdId(), 0x21);
-    EXPECT_EQ(cmd.GetReqSize(), 6); // 6 + 0 * 8
+
+    // Then: 验证命令属性
+    EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
+    EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
+    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE);
     EXPECT_EQ(cmd.GetRspSize(), 3);
 
     const auto& cmdParams = cmd.GetParams();
@@ -148,23 +221,25 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Constructor_005, TestSize.Level1)
 {
+    // Given: 创建包含最大点数的参数
     std::vector<RotateParam> params;
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < MAX_POINT_SIZE; i++) {
         RotateParam param;
-        param.duration = 1000;
-        param.forwardSpeed = 500;
-        param.turningSpeed = 1.0f;
+        CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
         params.push_back(param);
     }
 
+    // When: 创建命令对象
     WheelSetMechRotationTraceCmd cmd(500, params);
-    EXPECT_EQ(cmd.GetCmdSet(), 0x03);
-    EXPECT_EQ(cmd.GetCmdId(), 0x21);
-    EXPECT_EQ(cmd.GetReqSize(), 134); // 6 + 16 * 8
+
+    // Then: 验证命令属性
+    EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
+    EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
+    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE + MAX_POINT_SIZE * ROTATE_PARAM_SIZE);
     EXPECT_EQ(cmd.GetRspSize(), 3);
 
     const auto& cmdParams = cmd.GetParams();
-    EXPECT_EQ(cmdParams.size(), 16);
+    EXPECT_EQ(cmdParams.size(), MAX_POINT_SIZE);
 }
 
 /**
@@ -174,47 +249,22 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建包含单个点的命令对象
     std::vector<RotateParam> params;
     RotateParam param;
-    param.duration = 1000;
-    param.forwardSpeed = 500;
-    param.turningSpeed = 1.0f;
+    CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
     params.push_back(param);
-
     WheelSetMechRotationTraceCmd cmd(600, params);
+
+    // When: 调用Marshal方法
     auto buffer = cmd.Marshal();
+
+    // Then: 验证返回值和buffer内容
     ASSERT_NE(buffer, nullptr);
-    EXPECT_EQ(buffer->Size(), 16);
-    uint8_t cmdSet = 0;
-    uint8_t cmdId = 0;
-    uint16_t taskId = 0;
-    uint8_t controlByte = 0;
-    uint8_t reserve1 = 0;
-    uint8_t reserve2 = 0;
-    uint8_t pointNum = 0;
-    uint16_t duration = 0;
-    int16_t forwardSpeed = 0;
-    float turningSpeed = 0.0f;
-    EXPECT_EQ(buffer->ReadUint8(0, cmdSet), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(1, cmdId), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint16(2, taskId), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(4, controlByte), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(5, reserve1), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(6, reserve2), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(7, pointNum), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint16(8, duration), ERR_OK);
-    EXPECT_EQ(buffer->ReadInt16(10, forwardSpeed), ERR_OK);
-    EXPECT_EQ(buffer->ReadFloat(12, turningSpeed), ERR_OK);
-    EXPECT_EQ(cmdSet, 0x03);
-    EXPECT_EQ(cmdId, 0x21);
-    EXPECT_EQ(taskId, 600);
-    EXPECT_EQ(controlByte, 0x00);
-    EXPECT_EQ(reserve1, 0x00);
-    EXPECT_EQ(reserve2, 0x00);
-    EXPECT_EQ(pointNum, 1);
-    EXPECT_EQ(duration, 1000);
-    EXPECT_EQ(forwardSpeed, 500);
-    EXPECT_FLOAT_EQ(turningSpeed, 1.0f);
+    EXPECT_EQ(buffer->Size(), HEADER_SIZE + ROTATE_PARAM_SIZE);
+    VerifyBufferHeader(buffer, 600, 1);
+    VerifyRotateParamInBuffer(buffer, HEADER_SIZE, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED,
+        DEFAULT_TURNING_SPEED);
 }
 
 /**
@@ -224,63 +274,27 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Marshal_
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Marshal_002, TestSize.Level1)
 {
+    // Given: 创建包含多个点的命令对象
     std::vector<RotateParam> params;
     for (int i = 0; i < 3; i++) {
         RotateParam param;
-        param.duration = 1000 + i * 500;
-        param.forwardSpeed = 500 + i * 100;
-        param.turningSpeed = 1.0f + i * 0.5f;
+        CreateRotateParam(param, DEFAULT_DURATION + i * 500, DEFAULT_FORWARD_SPEED + i * 100,
+            DEFAULT_TURNING_SPEED + i * 0.5f);
         params.push_back(param);
     }
-
     WheelSetMechRotationTraceCmd cmd(700, params);
+
+    // When: 调用Marshal方法
     auto buffer = cmd.Marshal();
+
+    // Then: 验证返回值和buffer内容
     ASSERT_NE(buffer, nullptr);
-    EXPECT_EQ(buffer->Size(), 32);
-    uint8_t cmdSet = 0;
-    uint8_t cmdId = 0;
-    uint16_t taskId = 0;
-    uint8_t controlByte = 0;
-    uint8_t reserve1 = 0;
-    uint8_t reserve2 = 0;
-    uint8_t pointNum = 0;
-    EXPECT_EQ(buffer->ReadUint8(0, cmdSet), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(1, cmdId), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint16(2, taskId), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(4, controlByte), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(5, reserve1), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(6, reserve2), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint8(7, pointNum), ERR_OK);
-    EXPECT_EQ(cmdSet, 0x03);
-    EXPECT_EQ(cmdId, 0x21);
-    EXPECT_EQ(taskId, 700);
-    EXPECT_EQ(controlByte, 0x00);
-    EXPECT_EQ(reserve1, 0x00);
-    EXPECT_EQ(reserve2, 0x00);
-    EXPECT_EQ(pointNum, 3);
-
-    uint16_t duration1 = 0, duration2 = 0, duration3 = 0;
-    int16_t forwardSpeed1 = 0, forwardSpeed2 = 0, forwardSpeed3 = 0;
-    float turningSpeed1 = 0.0f, turningSpeed2 = 0.0f, turningSpeed3 = 0.0f;
-    EXPECT_EQ(buffer->ReadUint16(8, duration1), ERR_OK);
-    EXPECT_EQ(buffer->ReadInt16(10, forwardSpeed1), ERR_OK);
-    EXPECT_EQ(buffer->ReadFloat(12, turningSpeed1), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint16(16, duration2), ERR_OK);
-    EXPECT_EQ(buffer->ReadInt16(18, forwardSpeed2), ERR_OK);
-    EXPECT_EQ(buffer->ReadFloat(20, turningSpeed2), ERR_OK);
-    EXPECT_EQ(buffer->ReadUint16(24, duration3), ERR_OK);
-    EXPECT_EQ(buffer->ReadInt16(26, forwardSpeed3), ERR_OK);
-    EXPECT_EQ(buffer->ReadFloat(28, turningSpeed3), ERR_OK);
-
-    EXPECT_EQ(duration1, 1000);
-    EXPECT_EQ(forwardSpeed1, 500);
-    EXPECT_FLOAT_EQ(turningSpeed1, 1.0f);
-    EXPECT_EQ(duration2, 1500);
-    EXPECT_EQ(forwardSpeed2, 600);
-    EXPECT_FLOAT_EQ(turningSpeed2, 1.5f);
-    EXPECT_EQ(duration3, 2000);
-    EXPECT_EQ(forwardSpeed3, 700);
-    EXPECT_FLOAT_EQ(turningSpeed3, 2.0f);
+    EXPECT_EQ(buffer->Size(), HEADER_SIZE + 3 * ROTATE_PARAM_SIZE);
+    VerifyBufferHeader(buffer, 700, 3);
+    VerifyRotateParamInBuffer(buffer, HEADER_SIZE, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED,
+        DEFAULT_TURNING_SPEED);
+    VerifyRotateParamInBuffer(buffer, HEADER_SIZE + ROTATE_PARAM_SIZE, 1500, 600, 1.5f);
+    VerifyRotateParamInBuffer(buffer, HEADER_SIZE + 2 * ROTATE_PARAM_SIZE, 2000, 700, 2.0f);
 }
 
 /**
@@ -290,16 +304,18 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Marshal_
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建命令对象
     std::vector<RotateParam> params;
     RotateParam param;
-    param.duration = 1000;
-    param.forwardSpeed = 500;
-    param.turningSpeed = 1.0f;
+    CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
     params.push_back(param);
-
     WheelSetMechRotationTraceCmd cmd(900, params);
     uint8_t initialResult = cmd.GetResult();
+
+    // When: 调用TriggerResponse方法，传入nullptr
     cmd.TriggerResponse(nullptr);
+
+    // Then: 验证结果未改变
     EXPECT_EQ(cmd.GetResult(), initialResult);
 }
 
@@ -310,18 +326,20 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerR
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建命令对象和小buffer
     std::vector<RotateParam> params;
     RotateParam param;
-    param.duration = 1000;
-    param.forwardSpeed = 500;
-    param.turningSpeed = 1.0f;
+    CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
     params.push_back(param);
-
     WheelSetMechRotationTraceCmd cmd(1000, params);
     uint8_t initialResult = cmd.GetResult();
     auto buffer = std::make_shared<MechDataBuffer>(1);
     ASSERT_NE(buffer, nullptr);
+
+    // When: 调用TriggerResponse方法，传入数据不足的buffer
     cmd.TriggerResponse(buffer);
+
+    // Then: 验证结果未改变
     EXPECT_EQ(cmd.GetResult(), initialResult);
 }
 
@@ -332,21 +350,23 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerR
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerResponse_003, TestSize.Level1)
 {
+    // Given: 创建命令对象和正常buffer
     std::vector<RotateParam> params;
     RotateParam param;
-    param.duration = 1000;
-    param.forwardSpeed = 500;
-    param.turningSpeed = 1.0f;
+    CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
     params.push_back(param);
-
     WheelSetMechRotationTraceCmd cmd(1100, params);
     auto buffer = std::make_shared<MechDataBuffer>(10);
     ASSERT_NE(buffer, nullptr);
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x21);
+    buffer->AppendUint8(CMD_SET);
+    buffer->AppendUint8(CMD_ID);
     buffer->AppendUint16(1100);
     buffer->AppendUint8(1);
+
+    // When: 调用TriggerResponse方法
     cmd.TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(cmd.GetResult(), 1);
 }
 
@@ -357,24 +377,26 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerR
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerResponse_004, TestSize.Level1)
 {
+    // Given: 创建命令对象、正常buffer和回调
     std::vector<RotateParam> params;
     RotateParam param;
-    param.duration = 1000;
-    param.forwardSpeed = 500;
-    param.turningSpeed = 1.0f;
+    CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
     params.push_back(param);
-
     WheelSetMechRotationTraceCmd cmd(1200, params);
     auto buffer = std::make_shared<MechDataBuffer>(10);
     ASSERT_NE(buffer, nullptr);
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x21);
+    buffer->AppendUint8(CMD_SET);
+    buffer->AppendUint8(CMD_ID);
     buffer->AppendUint8(0);
     bool callbackTriggered = false;
     cmd.SetResponseCallback([&callbackTriggered]() {
         callbackTriggered = true;
     });
+
+    // When: 调用TriggerResponse方法
     cmd.TriggerResponse(buffer);
+
+    // Then: 验证结果和回调
     EXPECT_EQ(cmd.GetResult(), 0);
     EXPECT_FALSE(callbackTriggered);
 }
@@ -386,19 +408,22 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_TriggerR
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_GetParams_001, TestSize.Level1)
 {
+    // Given: 创建包含多个点的命令对象
     std::vector<RotateParam> params;
     for (int i = 0; i < 3; i++) {
         RotateParam param;
-        param.duration = 1000 + i * 500;
-        param.forwardSpeed = 500 + i * 100;
-        param.turningSpeed = 1.0f + i * 0.5f;
+        CreateRotateParam(param, DEFAULT_DURATION + i * 500, DEFAULT_FORWARD_SPEED + i * 100,
+            DEFAULT_TURNING_SPEED + i * 0.5f);
         params.push_back(param);
     }
-
     WheelSetMechRotationTraceCmd cmd(1400, params);
+
+    // When: 调用GetParams方法
     const auto& cmdParams = cmd.GetParams();
+
+    // Then: 验证参数
     EXPECT_EQ(cmdParams.size(), 3);
-    EXPECT_EQ(cmdParams[0].duration, 1000);
+    EXPECT_EQ(cmdParams[0].duration, DEFAULT_DURATION);
     EXPECT_EQ(cmdParams[1].duration, 1500);
     EXPECT_EQ(cmdParams[2].duration, 2000);
 }
@@ -410,20 +435,22 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_GetParam
  */
 HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_GetResult_002, TestSize.Level1)
 {
+    // Given: 创建命令对象和buffer
     std::vector<RotateParam> params;
     RotateParam param;
-    param.duration = 1000;
-    param.forwardSpeed = 500;
-    param.turningSpeed = 1.0f;
+    CreateRotateParam(param, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED, DEFAULT_TURNING_SPEED);
     params.push_back(param);
-
     WheelSetMechRotationTraceCmd cmd(1600, params);
     auto buffer = std::make_shared<MechDataBuffer>(10);
     ASSERT_NE(buffer, nullptr);
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x21);
+    buffer->AppendUint8(CMD_SET);
+    buffer->AppendUint8(CMD_ID);
     buffer->AppendUint8(0);
+
+    // When: 调用TriggerResponse方法
     cmd.TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(cmd.GetResult(), 0);
 }
 
