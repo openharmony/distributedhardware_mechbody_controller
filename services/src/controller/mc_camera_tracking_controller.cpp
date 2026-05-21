@@ -718,6 +718,7 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
             if (item->GetObjectId() == lastTrackingFrame_->targetId) {
                 HILOGI("got detected object for id: %{public}d", lastTrackingFrame_->targetId);
                 selectedObject = item;
+                targetObject = item;
                 return ERR_OK;
             }
         }
@@ -729,6 +730,7 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
             std::abs(itemRect.topLeftY - trackingRegion.topLeftY) <= TRACKING_LOST_CHECK) {
             HILOGI("got detected object which is same as trackingRegion");
             selectedObject = item;
+            targetObject = item;
             return ERR_OK;
         }
     }
