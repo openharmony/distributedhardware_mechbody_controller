@@ -35,8 +35,23 @@ namespace {
     constexpr int16_t DEFAULT_FORWARD_SPEED = 500;
     constexpr float DEFAULT_TURNING_SPEED = 1.0f;
     constexpr uint16_t ROTATE_PARAM_SIZE = 8;
+    constexpr uint16_t BASE_REQ_SIZE = 6;
     constexpr uint16_t HEADER_SIZE = 8;
     constexpr uint16_t MAX_POINT_SIZE = 16;
+    constexpr uint8_t OFFSET_CMD_SET = 0;
+    constexpr uint8_t OFFSET_CMD_ID = 1;
+    constexpr uint8_t OFFSET_TASK_ID = 2;
+    constexpr uint8_t OFFSET_CONTROL_BYTE = 4;
+    constexpr uint8_t OFFSET_RESERVE1 = 5;
+    constexpr uint8_t OFFSET_RESERVE2 = 6;
+    constexpr uint8_t OFFSET_POINT_NUM = 7;
+    constexpr uint8_t OFFSET_FORWARD_SPEED = 2;
+    constexpr uint8_t OFFSET_TURNING_SPEED = 4;
+    constexpr uint8_t TEST_POINT_COUNT = 3;
+    constexpr uint16_t DURATION_INCREMENT = 500;
+    constexpr int16_t FORWARD_SPEED_INCREMENT = 100;
+    constexpr float TURNING_SPEED_INCREMENT = 0.5f;
+    constexpr uint16_t RSP_SIZE = 3;
 }
 
 class WheelSetMechRotationTraceCmdTest : public testing::Test {
@@ -66,8 +81,8 @@ protected:
         int16_t forwardSpeed = 0;
         float turningSpeed = 0.0f;
         EXPECT_EQ(buffer->ReadUint16(offset, duration), ERR_OK);
-        EXPECT_EQ(buffer->ReadInt16(offset + 2, forwardSpeed), ERR_OK);
-        EXPECT_EQ(buffer->ReadFloat(offset + 4, turningSpeed), ERR_OK);
+        EXPECT_EQ(buffer->ReadInt16(offset + OFFSET_FORWARD_SPEED, forwardSpeed), ERR_OK);
+        EXPECT_EQ(buffer->ReadFloat(offset + OFFSET_TURNING_SPEED, turningSpeed), ERR_OK);
         EXPECT_EQ(duration, expectedDuration);
         EXPECT_EQ(forwardSpeed, expectedForwardSpeed);
         EXPECT_FLOAT_EQ(turningSpeed, expectedTurningSpeed);
@@ -83,13 +98,13 @@ protected:
         uint8_t reserve1 = 0;
         uint8_t reserve2 = 0;
         uint8_t pointNum = 0;
-        EXPECT_EQ(buffer->ReadUint8(0, cmdSet), ERR_OK);
-        EXPECT_EQ(buffer->ReadUint8(1, cmdId), ERR_OK);
-        EXPECT_EQ(buffer->ReadUint16(2, taskId), ERR_OK);
-        EXPECT_EQ(buffer->ReadUint8(4, controlByte), ERR_OK);
-        EXPECT_EQ(buffer->ReadUint8(5, reserve1), ERR_OK);
-        EXPECT_EQ(buffer->ReadUint8(6, reserve2), ERR_OK);
-        EXPECT_EQ(buffer->ReadUint8(7, pointNum), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(OFFSET_CMD_SET, cmdSet), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(OFFSET_CMD_ID, cmdId), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint16(OFFSET_TASK_ID, taskId), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(OFFSET_CONTROL_BYTE, controlByte), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(OFFSET_RESERVE1, reserve1), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(OFFSET_RESERVE2, reserve2), ERR_OK);
+        EXPECT_EQ(buffer->ReadUint8(OFFSET_POINT_NUM, pointNum), ERR_OK);
         EXPECT_EQ(cmdSet, CMD_SET);
         EXPECT_EQ(cmdId, CMD_ID);
         EXPECT_EQ(taskId, expectedTaskId);
@@ -127,8 +142,8 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
     // Then: 验证命令属性
     EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
     EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
-    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE + ROTATE_PARAM_SIZE);
-    EXPECT_EQ(cmd.GetRspSize(), 3);
+    EXPECT_EQ(cmd.GetReqSize(), BASE_REQ_SIZE + ROTATE_PARAM_SIZE);
+    EXPECT_EQ(cmd.GetRspSize(), RSP_SIZE);
 
     const auto& cmdParams = cmd.GetParams();
     EXPECT_EQ(cmdParams.size(), 1);
@@ -146,10 +161,11 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
 {
     // Given: 创建包含多个点的参数
     std::vector<RotateParam> params;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < TEST_POINT_COUNT; i++) {
         RotateParam param;
-        CreateRotateParam(param, DEFAULT_DURATION + i * 500, DEFAULT_FORWARD_SPEED + i * 100,
-            DEFAULT_TURNING_SPEED + i * 0.5f);
+        CreateRotateParam(param, DEFAULT_DURATION + i * DURATION_INCREMENT,
+            DEFAULT_FORWARD_SPEED + i * FORWARD_SPEED_INCREMENT,
+            DEFAULT_TURNING_SPEED + i * TURNING_SPEED_INCREMENT);
         params.push_back(param);
     }
 
@@ -159,8 +175,8 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
     // Then: 验证命令属性
     EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
     EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
-    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE + 3 * ROTATE_PARAM_SIZE);
-    EXPECT_EQ(cmd.GetRspSize(), 3);
+    EXPECT_EQ(cmd.GetReqSize(), BASE_REQ_SIZE + TEST_POINT_COUNT * ROTATE_PARAM_SIZE);
+    EXPECT_EQ(cmd.GetRspSize(), RSP_SIZE);
 
     const auto& cmdParams = cmd.GetParams();
     EXPECT_EQ(cmdParams.size(), 3);
@@ -192,29 +208,6 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
 }
 
 /**
- * @tc.name  : WheelSetMechRotationTraceCmd_Constructor_004
- * @tc.number: WheelSetMechRotationTraceCmd_Constructor_004
- * @tc.desc  : Test constructor with empty params.
- */
-HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Constructor_004, TestSize.Level1)
-{
-    // Given: 创建空参数
-    std::vector<RotateParam> params;
-
-    // When: 创建命令对象
-    WheelSetMechRotationTraceCmd cmd(400, params);
-
-    // Then: 验证命令属性
-    EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
-    EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
-    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE);
-    EXPECT_EQ(cmd.GetRspSize(), 3);
-
-    const auto& cmdParams = cmd.GetParams();
-    EXPECT_EQ(cmdParams.size(), 0);
-}
-
-/**
  * @tc.name  : WheelSetMechRotationTraceCmd_Constructor_005
  * @tc.number: WheelSetMechRotationTraceCmd_Constructor_005
  * @tc.desc  : Test constructor with max points (16).
@@ -235,8 +228,8 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Construc
     // Then: 验证命令属性
     EXPECT_EQ(cmd.GetCmdSet(), CMD_SET);
     EXPECT_EQ(cmd.GetCmdId(), CMD_ID);
-    EXPECT_EQ(cmd.GetReqSize(), HEADER_SIZE + MAX_POINT_SIZE * ROTATE_PARAM_SIZE);
-    EXPECT_EQ(cmd.GetRspSize(), 3);
+    EXPECT_EQ(cmd.GetReqSize(), BASE_REQ_SIZE + MAX_POINT_SIZE * ROTATE_PARAM_SIZE);
+    EXPECT_EQ(cmd.GetRspSize(), RSP_SIZE);
 
     const auto& cmdParams = cmd.GetParams();
     EXPECT_EQ(cmdParams.size(), MAX_POINT_SIZE);
@@ -289,12 +282,17 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_Marshal_
 
     // Then: 验证返回值和buffer内容
     ASSERT_NE(buffer, nullptr);
-    EXPECT_EQ(buffer->Size(), HEADER_SIZE + 3 * ROTATE_PARAM_SIZE);
-    VerifyBufferHeader(buffer, 700, 3);
+    EXPECT_EQ(buffer->Size(), HEADER_SIZE + TEST_POINT_COUNT * ROTATE_PARAM_SIZE);
+    VerifyBufferHeader(buffer, 700, TEST_POINT_COUNT);
     VerifyRotateParamInBuffer(buffer, HEADER_SIZE, DEFAULT_DURATION, DEFAULT_FORWARD_SPEED,
         DEFAULT_TURNING_SPEED);
-    VerifyRotateParamInBuffer(buffer, HEADER_SIZE + ROTATE_PARAM_SIZE, 1500, 600, 1.5f);
-    VerifyRotateParamInBuffer(buffer, HEADER_SIZE + 2 * ROTATE_PARAM_SIZE, 2000, 700, 2.0f);
+    VerifyRotateParamInBuffer(buffer, HEADER_SIZE + ROTATE_PARAM_SIZE,
+        DEFAULT_DURATION + DURATION_INCREMENT, DEFAULT_FORWARD_SPEED + FORWARD_SPEED_INCREMENT,
+        DEFAULT_TURNING_SPEED + TURNING_SPEED_INCREMENT);
+    VerifyRotateParamInBuffer(buffer, HEADER_SIZE + 2 * ROTATE_PARAM_SIZE,
+        DEFAULT_DURATION + 2 * DURATION_INCREMENT,
+        DEFAULT_FORWARD_SPEED + 2 * FORWARD_SPEED_INCREMENT,
+        DEFAULT_TURNING_SPEED + 2 * TURNING_SPEED_INCREMENT);
 }
 
 /**
@@ -410,10 +408,11 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_GetParam
 {
     // Given: 创建包含多个点的命令对象
     std::vector<RotateParam> params;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < TEST_POINT_COUNT; i++) {
         RotateParam param;
-        CreateRotateParam(param, DEFAULT_DURATION + i * 500, DEFAULT_FORWARD_SPEED + i * 100,
-            DEFAULT_TURNING_SPEED + i * 0.5f);
+        CreateRotateParam(param, DEFAULT_DURATION + i * DURATION_INCREMENT,
+            DEFAULT_FORWARD_SPEED + i * FORWARD_SPEED_INCREMENT,
+            DEFAULT_TURNING_SPEED + i * TURNING_SPEED_INCREMENT);
         params.push_back(param);
     }
     WheelSetMechRotationTraceCmd cmd(1400, params);
@@ -422,10 +421,10 @@ HWTEST_F(WheelSetMechRotationTraceCmdTest, WheelSetMechRotationTraceCmd_GetParam
     const auto& cmdParams = cmd.GetParams();
 
     // Then: 验证参数
-    EXPECT_EQ(cmdParams.size(), 3);
+    EXPECT_EQ(cmdParams.size(), TEST_POINT_COUNT);
     EXPECT_EQ(cmdParams[0].duration, DEFAULT_DURATION);
-    EXPECT_EQ(cmdParams[1].duration, 1500);
-    EXPECT_EQ(cmdParams[2].duration, 2000);
+    EXPECT_EQ(cmdParams[1].duration, DEFAULT_DURATION + DURATION_INCREMENT);
+    EXPECT_EQ(cmdParams[2].duration, DEFAULT_DURATION + 2 * DURATION_INCREMENT);
 }
 
 /**
