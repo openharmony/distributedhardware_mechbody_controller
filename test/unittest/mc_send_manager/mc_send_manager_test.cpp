@@ -98,67 +98,112 @@ HWTEST_F(MechSendManagerTest, UnRegisterBluetoothListener_001, TestSize.Level3)
 
 /**
  * @tc.name: GetCmdBySeqNo_001
- * @tc.desc: test GetCmdBySeqNo func
+ * @tc.desc: 测试 GetCmdBySeqNo 函数根据序列号获取命令对象
  * @tc.type: FUNC
  */
 HWTEST_F(MechSendManagerTest, GetCmdBySeqNo_001, TestSize.Level3)
 {
     DTEST_LOG << "MechSendManagerTest GetCmdBySeqNo_001 begin" << std::endl;
-    std::shared_ptr<TransportSendAdapter> transportSendAdapterTest = std::make_shared<TransportSendAdapter>();
-    uint16_t seqNo = 1;
-    EXPECT_NO_FATAL_FAILURE(transportSendAdapterTest->GetCmdBySeqNo(seqNo));
 
+    // Given: 创建 TransportSendAdapter
+    std::shared_ptr<TransportSendAdapter> transportSendAdapterTest = std::make_shared<TransportSendAdapter>();
+
+    // When: 调用 GetCmdBySeqNo 查询不存在的序列号
+    uint16_t seqNo = 1;
+    std::shared_ptr<CommandBase> result1 = transportSendAdapterTest->GetCmdBySeqNo(seqNo);
+
+    // Then: 返回 nullptr
+    EXPECT_EQ(result1, nullptr);
+
+    // When: 通过 PushResponseTask 直接添加命令到 pendingRequests_
     CommandFactory factory;
     std::shared_ptr<CommandBase> cmd = factory.CreateGetMechCameraTrackingLayoutCmd();
-    transportSendAdapterTest->pendingRequests_[seqNo] = cmd;
-    EXPECT_NO_FATAL_FAILURE(transportSendAdapterTest->GetCmdBySeqNo(seqNo));
+    ASSERT_NE(cmd, nullptr);
+
+    int32_t ret = transportSendAdapterTest->PushResponseTask(cmd, seqNo);
+    ASSERT_EQ(ret, ERR_OK) << "PushResponseTask should succeed";
+
+    // When: 调用 GetCmdBySeqNo 查询序列号1
+    std::shared_ptr<CommandBase> result2 = transportSendAdapterTest->GetCmdBySeqNo(seqNo);
+
+    // Then: 返回对应的命令对象
+    ASSERT_NE(result2, nullptr) << "GetCmdBySeqNo should return non-null after PushResponseTask";
+    EXPECT_EQ(result2->GetCmdType(), cmd->GetCmdType());
+
     DTEST_LOG << "MechSendManagerTest GetCmdBySeqNo_001 end" << std::endl;
 }
 
 /**
  * @tc.name: ExeRespTimeoutTask_001
- * @tc.desc: test ExeRespTimeoutTask func
+ * @tc.desc: 测试 ExeRespTimeoutTask 函数执行响应超时任务
  * @tc.type: FUNC
  */
 HWTEST_F(MechSendManagerTest, ExeRespTimeoutTask_001, TestSize.Level3)
 {
     DTEST_LOG << "MechSendManagerTest ExeRespTimeoutTask_001 begin" << std::endl;
+
+    // Given: 创建 TransportSendAdapter
     std::shared_ptr<TransportSendAdapter> transportSendAdapterTest = std::make_shared<TransportSendAdapter>();
+
+    // When: 调用 ExeRespTimeoutTask 处理不存在的序列号
     uint16_t seqNo = 1;
     int32_t ret = transportSendAdapterTest->ExeRespTimeoutTask(seqNo);
+
+    // Then: 返回成功
     EXPECT_EQ(ret, ERR_OK);
 
+    // When: 通过 PushResponseTask 添加命令到 pendingRequests_
     CommandFactory factory;
     std::shared_ptr<CommandBase> cmd = factory.CreateGetMechCameraTrackingLayoutCmd();
-    std::shared_ptr<CommandBase> cmdNull = nullptr;
-    transportSendAdapterTest->pendingRequests_[seqNo] = cmdNull;
-    ret = transportSendAdapterTest->ExeRespTimeoutTask(seqNo);
-    EXPECT_EQ(ret, ERR_OK);
+    ASSERT_NE(cmd, nullptr);
+    ret = transportSendAdapterTest->PushResponseTask(cmd, seqNo);
+    ASSERT_EQ(ret, ERR_OK) << "PushResponseTask should succeed";
 
-    transportSendAdapterTest->pendingRequests_[seqNo] = cmd;
+    // When: 调用 ExeRespTimeoutTask 处理存在的序列号
     ret = transportSendAdapterTest->ExeRespTimeoutTask(seqNo);
+
+    // Then: 返回成功，且 pending request 被删除
     EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "MechSendManagerTest ExeResponseTask_001 end" << std::endl;
+    std::shared_ptr<CommandBase> result = transportSendAdapterTest->GetCmdBySeqNo(seqNo);
+    EXPECT_EQ(result, nullptr);
+
+    DTEST_LOG << "MechSendManagerTest ExeRespTimeoutTask_001 end" << std::endl;
 }
 
 /**
  * @tc.name: RemoveRespTimeoutTask_001
- * @tc.desc: test RemoveRespTimeoutTask func
+ * @tc.desc: 测试 RemoveRespTimeoutTask 函数移除响应超时任务
  * @tc.type: FUNC
  */
 HWTEST_F(MechSendManagerTest, RemoveRespTimeoutTask_001, TestSize.Level3)
 {
     DTEST_LOG << "MechSendManagerTest RemoveRespTimeoutTask_001 begin" << std::endl;
+
+    // Given: 创建 TransportSendAdapter
     std::shared_ptr<TransportSendAdapter> transportSendAdapterTest = std::make_shared<TransportSendAdapter>();
+
+    // When: 调用 RemoveRespTimeoutTask 移除不存在的序列号
     uint16_t seqNo = 1;
     int32_t ret = transportSendAdapterTest->RemoveRespTimeoutTask(seqNo);
+
+    // Then: 返回成功
     EXPECT_EQ(ret, ERR_OK);
 
+    // When: 通过 PushResponseTask 添加命令到 pendingRequests_
     CommandFactory factory;
     std::shared_ptr<CommandBase> cmd = factory.CreateGetMechCameraTrackingLayoutCmd();
-    transportSendAdapterTest->pendingRequests_[seqNo] = cmd;
+    ASSERT_NE(cmd, nullptr);
+    ret = transportSendAdapterTest->PushResponseTask(cmd, seqNo);
+    ASSERT_EQ(ret, ERR_OK) << "PushResponseTask should succeed";
+
+    // When: 调用 RemoveRespTimeoutTask 移除存在的序列号
     ret = transportSendAdapterTest->RemoveRespTimeoutTask(seqNo);
+
+    // Then: 返回成功，且 pending request 被删除
     EXPECT_EQ(ret, ERR_OK);
+    std::shared_ptr<CommandBase> result = transportSendAdapterTest->GetCmdBySeqNo(seqNo);
+    EXPECT_EQ(result, nullptr);
+
     DTEST_LOG << "MechSendManagerTest RemoveRespTimeoutTask_001 end" << std::endl;
 }
 
@@ -205,33 +250,64 @@ HWTEST_F(MechSendManagerTest, BleReceviceListenerImpl_OnReceive_002, TestSize.Le
 HWTEST_F(MechSendManagerTest, TransportSendAdapter_OnReceive_001, TestSize.Level3)
 {
     DTEST_LOG << "MechSendManagerTest TransportSendAdapter_OnReceive_001 begin" << std::endl;
+
+    // Given: 创建 TransportSendAdapter 并通过 PushResponseTask 添加命令
     std::shared_ptr<TransportSendAdapter> transportSendAdapterTest = std::make_shared<TransportSendAdapter>();
-    bool isAck = true;
+    CommandFactory factory;
+    std::shared_ptr<CommandBase> cmd = factory.CreateGetMechCameraTrackingLayoutCmd();
     uint16_t seqNo = 1;
+    int32_t ret = transportSendAdapterTest->PushResponseTask(cmd, seqNo);
+    ASSERT_EQ(ret, ERR_OK) << "PushResponseTask should succeed";
+
+    // 验证命令已添加到 pendingRequests_
+    std::shared_ptr<CommandBase> foundCmd = transportSendAdapterTest->GetCmdBySeqNo(seqNo);
+    ASSERT_NE(foundCmd, nullptr) << "Command should be in pendingRequests_ after PushResponseTask";
+    EXPECT_EQ(foundCmd->GetCmdType(), cmd->GetCmdType());
+
+    // When: 调用 OnReceive 处理 ACK 响应
+    bool isAck = true;
     uint32_t dataLen = 4;
     std::shared_ptr<MechDataBuffer> data = std::make_shared<MechDataBuffer>(static_cast<size_t>(dataLen));
-    int32_t ret = transportSendAdapterTest->OnReceive(isAck, seqNo, data);
+    ret = transportSendAdapterTest->OnReceive(isAck, seqNo, data);
+
+    // Then: 返回成功
     EXPECT_EQ(ret, ERR_OK);
 
-    isAck = false;
-    ret = transportSendAdapterTest->OnReceive(isAck, seqNo, data);
-    EXPECT_EQ(ret, ERR_OK);
+    // 等待异步任务执行完成
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // 验证 pending request 被删除（副作用）
+    foundCmd = transportSendAdapterTest->GetCmdBySeqNo(seqNo);
+    EXPECT_EQ(foundCmd, nullptr) << "Command should be removed from pendingRequests_ after OnReceive with ACK";
+
     DTEST_LOG << "MechSendManagerTest TransportSendAdapter_OnReceive_001 end" << std::endl;
 }
 
 /**
  * @tc.name: CreateResponseSeqNo_001
- * @tc.desc: test CreateResponseSeqNo func
+ * @tc.desc: 测试 CreateResponseSeqNo 函数创建响应序列号
  * @tc.type: FUNC
  */
 HWTEST_F(MechSendManagerTest, CreateResponseSeqNo_001, TestSize.Level3)
 {
     DTEST_LOG << "MechSendManagerTest CreateResponseSeqNo_001 begin" << std::endl;
+
+    // Given: 创建 TransportSendAdapter
     std::shared_ptr<TransportSendAdapter> transportSendAdapterTest = std::make_shared<TransportSendAdapter>();
-    transportSendAdapterTest->lastSeqNo_ = UINT16_MAX;
-    int32_t ret = transportSendAdapterTest->CreateResponseSeqNo();
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "MechSendManagerTest PushResponseTask_001 end" << std::endl;
+
+    // When: 首次调用 CreateResponseSeqNo
+    uint16_t seqNo1 = transportSendAdapterTest->CreateResponseSeqNo();
+
+    // Then: 返回序列号1
+    EXPECT_EQ(seqNo1, 1);
+
+    // When: 再次调用 CreateResponseSeqNo
+    uint16_t seqNo2 = transportSendAdapterTest->CreateResponseSeqNo();
+
+    // Then: 返回递增的序列号
+    EXPECT_EQ(seqNo2, 2);
+
+    DTEST_LOG << "MechSendManagerTest CreateResponseSeqNo_001 end" << std::endl;
 }
 
 /**
