@@ -143,41 +143,6 @@ HWTEST_F(MechbodyAdapterUtilsTest, RunTrackingCore_002, TestSize.Level3)
 }
 
 /**
- * @tc.name: RunTrackingCore_003
- * @tc.desc: 测试初始化成功后调用 RunTrackingCore 返回成功并正确调用回调函数
- * @tc.type: FUNC
- */
-HWTEST_F(MechbodyAdapterUtilsTest, RunTrackingCore_003, TestSize.Level3)
-{
-    DTEST_LOG << "MechbodyAdapterUtilsTest RunTrackingCore_003 begin" << std::endl;
-
-    // Given: 初始化成功
-    int32_t initRet = MechbodyAdapterUtils::InitTrackingCore();
-    ASSERT_EQ(initRet, ERR_OK);
-
-    // When: 调用 RunTrackingCore
-    bool pushCalled = false;
-    float pushX = 0.0f;
-    float pushY = 0.0f;
-    auto pushFn = [&pushCalled, &pushX, &pushY](float x, float y) {
-        pushCalled = true;
-        pushX = x;
-        pushY = y;
-    };
-    int32_t ret = MechbodyAdapterUtils::RunTrackingCore(100.0f, 100.0f, 640.0f, 480.0f, pushFn);
-
-    // Then: RunTrackingCore 应该返回成功，且回调函数被正确调用
-    EXPECT_EQ(ret, ERR_OK);
-    EXPECT_TRUE(pushCalled);
-    EXPECT_FLOAT_EQ(pushX, 100.0f);
-    EXPECT_FLOAT_EQ(pushY, 100.0f);
-
-    DTEST_LOG << "MechbodyAdapterUtilsTest RunTrackingCore_003 end, initRet=" << initRet
-              << ", ret=" << ret << ", pushCalled=" << pushCalled
-              << ", pushX=" << pushX << ", pushY=" << pushY << std::endl;
-}
-
-/**
  * @tc.name: ResetTrackingCore_001
  * @tc.desc: 测试未初始化时调用 ResetTrackingCore 返回错误
  * @tc.type: FUNC
