@@ -30,17 +30,8 @@ namespace {
     const std::string TAG = "McProtocolConvertorFuzzTest";
     const uint32_t MAX_DATA_SIZE = 512;
     const size_t MAX_SERVICE_NAME_LENGTH = 255;
-    const uint8_t TEST_FUNCTION_COUNT = 4;
     const uint32_t ZERO_VALUE = 0;
     const uint8_t MAX_OPT_TYPE_VALUE = 3;
-    const size_t MIN_INPUT_SIZE = 1;
-
-    enum class TestFunctionId {
-        FUZZ_VALIDATE = 0,
-        FUZZ_CONVERT = 1,
-        FUZZ_GET_DATA = 2,
-        FUZZ_DATA_BUFFER_OPERATIONS = 3
-    };
 }
 
 static void TestValidate(FuzzedDataProvider &provider)
@@ -53,7 +44,12 @@ static void TestValidate(FuzzedDataProvider &provider)
         std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataLen);
         if (!testData.empty()) {
             dataPtr = testData.data();
+            dataLen = testData.size();
+        } else {
+            dataLen = ZERO_VALUE;
         }
+    } else {
+        dataLen = ZERO_VALUE;
     }
 
     ProtocolConverter protocolConverter;
@@ -74,8 +70,9 @@ static std::shared_ptr<MechDataBuffer> CreateDataBufferWithData(FuzzedDataProvid
         return dataBuffer;
     }
 
-    dataBuffer->SetRange(ZERO_VALUE, dataSize);
-    if (memcpy_s(dataBuffer->Data(), dataBuffer->Size(), testData.data(), dataSize) != 0) {
+    uint32_t actualDataSize = testData.size();
+    dataBuffer->SetRange(ZERO_VALUE, actualDataSize);
+    if (memcpy_s(dataBuffer->Data(), dataBuffer->Size(), testData.data(), actualDataSize) != 0) {
         return nullptr;
     }
 
@@ -138,29 +135,10 @@ static void TestDataBufferOperations(FuzzedDataProvider &provider)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < MIN_INPUT_SIZE) {
-        return 0;
-    }
-
     FuzzedDataProvider provider(data, size);
-    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % TEST_FUNCTION_COUNT;
-
-    switch (static_cast<TestFunctionId>(testType)) {
-        case TestFunctionId::FUZZ_VALIDATE:
-            TestValidate(provider);
-            break;
-        case TestFunctionId::FUZZ_CONVERT:
-            TestConvert(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_DATA:
-            TestGetData(provider);
-            break;
-        case TestFunctionId::FUZZ_DATA_BUFFER_OPERATIONS:
-            TestDataBufferOperations(provider);
-            break;
-        default:
-            break;
-    }
-
+    TestValidate(provider);
+    TestConvert(provider);
+    TestGetData(provider);
+    TestDataBufferOperations(provider);
     return 0;
 }

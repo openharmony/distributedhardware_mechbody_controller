@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef BLE_SEND_MANAGER_FOUR_FUZZER_H
-#define BLE_SEND_MANAGER_FOUR_FUZZER_H
+#ifndef BLESENDMANAGERFOUR_FUZZER_H
+#define BLESENDMANAGERFOUR_FUZZER_H
 
-#endif // BLE_SEND_MANAGER_FOUR_FUZZER_H
+#define FUZZ_PROJECT_NAME "blesendmanagerfour_fuzzer"
+
+#endif

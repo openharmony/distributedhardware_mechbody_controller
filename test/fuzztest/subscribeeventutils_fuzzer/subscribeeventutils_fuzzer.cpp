@@ -47,27 +47,31 @@ enum class TestFunctionId {
 
 void FuzzGetInstance(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    SubscribeEventUtils::GetInstance();
+    if (provider.ConsumeBool()) {
+        SubscribeEventUtils::GetInstance();
+    }
 }
 
 void FuzzInit(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    SubscribeEventUtils::GetInstance().Init();
+    if (provider.ConsumeBool()) {
+        SubscribeEventUtils::GetInstance().Init();
+    }
 }
 
 void FuzzUnInit(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    SubscribeEventUtils::GetInstance().UnInit();
+    if (provider.ConsumeBool()) {
+        SubscribeEventUtils::GetInstance().UnInit();
+    }
 }
 
 void FuzzAddEventService(FuzzedDataProvider &provider)
 {
-    (void)provider;
     static MockBaseService service;
-    SubscribeEventUtils::GetInstance().AddEventService(&service);
+    if (provider.ConsumeBool()) {
+        SubscribeEventUtils::GetInstance().AddEventService(&service);
+    }
 }
 
 void FuzzOnReceiveEvent(FuzzedDataProvider &provider)

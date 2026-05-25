@@ -56,23 +56,26 @@ enum class TestFunctionId {
 
 void FuzzConstructor(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    RegisterMechCliffInfoCmd cmd;
+    if (provider.ConsumeBool()) {
+        RegisterMechCliffInfoCmd cmd;
+    }
 }
 
 void FuzzMarshal(FuzzedDataProvider &provider)
 {
-    (void)provider;
     RegisterMechCliffInfoCmd cmd;
-    auto buffer = cmd.Marshal();
+    if (provider.ConsumeBool()) {
+        auto buffer = cmd.Marshal();
+    }
 }
 
 void FuzzUnmarshalWithNull(FuzzedDataProvider &provider)
 {
-    (void)provider;
     RegisterMechCliffInfoCmd cmd;
-    bool result = cmd.Unmarshal(nullptr);
-    (void)result;
+    if (provider.ConsumeBool()) {
+        bool result = cmd.Unmarshal(nullptr);
+        (void)result;
+    }
 }
 
 void FuzzUnmarshalWithSmallBuffer(FuzzedDataProvider &provider)
@@ -97,17 +100,19 @@ void FuzzUnmarshalWithZeroCliff(FuzzedDataProvider &provider)
         return;
     }
 
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x40);
+    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
+    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
 
     for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
+        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
     }
 
     buffer->AppendUint8(0x00);
 
     bool result = cmd.Unmarshal(buffer);
-    (void)result;
+    if (provider.ConsumeBool()) {
+        (void)result;
+    }
 }
 
 void FuzzUnmarshalWithOneCliff(FuzzedDataProvider &provider)
@@ -170,10 +175,9 @@ void FuzzUnmarshalWithMultipleCliffs(FuzzedDataProvider &provider)
 
 void FuzzUnmarshalWithMaxCliffs(FuzzedDataProvider &provider)
 {
-    (void)provider;
     RegisterMechCliffInfoCmd cmd;
 
-    uint8_t cliffNums = MAX_CLIFF_NUMS;
+    uint8_t cliffNums = provider.ConsumeBool() ? MAX_CLIFF_NUMS : provider.ConsumeIntegral<uint8_t>();
     size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + cliffNums * (BIT_OFFSET_2 + FUZZ_CLIFF_INFO_SIZE);
 
     auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
@@ -181,22 +185,24 @@ void FuzzUnmarshalWithMaxCliffs(FuzzedDataProvider &provider)
         return;
     }
 
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x40);
+    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
+    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
 
     for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
+        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
     }
 
     buffer->AppendUint8(cliffNums);
 
     for (uint8_t i = FUZZ_ZERO; i < cliffNums; i++) {
-        buffer->AppendInt16(0x0000);
-        buffer->AppendUint8(0x00);
+        buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
+        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
     }
 
     bool result = cmd.Unmarshal(buffer);
-    (void)result;
+    if (provider.ConsumeBool()) {
+        (void)result;
+    }
 }
 
 void FuzzUnmarshalWithInvalidLength(FuzzedDataProvider &provider)
@@ -257,9 +263,10 @@ void FuzzUnmarshalWithRandomData(FuzzedDataProvider &provider)
 
 void FuzzTriggerResponseWithNull(FuzzedDataProvider &provider)
 {
-    (void)provider;
     RegisterMechCliffInfoCmd cmd;
-    cmd.TriggerResponse(nullptr);
+    if (provider.ConsumeBool()) {
+        cmd.TriggerResponse(nullptr);
+    }
 }
 
 void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
@@ -278,26 +285,29 @@ void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
 
 void FuzzGetCliffs(FuzzedDataProvider &provider)
 {
-    (void)provider;
     RegisterMechCliffInfoCmd cmd;
-    std::vector<CliffInfo> cliffs = cmd.GetCliffs();
-    (void)cliffs;
+    if (provider.ConsumeBool()) {
+        std::vector<CliffInfo> cliffs = cmd.GetCliffs();
+        (void)cliffs;
+    }
 }
 
 void FuzzGetCliffNums(FuzzedDataProvider &provider)
 {
-    (void)provider;
     RegisterMechCliffInfoCmd cmd;
-    uint8_t cliffNums = cmd.GetCliffNums();
-    (void)cliffNums;
+    if (provider.ConsumeBool()) {
+        uint8_t cliffNums = cmd.GetCliffNums();
+        (void)cliffNums;
+    }
 }
 
 void FuzzGetResult(FuzzedDataProvider &provider)
 {
-    (void)provider;
     RegisterMechCliffInfoCmd cmd;
-    uint8_t result = cmd.GetResult();
-    (void)result;
+    if (provider.ConsumeBool()) {
+        uint8_t result = cmd.GetResult();
+        (void)result;
+    }
 }
 
 void FuzzFullWorkflow(FuzzedDataProvider &provider)
@@ -369,6 +379,7 @@ void RunBasicFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
             FuzzGetResult(provider);
             break;
         default:
+            (void)provider;
             break;
     }
 }

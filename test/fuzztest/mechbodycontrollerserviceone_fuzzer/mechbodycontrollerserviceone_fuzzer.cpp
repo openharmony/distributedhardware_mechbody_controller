@@ -123,6 +123,55 @@ void SetTrackingEnabledFuzzTest(const uint8_t *data, size_t size)
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
     mechBodyControllerService.SetTrackingEnabled(isEnabled);
 }
+
+void GetAppNameByTokenIdFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < sizeof(uint32_t))) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    uint32_t tokenId = fdp.ConsumeIntegral<uint32_t>();
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.GetAppNameByTokenId(tokenId);
+}
+
+void JudgeDeviceEnableSwitchAndReportFocustrackingStartEventFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < sizeof(uint32_t))) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    uint32_t tokenId = fdp.ConsumeIntegral<uint32_t>();
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.JudgeDeviceEnableSwitchAndReportFocustrackingStartEvent(tokenId);
+}
+
+void JudgeAppEnableSwitchAndReportFocustrackingStartEventFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < sizeof(uint32_t))) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    uint32_t tokenId = fdp.ConsumeIntegral<uint32_t>();
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.JudgeAppEnableSwitchAndReportFocustrackingStartEvent(tokenId);
+}
+
+void CleanMotionManagersFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.CleanMotionManagers();
+}
 }
 
 /* Fuzzer entry point */
@@ -134,5 +183,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnDeviceConnectedFuzzTest(data, size);
     OHOS::GetAttachedDevicesFuzzTest(data, size);
     OHOS::SetTrackingEnabledFuzzTest(data, size);
+    OHOS::GetAppNameByTokenIdFuzzTest(data, size);
+    OHOS::JudgeDeviceEnableSwitchAndReportFocustrackingStartEventFuzzTest(data, size);
+    OHOS::JudgeAppEnableSwitchAndReportFocustrackingStartEventFuzzTest(data, size);
+    OHOS::CleanMotionManagersFuzzTest(data, size);
     return 0;
 }

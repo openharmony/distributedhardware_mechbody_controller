@@ -49,8 +49,7 @@ MechBodyControllerService::~MechBodyControllerService()
 {
 }
 
-int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId, bool isFirstConnect,
-    const uint32_t &deviceIdentifier)
+int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId, bool isFirstConnect, const uint32_t &deviceIdentifier)
 {
     return 0;
 }
@@ -236,10 +235,25 @@ void GetMaxRotationSpeedInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> me
 }
 
 void RotateBySpeedInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                const uint8_t *data,
-                                size_t size)
+                                 const uint8_t *data,
+                                 size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_BY_SPEED);
+    MessageParcel datas;
+    datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
+    datas.WriteBuffer(data, size);
+    datas.RewindRead(0);
+    MessageParcel reply;
+    MessageOption option;
+
+    mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
+}
+
+void UnSubscribeCallbackInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
+                                      const uint8_t *data,
+                                      size_t size)
+{
+    uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::UN_SUBSCRIBE_CALLBACK);
     MessageParcel datas;
     datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
     datas.WriteBuffer(data, size);
@@ -261,5 +275,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetMaxRotationTimeInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::GetMaxRotationSpeedInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::RotateBySpeedInnerFuzzTest(mechBodyControllerStubPtr, data, size);
+    OHOS::UnSubscribeCallbackInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     return 0;
 }

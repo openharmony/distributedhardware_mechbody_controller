@@ -8,14 +8,14 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either or implied.
+ express * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
-#ifndef MCCONNECTMANAGER_FUZZER_H
-#define MCCONNECTMANAGER_FUZZER_H
+#ifndef MCCONNECTMANAGERONE_FUZZER_H
+#define MCCONNECTMANAGERONE_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "mcconnectmanager_fuzzer"
+#define FUZZ_PROJECT_NAME "mcconnectmanagerone_fuzzer"
 
 #endif

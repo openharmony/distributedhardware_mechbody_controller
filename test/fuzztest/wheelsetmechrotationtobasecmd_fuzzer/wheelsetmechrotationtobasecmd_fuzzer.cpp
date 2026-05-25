@@ -42,8 +42,11 @@ enum class TestFunctionId {
 
 void FuzzConstructorDefault(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    RotateToBaseParam params(0, 0, 0, 0.0f);
+    uint16_t taskId = provider.ConsumeBool() ? 0 : provider.ConsumeIntegral<uint16_t>();
+    uint16_t rotateTime = provider.ConsumeBool() ? 0 : provider.ConsumeIntegral<uint16_t>();
+    int16_t forwardSpeed = provider.ConsumeBool() ? 0 : provider.ConsumeIntegral<int16_t>();
+    float turningSpeed = provider.ConsumeBool() ? 0.0f : provider.ConsumeFloatingPoint<float>();
+    RotateToBaseParam params(taskId, rotateTime, forwardSpeed, turningSpeed);
     WheelSetMechRotationToBaseCmd cmd(params);
 }
 

@@ -29,15 +29,7 @@ using namespace OHOS::MechBodyController;
 namespace {
     const std::string TAG = "McSendAdapterFuzzTest";
     const uint32_t MAX_DATA_SIZE = 4096;
-    const uint8_t TEST_FUNCTION_COUNT = 3;
-    const size_t MIN_INPUT_SIZE = 1;
     const uint32_t MIN_OFFSET = 0;
-
-    enum class TestFunctionId {
-        FUZZ_BLE_RECEIVE_LISTENER = 0,
-        FUZZ_DATA_BUFFER_OPERATIONS = 1,
-        FUZZ_PROTOCOL_CONVERTER = 2
-    };
 }
 
 class MockTransportSendAdapter : public std::enable_shared_from_this<MockTransportSendAdapter> {
@@ -104,7 +96,7 @@ static void TestBleReceiveListener(FuzzedDataProvider &provider)
     std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataLen);
 
     const uint8_t *dataPtr = testData.empty() ? nullptr : testData.data();
-    listener.OnReceive(dataPtr, dataLen);
+    listener.OnReceive(dataPtr, testData.size());
 }
 
 static void TestDataBufferOperations(FuzzedDataProvider &provider)
@@ -132,15 +124,16 @@ static void TestProtocolConverter(FuzzedDataProvider &provider)
     std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataLen);
 
     const uint8_t *dataPtr = testData.empty() ? nullptr : testData.data();
+    uint32_t actualDataLen = testData.size();
 
     ProtocolConverter protocolConverter;
-    protocolConverter.Validate(dataPtr, dataLen);
+    protocolConverter.Validate(dataPtr, actualDataLen);
 
-    if (dataLen > MIN_OFFSET && dataPtr != nullptr) {
-        std::shared_ptr<MechDataBuffer> mechDataBuffer = std::make_shared<MechDataBuffer>(dataLen);
+    if (actualDataLen > MIN_OFFSET && dataPtr != nullptr) {
+        std::shared_ptr<MechDataBuffer> mechDataBuffer = std::make_shared<MechDataBuffer>(actualDataLen);
         if (mechDataBuffer != nullptr) {
-            mechDataBuffer->SetRange(MIN_OFFSET, dataLen);
-            if (memcpy_s(mechDataBuffer->Data(), mechDataBuffer->Size(), dataPtr, dataLen) == 0) {
+            mechDataBuffer->SetRange(MIN_OFFSET, actualDataLen);
+            if (memcpy_s(mechDataBuffer->Data(), mechDataBuffer->Size(), dataPtr, actualDataLen) == 0) {
                 uint16_t seqNo = 0;
                 bool isAck = false;
                 protocolConverter.GetData(mechDataBuffer, seqNo, isAck);
@@ -151,26 +144,9 @@ static void TestProtocolConverter(FuzzedDataProvider &provider)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < MIN_INPUT_SIZE) {
-        return 0;
-    }
-
     FuzzedDataProvider provider(data, size);
-    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % TEST_FUNCTION_COUNT;
-
-    switch (static_cast<TestFunctionId>(testType)) {
-        case TestFunctionId::FUZZ_BLE_RECEIVE_LISTENER:
-            TestBleReceiveListener(provider);
-            break;
-        case TestFunctionId::FUZZ_DATA_BUFFER_OPERATIONS:
-            TestDataBufferOperations(provider);
-            break;
-        case TestFunctionId::FUZZ_PROTOCOL_CONVERTER:
-            TestProtocolConverter(provider);
-            break;
-        default:
-            break;
-    }
-
+    TestBleReceiveListener(provider);
+    TestDataBufferOperations(provider);
+    TestProtocolConverter(provider);
     return 0;
 }

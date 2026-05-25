@@ -43,26 +43,30 @@ enum class TestFunctionId {
 
 void FuzzConstructorStop(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechMotionControlCmd cmd(ControlCommand::STOP);
+    ControlCommand action = provider.ConsumeBool() ? ControlCommand::STOP :
+        static_cast<ControlCommand>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechMotionControlCmd cmd(action);
 }
 
 void FuzzConstructorGoCenter(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechMotionControlCmd cmd(ControlCommand::GO_CENTER);
+    ControlCommand action = provider.ConsumeBool() ? ControlCommand::GO_CENTER :
+        static_cast<ControlCommand>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechMotionControlCmd cmd(action);
 }
 
 void FuzzConstructorHorizontallySwitch(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechMotionControlCmd cmd(ControlCommand::HORIZONTALLY_SWITCH);
+    ControlCommand action = provider.ConsumeBool() ? ControlCommand::HORIZONTALLY_SWITCH :
+        static_cast<ControlCommand>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechMotionControlCmd cmd(action);
 }
 
 void FuzzConstructorUnknown(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechMotionControlCmd cmd(ControlCommand::UNKNOWN);
+    ControlCommand action = provider.ConsumeBool() ? ControlCommand::UNKNOWN :
+        static_cast<ControlCommand>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechMotionControlCmd cmd(action);
 }
 
 void FuzzConstructorRandom(FuzzedDataProvider &provider)

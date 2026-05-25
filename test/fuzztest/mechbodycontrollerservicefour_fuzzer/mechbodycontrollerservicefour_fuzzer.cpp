@@ -141,6 +141,20 @@ void StopMovingFuzzTest(const uint8_t *data, size_t size)
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
     mechBodyControllerService.StopMoving(mechId, cmdId);
 }
+
+void UnSubscribeCallbackFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    uint32_t enumIdx = fdp.ConsumeIntegral<uint32_t>() % 10;
+    MechEventType mechEventType = static_cast<MechEventType>(enumIdx);
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.UnSubscribeCallback(mechEventType);
+}
 }
 
 /* Fuzzer entry point */
@@ -152,5 +166,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetMaxRotationSpeedFuzzTest(data, size);
     OHOS::RotateBySpeedFuzzTest(data, size);
     OHOS::StopMovingFuzzTest(data, size);
+    OHOS::UnSubscribeCallbackFuzzTest(data, size);
     return 0;
 }
