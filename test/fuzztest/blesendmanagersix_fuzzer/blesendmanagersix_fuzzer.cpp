@@ -21,6 +21,7 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include <string>
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage, readability-identifier-naming)
 #define private public
 #include "ble_send_manager.h"
 #undef private
