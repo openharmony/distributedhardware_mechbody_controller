@@ -36,6 +36,8 @@ using namespace OHOS::Bluetooth;
 namespace {
 const std::string TAG = "BleSendManager";
 const std::string TARGET_DEVICE_NAME = "";
+const int32_t SLEEP_TIME = 100;
+const int32_t VALUE_THREE = 3;
 std::unique_ptr<std::thread> delayThread;
 
 UUID SERVICE_UUID = UUID::FromString("15f1e600-a277-43fc-a484-dd39ef8a9100");
@@ -107,9 +109,9 @@ void RegisterTransportSendAdapterFuzzTest(const uint8_t *data, size_t size)
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
     std::shared_ptr<BleReceviceListener> listener;
 
-    if (testChoice % 3 == 0) {
+    if (testChoice % VALUE_THREE == 0) {
         listener = nullptr;
-    } else if (testChoice % 3 == 1) {
+    } else if (testChoice % VALUE_THREE == 1) {
         listener = std::make_shared<TestBleReceviceListener>();
     } else {
         listener = std::make_shared<TestBleReceviceListener>();
@@ -131,9 +133,9 @@ void UnRegisterTransportSendAdapterFuzzTest(const uint8_t *data, size_t size)
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
     std::shared_ptr<BleReceviceListener> listener;
 
-    if (testChoice % 3 == 0) {
+    if (testChoice % VALUE_THREE == 0) {
         listener = nullptr;
-    } else if (testChoice % 3 == 1) {
+    } else if (testChoice % VALUE_THREE == 1) {
         listener = std::make_shared<TestBleReceviceListener>();
     } else {
         listener = std::make_shared<TestBleReceviceListener>();
@@ -184,7 +186,7 @@ void MechbodyConnectFuzzTestOne(const uint8_t *data, size_t size)
 
     // 非首次连接（deviceIdentifier = 0），会提前返回
     bleSendManager.MechbodyConnect(mac, deviceName, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
     MechConnectManager::GetInstance().CleanMechInfo();
 }
 
@@ -212,8 +214,9 @@ void MechbodyConnectFuzzTestTwo(const uint8_t *data, size_t size)
     MechConnectManager::GetInstance().AddMechInfo(existingMech);
 
     // 首次连接（deviceIdentifier != 0），会断开旧设备
-    bleSendManager.MechbodyConnect(mac, deviceName, 12345);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    int32_t deviceIdentifier = 12345;
+    bleSendManager.MechbodyConnect(mac, deviceName, deviceIdentifier);
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
     MechConnectManager::GetInstance().CleanMechInfo();
 }
 
@@ -247,7 +250,7 @@ void MechbodyConnectFuzzTestThree(const uint8_t *data, size_t size)
 
     // 执行连接（覆盖722-745行）
     bleSendManager.MechbodyConnect(mac, deviceName, deviceIdentifier);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
 }
 
 void MechbodyPairFuzzTest(const uint8_t *data, size_t size)
