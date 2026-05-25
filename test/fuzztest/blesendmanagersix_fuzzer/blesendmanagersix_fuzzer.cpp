@@ -33,6 +33,7 @@ using namespace OHOS::Bluetooth;
 namespace {
 const std::string TAG = "BleSendManager";
 const std::string TARGET_DEVICE_NAME = "";
+const int32_t VALUE_TWO = 2;
 std::unique_ptr<std::thread> delayThread;
 
 UUID SERVICE_UUID = UUID::FromString("15f1e600-a277-43fc-a484-dd39ef8a9100");
@@ -58,7 +59,7 @@ void MechbodyDisConnectFuzzTest(const uint8_t *data, size_t size)
     mechInfo.gattCoonectState = fdp.ConsumeBool();
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.eventHandler_ = nullptr;
     } else {
         auto runner = AppExecFwk::EventRunner::Create("BleSenderManager");
@@ -103,7 +104,7 @@ void MechbodyGattcDisconnectFuzzTest(const uint8_t *data, size_t size)
     mechInfo.mechType = static_cast<MechType>(fdp.ConsumeIntegral<int32_t>());
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.gattClient_ = nullptr;
     } else {
         std::string address = fdp.ConsumeRandomLengthString();
@@ -149,7 +150,7 @@ void MechbodyDisConnectForMechbotyStartFuzzTest(const uint8_t *data, size_t size
     mechInfo.gattCoonectState = fdp.ConsumeBool();
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.eventHandler_ = nullptr;
     } else {
         auto runner = AppExecFwk::EventRunner::Create("BleSenderManager");
@@ -195,7 +196,7 @@ void MechbodyGattcDisconnectForMechbotyStartFuzzTest(const uint8_t *data, size_t
     mechInfo.gattCoonectState = fdp.ConsumeBool();
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.gattClient_ = nullptr;
     } else {
         std::string address = fdp.ConsumeRandomLengthString();
