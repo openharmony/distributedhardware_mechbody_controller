@@ -242,13 +242,16 @@ void OnConnectionStateChangedFuzzTest(const uint8_t *data, size_t size)
 
 void OnServicesDiscoveredFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size == 0)) return;
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
     FuzzedDataProvider fdp(data, size);
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
 
     // 场景1: status != GATT_SUCCESS (102-104行)
     auto cb1 = std::make_shared<BleGattClientCallback>();
-    cb1->OnServicesDiscovered(fdp.ConsumeIntegralInRange<int>(-99, 0));
+    int32_t integerRangeMin = -99;
+    cb1->OnServicesDiscovered(fdp.ConsumeIntegralInRange<int>(integerRangeMin, 0));
 
     // 场景2: gattClient_ == nullptr (106-109行)
     auto cb2 = std::make_shared<BleGattClientCallback>();
@@ -257,8 +260,9 @@ void OnServicesDiscoveredFuzzTest(const uint8_t *data, size_t size)
 
     // 场景3: GetService失败+完整流程 (110-138行)
     auto cb3 = std::make_shared<BleGattClientCallback>();
+    int32_t randomLength = 17;
     bleSendManager.gattClient_ = std::make_shared<GattClient>(
-        BluetoothRemoteDevice(fdp.ConsumeRandomLengthString(17), 1));
+        BluetoothRemoteDevice(fdp.ConsumeRandomLengthString(randomLength), 1));
     cb3->OnServicesDiscovered(OHOS::Bluetooth::GattStatus::GATT_SUCCESS);
 }
 
