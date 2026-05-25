@@ -34,6 +34,8 @@ using namespace OHOS::Bluetooth;
 namespace {
 const std::string TAG = "BleSendManager";
 const std::string TARGET_DEVICE_NAME = "";
+const int32_t VALUE_TWO = 2;
+const int32_t VALUE_THREE = 3;
 std::unique_ptr<std::thread> delayThread;
 
 UUID SERVICE_UUID = UUID::FromString("15f1e600-a277-43fc-a484-dd39ef8a9100");
@@ -52,7 +54,7 @@ void InitFuzzTest(const uint8_t *data, size_t size)
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.observer_ = nullptr;
         bleSendManager.remoteDeviceObserver_ = nullptr;
         bleSendManager.hostObserver_ = nullptr;
@@ -75,7 +77,7 @@ void CleanOldAssetsForMechbodyStartFuzzTest(const uint8_t *data, size_t size)
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.eventHandler_ = nullptr;
     } else {
         auto runner = AppExecFwk::EventRunner::Create("BleSenderManager");
@@ -96,7 +98,7 @@ void CleanAllLocalInfoFuzzTest(const uint8_t *data, size_t size)
 
     // 场景1: eventHandler_ 为 nullptr
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 3 == 0) {
+    if (testChoice % VALUE_THREE == 0) {
         bleSendManager.eventHandler_ = nullptr;
         bleSendManager.CleanAllLocalInfo();
         return;
@@ -119,10 +121,12 @@ void CleanAllLocalInfoFuzzTest(const uint8_t *data, size_t size)
 
     // 添加模拟设备信息到 MechConnectManager
     int32_t deviceCount = fdp.ConsumeIntegralInRange<int32_t>(0, 5);
+    int32_t randomLengthMin = 17;
+    int32_t randomLengthMax = 32;
     for (int32_t i = 0; i < deviceCount; i++) {
         MechInfo mechInfo;
-        mechInfo.mac = fdp.ConsumeRandomLengthString(17);
-        mechInfo.mechName = fdp.ConsumeRandomLengthString(32);
+        mechInfo.mac = fdp.ConsumeRandomLengthString(randomLengthMin);
+        mechInfo.mechName = fdp.ConsumeRandomLengthString(randomLengthMax);
         mechInfo.mechId = fdp.ConsumeIntegral<int32_t>();
         mechInfo.mechType = static_cast<MechType>(fdp.ConsumeIntegral<int32_t>());
         mechInfo.gattCoonectState = fdp.ConsumeBool();
@@ -145,7 +149,7 @@ void UnInitFuzzTest(const uint8_t *data, size_t size)
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.gattClient_ = nullptr;
     } else {
         std::string address = fdp.ConsumeRandomLengthString();
@@ -166,7 +170,7 @@ void CancelDelayedUnloadFuzzTest(const uint8_t *data, size_t size)
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
 
     int32_t testChoice = fdp.ConsumeIntegral<int32_t>();
-    if (testChoice % 2 == 0) {
+    if (testChoice % VALUE_TWO == 0) {
         bleSendManager.eventHandler_ = nullptr;
     } else {
         auto runner = AppExecFwk::EventRunner::Create("BleSenderManager");
