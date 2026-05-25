@@ -20,6 +20,7 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include <string>
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage, readability-identifier-naming)
 #define private public
 #define protected public
 #include "mechbody_controller_service.h"
