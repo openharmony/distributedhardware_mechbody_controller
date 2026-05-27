@@ -68,6 +68,11 @@ bool RegisterMechCliffInfoCmd::Unmarshal(std::shared_ptr<MechDataBuffer> data)
         HILOGI("Cliff num is 0");
         return true;
     }
+    // 按照读取到的悬崖数量信息，重新校验最小长度
+    if (data->Size() < offset + cliffNums_* BIT_OFFSET_3) {
+        HILOGE("Invalid input data for unmarshal");
+        return false;
+    }
 
     for (int i = 1; i<= cliffNums_; i++) {
         CliffInfo cliffInfo;
@@ -77,15 +82,47 @@ bool RegisterMechCliffInfoCmd::Unmarshal(std::shared_ptr<MechDataBuffer> data)
 
         // 解析悬崖额外信息长度，当前不会上报，长度默认0
         CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, cliffInfo.cliffInfoLen), false, "read cliff info len");
-        if (cliffInfo.cliffInfoLen != BIT_OFFSET_0) {
+        if (cliffInfo.cliffInfoLen == BIT_OFFSET_0) {
+            offset++;
+            cliffInfos_.push_back(cliffInfo);
+            continue;
+        }
+        HILOGW("cliff info len is not zero, cliff len %{public}d", cliffInfo.cliffInfoLen);
+        // 重新校验长度
+        if (cliffInfo.cliffInfoLen > data->Size() - offset) {
             HILOGE("cliff info len is invalid");
             return false;
         }
         offset++;
 
+         // 解析额外信息的值
+        cliffInfo.details = GetCliffDetails(data, offset, cliffInfo.cliffInfoLen);
+        offset += cliffInfo.cliffInfoLen;
+
         cliffInfos_.push_back(cliffInfo);
     }
     return true;
+}
+
+std::vector<ExtraDetail> RegisterMechCliffInfoCmd::GetCliffDetails(
+    std::shared_ptr<MechDataBuffer> data, size_t offset, uint8_t detailLen)
+{
+    std::vector<ExtraDetail> details;
+    HILOGD("start.");
+    
+    size_t endOffset = offset + detailLen;
+    
+    do {
+        ExtraDetail detail;
+        CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, detail.detailType), details, "read cliff extra info type");
+        offset++;
+        
+        CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, detail.dataLen), details, "read cliff extra info data len");
+        offset++;
+        offset += detail.dataLen;
+        details.push_back(detail);
+    } while (offset < endOffset);
+    return details;
 }
 
 void RegisterMechCliffInfoCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> data)

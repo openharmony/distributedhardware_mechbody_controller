@@ -72,6 +72,7 @@
 #include "mc_register_mech_obstacle_info_cmd.h"
 #include "mc_normal_set_mech_phone_status_cmd.h"
 #include "mc_set_mech_device_pairing_info_cmd.h"
+#include "mc_wheel_get_mech_movement_capability_cmd.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -140,7 +141,7 @@ public:
     std::shared_ptr<WheelSetMechRotationToBaseCmd> CreateWheelSetMechRotationToBaseCmd(
         const RotateToBaseParam& params);
     std::shared_ptr<WheelSetMechMotionControlCmd> CreateWheelSetMechMotionControlCmd(ControlCommand action);
-
+    std::shared_ptr<WheelGetMechMovementCapabilityCmd> CreateWheelGetMechMovementCapabilityCmd();
 private:
     template<typename CmdT>
     std::shared_ptr<CommandBase> CreateAndUnmarshal(std::shared_ptr<MechDataBuffer> data)

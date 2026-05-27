@@ -35,6 +35,7 @@
 #include "iservice_registry.h"
 #include "string_wrapper.h"
 #include "int_wrapper.h"
+#include "application_state_observer_stub.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -63,11 +64,13 @@ struct MechNapiCommandCallbackInfo {
     uint32_t tokenId;
     std::string napiCmdId;
     bool willLimitChange = false;
+    bool needRestoreTracking = false;
 
     std::string ToString() const
     {
         return "napiCmdId: " + napiCmdId +
-               ", willLimitChange: " + std::to_string(willLimitChange);
+               ", willLimitChange: " + std::to_string(willLimitChange) +
+               ", needRestoreTracking: " + std::to_string(needRestoreTracking);
     }
 };
 
@@ -89,9 +92,6 @@ public:
     int32_t Rotate(std::shared_ptr<RotateParam> rotateParam, uint32_t &tokenId, std::string &napiCmdId);
     int32_t RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
                           uint32_t &tokenId, std::string &napiCmdId);
-    std::shared_ptr<CommandBase> ExecuteRotateCommand(const RotateParam &param, uint8_t taskId);
-    std::shared_ptr<CommonSetMechRotationBySpeedCmd> CreateAndSendRotateBySpeedCommand(
-        std::shared_ptr<RotateBySpeedParam> rotateSpeedParam, uint8_t responseTaskId);
     int32_t StopRotate(uint32_t &tokenId, std::string &napiCmdId);
 
     int32_t GetSpeedControlTimeLimit(std::shared_ptr<TimeLimit> &timeLimit);
@@ -140,6 +140,13 @@ public:
     void ScheduleCompletionCallback(const MechNapiCommandCallbackInfo& callbackInfo,
         uint32_t totalDuration);
     int32_t CheckWheelSpeedLimit(const std::vector<RotateParam>& rotateParams);
+    int32_t ConnectAbility();
+    void RegisterAbilityStateChangeListener();
+    void UnRegisterAbilityStateChangeListener();
+    bool GetIsFirstConnect() const;
+    int8_t GetDeviceType() const;
+    void SetIsFirstConnect(bool isFirstConnect);
+    int32_t GetMechId() const;
 
 private:
     void MMIKeyEvent(CameraKeyEvent eventType);
@@ -188,7 +195,30 @@ private:
     bool IsAiDispatchServiceInForeground(const std::vector<AppExecFwk::AppStateData> &list);
     sptr<AppExecFwk::IAppMgr> GetAppManagerInstance();
     void ConnectServiceExtension(AAFwk::WantParams wantParams);
-    int32_t ConnectAbility();
+    void GetWheelMovementCapabilityInfo();
+    bool isSupportMoveCapability(ActionType type);
+    int32_t RotateBySpeedV1(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
+        uint32_t tokenId, std::string napiCmdId);
+    int32_t RotateBySpeedV2(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
+        uint32_t tokenId, std::string napiCmdId);
+    std::shared_ptr<CommandBase> ExecuteRotateCommand(const RotateParam &param, uint8_t taskId);
+    std::shared_ptr<CommonSetMechRotationBySpeedCmd> CreateAndSendRotateBySpeedCommand(
+        std::shared_ptr<RotateBySpeedParam> rotateSpeedParam, uint8_t responseTaskId);
+    void DoActionSendAndTimeout(std::shared_ptr<WheelSetMechSceneControlCmd> sceneControlCmd,
+        uint8_t taskId, bool needRestoreTracking);
+    std::shared_ptr<CommandBase> CreateDoActionCommand(ActionType actionType);
+    void RegisterDoActionCallback(uint8_t taskId, uint32_t tokenId, std::string &napiCmdId,
+        ActionType actionType, std::shared_ptr<CommandBase> command, bool needRestoreTracking);
+    void HandleDoActionResponse(uint8_t taskId, ActionType actionType,
+        std::shared_ptr<CommandBase> command);
+    void CreateDoActionTimeoutCallback(uint8_t taskId, bool needRestoreTracking);
+    ExecResult ExtractRotationTraceResult(std::shared_ptr<CommandBase> command);
+    ExecResult ExtractRotationBySpeedResult(std::shared_ptr<CommandBase> command);
+    std::shared_ptr<CommandBase> CreateHeadUpCmd();
+    std::shared_ptr<CommandBase> CreateHeadDownCmd();
+    std::shared_ptr<CommandBase> CreateNodCmd();
+    std::shared_ptr<CommandBase> CreateHeadShakeCmd();
+    void TrggerMechLocationReport();
 
 private:
     std::shared_ptr<DeviceStatus> deviceStatus_;
@@ -240,6 +270,8 @@ private:
     bool deviceBaseInfoReady_ = false;
     bool isFirstConnect_ = false;
     uint32_t deviceIdentifier_ = 0x00000000;
+    sptr<AppExecFwk::IApplicationStateObserver> appChangeListener_;
+    std::vector<std::string> bundleNameList_;
 };
 
 class MechEventListenerImpl : public IMechEventListener {
@@ -255,6 +287,17 @@ public:
     void MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd) override;
     void MechWheelZoomNotify(const std::shared_ptr<RegisterMechWheelDataCmd> &cmd) override;
     void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd) override;
+
+private:
+    std::shared_ptr<MotionManager> motionManager_;
+};
+
+class AbilityStateListener : public AppExecFwk::ApplicationStateObserverStub {
+public:
+    AbilityStateListener(std::shared_ptr<MotionManager> motionManager);
+    ~AbilityStateListener();
+
+    void OnAbilityStateChanged(const AppExecFwk::AbilityStateData &abilityStateData) override;
 
 private:
     std::shared_ptr<MotionManager> motionManager_;

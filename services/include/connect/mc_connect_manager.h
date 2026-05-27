@@ -56,7 +56,7 @@ public:
     int32_t NotifyMechDisconnect(const MechInfo& mechInfo);
     bool GetMechBasicInfo(int32_t mechId, MechInfo& mechInfo);
     bool GetConnectMechList(std::set<MechInfo>& mechInfos);
-    bool NotifyMechState(int32_t mechId, bool isAttached);
+    bool NotifyMechState(int32_t mechId, bool isAttached, bool forceDisconnect = false);
     AttachmentStateMap GetMechState(int32_t mechId);
     bool UpdateBleStatus(bool isBLEActive);
     bool GetLocalDeviceBleStatus();

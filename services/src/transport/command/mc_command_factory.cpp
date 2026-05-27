@@ -316,6 +316,10 @@ std::shared_ptr<WheelSetMechMotionControlCmd> CommandFactory::CreateWheelSetMech
     return std::make_shared<WheelSetMechMotionControlCmd>(action);
 }
 
+std::shared_ptr<WheelGetMechMovementCapabilityCmd> CommandFactory::CreateWheelGetMechMovementCapabilityCmd()
+{
+    return std::make_shared<WheelGetMechMovementCapabilityCmd>();
+}
 
 std::shared_ptr<CommandBase> CommandFactory::CreateFromData(std::shared_ptr<MechDataBuffer> data)
 {

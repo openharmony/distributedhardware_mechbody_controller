@@ -84,7 +84,10 @@ void NormalSetMechRotationTraceCmd::TriggerResponse(std::shared_ptr<MechDataBuff
         return;
     }
 
-    CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_2, result_), "read result_");
+    uint16_t taskId = 0;
+    CHECK_ERR_RETURN(data->ReadUint16(BIT_OFFSET_2, taskId), "read taskId");
+    HILOGI("taskId: %{public}u", taskId);
+    CHECK_ERR_RETURN(data->ReadUint8(BIT_OFFSET_4, result_), "read result_");
     HILOGI("response code: %{public}u", result_);
 
     if (responseCb_) {
