@@ -2971,7 +2971,7 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
         }
         return;
     }
- 
+
     AppForegroundInfo newForegroundInfo = *it;
     HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}ld, nowTime:%{public}ld,duration:%{public}lu",
         newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
