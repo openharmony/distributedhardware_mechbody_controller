@@ -418,7 +418,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_InvalidToken_ReturnsError, 
  */
 HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_AttachStateListenOn_ValidCallback_ReturnsSuccess, TestSize.Level1)
 {
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_AttachStateListenOn_ValidCallback_ReturnsSuccess begin" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_AttachStateListenOn_"
+              << "ValidCallback_ReturnsSuccess begin" << std::endl;
 
     // Given: Create a MechBodyControllerStub instance and prepare test data
     auto stub = std::make_shared<TestMechBodyControllerStub>();
@@ -445,7 +446,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_AttachStateListenOn_ValidCa
     // The reply should contain exactly one int32 (the result)
     EXPECT_EQ(reply.GetDataSize(), sizeof(int32_t));
 
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_AttachStateListenOn_ValidCallback_ReturnsSuccess end" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_AttachStateListenOn_"
+              << "ValidCallback_ReturnsSuccess end" << std::endl;
 }
 
 /**
@@ -550,7 +552,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_SetUserOperation_ReturnsSuc
  */
 HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_SetCameraTrackingEnabled_ReturnsSuccess, TestSize.Level1)
 {
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_SetCameraTrackingEnabled_ReturnsSuccess begin" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_SetCameraTrackingEnabled_"
+              << "ReturnsSuccess begin" << std::endl;
 
     // Given: Create a MechBodyControllerStub instance and prepare test data
     auto stub = std::make_shared<TestMechBodyControllerStub>();
@@ -580,7 +583,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_SetCameraTrackingEnabled_Re
  */
 HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_GetCameraTrackingEnabled_ReturnsSuccess, TestSize.Level1)
 {
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_GetCameraTrackingEnabled_ReturnsSuccess begin" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_GetCameraTrackingEnabled_"
+              << "ReturnsSuccess begin" << std::endl;
 
     // Given: Create a MechBodyControllerStub instance and prepare test data
     auto stub = std::make_shared<TestMechBodyControllerStub>();
@@ -609,7 +613,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_GetCameraTrackingEnabled_Re
  */
 HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_TrackingEventListenOn_NullCallback_ReturnsSuccess, TestSize.Level1)
 {
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_TrackingEventListenOn_NullCallback_ReturnsSuccess begin" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_TrackingEventListenOn_"
+              << "NullCallback_ReturnsSuccess begin" << std::endl;
 
     // Given: Create a MechBodyControllerStub instance and prepare test data with null callback
     auto stub = std::make_shared<TestMechBodyControllerStub>();
@@ -626,7 +631,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_TrackingEventListenOn_NullC
     // Then: Verify that the function returns success (actual behavior: returns 0 even with nullptr)
     EXPECT_EQ(result, 0);
 
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_TrackingEventListenOn_NullCallback_ReturnsSuccess end" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_TrackingEventListenOn_"
+              << "NullCallback_ReturnsSuccess end" << std::endl;
 }
 
 /**
@@ -727,7 +733,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_GetCameraTrackingLayout_Ret
  */
 HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RegisterCmdChannel_NullCallback_ReturnsSuccess, TestSize.Level1)
 {
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RegisterCmdChannel_NullCallback_ReturnsSuccess begin" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RegisterCmdChannel_"
+              << "NullCallback_ReturnsSuccess begin" << std::endl;
 
     // Given: Create a MechBodyControllerStub instance and prepare test data with null callback
     auto stub = std::make_shared<TestMechBodyControllerStub>();
@@ -744,10 +751,9 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RegisterCmdChannel_NullCall
     // Then: Verify that the function returns success (actual behavior: returns 0 even with nullptr)
     EXPECT_EQ(result, 0);
 
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RegisterCmdChannel_NullCallback_ReturnsSuccess end" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RegisterCmdChannel_"
+              << "NullCallback_ReturnsSuccess end" << std::endl;
 }
-
-
 
 /**
  * @tc.name  : OnRemoteRequest_RotateByDegree_ReturnsSuccess
@@ -1034,9 +1040,11 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_GetRotationAxesStatus_Retur
  * @tc.type  : PERF
  * @tc.level  : Level 1
  */
-HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RotationAxesStatusChangeListenOn_NullCallback_ReturnsSuccess, TestSize.Level1)
+HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RotationAxesStatusChangeListenOn_NullCallback_ReturnsSuccess,
+          TestSize.Level1)
 {
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOn_NullCallback_ReturnsSuccess begin" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOn_"
+              << "NullCallback_ReturnsSuccess begin" << std::endl;
 
     // Given: Create a MechBodyControllerStub instance and prepare test data with null callback
     auto stub = std::make_shared<TestMechBodyControllerStub>();
@@ -1053,7 +1061,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RotationAxesStatusChangeLis
     // Then: Verify that the function returns success (actual behavior: returns 0 even with nullptr)
     EXPECT_EQ(result, 0);
 
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOn_NullCallback_ReturnsSuccess end" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOn_"
+              << "NullCallback_ReturnsSuccess end" << std::endl;
 }
 
 /**
@@ -1066,7 +1075,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RotationAxesStatusChangeLis
  */
 HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RotationAxesStatusChangeListenOff_ReturnsSuccess, TestSize.Level1)
 {
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOff_ReturnsSuccess begin" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOff_"
+              << "ReturnsSuccess begin" << std::endl;
 
     // Given: Create a MechBodyControllerStub instance and prepare test data
     auto stub = std::make_shared<TestMechBodyControllerStub>();
@@ -1082,7 +1092,8 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_RotationAxesStatusChangeLis
     // Then: Verify that the function returns success
     EXPECT_EQ(result, ERR_OK);
 
-    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOff_ReturnsSuccess end" << std::endl;
+    DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_RotationAxesStatusChangeListenOff_"
+              << "ReturnsSuccess end" << std::endl;
 }
 
 /**
