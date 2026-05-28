@@ -2966,14 +2966,14 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
             foregroundInfo.state = appStateData.state;
             foregroundInfo.startTime = timeNow;
             appForegroundInfos_.insert(foregroundInfo);
-            HILOGI("app foreground info init, appName:%{public}s, state:%{public}d, startTime:%{public}PRId64",
+            HILOGI("app foreground info init, appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64,
                 foregroundInfo.bundleName.c_str(), foregroundInfo.state, foregroundInfo.startTime);
         }
         return;
     }
 
     AppForegroundInfo newForegroundInfo = *it;
-    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}PRId64, nowTime:%{public}PRId64,duration:%{public}lu",
+    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64", nowTime:%{public}"PRId64",duration:%{public}"PRIu64,
         newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, timeNow, newForegroundInfo.duration);
     if (appStateData.state == APP_STATE_FOREGROUND) {
@@ -2996,7 +2996,7 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
     }
     appForegroundInfos_.erase(it);
     appForegroundInfos_.insert(newForegroundInfo);
-    HILOGI("end. appName:%{public}s, state:%{public}d, startTime:%{public}PRId64,duration:%{public}lu",
+    HILOGI("end. appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64",duration:%{public}" PRIu64,
         newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, newForegroundInfo.duration);
 }
@@ -3008,16 +3008,16 @@ void MotionManager::UpdateEndtimeAndCompute()
         system_clock::now().time_since_epoch()).count();
     
     std::vector<AppForegroundInfo> appInfos(appForegroundInfos_.begin(), appForegroundInfos_.end());
-    HILOGI("start. timeNow:%{public}PRId64, app nums:%{public}lu, appInfo size: %{public}lu",
+    HILOGI("start. timeNow:%{public}"PRId64", app nums:%{public}zu, appInfo size: %{public}zu",
         timeNow, appForegroundInfos_.size(), appInfos.size());
     for (auto& info : appInfos) {
         if (info.state == APP_STATE_FOREGROUND) {
-            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}PRId64,duration:%{public}lu",
+            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64",duration:%{public}"PRIu64,
                 info.bundleName.c_str(), info.state, info.startTime, info.duration);
             uint64_t duration = static_cast<uint64_t>(timeNow - info.startTime);
             info.duration += duration;
         }
-        HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}PRId64,duration:%{public}lu",
+        HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64",duration:%{public}"PRIu64,
             info.bundleName.c_str(), info.state, info.startTime, info.duration);
     }
     std::sort(appInfos.begin(), appInfos.end(),
