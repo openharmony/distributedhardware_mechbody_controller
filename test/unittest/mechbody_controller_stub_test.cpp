@@ -220,8 +220,6 @@ int32_t TurnBySpeed(const int32_t &mechId, std::string &cmdId,
     }
 };
 
-
-
 void MechBodyControllerStubTest::SetUpTestCase()
 {
     DTEST_LOG << "MechBodyControllerStubTest::SetUpTestCase" << std::endl;
@@ -507,8 +505,6 @@ HWTEST_F(MechBodyControllerStubTest, OnRemoteRequest_GetAttachedDevices_ReturnsS
 
     DTEST_LOG << "MechBodyControllerStubTest OnRemoteRequest_GetAttachedDevices_ReturnsSuccess end" << std::endl;
 }
-
-
 
 /**
  * @tc.name  : OnRemoteRequest_SetUserOperation_ReturnsSuccess
