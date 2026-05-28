@@ -862,7 +862,23 @@ int32_t BleSendManager::MechbodyDisConnect(MechInfo &mechInfo)
         MechbodyDisConnectSync(mechInfo);
         HILOGI("MECHBODY_EXEC_DISCONNECT async disconnect end, mech info for: %{public}s", mechInfo.ToString().c_str());
     };
-
+    std::thread dotReportThread(
+        [mechIdParam = mechInfo.mechId] () mutable {
+        MechkitControlInfo controlInfo = {0};
+        {
+            auto &instance = MechBodyControllerService::GetInstance();
+            std::lock_guard<std::mutex> lock(instance.motionManagersMutex);
+            auto it = instance.motionManagers_.find(mechIdParam);
+            if (it != instance.motionManagers_.end()) {
+                //更新并计算应用在前台时间
+                it->second->UpdateEndtimeAndCompute();
+                controlInfo = it->second->GetDfxInfo();
+                HILOGI("MECHBODY_EXEC_DISCONNECT end, getDFXinfo");
+                HisyseventUtils::DoReportMechkitControlStatisticEvent(controlInfo);
+            }
+        }
+    });
+    dotReportThread.detach();
     if (eventHandler_ != nullptr) {
         eventHandler_->PostTask(connFunc);
     }
