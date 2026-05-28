@@ -194,6 +194,21 @@ enum {
      * Result(96469010) for device not placed on mech.
      */
     DEVICE_NOT_PLACED_ON_MECH,
+
+    /**
+     * Result(96469017) for device not connected.
+     */
+    NO_DEVICE_CONNECTED,
+
+    /**
+     * Result(96469018) for get device limited info failed.
+     */
+    GET_LIMIT_INFO_FAILED,
+
+    /**
+     * Result(96469019) for get current position failed.
+     */
+    GET_CURRENT_POSITION_FAILED,
 };
 
 enum MechNapiErrorCode {
