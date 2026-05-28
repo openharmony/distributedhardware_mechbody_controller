@@ -29,6 +29,7 @@
 #include "mechbody_controller_utils.h"
 #include "hisysevent_utils.h"
 #include <cmath>
+#include "app_scheduler.h"
 
 uint32_t g_capabilityInfo[MAX_CAPABILITY_BIT_NUM] = {0};
 
@@ -63,6 +64,12 @@ constexpr int32_t DO_ACTION_TIME_USED = 500; //ms
 constexpr uint8_t MECH_LOCATION_REPORT_INTERVAL = 30;
 constexpr int32_t MS_CONVERSION = 1000;
 constexpr int32_t CM_CONVERSION = 10;
+constexpr int32_t PORECAST_MS_TO_S = 1000;
+constexpr size_t MAX_DFX_APP_NUM = 5;
+constexpr int32_t APP_STATE_FOREGROUND = 2;
+constexpr int32_t APP_STATE_BACKGROUND = 4;
+constexpr int32_t APP_STATE_TERMINATED = 5;
+const std::string SCENEBOARD_BUNDLE_NAME = "com.ohos.sceneboard";
 
 const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
     {CameraKeyEvent::START_FILMING, MMI::KeyEvent::KEYCODE_VOLUME_UP},
@@ -267,6 +274,9 @@ void MotionManager::MechButtonEventNotify(const std::shared_ptr<CommonRegisterMe
             break;
     }
     McCameraTrackingController::GetInstance().SetStickOffset(cmd->GetStickX(), cmd->GetStickY());
+    if (cmd->GetStickX() != 0 || cmd->GetStickY() != 0) {
+        controlInfo_.stickNum++;
+    }
 }
 
 void MotionManager::MechParamNotify(const std::shared_ptr<CommonRegisterMechStateInfoCmd> &cmd)
@@ -359,6 +369,7 @@ void MotionManager::MechCliffInfoNotify(const std::shared_ptr<RegisterMechCliffI
 {
     HILOGI("notify");
     MechBodyControllerService::GetInstance().NotifyMechEvent(mechId_, MechEventType::REACH_CLIFF);
+    controlInfo_.cliffNumber = cmd->GetCliffNums();
     HILOGI("notify end");
 }
 
@@ -366,6 +377,7 @@ void MotionManager::MechObstacleInfoNotify(const std::shared_ptr<RegisterMechObs
 {
     HILOGI("notify");
     MechBodyControllerService::GetInstance().NotifyMechEvent(mechId_, MechEventType::REACH_OBSTACLE);
+    controlInfo_.obstacleNumber = cmd->GetObstacleNums();
     HILOGI("notify end");
 }
 
@@ -479,7 +491,6 @@ bool MotionManager::IsAiDispatchServiceInForeground(const std::vector<AppExecFwk
 bool MotionManager::IsDesktopScene(const std::vector<AppExecFwk::AppStateData> &list)
 {
     HILOGI("start");
-    const std::string SCENEBOARD_BUNDLE_NAME = "com.ohos.sceneboard";
     bool hasNonUIExtensionFocus = false;
     bool hasSceneboardFocus = false;
 
@@ -524,19 +535,15 @@ void MotionManager::RegisterAbilityStateChangeListener()
         HILOGI("appChangeListener already registered, skip duplicate registration");
         return;
     }
-    bundleNameList_.push_back(AILIFESVC_BUNDLE_NAME);
     appChangeListener_ = new (std::nothrow) AbilityStateListener(shared_from_this());
     if (appChangeListener_ == nullptr) {
         HILOGE("Failed to create AbilityStateListener: out of memory");
-        bundleNameList_.clear();
         return;
     }
-    int32_t result = appManager->RegisterApplicationStateObserver(
-        appChangeListener_, bundleNameList_);
+    int32_t result = appManager->RegisterApplicationStateObserver(appChangeListener_);
     if (result != ERR_OK) {
         HILOGE("RegisterApplicationStateObserver failed: %{public}d", result);
         appChangeListener_ = nullptr;
-        bundleNameList_.clear();
         return;
     }
 
@@ -558,7 +565,6 @@ void MotionManager::UnRegisterAbilityStateChangeListener()
         }
         appChangeListener_ = nullptr;
     }
-    bundleNameList_.clear();
     HILOGD("UnRegisterAbilityStateChangeListener over");
 }
 
@@ -587,6 +593,11 @@ int32_t MotionManager::ConnectAbility()
     wantParams.SetParam("mechName", AAFwk::String::Box(""));
     ConnectServiceExtension(wantParams);
     return ERR_OK;
+}
+
+uint64_t MotionManager::GetStrackingTime()
+{
+    return trackingTime_;
 }
 
 void MotionManager::MechExecutionResultNotify(const std::shared_ptr<RegisterMechControlResultCmd> &cmd)
@@ -815,6 +826,71 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     HILOGI("MotionManager end.");
 }
 
+void MotionManager::InitDfxInfo()
+{
+    HILOGI("InitDfxInfo start.");
+    // 连接且吸附初始化DFX
+    if (deviceStatus_->stateInfo.isPhoneOn) {
+        controlInfo_.upWard = 0;
+        controlInfo_.downWard = 0;
+        controlInfo_.turnLeft = 0;
+        controlInfo_.turnRight = 0;
+        controlInfo_.fastRotation = 0;
+        controlInfo_.landScapePortrait = 0;
+        controlInfo_.cameraMode = 0;
+        controlInfo_.trackingDuration = 0;
+        controlInfo_.cameraType = 0;
+        controlInfo_.zoomRatio = 0.0f;
+        controlInfo_.obstacleNumber = 0;
+        controlInfo_.cliffNumber = 0;
+        controlInfo_.successNumber = 0;
+        controlInfo_.failNumber = 0;
+        controlInfo_.deviceType = 0;
+        controlInfo_.stickNum = 0;
+ 
+        // 单独处理vector成员
+        controlInfo_.appName.clear();
+        controlInfo_.appName.resize(MAX_DFX_APP_NUM);
+        controlInfo_.existenceTime.clear();
+        controlInfo_.existenceTime.resize(MAX_DFX_APP_NUM);
+ 
+        // 清空字符串
+        controlInfo_.packageName.clear();
+        // 初始化在前台的APP的数据
+        auto appManager = GetAppManagerInstance();
+        if (appManager == nullptr) {
+            HILOGE("appManager is null, cannot check foreground app");
+            return;
+        }
+        std::vector<AppExecFwk::AppStateData> foregroundApps;
+        int32_t ret = appManager->GetForegroundApplications(foregroundApps);
+        if (ret != 0) {
+            HILOGE("Failed to get foreground applications, ret: %{public}d", ret);
+            return;
+        }
+        for (auto appStateData: foregroundApps) {
+            if (appStateData.bundleName == SCENEBOARD_BUNDLE_NAME) {
+                continue;
+            }
+            UpdateAppForegroundInfo(appStateData);
+        }
+    }
+}
+ 
+MechkitControlInfo MotionManager::GetDfxInfo()
+{
+    return controlInfo_;
+}
+ 
+void MotionManager::GetDfxDeviceTypeInfo()
+{
+    if (protocolVer_ == 0x01) {
+        controlInfo_.deviceType = static_cast<uint8_t>(MechType::PORTABLE_GIMBAL);
+    } else {
+        controlInfo_.deviceType = static_cast<uint8_t>(deviceBaseInfo_.devType);
+    }
+}
+
 int32_t MotionManager::Init()
 {
     HILOGI("MotionManager Init start");
@@ -865,6 +941,8 @@ int32_t MotionManager::Init()
 
     startTrackingChecker_ = true;
     trackingCheckerThread_ = std::make_unique<std::thread>(&MotionManager::TrackingChecker, this);
+    InitDfxInfo();
+    GetDfxDeviceTypeInfo();
     HILOGI("MotionManager Init end.");
     return ERR_OK;
 }
@@ -2066,6 +2144,22 @@ void MotionManager::CreateDoActionTimeoutCallback(uint8_t taskId, bool needResto
     if (eventHandler_) eventHandler_->PostTask(timeoutFunc, taskName, RESPONSE_TIMEOUT);
 }
 
+void MotionManager::MechkitFaultInfoReport(const RotateBySpeedParam& rotateSpeedParam)
+{
+    if (rotateSpeedParam.speed.yawSpeed == DEGREE_CIRCLED_MIN ||
+        rotateSpeedParam.speed.yawSpeed == DEGREE_CIRCLED_MAX) {
+        controlInfo_.fastRotation++;
+    } else if (rotateSpeedParam.speed.yawSpeed < 0) {
+        controlInfo_.turnLeft++;
+    } else if (rotateSpeedParam.speed.yawSpeed > 0) {
+        controlInfo_.turnRight++;
+    } else if (rotateSpeedParam.speed.pitchSpeed < 0) {
+        controlInfo_.upWard++;
+    } else if (rotateSpeedParam.speed.pitchSpeed > 0) {
+        controlInfo_.downWard++;
+    }
+}
+
 int32_t MotionManager::RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
     uint32_t &tokenId, std::string &napiCmdId)
 {
@@ -2075,7 +2169,7 @@ int32_t MotionManager::RotateBySpeed(std::shared_ptr<RotateBySpeedParam> rotateS
         return DEVICE_NOT_PLACED_ON_MECH;
     }
     CHECK_POINTER_RETURN_VALUE(rotateSpeedParam, INVALID_PARAMETERS_ERR, "rotateSpeedParam");
-
+    MechkitFaultInfoReport(*rotateSpeedParam);
     if (protocolVer_ == 0x01) {
         return RotateBySpeedV1(rotateSpeedParam, tokenId, napiCmdId);
     } else {
@@ -2481,6 +2575,17 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     cameraTrackingFrameCmd->SetTimestamp(nowUs.count());
 
     sendAdapter_->SendCommand(cameraTrackingFrameCmd);
+    uint64_t tmpTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now()).time_since_epoch().count());
+    controlInfo_.trackingDuration = static_cast<uint64_t>(trackingFrameParams->timeDelay);
+    uint64_t lastTime = McCameraTrackingController::GetInstance().GetPredictDfxCurTime();
+    if (lastTime > 0) {
+        if (tmpTime > lastTime && (tmpTime - lastTime) > PORECAST_MS_TO_S) {
+            controlInfo_.failNumber++;
+        } else {
+            controlInfo_.successNumber++;
+        }
+    }
     return ERR_OK;
 }
 
@@ -2561,6 +2666,16 @@ int32_t MotionManager::GetMechCameraTrackingLayout(std::shared_ptr<LayoutParams>
     return ERR_OK;
 }
 
+void MotionManager::MechkitIntelligentInfoReport(const CameraInfoParams &mechCameraInfo)
+{
+    HILOGI("start.");
+    controlInfo_.cameraMode = static_cast<uint8_t>(McCameraTrackingController::GetInstance().GetCamereModeInfo());
+    uint32_t tokenId = McCameraTrackingController::GetInstance().GetTokenIdOfCurrentCameraInfo();
+    controlInfo_.packageName = MechBodyControllerService::GetAppNameByTokenId(tokenId);
+    controlInfo_.zoomRatio = mechCameraInfo.zoomFactor;
+    controlInfo_.cameraType = static_cast<uint8_t>(mechCameraInfo.cameraType);
+}
+
 int32_t MotionManager::SetMechCameraInfo(const CameraInfoParams &mechCameraInfo)
 {
     HILOGI("SetMechCameraInfo start.");
@@ -2575,6 +2690,7 @@ int32_t MotionManager::SetMechCameraInfo(const CameraInfoParams &mechCameraInfo)
     CHECK_POINTER_RETURN_VALUE(cameraInfoCmd, INVALID_PARAMETERS_ERR, "cameraInfoCmd is empty.");
     cameraInfoCmd->SetResponseCallback(setMechCameraInfoCallback);
     sendAdapter_->SendCommand(cameraInfoCmd);
+    MechkitIntelligentInfoReport(mechCameraInfo);
     HILOGI("SetMechCameraInfo end.");
     return ERR_OK;
 }
@@ -2833,6 +2949,95 @@ int32_t MotionManager::IsSupportAction(uint32_t tokenId, ActionType actionType, 
     return ERR_OK;
 }
 
+void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appStateData)
+{
+    HILOGI("start.");
+    std::lock_guard<std::mutex> lock(appForegroundInfoMutex_);
+    auto it = std::find_if(appForegroundInfos_.begin(), appForegroundInfos_.end(),
+        [appStateData](const AppForegroundInfo& appForegroundInfo) {
+        return appForegroundInfo.bundleName == appStateData.bundleName;
+    });
+    int64_t timeNow = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::
+            system_clock::now().time_since_epoch()).count();
+    if (it == appForegroundInfos_.end()) {
+        if (appStateData.state == APP_STATE_FOREGROUND) {
+            AppForegroundInfo foregroundInfo;
+            foregroundInfo.bundleName = appStateData.bundleName;
+            foregroundInfo.state = appStateData.state;
+            foregroundInfo.startTime = timeNow;
+            appForegroundInfos_.insert(foregroundInfo);
+            HILOGI("app foreground info init, appName:%{public}s, state:%{public}d, startTime:%{public}ld",
+                foregroundInfo.bundleName.c_str(), foregroundInfo.state, foregroundInfo.startTime);
+        }
+        return;
+    }
+ 
+    AppForegroundInfo newForegroundInfo = *it;
+    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}ld, nowTime:%{public}ld,duration:%{public}lu",
+        newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
+        newForegroundInfo.startTime, timeNow, newForegroundInfo.duration);
+    if (appStateData.state == APP_STATE_FOREGROUND) {
+        if (newForegroundInfo.state != APP_STATE_FOREGROUND) {
+            newForegroundInfo.state = APP_STATE_FOREGROUND;
+            newForegroundInfo.startTime = timeNow;
+        }
+    } else if (appStateData.state == APP_STATE_BACKGROUND) {
+        if (newForegroundInfo.state == APP_STATE_FOREGROUND) {
+            newForegroundInfo.state = appStateData.state;
+            uint64_t duration = static_cast<uint64_t>(timeNow - newForegroundInfo.startTime);
+            newForegroundInfo.duration += duration;
+        }
+    } else if (appStateData.state == APP_STATE_TERMINATED) {
+        if (newForegroundInfo.state == APP_STATE_FOREGROUND) {
+            newForegroundInfo.state = appStateData.state;
+            uint64_t duration = static_cast<uint64_t>(timeNow - newForegroundInfo.startTime);
+            newForegroundInfo.duration += duration;
+        }
+    }
+    appForegroundInfos_.erase(it);
+    appForegroundInfos_.insert(newForegroundInfo);
+    HILOGI("end. appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
+        newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
+        newForegroundInfo.startTime, newForegroundInfo.duration);
+}
+ 
+void MotionManager::UpdateEndtimeAndCompute()
+{
+    std::lock_guard<std::mutex> lock(appForegroundInfoMutex_);
+    int64_t timeNow = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::
+        system_clock::now().time_since_epoch()).count();
+    
+    std::vector<AppForegroundInfo> appInfos(appForegroundInfos_.begin(), appForegroundInfos_.end());
+    HILOGI("start. timeNow:%{public}ld, app nums:%{public}lu, appInfo size: %{public}lu",
+        timeNow, appForegroundInfos_.size(), appInfos.size());
+    for (auto& info : appInfos) {
+        if (info.state == APP_STATE_FOREGROUND) {
+            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
+                info.bundleName.c_str(), info.state, info.startTime, info.duration);
+            uint64_t duration = static_cast<uint64_t>(timeNow - info.startTime);
+            info.duration += duration;
+        }
+        HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
+            info.bundleName.c_str(), info.state, info.startTime, info.duration);
+    }
+    std::sort(appInfos.begin(), appInfos.end(),
+        [](const AppForegroundInfo& a, const AppForegroundInfo& b) {
+            return a.duration > b.duration;
+        });
+    size_t topCount = std::min(appInfos.size(), static_cast<size_t>(5));
+    // 更新成员变量controlInfo_的appName和existenceTime
+    controlInfo_.appName.clear();
+    controlInfo_.existenceTime.clear();
+    
+    for (size_t i = 0; i < topCount; ++i) {
+        controlInfo_.appName.push_back(appInfos[i].bundleName);
+        controlInfo_.existenceTime.push_back(appInfos[i].duration);
+    }
+    
+    // 清空set中的数据
+    appForegroundInfos_.clear();
+}
+
 MechEventListenerImpl::MechEventListenerImpl(std::shared_ptr<MotionManager> motionManager)
 {
     HILOGI("MechEventListenerImpl called");
@@ -2931,6 +3136,15 @@ void AbilityStateListener::OnAbilityStateChanged(const AppExecFwk::AbilityStateD
         motionManager_->ConnectAbility();
         motionManager_->SetIsFirstConnect(false);
     }
+}
+
+void AbilityStateListener::OnAppStateChanged(const AppExecFwk::AppStateData &appStateData)
+{
+    HILOGI("bundleName:%{public}s, state:%{public}d", appStateData.bundleName.c_str(), appStateData.state);
+    if (appStateData.bundleName == SCENEBOARD_BUNDLE_NAME) {
+        return;
+    }
+    motionManager_->UpdateAppForegroundInfo(appStateData);
 }
 } // namespace MechBodyController
 } // namespace OHOS
