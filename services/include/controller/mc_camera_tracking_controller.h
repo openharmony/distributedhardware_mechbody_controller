@@ -163,6 +163,8 @@ public:
     int32_t SetStickOffset(const int16_t &stickX, const int16_t &stickY);
     uint32_t GetTokenIdOfCurrentCameraInfo();
     void UserIdChangeCallback();
+    uint8_t GetCamereModeInfo();
+    uint64_t GetPredictDfxCurTime();
 
 private:
     int32_t ComputeFov();
@@ -224,6 +226,7 @@ private:
     void AdjustYOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace, bool &isBody);
     void AdjustXOffset(ROI &roi, CameraType cameraType, float &offsetX, float &offsetY, bool &isFace, bool &isBody);
     bool IsCurrentTrackingEnabled();
+    void MechkitForecastDfxCurTime(int32_t ignoredFrameNum);
 
 public:
     std::mutex trackingEventCallbackMutex_;
@@ -256,6 +259,8 @@ private:
     std::chrono::steady_clock::time_point lastStickTime_;
     bool isStick_ = false;
     bool isSalientDetectionLocked_ = false;
+    uint8_t cameraMode_ = 0;
+    uint64_t trackingTimeCur_ = 0;
 };
 } // namespace MechBodyController
 } // namespace OHOS
