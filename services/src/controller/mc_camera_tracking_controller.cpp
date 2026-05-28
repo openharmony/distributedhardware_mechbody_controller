@@ -491,7 +491,7 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
             eventHandler_->RemoveTask(PREDICTION_TASK_NAME);
             g_predictionIgnoredFrame ++;
             if (g_predictionIgnoredFrame > PREDICTION_IGNORED_FRAME_MAX) {
-                HILOGI("DoPrediction now with invalid data.");
+                MechkitForecastDfxCurTime(g_predictionIgnoredFrame);
                 return DoPrediction(trackingParams, objectId);
             }
             HILOGI("DoPrediction now with invalid data delay.");
