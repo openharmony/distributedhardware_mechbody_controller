@@ -2973,8 +2973,8 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
     }
 
     AppForegroundInfo newForegroundInfo = *it;
-    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64", nowTime:%{public}"PRId64",duration:%{public}"PRIu64,
-        newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
+    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64", nowTime:%{public}"PRId64", "
+        "duration:%{public}"PRIu64, newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, timeNow, newForegroundInfo.duration);
     if (appStateData.state == APP_STATE_FOREGROUND) {
         if (newForegroundInfo.state != APP_STATE_FOREGROUND) {
@@ -3012,8 +3012,8 @@ void MotionManager::UpdateEndtimeAndCompute()
         timeNow, appForegroundInfos_.size(), appInfos.size());
     for (auto& info : appInfos) {
         if (info.state == APP_STATE_FOREGROUND) {
-            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64",duration:%{public}"PRIu64,
-                info.bundleName.c_str(), info.state, info.startTime, info.duration);
+            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}"PRId64", "
+            "duration:%{public}"PRIu64, info.bundleName.c_str(), info.state, info.startTime, info.duration);
             uint64_t duration = static_cast<uint64_t>(timeNow - info.startTime);
             info.duration += duration;
         }
