@@ -106,7 +106,7 @@ public:
     {
         return ERR_OK;
     }
-    int32_t SetTrackingEnabled(bool &isEnabled, bool isCapsuleSet) override
+    int32_t SetTrackingEnabled(bool &isEnabled) override
     {
         return ERR_OK;
     }
