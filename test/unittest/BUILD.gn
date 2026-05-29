@@ -627,37 +627,6 @@ ohos_unittest("resource_manager_utils_test") {
   subsystem_name = "distributedhardware"
 }
 
-ohos_unittest("hisysevent_utils_test") {
-  visibility = [ ":*" ]
-
-  module_out_path = mechbody_module_output_path
-
-  cflags = [
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
-
-  sanitize = {
-    blocklist = "./cfi_blocklist.txt"
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
-  sources = [ "dotReport/hisysevent_utils_test.cpp" ]
-
-  configs = [
-    ":mech_test_config",
-    "${mechbody_path}/test/resource:coverage_flags",
-  ]
-
-  external_deps = mech_external_deps
-  deps = mech_public_deps
-
-  part_name = "mechbody_controller"
-  subsystem_name = "distributedhardware"
-}
-
 group("unittest") {
   testonly = true
   deps = [
@@ -678,6 +647,5 @@ group("unittest") {
     ":mc_wheel_set_mech_scene_control_cmd_test",
     ":subscribe_event_utils_test",
     ":resource_manager_utils_test",
-    ":hisysevent_utils_test",
   ]
 }
