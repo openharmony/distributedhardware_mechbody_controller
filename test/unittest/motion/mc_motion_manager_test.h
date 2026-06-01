@@ -58,6 +58,9 @@ public:
     }
 };
 
+// 共享的 mock 机械状态变量，用于测试
+inline AttachmentStateMap g_mockMechState = AttachmentStateMap::DETACHED;
+
 class MotionManagerTest : public testing::Test {
 public:
     static void SetUpTestCase();
