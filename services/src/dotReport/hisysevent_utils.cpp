@@ -34,6 +34,8 @@ const char* PVERSIONID_PARAM_KEY = "PVERSIONID";
 const char* PVERSIONID_PARAM_VALUE = "1.0";
 
 constexpr char MECHKIT_SYSEVENT_REPORT_DOMAIN[] = "HIMECH_UE";
+constexpr char MECHKIT_SYSEVENT_DOMAIN[] = "MECHANIC";
+const char* MECHKIT_CONTROL_STATISTIC_EVENT = "MECHKIT_CONTROL_STATISTIC";
 
 uint64_t GetTimeStampMs()
 {
@@ -80,6 +82,40 @@ void HisyseventUtils::DotReportFocustrackingStartEvent(const std::string &appNam
     if (res != ERR_OK) {
         HILOGE("DotReportFocustrackingStartEvent error, res:%{public}d", res);
     }
+}
+
+void HisyseventUtils::DoReportMechkitControlStatisticEvent(MechkitControlInfo controlInfo)
+{
+    int32_t res = HiSysEventWrite(MECHKIT_SYSEVENT_DOMAIN,
+        MECHKIT_CONTROL_STATISTIC_EVENT,
+        OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "UP_WARD", controlInfo.upWard,
+        "DOWN_WARD", controlInfo.downWard,
+        "TURN_LEFT", controlInfo.turnLeft,
+        "TURN_RIGHT", controlInfo.turnRight,
+        "FAST_ROTATION", controlInfo.fastRotation,
+        "LANDSCAPE_PORTRAIT", controlInfo.landScapePortrait,
+        "CAMERA_MODE", controlInfo.cameraMode,
+        "TRACKING_DURATION", controlInfo.trackingDuration,
+        "CAMERA_TYPE", controlInfo.cameraType,
+        "ZOOM_RATIO", controlInfo.zoomRatio,
+        "PACKAGE_NAME", controlInfo.packageName,
+        "STICK_NUM", controlInfo.stickNum,
+        "SUCCESS_NUMBER", controlInfo.successNumber,
+        "FAIL_NUMBER", controlInfo.failNumber,
+        "APP_NAME", controlInfo.appName,
+        "EXISTENCE_TIME", controlInfo.existenceTime,
+        "OBSTACLE_NUMBER", controlInfo.obstacleNumber,
+        "CLIFF_NUMBER", controlInfo.cliffNumber,
+        "DEVICE_TYPE", controlInfo.deviceType,
+        "ORG_PKG", PNAMEID_PARAM_VALUE,
+        "BIZ_SCENE", 1,
+        "BIZ_STAGE", 1,
+        "STAGE_RES", 1);
+    if (res != ERR_OK) {
+        HILOGE("DoReportMechkitControlStatisticEvent error, res:%{public}d", res);
+    }
+    HILOGI("DoReportMechkitControlStatisticEvent ok, res:%{public}d", res);
 }
 
 } // namespace MechBodyController

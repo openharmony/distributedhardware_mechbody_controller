@@ -216,6 +216,12 @@ void McCameraTrackingController::UpdateCurrentCameraInfoByCaptureSessionInfo(
     currentCameraInfo_->zoomFactor = captureSessionInfo.zoomInfo.zoomValue;
     currentCameraInfo_->equivalentFocus = captureSessionInfo.zoomInfo.equivalentFocus;
     currentCameraInfo_->videoStabilizationMode = captureSessionInfo.zoomInfo.videoStabilizationMode;
+    cameraMode_ = currentCameraInfo_->sessionMode;
+}
+
+uint8_t McCameraTrackingController::GetCamereModeInfo()
+{
+    return cameraMode_;
 }
 
 int32_t McCameraTrackingController::OnMetadataInfo(const std::shared_ptr<OHOS::Camera::CameraMetadata>& result)
@@ -426,6 +432,24 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
     return ERR_OK;
 }
 
+void McCameraTrackingController::MechkitForecastDfxCurTime(int32_t ignoredFrameNum)
+{
+#ifdef MECHBODY_CONTROLLER_EXTENDED
+    HILOGI("MechkitForecastDfxCurTime enter");
+    if (ignoredFrameNum == PREDICTION_IGNORED_FRAME_MAX + 1) {
+        trackingTimeCur_ = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now()).time_since_epoch().count());
+        HILOGI("MechkitForecastDfxCurTime isTracking: %{public}lu", trackingTimeCur_);
+    }
+ 
+#endif
+}
+ 
+uint64_t McCameraTrackingController::GetPredictDfxCurTime()
+{
+    return trackingTimeCur_;
+}
+
 void PrintOnFocusTrackingLog(CameraStandard::FocusTrackingMetaInfo &info)
 {
     std::ostringstream oss;
@@ -467,7 +491,7 @@ int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackin
             eventHandler_->RemoveTask(PREDICTION_TASK_NAME);
             g_predictionIgnoredFrame ++;
             if (g_predictionIgnoredFrame > PREDICTION_IGNORED_FRAME_MAX) {
-                HILOGI("DoPrediction now with invalid data.");
+                MechkitForecastDfxCurTime(g_predictionIgnoredFrame);
                 return DoPrediction(trackingParams, objectId);
             }
             HILOGI("DoPrediction now with invalid data delay.");

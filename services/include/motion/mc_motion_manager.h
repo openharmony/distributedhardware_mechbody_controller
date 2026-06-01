@@ -36,6 +36,7 @@
 #include "string_wrapper.h"
 #include "int_wrapper.h"
 #include "application_state_observer_stub.h"
+#include "../dotReport/hisysevent_utils.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -147,6 +148,10 @@ public:
     int8_t GetDeviceType() const;
     void SetIsFirstConnect(bool isFirstConnect);
     int32_t GetMechId() const;
+    uint64_t GetStrackingTime();
+    MechkitControlInfo GetDfxInfo();
+    void UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appStateData);
+    void UpdateEndtimeAndCompute();
 
 private:
     void MMIKeyEvent(CameraKeyEvent eventType);
@@ -219,6 +224,10 @@ private:
     std::shared_ptr<CommandBase> CreateNodCmd();
     std::shared_ptr<CommandBase> CreateHeadShakeCmd();
     void TrggerMechLocationReport();
+    void MechkitFaultInfoReport(const RotateBySpeedParam& rotateSpeedParam);
+    void MechkitIntelligentInfoReport(const CameraInfoParams &mechCameraInfo);
+    void InitDfxInfo();
+    void GetDfxDeviceTypeInfo();
 
 private:
     std::shared_ptr<DeviceStatus> deviceStatus_;
@@ -271,7 +280,10 @@ private:
     bool isFirstConnect_ = false;
     uint32_t deviceIdentifier_ = 0x00000000;
     sptr<AppExecFwk::IApplicationStateObserver> appChangeListener_;
-    std::vector<std::string> bundleNameList_;
+    std::set<AppForegroundInfo> appForegroundInfos_;
+    std::mutex appForegroundInfoMutex_;
+    uint64_t trackingTime_ = 0;
+    MechkitControlInfo controlInfo_ = {0};
 };
 
 class MechEventListenerImpl : public IMechEventListener {
@@ -298,6 +310,7 @@ public:
     ~AbilityStateListener();
 
     void OnAbilityStateChanged(const AppExecFwk::AbilityStateData &abilityStateData) override;
+    void OnAppStateChanged(const AppExecFwk::AppStateData &appStateData) override;
 
 private:
     std::shared_ptr<MotionManager> motionManager_;

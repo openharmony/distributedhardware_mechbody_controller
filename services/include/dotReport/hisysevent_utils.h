@@ -34,10 +34,45 @@ struct MechKitStartReportInfo {
     MechKitStartResCode mechkitStartResultCode = MechKitStartResCode::SUCCESS;
 };
 
+struct MechkitControlInfo {
+    uint32_t upWard;
+    uint32_t downWard;
+    uint32_t turnLeft;
+    uint32_t turnRight;
+    uint32_t fastRotation;
+    uint32_t landScapePortrait;
+    uint8_t cameraMode;
+    uint64_t trackingDuration;
+    uint8_t cameraType;
+    float_t zoomRatio;
+    std::string packageName;
+    uint8_t obstacleNumber;
+    uint8_t cliffNumber;
+    uint32_t successNumber;
+    uint32_t failNumber;
+    uint8_t deviceType;
+    uint32_t stickNum;
+    std::vector<std::string> appName;
+    std::vector<uint64_t> existenceTime;
+};
+
+struct AppForegroundInfo {
+    std::string bundleName;
+    int64_t startTime;
+    uint64_t duration = 0;
+    int32_t state;
+    
+    bool operator<(const AppForegroundInfo& other) const
+    {
+        return bundleName < other.bundleName;
+    }
+};
+
 class HisyseventUtils {
 public:
     static void DotReportMechKitStartEvent(const MechKitStartReportInfo &mechKitStartReportInfo);
     static void DotReportFocustrackingStartEvent(const std::string &appName);
+    static void DoReportMechkitControlStatisticEvent(MechkitControlInfo controlInfo);
 };
 } // namespace MechBodyController
 } // namespace OHOS
