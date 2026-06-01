@@ -61,17 +61,18 @@ HWTEST_F(MechbodyAdapterUtilsTest, InitTrackingCore_001, TestSize.Level3)
     DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_001 begin" << std::endl;
 
     // Given: 使用不存在的动态库路径会导致加载失败
-    // 注意：由于路径是硬编码的，这个测试可能在实际环境中失败
-    // 这里主要测试错误处理逻辑
-
     // When: 调用初始化方法
     int32_t ret = MechbodyAdapterUtils::InitTrackingCore();
 
-    // Then: 返回错误码或成功（取决于环境中是否存在对应的动态库）
-    // 如果动态库不存在，应该返回错误码
+    // Then: 根据环境验证具体的返回值
     // 如果动态库存在，应该返回成功
-    EXPECT_TRUE(ret == ERR_OK || ret == LOAD_MECH_ADAPTER_SO_ERROR ||
-                ret == LOAD_MECH_ADAPTER_FUNCTION_ERROR);
+    if (ret == ERR_OK) {
+        // 验证初始化成功后，句柄和函数指针不为空
+        // 需要添加对内部状态的验证
+    } else {
+        // 验证返回了具体的错误码
+        EXPECT_TRUE(ret == LOAD_MECH_ADAPTER_SO_ERROR || ret == LOAD_MECH_ADAPTER_FUNCTION_ERROR);
+    }
 
     DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_001 end, ret=" << ret << std::endl;
 }
@@ -118,28 +119,6 @@ HWTEST_F(MechbodyAdapterUtilsTest, RunTrackingCore_001, TestSize.Level3)
     EXPECT_EQ(ret, LOAD_MECH_ADAPTER_FUNCTION_ERROR);
 
     DTEST_LOG << "MechbodyAdapterUtilsTest RunTrackingCore_001 end, ret=" << ret << std::endl;
-}
-
-/**
- * @tc.name: RunTrackingCore_002
- * @tc.desc: 测试初始化失败时调用 RunTrackingCore 返回错误
- * @tc.type: FUNC
- */
-HWTEST_F(MechbodyAdapterUtilsTest, RunTrackingCore_002, TestSize.Level3)
-{
-    DTEST_LOG << "MechbodyAdapterUtilsTest RunTrackingCore_002 begin" << std::endl;
-
-    // Given: 未初始化，句柄和函数指针为空
-    // 已在 SetUp 中调用 Clear()
-
-    // When: 调用 RunTrackingCore
-    auto pushFn = [](float x, float y) {};
-    int32_t ret = MechbodyAdapterUtils::RunTrackingCore(100.0f, 100.0f, 640.0f, 480.0f, pushFn);
-
-    // Then: 返回错误码
-    EXPECT_EQ(ret, LOAD_MECH_ADAPTER_FUNCTION_ERROR);
-
-    DTEST_LOG << "MechbodyAdapterUtilsTest RunTrackingCore_002 end, ret=" << ret << std::endl;
 }
 
 /**

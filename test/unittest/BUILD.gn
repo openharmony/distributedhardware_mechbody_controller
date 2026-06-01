@@ -117,6 +117,7 @@ ohos_unittest("mc_transport_command_test") {
   sources = [
     "transport/mc_data_buffer_test.cpp",
     "transport/mc_protocol_convertor_test.cpp",
+    "transport/mc_send_adapter_test.cpp",    
   ]
 
   configs = [
