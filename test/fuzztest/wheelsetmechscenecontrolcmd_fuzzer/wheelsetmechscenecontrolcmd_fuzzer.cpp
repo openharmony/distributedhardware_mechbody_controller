@@ -45,38 +45,44 @@ enum class TestFunctionId {
 
 void FuzzConstructorLandscapePortraitSwitch(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechSceneControlCmd cmd(ActionType::LANDSCAPE_PORTRAIT_SWITCH);
+    ActionType actionType = provider.ConsumeBool() ? ActionType::LANDSCAPE_PORTRAIT_SWITCH :
+        static_cast<ActionType>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechSceneControlCmd cmd(actionType);
 }
 
 void FuzzConstructorPatrolMode(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechSceneControlCmd cmd(ActionType::PATROL_MODE);
+    ActionType actionType = provider.ConsumeBool() ? ActionType::PATROL_MODE :
+        static_cast<ActionType>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechSceneControlCmd cmd(actionType);
 }
 
 void FuzzConstructorGreetMode(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechSceneControlCmd cmd(ActionType::GREET_MODE);
+    ActionType actionType = provider.ConsumeBool() ? ActionType::GREET_MODE :
+        static_cast<ActionType>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechSceneControlCmd cmd(actionType);
 }
 
 void FuzzConstructorHeadUp(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechSceneControlCmd cmd(ActionType::HEAD_UP);
+    ActionType actionType = provider.ConsumeBool() ? ActionType::HEAD_UP :
+        static_cast<ActionType>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechSceneControlCmd cmd(actionType);
 }
 
 void FuzzConstructorHappy(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechSceneControlCmd cmd(ActionType::HAPPY);
+    ActionType actionType = provider.ConsumeBool() ? ActionType::HAPPY :
+        static_cast<ActionType>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechSceneControlCmd cmd(actionType);
 }
 
 void FuzzConstructorDance(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelSetMechSceneControlCmd cmd(ActionType::DANCE);
+    ActionType actionType = provider.ConsumeBool() ? ActionType::DANCE :
+        static_cast<ActionType>(provider.ConsumeIntegral<int32_t>());
+    WheelSetMechSceneControlCmd cmd(actionType);
 }
 
 void FuzzConstructorRandom(FuzzedDataProvider &provider)

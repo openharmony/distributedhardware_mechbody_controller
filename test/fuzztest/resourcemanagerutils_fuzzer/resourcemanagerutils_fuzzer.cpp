@@ -48,27 +48,25 @@ void FuzzGetPixelMapByName(FuzzedDataProvider &provider)
 
 void FuzzGetStringEmptyName(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    std::string emptyName = "";
+    std::string emptyName = provider.ConsumeBool() ? "" : provider.ConsumeRandomLengthString();
     ResourceManagerUtils::GetSystemStringByName(emptyName);
 }
 
 void FuzzGetPixelMapEmptyName(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    std::string emptyName = "";
+    std::string emptyName = provider.ConsumeBool() ? "" : provider.ConsumeRandomLengthString();
     ResourceManagerUtils::GetPixelMapByName(emptyName);
 }
 
 void FuzzGetStringSpecialChars(FuzzedDataProvider &provider)
 {
-    std::string specialChars = "!@#$%^&*()_+-=[]{}|;':\",./<>?";
+    std::string specialChars = provider.ConsumeRandomLengthString();
     ResourceManagerUtils::GetSystemStringByName(specialChars);
 }
 
 void FuzzGetPixelMapSpecialChars(FuzzedDataProvider &provider)
 {
-    std::string specialChars = "!@#$%^&*()_+-=[]{}|;':\",./<>?";
+    std::string specialChars = provider.ConsumeRandomLengthString();
     ResourceManagerUtils::GetPixelMapByName(specialChars);
 }
 

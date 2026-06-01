@@ -133,22 +133,45 @@ void OnRotationAxesStatusChangeFuzzTest(const uint8_t *data, size_t size)
     mechBodyControllerService.OnRotationAxesStatusChange(mechId, axesStatus);
 }
 
-void SetUserOperationFuzzTest(const uint8_t *data, size_t size)
+void NotifyMechEventFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    FuzzedDataProvider fdp(data, size);
-    int32_t num = fdp.ConsumeIntegral<int32_t>();
-    std::shared_ptr<Operation> operation = std::make_shared<Operation>(
-            static_cast<Operation>(num));
-    std::string mac = fdp.ConsumeRandomLengthString();
-    std::string param = fdp.ConsumeRandomLengthString();
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
-    mechBodyControllerService.SetUserOperation(operation, mac, param);
 
+    FuzzedDataProvider fdp(data, size);
     int32_t mechId = fdp.ConsumeIntegral<int32_t>();
-    mechBodyControllerService.OnDeviceDisconnected(mechId);
+    uint32_t enumIdx = fdp.ConsumeIntegral<uint32_t>() % 10;
+    MechEventType mechEventType = static_cast<MechEventType>(enumIdx);
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.NotifyMechEvent(mechId, mechEventType);
+}
+
+void IsSupportActionFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    int32_t mechId = fdp.ConsumeIntegral<int32_t>();
+    uint32_t enumIdx = fdp.ConsumeIntegral<uint32_t>() % 20;
+    ActionType actionType = static_cast<ActionType>(enumIdx);
+    bool isSupport = false;
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.IsSupportAction(mechId, actionType, isSupport);
+}
+
+void OnStopFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.OnStop();
 }
 }
 
@@ -160,6 +183,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetRotationDegreeLimitsFuzzTest(data, size);
     OHOS::GetRotationAxesStatusFuzzTest(data, size);
     OHOS::OnRotationAxesStatusChangeFuzzTest(data, size);
-    OHOS::SetUserOperationFuzzTest(data, size);
+    OHOS::NotifyMechEventFuzzTest(data, size);
+    OHOS::IsSupportActionFuzzTest(data, size);
+    OHOS::OnStopFuzzTest(data, size);
     return 0;
 }

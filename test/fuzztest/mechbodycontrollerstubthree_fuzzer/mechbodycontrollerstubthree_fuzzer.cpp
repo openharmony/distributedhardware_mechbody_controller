@@ -50,7 +50,7 @@ MechBodyControllerService::~MechBodyControllerService()
 }
 
 int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId, bool isFirstConnect,
-    const uint32_t &deviceIdentifier)
+                                                     const uint32_t &deviceIdentifier)
 {
     return 0;
 }
@@ -176,8 +176,7 @@ int32_t MechBodyControllerService::UnRegisterRotationAxesStatusChangeCallback()
 }
 
 void RegisterCmdChannelInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                     const uint8_t *data,
-                                     size_t size)
+                                     const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::REGISTER_CMD_CHANNEL);
     MessageParcel datas;
@@ -190,8 +189,7 @@ void RegisterCmdChannelInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mec
     mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
 }
 
-void RotateByDegreeInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                 const uint8_t *data,
+void RotateByDegreeInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr, const uint8_t *data,
                                  size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_BY_DEGREE);
@@ -206,8 +204,7 @@ void RotateByDegreeInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBod
 }
 
 void GetMaxRotationTimeInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                     const uint8_t *data,
-                                     size_t size)
+                                     const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::GET_MAX_ROTATION_TIME);
     MessageParcel datas;
@@ -221,8 +218,7 @@ void GetMaxRotationTimeInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mec
 }
 
 void GetMaxRotationSpeedInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                      const uint8_t *data,
-                                      size_t size)
+                                      const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::GET_MAX_ROTATION_SPEED);
     MessageParcel datas;
@@ -235,11 +231,24 @@ void GetMaxRotationSpeedInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> me
     mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
 }
 
-void RotateBySpeedInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                const uint8_t *data,
+void RotateBySpeedInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr, const uint8_t *data,
                                 size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_BY_SPEED);
+    MessageParcel datas;
+    datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
+    datas.WriteBuffer(data, size);
+    datas.RewindRead(0);
+    MessageParcel reply;
+    MessageOption option;
+
+    mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
+}
+
+void UnSubscribeCallbackInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
+                                      const uint8_t *data, size_t size)
+{
+    uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::UN_SUBSCRIBE_CALLBACK);
     MessageParcel datas;
     datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
     datas.WriteBuffer(data, size);
@@ -261,5 +270,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetMaxRotationTimeInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::GetMaxRotationSpeedInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::RotateBySpeedInnerFuzzTest(mechBodyControllerStubPtr, data, size);
+    OHOS::UnSubscribeCallbackInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     return 0;
 }

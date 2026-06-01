@@ -50,7 +50,7 @@ MechBodyControllerService::~MechBodyControllerService()
 }
 
 int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId, bool isFirstConnect,
-    const uint32_t &deviceIdentifier)
+                                                     const uint32_t &deviceIdentifier)
 {
     return 0;
 }
@@ -176,8 +176,7 @@ int32_t MechBodyControllerService::UnRegisterRotationAxesStatusChangeCallback()
 }
 
 void AttachStateChangeListenOnInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                            const uint8_t *data,
-                                            size_t size)
+                                            const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_ON);
     MessageParcel datas;
@@ -191,8 +190,7 @@ void AttachStateChangeListenOnInnerFuzzTest(std::shared_ptr<MechBodyControllerSt
 }
 
 void AttachStateChangeListenOffInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                             const uint8_t *data,
-                                             size_t size)
+                                             const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ATTACH_STATE_CHANGE_LISTEN_OFF);
     MessageParcel datas;
@@ -206,8 +204,7 @@ void AttachStateChangeListenOffInnerFuzzTest(std::shared_ptr<MechBodyControllerS
 }
 
 void GetAttachedDevicesInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                     const uint8_t *data,
-                                     size_t size)
+                                     const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::GET_ATTACHED_DEVICES);
     MessageParcel datas;
@@ -221,8 +218,7 @@ void GetAttachedDevicesInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mec
 }
 
 void SetUserOperationInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                   const uint8_t *data,
-                                   size_t size)
+                                   const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::SET_USER_OPERATION);
     MessageParcel datas;
@@ -236,10 +232,65 @@ void SetUserOperationInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechB
 }
 
 void SetCameraTrackingEnabledInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
-                                           const uint8_t *data,
-                                           size_t size)
+                                           const uint8_t *data, size_t size)
 {
     uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::SET_CAMERA_TRACKING_ENABLED);
+    MessageParcel datas;
+    datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
+    datas.WriteBuffer(data, size);
+    datas.RewindRead(0);
+    MessageParcel reply;
+    MessageOption option;
+
+    mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
+}
+
+void RotateToEulerAnglesInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr,
+                                      const uint8_t *data, size_t size)
+{
+    uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::ROTATE_TO_EULER_ANGLES);
+    MessageParcel datas;
+    datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
+    datas.WriteBuffer(data, size);
+    datas.RewindRead(0);
+    MessageParcel reply;
+    MessageOption option;
+
+    mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
+}
+
+void SearchTargetInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr, const uint8_t *data,
+                               size_t size)
+{
+    uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::SEARCH_TARGET);
+    MessageParcel datas;
+    datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
+    datas.WriteBuffer(data, size);
+    datas.RewindRead(0);
+    MessageParcel reply;
+    MessageOption option;
+
+    mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
+}
+
+void MoveInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr, const uint8_t *data,
+                       size_t size)
+{
+    uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::MOVE);
+    MessageParcel datas;
+    datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
+    datas.WriteBuffer(data, size);
+    datas.RewindRead(0);
+    MessageParcel reply;
+    MessageOption option;
+
+    mechBodyControllerStubPtr->OnRemoteRequest(code, datas, reply, option);
+}
+
+void MoveBySpeedInnerFuzzTest(std::shared_ptr<MechBodyControllerStub> mechBodyControllerStubPtr, const uint8_t *data,
+                              size_t size)
+{
+    uint32_t code = static_cast<uint32_t>(IMechBodyControllerCode::MOVE_BY_SPEED);
     MessageParcel datas;
     datas.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN);
     datas.WriteBuffer(data, size);
@@ -261,5 +312,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetAttachedDevicesInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::SetUserOperationInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     OHOS::SetCameraTrackingEnabledInnerFuzzTest(mechBodyControllerStubPtr, data, size);
+    OHOS::RotateToEulerAnglesInnerFuzzTest(mechBodyControllerStubPtr, data, size);
+    OHOS::SearchTargetInnerFuzzTest(mechBodyControllerStubPtr, data, size);
+    OHOS::MoveInnerFuzzTest(mechBodyControllerStubPtr, data, size);
+    OHOS::MoveBySpeedInnerFuzzTest(mechBodyControllerStubPtr, data, size);
     return 0;
 }

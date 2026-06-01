@@ -29,14 +29,6 @@ using namespace OHOS::MechBodyController;
 namespace {
     const std::string TAG = "McCommandFactoryFuzzTest";
     const uint32_t MAX_DATA_SIZE = 512;
-
-    enum class TestFunctionId {
-        FUZZ_FACTORY_SETTINGS = 0,
-        FUZZ_FACTORY_CREATE_COMMANDS = 1,
-        FUZZ_FACTORY_CREATE_COMMANDS_WITH_PARAMS = 2,
-        FUZZ_FACTORY_CREATE_COMMANDS_WITH_COMPLEX_PARAMS = 3,
-        FUZZ_FACTORY_CREATE_FROM_DATA = 4
-    };
 }
 
 static void TestFactorySettings(FuzzedDataProvider &provider)
@@ -219,6 +211,8 @@ static void TestWheelCommands(FuzzedDataProvider &provider, CommandFactory &fact
         wheelParams.push_back(wheelParam);
     }
     factory.CreateWheelSetMechRelativePositionCmd(taskId, wheelParams);
+
+    factory.CreateWheelGetMechMovementCapabilityCmd();
 }
 
 static void TestOtherCommands(FuzzedDataProvider &provider, CommandFactory &factory)
@@ -252,55 +246,31 @@ static void TestFactoryCreateCommandsWithComplexParams(FuzzedDataProvider &provi
 static void TestFactoryCreateFromData(FuzzedDataProvider &provider)
 {
     CommandFactory factory;
-
     uint32_t dataSize = provider.ConsumeIntegralInRange<uint32_t>(0, MAX_DATA_SIZE);
     std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
 
     if (dataBuffer == nullptr) {
         return;
     }
-
     if (dataSize > 0) {
         std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataSize);
         if (!testData.empty()) {
-            dataBuffer->SetRange(0, dataSize);
-            if (memcpy_s(dataBuffer->Data(), dataBuffer->Size(), testData.data(), dataSize) != 0) {
+            dataBuffer->SetRange(0, testData.size());
+            if (memcpy_s(dataBuffer->Data(), dataBuffer->Size(), testData.data(), testData.size()) != 0) {
                 return;
             }
         }
     }
-
     factory.CreateFromData(dataBuffer);
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < 1) {
-        return 0;
-    }
-
     FuzzedDataProvider provider(data, size);
-    uint8_t testType = provider.ConsumeIntegral<uint8_t>() % 5;
-
-    switch (static_cast<TestFunctionId>(testType)) {
-        case TestFunctionId::FUZZ_FACTORY_SETTINGS:
-            TestFactorySettings(provider);
-            break;
-        case TestFunctionId::FUZZ_FACTORY_CREATE_COMMANDS:
-            TestFactoryCreateCommands(provider);
-            break;
-        case TestFunctionId::FUZZ_FACTORY_CREATE_COMMANDS_WITH_PARAMS:
-            TestFactoryCreateCommandsWithParams(provider);
-            break;
-        case TestFunctionId::FUZZ_FACTORY_CREATE_COMMANDS_WITH_COMPLEX_PARAMS:
-            TestFactoryCreateCommandsWithComplexParams(provider);
-            break;
-        case TestFunctionId::FUZZ_FACTORY_CREATE_FROM_DATA:
-            TestFactoryCreateFromData(provider);
-            break;
-        default:
-            break;
-    }
-
+    TestFactorySettings(provider);
+    TestFactoryCreateCommands(provider);
+    TestFactoryCreateCommandsWithParams(provider);
+    TestFactoryCreateCommandsWithComplexParams(provider);
+    TestFactoryCreateFromData(provider);
     return 0;
 }

@@ -124,7 +124,8 @@ static void TestReadOperations(FuzzedDataProvider &provider)
     int16_t int16Val = 0;
     float floatVal = 0.0f;
 
-    uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, rangeSize - MIN_BUFFER_SIZE);
+    uint32_t maxReadOffset = (rangeSize >= sizeof(uint64_t)) ? (rangeSize - sizeof(uint64_t)) : MIN_OFFSET;
+    uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, maxReadOffset);
 
     dataBuffer->ReadUint8(readOffset, uint8Val);
     dataBuffer->ReadUint16(readOffset, uint16Val);
@@ -181,7 +182,8 @@ static void TestBoundaryConditions(FuzzedDataProvider &provider)
         int16_t valI16 = 0;
         float valF = 0.0f;
 
-        uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, rangeSize - MIN_BUFFER_SIZE);
+        uint32_t maxReadOffset = (rangeSize >= sizeof(uint64_t)) ? (rangeSize - sizeof(uint64_t)) : MIN_OFFSET;
+        uint32_t readOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, maxReadOffset);
 
         dataBuffer->ReadUint8(readOffset, val8);
         dataBuffer->ReadUint16(readOffset, val16);

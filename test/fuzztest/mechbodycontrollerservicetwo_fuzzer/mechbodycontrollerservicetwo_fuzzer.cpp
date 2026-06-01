@@ -120,8 +120,65 @@ void NotifyOperationResultFuzzTest(const uint8_t *data, size_t size)
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
     mechBodyControllerService.NotifyOperationResult(tokenId, cmdId, result);
 }
+
+void SearchTargetFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    std::string napiCmdId = fdp.ConsumeRandomLengthString();
+    auto targetInfo = std::make_shared<TargetInfo>();
+    auto searchParams = std::make_shared<SearchParams>();
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.SearchTarget(napiCmdId, targetInfo, searchParams);
 }
 
+void SearchTargetEndFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    uint32_t tokenId = fdp.ConsumeIntegral<uint32_t>();
+    std::string napiCmdId = fdp.ConsumeRandomLengthString();
+    int32_t targetNum = fdp.ConsumeIntegral<int32_t>();
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.SearchTargetEnd(tokenId, napiCmdId, targetNum);
+}
+
+void GetTrackingEnabledDeviceFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    bool isEnabled = fdp.ConsumeIntegral<bool>();
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.GetTrackingEnabledDevice(isEnabled);
+}
+
+void MoveFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    int32_t mechId = fdp.ConsumeIntegral<int32_t>();
+    std::string cmdId = fdp.ConsumeRandomLengthString();
+    auto moveParams = std::make_shared<MoveParams>();
+
+    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
+    mechBodyControllerService.Move(mechId, cmdId, moveParams);
+}
+}
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
@@ -131,5 +188,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::GetTrackingLayoutFuzzTest(data, size);
     OHOS::RotateByDegreeFuzzTest(data, size);
     OHOS::NotifyOperationResultFuzzTest(data, size);
+    OHOS::SearchTargetFuzzTest(data, size);
+    OHOS::SearchTargetEndFuzzTest(data, size);
+    OHOS::GetTrackingEnabledDeviceFuzzTest(data, size);
+    OHOS::MoveFuzzTest(data, size);
     return 0;
 }

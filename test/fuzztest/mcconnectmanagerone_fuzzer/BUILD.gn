@@ -17,11 +17,11 @@ import("//build/test.gni")
 import(
     "//foundation/distributedhardware/mechbody_controller/mechbody.gni")
 
-ohos_fuzztest("McConnectManagerFuzzTest") {
+ohos_fuzztest("McConnectManagerOneFuzzTest") {
   module_out_path = "mechbody_controller/mechbody_controller/"
   mechbody_path =
       "//foundation/distributedhardware/mechbody_controller"
-  fuzz_config_file = "${mechbody_path}/test/fuzztest/mcconnectmanager_fuzzer"
+  fuzz_config_file = "${mechbody_path}/test/fuzztest/mcconnectmanagerone_fuzzer"
   include_dirs = [
     "${mechbody_path}/services/include",
     "${mechbody_path}/services/include/dotReport",
@@ -63,7 +63,7 @@ ohos_fuzztest("McConnectManagerFuzzTest") {
     "${mechbody_path}/services/src/utils/load_mechbody_adapter.cpp",
     "${mechbody_path}/services/src/dotReport/hisysevent_utils.cpp",
     "${mechbody_path}/services/src/utils/subscribe_event_utils.cpp",
-    "${mechbody_path}/test/fuzztest/mcconnectmanager_fuzzer/mcconnectmanager_fuzzer.cpp",
+    "${mechbody_path}/test/fuzztest/mcconnectmanagerone_fuzzer/mcconnectmanagerone_fuzzer.cpp",
   ]
 
   deps = [ "${mechbody_path}/services:mechbody_service" ]
@@ -94,7 +94,6 @@ ohos_fuzztest("McConnectManagerFuzzTest") {
     "window_manager:libdm_lite",
     "hisysevent:libhisysevent",
     "distributed_notification_service:ans_innerkits",
-    "resource_management:global_resmgr",
     "ability_runtime:ability_manager",  
     "ability_runtime:app_manager",
   ]
@@ -102,5 +101,5 @@ ohos_fuzztest("McConnectManagerFuzzTest") {
 
 group("fuzztest") {
   testonly = true
-  deps = [ ":McConnectManagerFuzzTest" ]
+  deps = [ ":McConnectManagerOneFuzzTest" ]
 }

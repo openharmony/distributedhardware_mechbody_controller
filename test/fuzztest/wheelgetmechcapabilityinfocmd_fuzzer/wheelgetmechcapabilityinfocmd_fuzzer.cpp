@@ -41,22 +41,25 @@ enum class TestFunctionId {
 
 void FuzzConstructor(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    WheelGetMechCapabilityInfoCmd cmd;
+    if (provider.ConsumeBool()) {
+        WheelGetMechCapabilityInfoCmd cmd;
+    }
 }
 
 void FuzzMarshal(FuzzedDataProvider &provider)
 {
-    (void)provider;
     WheelGetMechCapabilityInfoCmd cmd;
-    auto buffer = cmd.Marshal();
+    if (provider.ConsumeBool()) {
+        auto buffer = cmd.Marshal();
+    }
 }
 
 void FuzzTriggerResponseWithNull(FuzzedDataProvider &provider)
 {
-    (void)provider;
     WheelGetMechCapabilityInfoCmd cmd;
-    cmd.TriggerResponse(nullptr);
+    if (provider.ConsumeBool()) {
+        cmd.TriggerResponse(nullptr);
+    }
 }
 
 void FuzzTriggerResponseWithSmallBuffer(FuzzedDataProvider &provider)
@@ -73,12 +76,14 @@ void FuzzTriggerResponseWithZeroLength(FuzzedDataProvider &provider)
 {
     WheelGetMechCapabilityInfoCmd cmd;
 
-    auto buffer = std::make_shared<MechDataBuffer>(RSP_SIZE + BIT_OFFSET_2);
+    size_t bufferSize = provider.ConsumeBool() ? (RSP_SIZE + BIT_OFFSET_2) :
+        provider.ConsumeIntegralInRange<size_t>(0, 30);
+    auto buffer = std::make_shared<MechDataBuffer>(bufferSize);
     if (buffer == nullptr) {
         return;
     }
 
-    for (size_t i = 0; i < RSP_SIZE + BIT_OFFSET_2; i++) {
+    for (size_t i = 0; i < bufferSize; i++) {
         buffer->AppendUint8(0x00);
     }
 
@@ -132,18 +137,20 @@ void FuzzTriggerResponseWithRandomData(FuzzedDataProvider &provider)
 
 void FuzzGetParams(FuzzedDataProvider &provider)
 {
-    (void)provider;
     WheelGetMechCapabilityInfoCmd cmd;
-    WheelCapabilityInfo params = cmd.GetParams();
-    (void)params;
+    if (provider.ConsumeBool()) {
+        WheelCapabilityInfo params = cmd.GetParams();
+        (void)params;
+    }
 }
 
 void FuzzGetResult(FuzzedDataProvider &provider)
 {
-    (void)provider;
     WheelGetMechCapabilityInfoCmd cmd;
-    uint8_t result = cmd.GetResult();
-    (void)result;
+    if (provider.ConsumeBool()) {
+        uint8_t result = cmd.GetResult();
+        (void)result;
+    }
 }
 
 void FuzzFullWorkflow(FuzzedDataProvider &provider)

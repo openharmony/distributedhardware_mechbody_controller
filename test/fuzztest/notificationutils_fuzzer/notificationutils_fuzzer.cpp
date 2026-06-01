@@ -37,14 +37,16 @@ enum class TestFunctionId {
 
 void FuzzSendCeliaNotification(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CELIA);
+    if (provider.ConsumeBool()) {
+        NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CELIA);
+    }
 }
 
 void FuzzSendConnectedCapsuleNotification(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    if (provider.ConsumeBool()) {
+        NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    }
 }
 
 void FuzzCancelNotification(FuzzedDataProvider &provider)
@@ -72,8 +74,7 @@ void FuzzCancelMultiple(FuzzedDataProvider &provider)
 
 void FuzzSendInvalidType(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    NotificationType invalidType = static_cast<NotificationType>(99);
+    NotificationType invalidType = static_cast<NotificationType>(provider.ConsumeIntegral<int32_t>());
     NotificationUtils::SendNotification(invalidType);
 }
 
@@ -82,7 +83,9 @@ void FuzzCancelBoundaryValues(FuzzedDataProvider &provider)
     int32_t boundaryValues[] = {INT32_MIN, -1, 0, 1, INT32_MAX};
 
     for (auto notificationId : boundaryValues) {
-        NotificationUtils::CancelNotification(notificationId);
+        if (provider.ConsumeBool()) {
+            NotificationUtils::CancelNotification(notificationId);
+        }
     }
 }
 
@@ -106,9 +109,12 @@ void FuzzSendCapsuleMultiple(FuzzedDataProvider &provider)
 
 void FuzzAllNotificationTypes(FuzzedDataProvider &provider)
 {
-    (void)provider;
-    NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CELIA);
-    NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    if (provider.ConsumeBool()) {
+        NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CELIA);
+    }
+    if (provider.ConsumeBool()) {
+        NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    }
 }
 
 void FuzzSubscriberCallbacks(FuzzedDataProvider &provider)
