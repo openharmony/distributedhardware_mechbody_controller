@@ -24,55 +24,67 @@ namespace MechBodyController {
 
 void BleSendManagerTest::SetUpTestCase() {}
 void BleSendManagerTest::TearDownTestCase() {}
-void BleSendManagerTest::SetUp() {
+void BleSendManagerTest::SetUp()
+{
     bleSendManager_ = std::make_shared<BleSendManager>();
 }
-void BleSendManagerTest::TearDown() {
+void BleSendManagerTest::TearDown()
+{
     bleSendManager_ = nullptr;
 }
 
 void BleGattClientCallbackTest::SetUpTestCase() {}
 void BleGattClientCallbackTest::TearDownTestCase() {}
-void BleGattClientCallbackTest::SetUp() {
+void BleGattClientCallbackTest::SetUp()
+{
     bleGattClientCallback_ = std::make_shared<BleGattClientCallback>();
 }
-void BleGattClientCallbackTest::TearDown() {
+void BleGattClientCallbackTest::TearDown()
+{
     bleGattClientCallback_ = nullptr;
 }
 
 void RemoteDeviceObserverTest::SetUpTestCase() {}
 void RemoteDeviceObserverTest::TearDownTestCase() {}
-void RemoteDeviceObserverTest::SetUp() {
+void RemoteDeviceObserverTest::SetUp()
+{
     remoteDeviceObserver_ = std::make_shared<RemoteDeviceObserver>();
 }
-void RemoteDeviceObserverTest::TearDown() {
+void RemoteDeviceObserverTest::TearDown()
+{
     remoteDeviceObserver_ = nullptr;
 }
 
 void HostObserverTest::SetUpTestCase() {}
 void HostObserverTest::TearDownTestCase() {}
-void HostObserverTest::SetUp() {
+void HostObserverTest::SetUp()
+{
     hostObserver_ = std::make_shared<HostObserver>();
 }
-void HostObserverTest::TearDown() {
+void HostObserverTest::TearDown()
+{
     hostObserver_ = nullptr;
 }
 
 void HidObserverTest::SetUpTestCase() {}
 void HidObserverTest::TearDownTestCase() {}
-void HidObserverTest::SetUp() {
+void HidObserverTest::SetUp()
+{
     hidObserver_ = std::make_shared<HidObserver>();
 }
-void HidObserverTest::TearDown() {
+void HidObserverTest::TearDown()
+{
     hidObserver_ = nullptr;
 }
 
 void BluetoothServiceStatusChangeListenerTest::SetUpTestCase() {}
 void BluetoothServiceStatusChangeListenerTest::TearDownTestCase() {}
-void BluetoothServiceStatusChangeListenerTest::SetUp() {
+void BluetoothServiceStatusChangeListenerTest::SetUp()
+{
     bluetoothServiceStatusChangeListener_ = std::make_shared<BluetoothServiceStatusChangeListener>();
 }
-void BluetoothServiceStatusChangeListenerTest::TearDown() {
+void BluetoothServiceStatusChangeListenerTest::TearDown()
+{
     bluetoothServiceStatusChangeListener_ = nullptr;
 }
 
