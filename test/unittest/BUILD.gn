@@ -459,7 +459,8 @@ ohos_unittest("mc_command_test_0x01") {
     debug = false
   }
 
-  sources = [ "transport/command/0x01/mc_command_test01.cpp" ]
+  sources = [ "transport/command/0x01/mc_action_gimbal_feature_control_cmd_test.cpp",
+            "transport/command/0x01/mc_command_test01.cpp" ]
 
   configs = [
     ":mech_test_config",
