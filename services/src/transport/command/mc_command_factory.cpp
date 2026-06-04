@@ -210,7 +210,7 @@ std::shared_ptr<NormalSetMechMotionControlCmd> CommandFactory::CreateSetMechMoti
 
 std::shared_ptr<SetMechMotionControlCmd> CommandFactory::CreateSetMechMotionControlCmd01(ControlCommand action)
 {
- 	return std::make_shared<SetMechMotionControlCmd>(action);
+    return std::make_shared<SetMechMotionControlCmd>(action);
 }
 
 std::shared_ptr<NormalSetMechLocationReportCmd> CommandFactory::CreateSetMechLocationReportCmd(
