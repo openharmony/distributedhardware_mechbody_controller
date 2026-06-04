@@ -2122,7 +2122,6 @@ ExecResult MotionManager::ExtractMotionControlResult(std::shared_ptr<CommandBase
         auto motionCmd = static_cast<NormalSetMechMotionControlCmd *>(command.get());
         cmdResult = motionCmd->GetResult();
     }
-    controlInfo_.landScapePortrait++;
     return MapDeviceErrorCodeToExecResult(cmdResult);
 }
 
