@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 #ifndef BLE_SEND_MANAGER_TEST_H
 #define BLE_SEND_MANAGER_TEST_H
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "ble_send_manager.h"
 
 namespace OHOS {
@@ -26,9 +26,69 @@ class BleSendManagerTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
-    void SetUp() override;
-    void TearDown() override;
+    void SetUp();
+    void TearDown();
+
+protected:
+    std::shared_ptr<BleSendManager> bleSendManager_;
 };
+
+class BleGattClientCallbackTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp();
+    void TearDown();
+
+protected:
+    std::shared_ptr<BleGattClientCallback> bleGattClientCallback_;
+};
+
+class RemoteDeviceObserverTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp();
+    void TearDown();
+
+protected:
+    std::shared_ptr<RemoteDeviceObserver> remoteDeviceObserver_;
+};
+
+class HostObserverTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp();
+    void TearDown();
+
+protected:
+    std::shared_ptr<HostObserver> hostObserver_;
+};
+
+class HidObserverTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp();
+    void TearDown();
+
+protected:
+    std::shared_ptr<HidObserver> hidObserver_;
+};
+
+class BluetoothServiceStatusChangeListenerTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp();
+    void TearDown();
+
+protected:
+    std::shared_ptr<BluetoothServiceStatusChangeListener> bluetoothServiceStatusChangeListener_;
+};
+
 } // namespace MechBodyController
 } // namespace OHOS
+
 #endif // BLE_SEND_MANAGER_TEST_H
