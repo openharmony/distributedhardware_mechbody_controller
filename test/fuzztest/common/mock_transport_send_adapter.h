@@ -43,13 +43,11 @@ public:
             return -1;
         }
         
-        std::thread([this, command, delay]() {
-            if (delay > 0) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-            }
-            SimulateResponse(command);
-        }).detach();
-        
+        if (delay > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+        }
+        SimulateResponse(command);
+
         return 0;
     }
     

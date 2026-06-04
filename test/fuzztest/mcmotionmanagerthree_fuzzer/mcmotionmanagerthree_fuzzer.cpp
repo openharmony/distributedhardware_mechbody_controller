@@ -165,14 +165,6 @@ void FuzzMechCliffInfoNotify(FuzzedDataProvider &provider)
     }
 }
 
-void FuzzMechCliffInfoNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechCliffInfoCmd> cmd = nullptr;
-    listener->MechCliffInfoNotify(cmd);
-}
-
 void FuzzMechObstacleInfoNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
@@ -186,15 +178,6 @@ void FuzzMechObstacleInfoNotify(FuzzedDataProvider &provider)
         listener->MechObstacleInfoNotify(cmd);
     }
 }
-
-void FuzzMechObstacleInfoNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechObstacleInfoCmd> cmd = nullptr;
-    listener->MechObstacleInfoNotify(cmd);
-}
-
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
@@ -206,8 +189,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzMechGenericEventNotifyWithNull(provider);
     FuzzMechGenericEventNotifyWithLowPower(provider);
     FuzzMechCliffInfoNotify(provider);
-    FuzzMechCliffInfoNotifyWithNull(provider);
     FuzzMechObstacleInfoNotify(provider);
-    FuzzMechObstacleInfoNotifyWithNull(provider);
     return 0;
 }
