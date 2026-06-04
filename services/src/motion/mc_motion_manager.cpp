@@ -2097,7 +2097,7 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
         result = MapDeviceErrorCodeToExecResult(
             static_cast<WheelSetMechSceneControlCmd *>(command.get())->GetResult());
     }
-    
+
     auto cbInfo = it->second;
     seqCallbacks_.erase(it);
     lock.unlock();
