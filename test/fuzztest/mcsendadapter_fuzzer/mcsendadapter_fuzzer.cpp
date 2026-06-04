@@ -8,7 +8,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -17,11 +17,13 @@
 #include <memory>
 #include <securec.h>
 #include <cstdint>
+#include <map>
 
 #include "mcsendadapter_fuzzer.h"
 #include "mc_send_adapter.h"
 #include "mc_data_buffer.h"
 #include "mc_protocol_convertor.h"
+#include "mc_command_base.h"
 #include "mechbody_controller_log.h"
 
 using namespace OHOS::MechBodyController;
@@ -29,124 +31,118 @@ using namespace OHOS::MechBodyController;
 namespace {
     const std::string TAG = "McSendAdapterFuzzTest";
     const uint32_t MAX_DATA_SIZE = 4096;
-    const uint32_t MIN_OFFSET = 0;
-}
 
-class MockTransportSendAdapter : public std::enable_shared_from_this<MockTransportSendAdapter> {
-public:
-    MockTransportSendAdapter() = default;
-    ~MockTransportSendAdapter() = default;
-
-    int32_t MockOnReceive(bool isAck, uint16_t seqNo, std::shared_ptr<MechDataBuffer> dataBuffer)
+    static void FuzzSendCommandBasic(FuzzedDataProvider& provider)
     {
-        if (dataBuffer == nullptr) {
-            return INVALID_PARAMETERS_ERR;
+        if (provider.remaining_bytes() < 1) {
+            return;
         }
-        return OHOS::ERR_OK;
+        bool useNullCmd = provider.ConsumeBool();
+        int32_t delayMs = provider.ConsumeIntegral<int32_t>();
+
+        if (useNullCmd) {
+            std::shared_ptr<CommandBase> nullCmd = nullptr;
+            TransportSendAdapter adapter;
+            adapter.SendCommand(nullCmd, delayMs);
+            return;
+        }
+
+        auto cmd = std::make_shared<MockCommand>();
+        cmd->SetCmdSet(provider.ConsumeIntegral<uint8_t>());
+        cmd->SetCmdId(provider.ConsumeIntegral<uint8_t>());
+        cmd->SetNeedResponse(false);
+        cmd->SetRetryTimes(provider.ConsumeIntegral<int32_t>());
+        cmd->SetTimestamp(provider.ConsumeIntegral<int64_t>());
+
+        TransportSendAdapter adapter;
+        adapter.SendCommand(cmd, delayMs);
     }
-};
 
-class MockBleReceviceListener : public BleReceviceListener {
-public:
-    explicit MockBleReceviceListener(std::shared_ptr<MockTransportSendAdapter> adapter)
-        : adapter_(adapter) {}
-    ~MockBleReceviceListener() = default;
-
-    int32_t OnReceive(const uint8_t *data, uint32_t dataLen) override
+    static void FuzzSendCommandWithResponse(FuzzedDataProvider& provider)
     {
-        if (data == nullptr && dataLen > 0) {
-            return INVALID_PARAMETERS_ERR;
+        if (provider.remaining_bytes() < 1) {
+            return;
         }
+        auto cmd = std::make_shared<MockCommand>();
+        int32_t rangeMax = 5;
+        cmd->SetCmdSet(provider.ConsumeIntegral<uint8_t>());
+        cmd->SetCmdId(provider.ConsumeIntegral<uint8_t>());
+        cmd->SetNeedResponse(true);
+        cmd->SetRetryTimes(provider.ConsumeIntegralInRange<int32_t>(0, rangeMax));
+        cmd->SetTimestamp(provider.ConsumeIntegral<int64_t>());
 
-        ProtocolConverter protocolConverter;
-        if (!protocolConverter.Validate(data, dataLen)) {
-            return INVALID_PARAMETERS_ERR;
-        }
-
-        std::shared_ptr<MechDataBuffer> mechDataBuffer = std::make_shared<MechDataBuffer>(dataLen);
-        if (mechDataBuffer == nullptr) {
-            return INVALID_PARAMETERS_ERR;
-        }
-
-        mechDataBuffer->SetRange(MIN_OFFSET, dataLen);
-        if (dataLen > MIN_OFFSET && memcpy_s(mechDataBuffer->Data(), mechDataBuffer->Size(), data, dataLen) != 0) {
-            return INVALID_PARAMETERS_ERR;
-        }
-
-        uint16_t seqNo = 0;
-        bool isAck = false;
-        std::shared_ptr<MechDataBuffer> newMechDataBuffer = protocolConverter.GetData(mechDataBuffer, seqNo, isAck);
-
-        if (adapter_ != nullptr) {
-            return adapter_->MockOnReceive(isAck, seqNo, newMechDataBuffer);
-        }
-        return OHOS::ERR_OK;
+        int32_t delayMs = provider.ConsumeIntegral<int32_t>();
+        TransportSendAdapter adapter;
+        adapter.SendCommand(cmd, delayMs);
     }
 
-private:
-    std::shared_ptr<MockTransportSendAdapter> adapter_;
-};
+    static void FuzzDiscardExpiredData(FuzzedDataProvider& provider)
+    {
+        if (provider.remaining_bytes() < 1) {
+            return;
+        }
+        auto cmd = std::make_shared<MockCommand>();
+        cmd->SetTimestamp(provider.ConsumeIntegral<int64_t>());
 
-static void TestBleReceiveListener(FuzzedDataProvider &provider)
-{
-    auto adapter = std::make_shared<MockTransportSendAdapter>();
-    MockBleReceviceListener listener(adapter);
-
-    uint32_t dataLen = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
-    std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataLen);
-
-    const uint8_t *dataPtr = testData.empty() ? nullptr : testData.data();
-    listener.OnReceive(dataPtr, testData.size());
-}
-
-static void TestDataBufferOperations(FuzzedDataProvider &provider)
-{
-    uint32_t bufferSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
-    std::shared_ptr<MechDataBuffer> mechDataBuffer = std::make_shared<MechDataBuffer>(bufferSize);
-
-    if (mechDataBuffer == nullptr) {
-        return;
+        TransportSendAdapter adapter;
+        adapter.DiscardExpiredData(cmd);
     }
 
-    uint32_t rangeOffset = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, bufferSize);
-    uint32_t rangeSize = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, bufferSize - rangeOffset);
-    mechDataBuffer->SetRange(rangeOffset, rangeSize);
-
-    mechDataBuffer->Size();
-    mechDataBuffer->Offset();
-    mechDataBuffer->Capacity();
-    mechDataBuffer->Data();
-}
-
-static void TestProtocolConverter(FuzzedDataProvider &provider)
-{
-    uint32_t dataLen = provider.ConsumeIntegralInRange<uint32_t>(MIN_OFFSET, MAX_DATA_SIZE);
-    std::vector<uint8_t> testData = provider.ConsumeBytes<uint8_t>(dataLen);
-
-    const uint8_t *dataPtr = testData.empty() ? nullptr : testData.data();
-    uint32_t actualDataLen = testData.size();
-
-    ProtocolConverter protocolConverter;
-    protocolConverter.Validate(dataPtr, actualDataLen);
-
-    if (actualDataLen > MIN_OFFSET && dataPtr != nullptr) {
-        std::shared_ptr<MechDataBuffer> mechDataBuffer = std::make_shared<MechDataBuffer>(actualDataLen);
-        if (mechDataBuffer != nullptr) {
-            mechDataBuffer->SetRange(MIN_OFFSET, actualDataLen);
-            if (memcpy_s(mechDataBuffer->Data(), mechDataBuffer->Size(), dataPtr, actualDataLen) == 0) {
-                uint16_t seqNo = 0;
-                bool isAck = false;
-                protocolConverter.GetData(mechDataBuffer, seqNo, isAck);
-            }
+    static void FuzzOnReceive(FuzzedDataProvider& provider)
+    {
+        if (provider.remaining_bytes() < 1) {
+            return;
         }
+        bool isAck = provider.ConsumeBool();
+        uint16_t seqNo = provider.ConsumeIntegral<uint16_t>();
+        bool useNullBuffer = provider.ConsumeBool();
+
+        std::shared_ptr<MechDataBuffer> dataBuffer;
+        if (!useNullBuffer) {
+            uint32_t bufferSize = provider.ConsumeIntegralInRange<uint32_t>(1, MAX_DATA_SIZE);
+            dataBuffer = std::make_shared<MechDataBuffer>(bufferSize);
+            dataBuffer->SetRange(0, bufferSize);
+        }
+
+        TransportSendAdapter adapter;
+        adapter.OnReceive(isAck, seqNo, dataBuffer);
+    }
+
+    static void FuzzBleReceiveListenerOnReceive(FuzzedDataProvider& provider)
+    {
+        if (provider.remaining_bytes() < 1) {
+            return;
+        }
+        bool useNullData = provider.ConsumeBool();
+        uint32_t dataLen = provider.ConsumeIntegralInRange<uint32_t>(1, MAX_DATA_SIZE);
+
+        std::shared_ptr<TransportSendAdapter> sendAdapter = std::make_shared<TransportSendAdapter>();
+        sendAdapter->RegisterBluetoothListener();
+        BleReceviceListenerImpl listener(sendAdapter);
+
+        if (useNullData) {
+            listener.OnReceive(nullptr, dataLen);
+            return;
+        }
+
+        auto data = std::make_unique<uint8_t[]>(dataLen);
+        for (uint32_t i = 0; i < dataLen && provider.remaining_bytes() > 0; i++) {
+            data[i] = provider.ConsumeIntegral<uint8_t>();
+        }
+        listener.OnReceive(data.get(), dataLen);
+        sendAdapter->UnRegisterBluetoothListener();
     }
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    TestBleReceiveListener(provider);
-    TestDataBufferOperations(provider);
-    TestProtocolConverter(provider);
+
+    FuzzSendCommandBasic(provider);
+    FuzzSendCommandWithResponse(provider);
+    FuzzDiscardExpiredData(provider);
+    FuzzOnReceive(provider);
+    FuzzBleReceiveListenerOnReceive(provider);
+
     return 0;
 }

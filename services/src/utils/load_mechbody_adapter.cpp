@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,9 +25,14 @@ namespace {
 
 std::mutex MechbodyAdapterUtils::mechAdapterMutex_;
 void* MechbodyAdapterUtils::mechAdapterHandle_ = nullptr;
+std::mutex MechbodyAdapterUtils::mechGimbalMutex_;
+void* MechbodyAdapterUtils::mechBackgroundHandle_ = nullptr;
 OHOS::MechBodyController::InitTrackingCore MechbodyAdapterUtils::initFunc_ = nullptr;
 OHOS::MechBodyController::RunTrackingCore MechbodyAdapterUtils::runFunc_ = nullptr;
 OHOS::MechBodyController::ResetTrackingCore MechbodyAdapterUtils::resetFunc_ = nullptr;
+OHOS::MechBodyController::RegisterBackgroundTracking MechbodyAdapterUtils::backgroundRegisterFunc_ = nullptr;
+OHOS::MechBodyController::UnRegisterBackgroundTracking MechbodyAdapterUtils::backgroundUnRegisterFunc_ = nullptr;
+
 
 int32_t MechbodyAdapterUtils::InitTrackingCore()
 {
@@ -35,12 +40,19 @@ int32_t MechbodyAdapterUtils::InitTrackingCore()
     std::lock_guard<std::mutex> lock(mechAdapterMutex_);
 #if (defined(__aarch64__) || defined(__x86_64__))
     char resolvedPath[100] = "/system/lib64/libmech_adapter.z.so";
+    char gimbalPath[100] = "/system/lib64/librobustgimbaltracker_service.z.so";
 #else
     char resolvedPath[100] = "/system/lib/libmech_adapter.z.so";
+    char gimbalPath[100] = "/system/lib/librobustgimbaltracker_service.z.so";
 #endif
     mechAdapterHandle_ = dlopen(resolvedPath, RTLD_LAZY);
     if (mechAdapterHandle_ == nullptr) {
         HILOGE("Failed to load mechbody adapter: %{public}s", dlerror());
+        return LOAD_MECH_ADAPTER_SO_ERROR;
+    }
+    mechBackgroundHandle_ = dlopen(gimbalPath, RTLD_LAZY);
+    if (mechBackgroundHandle_ == nullptr) {
+        HILOGE("Failed to load mechbody gimbal: %{public}s", dlerror());
         return LOAD_MECH_ADAPTER_SO_ERROR;
     }
     dlerror();
@@ -48,10 +60,14 @@ int32_t MechbodyAdapterUtils::InitTrackingCore()
     if (ret != ERR_OK) {
         HILOGE("Init remote mech adapter proxy failed, dlclose handle.");
         dlclose(mechAdapterHandle_);
+        dlclose(mechBackgroundHandle_);
         mechAdapterHandle_ = nullptr;
+        mechBackgroundHandle_ = nullptr;
         initFunc_ = nullptr;
         runFunc_ = nullptr;
         resetFunc_ = nullptr;
+        backgroundRegisterFunc_ = nullptr;
+        backgroundUnRegisterFunc_ = nullptr;
         return ret;
     }
     if (initFunc_ != nullptr) {
@@ -81,6 +97,19 @@ int32_t MechbodyAdapterUtils::LoadFunction()
     if (dlsymError != nullptr) {
         return LOAD_MECH_ADAPTER_FUNCTION_ERROR;
     }
+    backgroundRegisterFunc_ = reinterpret_cast<OHOS::MechBodyController::RegisterBackgroundTracking>(
+        dlsym(mechBackgroundHandle_, "RegisterBackgroundTracking"));
+    dlsymError = dlerror();
+    if (dlsymError != nullptr) {
+        return LOAD_MECH_ADAPTER_FUNCTION_ERROR;
+    }
+    backgroundUnRegisterFunc_ = reinterpret_cast<OHOS::MechBodyController::UnRegisterBackgroundTracking>(
+        dlsym(mechBackgroundHandle_, "UnRegisterBackgroundTracking"));
+    dlsymError = dlerror();
+    if (dlsymError != nullptr) {
+        return LOAD_MECH_ADAPTER_FUNCTION_ERROR;
+    }
+
     return ERR_OK;
 }
 
@@ -110,6 +139,31 @@ int32_t MechbodyAdapterUtils::ResetTrackingCore()
     return ERR_OK;
 }
 
+void MechbodyAdapterUtils::RegisterBackgroundTracking(const GetBackgroundXYFn& GetBackgroundXYFn)
+{
+    HILOGI("RegisterBackgroundTracking called");
+    std::lock_guard<std::mutex> lock(mechGimbalMutex_);
+    if (backgroundRegisterFunc_ == nullptr) {
+        HILOGE("backgroundRegisterFunc_ is nullptr");
+        return;
+    }
+    HILOGI("RegisterBackgroundTracking exec.");
+    backgroundRegisterFunc_(GetBackgroundXYFn);
+}
+
+void MechbodyAdapterUtils::UnRegisterBackgroundTracking()
+{
+    HILOGI("UnRegisterBackgroundTracking called");
+    std::lock_guard<std::mutex> lock(mechGimbalMutex_);
+
+    if (backgroundUnRegisterFunc_ == nullptr) {
+        HILOGE("backgroundUnRegisterFunc_ is nullptr");
+        return;
+    }
+    HILOGI("UnRegisterBackgroundTracking exec.");
+    backgroundUnRegisterFunc_();
+}
+
 void MechbodyAdapterUtils::Clear()
 {
     HILOGI("clear exec.");
@@ -122,6 +176,8 @@ void MechbodyAdapterUtils::Clear()
     initFunc_ = nullptr;
     runFunc_ = nullptr;
     resetFunc_ = nullptr;
+    backgroundRegisterFunc_ = nullptr;
+    backgroundUnRegisterFunc_ = nullptr;
 }
 } // namespace MechBodyController
 } // namespace OHOS

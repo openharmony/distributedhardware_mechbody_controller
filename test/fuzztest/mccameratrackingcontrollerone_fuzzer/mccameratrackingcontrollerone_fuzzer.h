@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MCCAMERATRACKINGCONTROLLER_FUZZER_H
-#define OHOS_MCCAMERATRACKINGCONTROLLER_FUZZER_H
+#ifndef OHOS_MCCAMERATRACKINGCONTROLLERONE_FUZZER_H
+#define OHOS_MCCAMERATRACKINGCONTROLLERONE_FUZZER_H
 
 #include "mc_camera_tracking_controller.h"
 #include "mc_motion_manager.h"
@@ -33,4 +33,4 @@ public:
 } // namespace MechBodyController
 } // namespace OHOS
 
-#endif // OHOS_MCCAMERATRACKINGCONTROLLER_FUZZER_H
+#endif // OHOS_MCCAMERATRACKINGCONTROLLERONE_FUZZER_H
