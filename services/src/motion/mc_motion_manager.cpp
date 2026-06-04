@@ -28,6 +28,8 @@
 #include "mc_connect_manager.h"
 #include "mechbody_controller_utils.h"
 #include "hisysevent_utils.h"
+#include "mc_set_mech_motion_control_cmd.h"
+#include "mc_normal_set_mech_motion_control_cmd.h"
 #include <cmath>
 #include "app_scheduler.h"
 

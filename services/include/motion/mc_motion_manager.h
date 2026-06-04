@@ -217,6 +217,12 @@ private:
     void HandleDoActionResponse(uint8_t taskId, ActionType actionType,
         std::shared_ptr<CommandBase> command);
     void CreateDoActionTimeoutCallback(uint8_t taskId, bool needRestoreTracking);
+    std::shared_ptr<CommandBase> CreateDoActionCommand(ActionType actionType);
+ 	void RegisterDoActionCallback(uint8_t taskId, uint32_t tokenId, std::string &napiCmdId,
+ 	    ActionType actionType, std::shared_ptr<CommandBase> command);
+ 	void HandleDoActionResponse(uint8_t taskId, ActionType actionType,
+ 	    std::shared_ptr<CommandBase> command);
+ 	void CreateDoActionTimeoutCallback(uint8_t taskId);
     ExecResult ExtractRotationTraceResult(std::shared_ptr<CommandBase> command);
     ExecResult ExtractRotationBySpeedResult(std::shared_ptr<CommandBase> command);
     std::shared_ptr<CommandBase> CreateHeadUpCmd();
