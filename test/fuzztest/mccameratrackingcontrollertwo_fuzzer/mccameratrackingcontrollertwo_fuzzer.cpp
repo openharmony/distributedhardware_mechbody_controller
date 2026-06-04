@@ -79,7 +79,9 @@ void FuzzOnCaptureSessionConfiged(const uint8_t *data, size_t size)
     previewOutputInfo.height = provider.ConsumeIntegral<int32_t>();
 
     captureSessionInfo.outputInfos.push_back(previewOutputInfo);
-    captureSessionInfo.callerTokenId = provider.ConsumeIntegralInRange<int32_t>(1, 6);
+    int32_t dataRangeMin = 1;
+    int32_t dataRangeMax = 6;
+    captureSessionInfo.callerTokenId = provider.ConsumeIntegralInRange<int32_t>(dataRangeMin, dataRangeMax);
     captureSessionInfo.sessionMode = CameraStandard::SceneMode::CINEMATIC_VIDEO;
     captureSessionInfo.sessionId = provider.ConsumeIntegral<int32_t>();
     g_cameraTrackingController->OnCaptureSessionConfiged(captureSessionInfo);
