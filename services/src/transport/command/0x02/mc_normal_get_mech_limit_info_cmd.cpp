@@ -63,22 +63,22 @@ void NormalGetMechLimitInfoCmd::TriggerResponse(std::shared_ptr<MechDataBuffer> 
     HILOGI("response code: %{public}u", result_);
     offset++;
 
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.yaw), "read yawMax");
-    offset += sizeof(float);
-
     CHECK_ERR_RETURN(data->ReadFloat(offset, params_.negMax.yaw), "read yawMin");
     offset += sizeof(float);
 
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.roll), "read rollMax");
+    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.yaw), "read yawMax");
     offset += sizeof(float);
 
     CHECK_ERR_RETURN(data->ReadFloat(offset, params_.negMax.roll), "read rollMin");
     offset += sizeof(float);
 
-    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.pitch), "read pitchMax");
+    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.roll), "read rollMax");
     offset += sizeof(float);
 
     CHECK_ERR_RETURN(data->ReadFloat(offset, params_.negMax.pitch), "read pitchMin");
+    offset += sizeof(float);
+
+    CHECK_ERR_RETURN(data->ReadFloat(offset, params_.posMax.pitch), "read pitchMax");
     offset += sizeof(float);
 
     if (responseCb_) {
