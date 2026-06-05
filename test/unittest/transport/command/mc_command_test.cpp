@@ -27,6 +27,92 @@ namespace OHOS {
 namespace MechBodyController {
 namespace {
 
+void TestCreateFromDataButton(CommandFactory& factory, size_t capacity)
+{
+    auto bufferButton = std::make_shared<MechDataBuffer>(capacity);
+    bufferButton->AppendUint8(0x02);  // cmdSet
+    bufferButton->AppendUint8(0x40);  // cmdId
+    bufferButton->AppendInt16(0);      // stickX
+    bufferButton->AppendInt16(0);      // stickY
+    bufferButton->AppendUint16(0);     // controlByte1
+    bufferButton->AppendUint16(0);     // controlByte2
+    auto cmdButton = factory.CreateFromData(bufferButton);
+    ASSERT_NE(cmdButton, nullptr);
+    EXPECT_EQ(cmdButton->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmdButton->GetCmdId(), 0x40);
+}
+
+void TestCreateFromDataAttitude(CommandFactory& factory, size_t capacity)
+{
+    auto bufferAttitude = std::make_shared<MechDataBuffer>(capacity);
+    bufferAttitude->AppendUint8(0x02);  // cmdSet
+    bufferAttitude->AppendUint8(0x42);  // cmdId
+    bufferAttitude->AppendInt16(0);      // pitch
+    bufferAttitude->AppendInt16(0);      // yaw
+    bufferAttitude->AppendInt16(0);      // roll
+    bufferAttitude->AppendInt16(0);      // reserved1
+    bufferAttitude->AppendInt16(0);      // reserved2
+    bufferAttitude->AppendInt16(0);      // reserved3
+    auto cmdAttitude = factory.CreateFromData(bufferAttitude);
+    ASSERT_NE(cmdAttitude, nullptr);
+    EXPECT_EQ(cmdAttitude->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmdAttitude->GetCmdId(), 0x42);
+}
+
+void TestCreateFromDataParam(CommandFactory& factory, size_t capacity)
+{
+    auto bufferParam = std::make_shared<MechDataBuffer>(capacity);
+    bufferParam->AppendUint8(0x02);  // cmdSet
+    bufferParam->AppendUint8(0x41);  // cmdId
+    bufferParam->AppendUint8(0);      // mechStatus
+    bufferParam->AppendUint8(0);      // battery
+    bufferParam->AppendUint8(0);      // errorCode
+    bufferParam->AppendUint8(0);      // reserved1
+    bufferParam->AppendUint8(0);      // reserved2
+    auto cmdParam = factory.CreateFromData(bufferParam);
+    ASSERT_NE(cmdParam, nullptr);
+    EXPECT_EQ(cmdParam->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmdParam->GetCmdId(), 0x41);
+}
+
+void TestCreateFromDataResult(CommandFactory& factory, size_t capacity)
+{
+    auto bufferResult = std::make_shared<MechDataBuffer>(capacity);
+    bufferResult->AppendUint8(0x02);  // cmdSet
+    bufferResult->AppendUint8(0x43);  // cmdId
+    bufferResult->AppendUint8(0);      // controlResult
+    auto cmdResult = factory.CreateFromData(bufferResult);
+    ASSERT_NE(cmdResult, nullptr);
+    EXPECT_EQ(cmdResult->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmdResult->GetCmdId(), 0x43);
+}
+
+void TestCreateFromDataWheel(CommandFactory& factory, size_t capacity)
+{
+    auto bufferWheel = std::make_shared<MechDataBuffer>(capacity);
+    bufferWheel->AppendUint8(0x02);  // cmdSet
+    bufferWheel->AppendUint8(0x44);  // cmdId
+    bufferWheel->AppendInt16(0);      // degree
+    bufferWheel->AppendInt16(0);      // speed
+    bufferWheel->AppendUint8(0);      // speed_ratio
+    auto cmdWheel = factory.CreateFromData(bufferWheel);
+    ASSERT_NE(cmdWheel, nullptr);
+    EXPECT_EQ(cmdWheel->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmdWheel->GetCmdId(), 0x44);
+}
+
+void TestCreateFromDataTracking(CommandFactory& factory, size_t capacity)
+{
+    auto bufferTracking = std::make_shared<MechDataBuffer>(capacity);
+    bufferTracking->AppendUint8(0x02);  // cmdSet
+    bufferTracking->AppendUint8(0x45);  // cmdId
+    bufferTracking->AppendUint8(0);      // isEnabled
+    auto cmdTracking = factory.CreateFromData(bufferTracking);
+    ASSERT_NE(cmdTracking, nullptr);
+    EXPECT_EQ(cmdTracking->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmdTracking->GetCmdId(), 0x45);
+}
+
 }
 
 void MechCommandTest::SetUpTestCase()
@@ -129,7 +215,7 @@ HWTEST_F(MechCommandTest, GetCmdType_001, TestSize.Level1)
     uint16_t cmdType = executionResultCmd->GetCmdType();
     
     // Then: 返回正确的命令类型值 (cmdSet << 8 | cmdId)
-    uint16_t expectedType = (static_cast<uint16_t>(RegisterMechControlResultCmd::CMD_SET) << 8) | 
+    uint16_t expectedType = (static_cast<uint16_t>(RegisterMechControlResultCmd::CMD_SET) << 8) |
                             RegisterMechControlResultCmd::CMD_ID;
     EXPECT_EQ(cmdType, expectedType);
 }
@@ -299,79 +385,23 @@ HWTEST_F(MechCommandTest, CreateFromData_001, TestSize.Level1)
     factory.SetFactoryProtocolVer(0x01);
     size_t capacity = 100;
 
-    // When: 测试按钮事件通知 (RPT_SIZE = 8, needs 10 bytes total)
-    auto bufferButton = std::make_shared<MechDataBuffer>(capacity);
-    bufferButton->AppendUint8(0x02);  // cmdSet
-    bufferButton->AppendUint8(0x40);  // cmdId
-    bufferButton->AppendInt16(0);      // stickX
-    bufferButton->AppendInt16(0);      // stickY
-    bufferButton->AppendUint16(0);     // controlByte1
-    bufferButton->AppendUint16(0);     // controlByte2
-    auto cmdButton = factory.CreateFromData(bufferButton);
-    ASSERT_NE(cmdButton, nullptr);
-    EXPECT_EQ(cmdButton->GetCmdSet(), 0x02);
-    EXPECT_EQ(cmdButton->GetCmdId(), 0x40);
+    // When & Then: 测试按钮事件通知
+    TestCreateFromDataButton(factory, capacity);
 
-    // When: 测试姿态通知 (RPT_SIZE = 12, needs 14 bytes total)
-    auto bufferAttitude = std::make_shared<MechDataBuffer>(capacity);
-    bufferAttitude->AppendUint8(0x02);  // cmdSet
-    bufferAttitude->AppendUint8(0x42);  // cmdId
-    bufferAttitude->AppendInt16(0);      // pitch
-    bufferAttitude->AppendInt16(0);      // yaw
-    bufferAttitude->AppendInt16(0);      // roll
-    bufferAttitude->AppendInt16(0);      // reserved1
-    bufferAttitude->AppendInt16(0);      // reserved2
-    bufferAttitude->AppendInt16(0);      // reserved3
-    auto cmdAttitude = factory.CreateFromData(bufferAttitude);
-    ASSERT_NE(cmdAttitude, nullptr);
-    EXPECT_EQ(cmdAttitude->GetCmdSet(), 0x02);
-    EXPECT_EQ(cmdAttitude->GetCmdId(), 0x42);
+    // When & Then: 测试姿态通知
+    TestCreateFromDataAttitude(factory, capacity);
 
-    // When: 测试参数通知 (RPT_SIZE = 5, needs 7 bytes total)
-    auto bufferParam = std::make_shared<MechDataBuffer>(capacity);
-    bufferParam->AppendUint8(0x02);  // cmdSet
-    bufferParam->AppendUint8(0x41);  // cmdId
-    bufferParam->AppendUint8(0);      // mechStatus
-    bufferParam->AppendUint8(0);      // battery
-    bufferParam->AppendUint8(0);      // errorCode
-    bufferParam->AppendUint8(0);      // reserved1
-    bufferParam->AppendUint8(0);      // reserved2
-    auto cmdParam = factory.CreateFromData(bufferParam);
-    ASSERT_NE(cmdParam, nullptr);
-    EXPECT_EQ(cmdParam->GetCmdSet(), 0x02);
-    EXPECT_EQ(cmdParam->GetCmdId(), 0x41);
+    // When & Then: 测试参数通知
+    TestCreateFromDataParam(factory, capacity);
 
-    // When: 测试执行结果通知 (RPT_SIZE = 1, needs 3 bytes total)
-    auto bufferResult = std::make_shared<MechDataBuffer>(capacity);
-    bufferResult->AppendUint8(0x02);  // cmdSet
-    bufferResult->AppendUint8(0x43);  // cmdId
-    bufferResult->AppendUint8(0);      // controlResult
-    auto cmdResult = factory.CreateFromData(bufferResult);
-    ASSERT_NE(cmdResult, nullptr);
-    EXPECT_EQ(cmdResult->GetCmdSet(), 0x02);
-    EXPECT_EQ(cmdResult->GetCmdId(), 0x43);
+    // When & Then: 测试执行结果通知
+    TestCreateFromDataResult(factory, capacity);
 
-    // When: 测试轮子数据通知 (RPT_SIZE = 5, needs 7 bytes total)
-    auto bufferWheel = std::make_shared<MechDataBuffer>(capacity);
-    bufferWheel->AppendUint8(0x02);  // cmdSet
-    bufferWheel->AppendUint8(0x44);  // cmdId
-    bufferWheel->AppendInt16(0);      // degree
-    bufferWheel->AppendInt16(0);      // speed
-    bufferWheel->AppendUint8(0);      // speed_ratio
-    auto cmdWheel = factory.CreateFromData(bufferWheel);
-    ASSERT_NE(cmdWheel, nullptr);
-    EXPECT_EQ(cmdWheel->GetCmdSet(), 0x02);
-    EXPECT_EQ(cmdWheel->GetCmdId(), 0x44);
+    // When & Then: 测试轮子数据通知
+    TestCreateFromDataWheel(factory, capacity);
 
-    // When: 测试跟踪使能通知 (RPT_SIZE = 1, needs 3 bytes total)
-    auto bufferTracking = std::make_shared<MechDataBuffer>(capacity);
-    bufferTracking->AppendUint8(0x02);  // cmdSet
-    bufferTracking->AppendUint8(0x45);  // cmdId
-    bufferTracking->AppendUint8(0);      // isEnabled
-    auto cmdTracking = factory.CreateFromData(bufferTracking);
-    ASSERT_NE(cmdTracking, nullptr);
-    EXPECT_EQ(cmdTracking->GetCmdSet(), 0x02);
-    EXPECT_EQ(cmdTracking->GetCmdId(), 0x45);
+    // When & Then: 测试跟踪使能通知
+    TestCreateFromDataTracking(factory, capacity);
 }
 
 /**
