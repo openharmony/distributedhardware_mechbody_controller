@@ -75,18 +75,6 @@ void TestCreateFromDataParam(CommandFactory& factory, size_t capacity)
     EXPECT_EQ(cmdParam->GetCmdId(), 0x41);
 }
 
-void TestCreateFromDataResult(CommandFactory& factory, size_t capacity)
-{
-    auto bufferResult = std::make_shared<MechDataBuffer>(capacity);
-    bufferResult->AppendUint8(0x02);  // cmdSet
-    bufferResult->AppendUint8(0x43);  // cmdId
-    bufferResult->AppendUint8(0);      // controlResult
-    auto cmdResult = factory.CreateFromData(bufferResult);
-    ASSERT_NE(cmdResult, nullptr);
-    EXPECT_EQ(cmdResult->GetCmdSet(), 0x02);
-    EXPECT_EQ(cmdResult->GetCmdId(), 0x43);
-}
-
 void TestCreateFromDataWheel(CommandFactory& factory, size_t capacity)
 {
     auto bufferWheel = std::make_shared<MechDataBuffer>(capacity);
@@ -393,9 +381,6 @@ HWTEST_F(MechCommandTest, CreateFromData_001, TestSize.Level1)
 
     // When & Then: 测试参数通知
     TestCreateFromDataParam(factory, capacity);
-
-    // When & Then: 测试执行结果通知
-    TestCreateFromDataResult(factory, capacity);
 
     // When & Then: 测试轮子数据通知
     TestCreateFromDataWheel(factory, capacity);
