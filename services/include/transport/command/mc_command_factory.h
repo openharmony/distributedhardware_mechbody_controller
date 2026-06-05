@@ -36,6 +36,7 @@
 #include "mc_set_mech_camera_tracking_layout_cmd.h"
 #include "mc_set_mech_config_cmd.h"
 #include "mc_set_mech_hid_preemptive_cmd.h"
+#include "mc_set_mech_motion_control_cmd.h"
 #include "mc_set_mech_rotation_by_speed_cmd.h"
 #include "mc_set_mech_rotation_cmd.h"
 #include "mc_set_mech_rotation_trace_cmd.h"
@@ -115,6 +116,7 @@ public:
     std::shared_ptr<WheelSetMechRotationTraceCmd> CreateSetWheelMechRotationTraceCmd(
         uint16_t taskId, const std::vector<RotateParam>& params);
     std::shared_ptr<SetMechStopCmd> CreateSetMechStopCmd();
+    std::shared_ptr<SetMechMotionControlCmd> CreateSetMechMotionControlCmd01(ControlCommand action);
     std::shared_ptr<NormalSetMechMotionControlCmd> CreateSetMechMotionControlCmd(ControlCommand action);
     std::shared_ptr<NormalSetMechLocationReportCmd> CreateSetMechLocationReportCmd(
         uint8_t reportSwitch, uint8_t reportFrequency);

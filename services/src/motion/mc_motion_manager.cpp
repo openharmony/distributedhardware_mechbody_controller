@@ -28,6 +28,8 @@
 #include "mc_connect_manager.h"
 #include "mechbody_controller_utils.h"
 #include "hisysevent_utils.h"
+#include "mc_set_mech_motion_control_cmd.h"
+#include "mc_normal_set_mech_motion_control_cmd.h"
 #include <cmath>
 #include "app_scheduler.h"
 
@@ -1966,22 +1968,33 @@ int32_t MotionManager::DoAction(uint32_t tokenId, std::string &napiCmdId, Action
 std::shared_ptr<CommandBase> MotionManager::CreateDoActionCommand(ActionType actionType)
 {
     std::shared_ptr<CommandBase> command;
-    switch (actionType) {
-        case ActionType::HEAD_UP:
-            command = CreateHeadUpCmd();
-            break;
-        case ActionType::HEAD_DOWN:
-            command = CreateHeadDownCmd();
-            break;
-        case ActionType::NOD:
-            command = CreateNodCmd();
-            break;
-        case ActionType::HEAD_SHAKE:
-            command = CreateHeadShakeCmd();
-            break;
-        default:
+    if (actionType == ActionType::LANDSCAPE_PORTRAIT_SWITCH) {
+        HILOGI("actionType is LANDSCAPE_PORTRAIT_SWITCH, protocolVer_: 0x%{public}x", protocolVer_);
+        if (protocolVer_ == 0x01) {
+            command = factory.CreateSetMechMotionControlCmd01(ControlCommand::GO_CENTER);
+        } else if (protocolVer_ == 0x02) {
+            command = factory.CreateSetMechMotionControlCmd(ControlCommand::HORIZONTALLY_SWITCH);
+        } else {
             command = factory.CreateWheelSetMechSceneControlCmd(actionType);
-            break;
+        }
+    } else {
+        switch (actionType) {
+            case ActionType::HEAD_UP:
+                command = CreateHeadUpCmd();
+                break;
+            case ActionType::HEAD_DOWN:
+                command = CreateHeadDownCmd();
+                break;
+            case ActionType::NOD:
+                command = CreateNodCmd();
+                break;
+            case ActionType::HEAD_SHAKE:
+                command = CreateHeadShakeCmd();
+                break;
+            default:
+                command = factory.CreateWheelSetMechSceneControlCmd(actionType);
+                break;
+        }
     }
     return command;
 }
@@ -2073,7 +2086,10 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
     }
 
     ExecResult result;
-    if (actionType == ActionType::NOD || actionType == ActionType::HEAD_SHAKE) {
+    if (actionType == ActionType::LANDSCAPE_PORTRAIT_SWITCH &&
+        (protocolVer_ == 0x01 || protocolVer_ == 0x02)) {
+        result = ExtractMotionControlResult(command);
+    } else if (actionType == ActionType::NOD || actionType == ActionType::HEAD_SHAKE) {
         result = ExtractRotationTraceResult(command);
     } else if (actionType == ActionType::HEAD_UP || actionType == ActionType::HEAD_DOWN) {
         result = ExtractRotationBySpeedResult(command);
@@ -2094,6 +2110,20 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
 
     MechBodyControllerService::GetInstance().NotifyOperationResult(
         cbInfo.tokenId, cbInfo.napiCmdId, result);
+}
+
+ExecResult MotionManager::ExtractMotionControlResult(std::shared_ptr<CommandBase> command)
+{
+    uint8_t cmdResult = 0;
+    if (protocolVer_ == 0x01) {
+        auto motionCmd = static_cast<SetMechMotionControlCmd *>(command.get());
+        cmdResult = motionCmd->GetResult();
+    } else {
+        auto motionCmd = static_cast<NormalSetMechMotionControlCmd *>(command.get());
+        cmdResult = motionCmd->GetResult();
+    }
+    controlInfo_.landScapePortrait++;
+    return MapDeviceErrorCodeToExecResult(cmdResult);
 }
 
 ExecResult MotionManager::ExtractRotationTraceResult(std::shared_ptr<CommandBase> command)
@@ -2944,7 +2974,20 @@ int32_t MotionManager::IsSupportAction(uint32_t tokenId, ActionType actionType, 
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
-    isSupport = isSupportMoveCapability(actionType);
+
+    if (actionType == ActionType::LANDSCAPE_PORTRAIT_SWITCH) {
+        HILOGI("actionType is LANDSCAPE_PORTRAIT_SWITCH, protocolVer_: 0x%{public}x", protocolVer_);
+        if (protocolVer_ == 0x01) {
+            isSupport = true;
+        } else if (protocolVer_ == 0x02) {
+            isSupport = deviceCapabilityInfo_.switchAble;
+        } else {
+            isSupport = isSupportMoveCapability(actionType);
+        }
+    } else {
+        isSupport = isSupportMoveCapability(actionType);
+    }
+
     HILOGI("actionType:%{public}d, isSupport: %{public}d .", actionType, isSupport);
     return ERR_OK;
 }
