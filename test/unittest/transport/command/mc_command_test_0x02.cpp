@@ -1453,13 +1453,10 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002, T
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_001, TestSize.Level1)
 {
-    // Given: 创建注册通用事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
     ASSERT_NE(executionCmd, nullptr);
-
-// When: 测试正常情况 - pitch禁用状态
     {
         int capacity = 100;
         auto buffer = std::make_shared<MechDataBuffer>(capacity);
@@ -1467,12 +1464,9 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_00
         buffer->AppendUint8(1);
         buffer->AppendUint8(1);
         buffer->AppendUint8(7);
-
-        // Then: 验证反序列化成功和pitch禁用状态
         EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
         EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
     }
-    // When: 测试异常情况 - 数据长度不足
     {
         int capacity = 100;
         auto buffer = std::make_shared<MechDataBuffer>(capacity);
@@ -1480,11 +1474,8 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_00
         buffer->AppendUint8(2);
         buffer->AppendUint8(2);
         buffer->AppendUint8(7);
-
-        // Then: 验证反序列化失败
         EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
     }
-    // When: 测试正常情况 - roll禁用状态
     {
         int capacity = 100;
         auto buffer = std::make_shared<MechDataBuffer>(capacity);
@@ -1496,7 +1487,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_00
         // Then: 验证反序列化成功
         EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
     }
-    // When: 测试异常情况 - 数据长度不足
     {
         int capacity = 100;
         auto buffer = std::make_shared<MechDataBuffer>(capacity);
@@ -1504,11 +1494,8 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_00
         buffer->AppendUint8(2);
         buffer->AppendUint8(2);
         buffer->AppendUint8(7);
-
-        // Then: 验证反序列化失败
         EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
     }
-    // When: 测试正常情况 - roll禁用状态
     {
         int capacity = 100;
         auto buffer = std::make_shared<MechDataBuffer>(capacity);
