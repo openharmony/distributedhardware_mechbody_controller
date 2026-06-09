@@ -51,6 +51,13 @@ namespace OHOS {
 namespace MechBodyController {
 namespace {
 
+constexpr uint8_t BUFFER_HEADER_SIZE = 2;
+constexpr uint8_t SUCCESS_RESULT = 1;
+constexpr uint16_t DEFAULT_TASK_ID = 100;
+constexpr uint8_t WHEEL_EVENT_TYPE = 7;
+constexpr uint8_t WHEEL_DATA_SIZE = 4;
+constexpr uint8_t STICK_EVENT_TYPE = 8;
+
 }
 
 void MechCommandTest0x02::SetUpTestCase()
@@ -86,9 +93,9 @@ void MechCommandTest0x02::TestRotationAxisLimit(
     RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch)
 {
     auto buffer = std::make_shared<MechDataBuffer>(100);
-    AppendUint8BySize(buffer, 2);
-    buffer->AppendUint16(100);
-    buffer->AppendUint8(1);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint16(DEFAULT_TASK_ID);
+    buffer->AppendUint8(SUCCESS_RESULT);
     buffer->AppendUint8(limitFlags);
 
     executionCmd->TriggerResponse(buffer);
@@ -104,9 +111,9 @@ void MechCommandTest0x02::TestRotationBySpeedAxisLimit(
     RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch)
 {
     auto buffer = std::make_shared<MechDataBuffer>(100);
-    AppendUint8BySize(buffer, 2);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
     buffer->AppendUint16(++g_taskId);
-    buffer->AppendUint8(1);
+    buffer->AppendUint8(SUCCESS_RESULT);
     buffer->AppendUint8(limitFlags);
 
     executionCmd->TriggerResponse(buffer);
@@ -122,7 +129,7 @@ void MechCommandTest0x02::TestKeyEventUnmarshal(
     CameraKeyEvent expectedEvent)
 {
     auto buffer = std::make_shared<MechDataBuffer>(100);
-    AppendUint8BySize(buffer, 2);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
     buffer->AppendUint8(eventType);
     buffer->AppendUint8(buttonCount);
     buffer->AppendUint8(buttonFrequency);
@@ -140,12 +147,12 @@ void MechCommandTest0x02::TestWheelEventUnmarshal(
     bool expectedResult)
 {
     auto buffer = std::make_shared<MechDataBuffer>(100);
-    AppendUint8BySize(buffer, 2);
-    buffer->AppendUint8(7);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint8(WHEEL_EVENT_TYPE);
     buffer->AppendUint8(wheelDataLength);
     buffer->AppendUint16(wheelSpeed);
     buffer->AppendUint16(wheelDirection);
-    buffer->AppendUint8(4);
+    buffer->AppendUint8(WHEEL_DATA_SIZE);
 
     EXPECT_EQ(executionCmd->Unmarshal(buffer), expectedResult);
     if (expectedResult) {
@@ -159,8 +166,8 @@ void MechCommandTest0x02::TestStickEventUnmarshal(
     bool expectedResult)
 {
     auto buffer = std::make_shared<MechDataBuffer>(100);
-    AppendUint8BySize(buffer, 2);
-    buffer->AppendUint8(8);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint8(STICK_EVENT_TYPE);
     buffer->AppendUint8(stickDataLength);
     buffer->AppendUint16(stickX);
     buffer->AppendUint16(stickY);
