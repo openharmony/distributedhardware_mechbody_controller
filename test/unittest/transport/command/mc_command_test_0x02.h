@@ -27,7 +27,23 @@ public:
     static void TearDownTestCase();
     void SetUp();
     void TearDown();
-public:
+
+private:
+    void TestRotationAxisLimit(std::shared_ptr<NormalSetMechRotationToLocationCmd> executionCmd,
+                                uint8_t limitFlags, RotationAxisLimited expectedYaw,
+                                RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch);
+    void TestRotationBySpeedAxisLimit(std::shared_ptr<NormalSetMechRotationBySpeedCmd> executionCmd,
+                                       uint8_t limitFlags, RotationAxisLimited expectedYaw,
+                                       RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch);
+    void TestKeyEventUnmarshal(std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+                               uint8_t eventType, uint8_t buttonCount, uint8_t buttonFrequency,
+                               CameraKeyEvent expectedEvent);
+    void TestWheelEventUnmarshal(std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+                                  uint8_t wheelDataLength, uint16_t wheelSpeed, uint8_t wheelDirection,
+                                  bool expectedResult);
+    void TestStickEventUnmarshal(std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+                                  uint8_t stickDataLength, uint16_t stickX, uint16_t stickY,
+                                  bool expectedResult);
 };
 } // namespace MechBodyController
 } // namespace OHOS
