@@ -27,6 +27,7 @@ public:
     static void TearDownTestCase();
     void SetUp();
     void TearDown();
+public:
 };
 } // namespace MechBodyController
 } // namespace OHOS
