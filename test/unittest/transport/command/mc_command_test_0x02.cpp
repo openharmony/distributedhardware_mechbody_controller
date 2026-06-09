@@ -80,6 +80,97 @@ void AppendUint8BySize(std::shared_ptr<MechDataBuffer> buffer, int size)
     }
 }
 
+void MechCommandTest0x02::TestRotationAxisLimit(
+    std::shared_ptr<NormalSetMechRotationToLocationCmd> executionCmd,
+    uint8_t limitFlags, RotationAxisLimited expectedYaw,
+    RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint16(100);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(limitFlags);
+
+    executionCmd->TriggerResponse(buffer);
+
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, expectedYaw);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, expectedRoll);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, expectedPitch);
+}
+
+void MechCommandTest0x02::TestRotationBySpeedAxisLimit(
+    std::shared_ptr<NormalSetMechRotationBySpeedCmd> executionCmd,
+    uint8_t limitFlags, RotationAxisLimited expectedYaw,
+    RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint16(++g_taskId);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(limitFlags);
+
+    executionCmd->TriggerResponse(buffer);
+
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, expectedYaw);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, expectedRoll);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, expectedPitch);
+}
+
+void MechCommandTest0x02::TestKeyEventUnmarshal(
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+    uint8_t eventType, uint8_t buttonCount, uint8_t buttonFrequency,
+    CameraKeyEvent expectedEvent)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(eventType);
+    buffer->AppendUint8(buttonCount);
+    buffer->AppendUint8(buttonFrequency);
+
+    bool result = executionCmd->Unmarshal(buffer);
+    EXPECT_EQ(result, true);
+    if (result && eventType != 0xFF) {
+        EXPECT_EQ(executionCmd->event_, expectedEvent);
+    }
+}
+
+void MechCommandTest0x02::TestWheelEventUnmarshal(
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+    uint8_t wheelDataLength, uint16_t wheelSpeed, uint8_t wheelDirection,
+    bool expectedResult)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(7);
+    buffer->AppendUint8(wheelDataLength);
+    buffer->AppendUint16(wheelSpeed);
+    buffer->AppendUint16(wheelDirection);
+    buffer->AppendUint8(4);
+
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), expectedResult);
+    if (expectedResult) {
+        EXPECT_EQ(executionCmd->wheelData_.speed, wheelSpeed);
+    }
+}
+
+void MechCommandTest0x02::TestStickEventUnmarshal(
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+    uint8_t stickDataLength, uint16_t stickX, uint16_t stickY,
+    bool expectedResult)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(8);
+    buffer->AppendUint8(stickDataLength);
+    buffer->AppendUint16(stickX);
+    buffer->AppendUint16(stickY);
+
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), expectedResult);
+    if (expectedResult) {
+        EXPECT_EQ(executionCmd->stickY_, stickY);
+    }
+}
+
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationTraceCmd_Marshal_001, TestSize.Level1)
 {
@@ -177,58 +268,21 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         factory.CreateSetMechRotationToLocationCmd(params);
     ASSERT_NE(executionCmd, nullptr);
 
-    // When: 测试yaw轴未限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000000);
+    // When & Then: 测试yaw轴未限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        executionCmd->TriggerResponse(buffer);
+    // When & Then: 测试yaw轴正向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000001, RotationAxisLimited::POS_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        // Then: 验证yaw轴未限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NOT_LIMITED);
-    }
-    // When: 测试yaw轴正向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000001);
+    // When & Then: 测试yaw轴负向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000010, RotationAxisLimited::NEG_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证yaw轴正向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::POS_LIMITED);
-    }
-    // When: 测试yaw轴负向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000010);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证yaw轴负向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    // When: 测试roll轴正向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000100);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证roll轴正向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::POS_LIMITED);
-    }
+    // When & Then: 测试roll轴正向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000100, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::POS_LIMITED, RotationAxisLimited::NOT_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse_002_001, TestSize.Level1)
@@ -247,46 +301,18 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
         factory.CreateSetMechRotationToLocationCmd(params);
     ASSERT_NE(executionCmd, nullptr);
 
-    // When: 测试roll轴负向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00001000);
+    // When & Then: 测试roll轴负向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00001000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NEG_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        executionCmd->TriggerResponse(buffer);
+    // When & Then: 测试pitch轴正向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00010000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::POS_LIMITED);
 
-        // Then: 验证roll轴负向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    // When: 测试pitch轴正向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00010000);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证pitch轴正向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::POS_LIMITED);
-    }
     // When: 设置回调并测试pitch轴负向限制状态
     executionCmd->SetResponseCallback(ResponseCb);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00100000);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证pitch轴负向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::NEG_LIMITED);
-    }
+    TestRotationAxisLimit(executionCmd, 0b00100000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NEG_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_Marshal_001, TestSize.Level1)
@@ -355,58 +381,21 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_00
         std::static_pointer_cast<NormalSetMechRotationBySpeedCmd>(executionCmdCommon);
     ASSERT_NE(executionCmd, nullptr);
 
-    // When: 测试yaw轴未限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000000);
+    // When & Then: 测试yaw轴未限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        executionCmd->TriggerResponse(buffer);
+    // When & Then: 测试yaw轴正向限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000001, RotationAxisLimited::POS_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        // Then: 验证yaw轴未限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NOT_LIMITED);
-    }
-    // When: 测试yaw轴正向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000001);
+    // When & Then: 测试yaw轴负向限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000010, RotationAxisLimited::NEG_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证yaw轴正向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::POS_LIMITED);
-    }
-    // When: 测试yaw轴负向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000010);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证yaw轴负向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    // When: 测试roll轴正向限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000100);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证roll轴正向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::POS_LIMITED);
-    }
+    // When & Then: 测试roll轴正向限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000100, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::POS_LIMITED, RotationAxisLimited::NOT_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_002_001, TestSize.Level1)
@@ -425,44 +414,18 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_00
         std::static_pointer_cast<NormalSetMechRotationBySpeedCmd>(executionCmdCommon);
     ASSERT_NE(executionCmd, nullptr);
 
-    // When: 测试不同的旋转轴限制状态
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00001000);
+    // When & Then: 测试roll轴负方向限制
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00001000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NEG_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        executionCmd->TriggerResponse(buffer);
+    // When & Then: 测试pitch轴正方向限制
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00010000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::POS_LIMITED);
 
-        // Then: 验证roll轴负方向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00010000);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证pitch轴正方向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::POS_LIMITED);
-    }
+    // When: 设置回调并测试pitch轴负方向限制
     executionCmd->SetResponseCallback(ResponseCb);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00100000);
-
-        executionCmd->TriggerResponse(buffer);
-
-        // Then: 验证pitch轴负方向限制
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::NEG_LIMITED);
-    }
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00100000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NEG_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechProtocolVerCmd_Marshal_001, TestSize.Level1)
@@ -1131,50 +1094,15 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_002, TestS
     ASSERT_NE(executionCmd, nullptr);
 
     // When: 测试异常情况 - 按键数量不匹配
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(3);
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(2);
+    buffer->AppendUint8(3);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
 
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-
-    // When: 测试正常情况 - 按键频率为2
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(2);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-
-        // Then: 验证按键频率
-        EXPECT_EQ(executionCmd->buttonFrequency_, 2);
-    }
-    // When: 测试正常情况 - 按键频率为1
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
-    // When: 测试正常情况 - 追踪切换事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-
-        // Then: 验证事件类型
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::SWITCH_TRACKING);
-    }
+    // When & Then: 测试正常情况 - 追踪切换事件
+    TestKeyEventUnmarshal(executionCmd, 2, 1, 1, CameraKeyEvent::SWITCH_TRACKING);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_002_001, TestSize.Level1)
@@ -1187,54 +1115,17 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_002_001, T
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
     ASSERT_NE(executionCmd, nullptr);
 
-    // When: 测试缩放放大事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(3);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    // When & Then: 测试缩放放大事件
+    TestKeyEventUnmarshal(executionCmd, 3, 1, 1, CameraKeyEvent::ZOOM_IN);
 
-        // Then: 验证事件类型
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::ZOOM_IN);
-    }
-    // When: 测试缩放缩小事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(4);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    // When & Then: 测试缩放缩小事件
+    TestKeyEventUnmarshal(executionCmd, 4, 1, 1, CameraKeyEvent::ZOOM_OUT);
 
-        // Then: 验证事件类型
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::ZOOM_OUT);
-    }
-    // When: 测试切换相机事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(5);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    // When & Then: 测试切换相机事件
+    TestKeyEventUnmarshal(executionCmd, 5, 1, 1, CameraKeyEvent::SWITCH_CAMERA);
 
-        // Then: 验证事件类型
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::SWITCH_CAMERA);
-    }
-    // When: 测试开始录像事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(6);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-
-        // Then: 验证事件类型
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::START_FILMING);
-    }
+    // When & Then: 测试开始录像事件
+    TestKeyEventUnmarshal(executionCmd, 6, 1, 1, CameraKeyEvent::START_FILMING);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003, TestSize.Level1)
@@ -1248,40 +1139,22 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003, TestS
     ASSERT_NE(executionCmd, nullptr);
 
     // When: 测试异常情况 - 滚轮数据长度不足
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(4);
-        buffer->AppendUint8(3);
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(7);
+    buffer->AppendUint8(4);
+    buffer->AppendUint8(3);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
 
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-    // When: 测试正常情况 - 滚轮事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(5);
-        buffer->AppendUint16(3);
-        buffer->AppendUint16(12);
-        buffer->AppendUint8(4);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    // When & Then: 测试正常情况 - 滚轮事件
+    TestWheelEventUnmarshal(executionCmd, 5, 4, 4, true);
 
-        // Then: 验证滚轮速度
-        EXPECT_EQ(executionCmd->wheelData_.speed, 12);
-    }
     // When: 测试异常情况 - 事件类型不匹配
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), false);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003_001, TestSize.Level1)
@@ -1294,31 +1167,11 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003_001, T
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
     ASSERT_NE(executionCmd, nullptr);
 
-    // When: 测试正常情况 - 摇杆事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(8);
-        buffer->AppendUint8(4);
-        buffer->AppendUint16(1);
-        buffer->AppendUint16(2);
+    // When & Then: 测试正常情况 - 摇杆事件
+    TestStickEventUnmarshal(executionCmd, 4, 1, 2, true);
 
-        // Then: 验证反序列化成功和摇杆Y值
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->stickY_, 2);
-    }
     // When: 测试异常情况 - 摇杆数据长度不足
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(8);
-        buffer->AppendUint8(5);
-        buffer->AppendUint16(1);
-        buffer->AppendUint16(2);
-
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
+    TestStickEventUnmarshal(executionCmd, 5, 1, 2, false);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_Marshal_001, TestSize.Level1)
@@ -1413,42 +1266,29 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002, T
     ASSERT_NE(executionCmd, nullptr);
 
     // When: 测试异常情况 - 数据长度不足
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(0);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(1);
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(0);
+    buffer->AppendUint8(2);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
 
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
     // When: 测试正常情况 - attached状态
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(0);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(10);
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(0);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(10);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), true);
+    EXPECT_EQ(executionCmd->GetParams().attached, 10);
 
-        // Then: 验证反序列化成功和attached值
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->GetParams().attached, 10);
-    }
     // When: 测试异常情况 - 事件类型不匹配
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(10);
-
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
+    auto buffer3 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer3, 2);
+    buffer3->AppendUint8(1);
+    buffer3->AppendUint8(2);
+    buffer3->AppendUint8(10);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer3), false);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_001, TestSize.Level1)
@@ -1457,52 +1297,47 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_00
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
     ASSERT_NE(executionCmd, nullptr);
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
+
+    // When: 测试正常情况 - pitchDisable
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
+
+    // When: 测试异常情况 - 数据长度不匹配
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(2);
+    buffer2->AppendUint8(2);
+    buffer2->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), false);
+
+    // When: 测试正常情况 - yawDisable
+    auto buffer3 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer3, 2);
+    buffer3->AppendUint8(2);
+    buffer3->AppendUint8(1);
+    buffer3->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer3), true);
+
+    // When: 测试异常情况 - 数据长度不匹配
+    auto buffer4 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer4, 2);
+    buffer4->AppendUint8(2);
+    buffer4->AppendUint8(2);
+    buffer4->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer4), false);
+
+    // When: 测试正常情况 - rollDisable
+    auto buffer5 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer5, 2);
+    buffer5->AppendUint8(2);
+    buffer5->AppendUint8(1);
+    buffer5->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer5), true);
 }
 
 
@@ -2133,16 +1968,12 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_004, TestS
     EXPECT_NE(executionCmd, nullptr);
 
     // When: 测试按键按下事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(0xFF);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-
-        // Then: 验证反序列化成功
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(0xFF);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_005, TestSize.Level1)
@@ -2157,26 +1988,19 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_005, TestS
     EXPECT_NE(executionCmd, nullptr);
 
     // When: 测试数据长度不足
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
 
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
     // When: 测试正常按键事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-
-        // Then: 验证反序列化成功
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), true);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_006, TestSize.Level1)
@@ -2190,18 +2014,8 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_006, TestS
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
 
-    // When: 测试切换照片/视频事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(5);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(3);
-
-        // Then: 验证反序列化成功和事件类型
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::SWITCH_PHOTO_FILM);
-    }
+    // When & Then: 测试切换照片/视频事件
+    TestKeyEventUnmarshal(executionCmd, 5, 1, 3, CameraKeyEvent::SWITCH_PHOTO_FILM);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_007, TestSize.Level1)
@@ -2216,51 +2030,39 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_007, TestS
     EXPECT_NE(executionCmd, nullptr);
 
     // When: 测试数据长度不足
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(1);
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(7);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
 
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
     // When: 测试数据长度不足
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(5);
-        buffer->AppendUint16(3);
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(7);
+    buffer2->AppendUint8(5);
+    buffer2->AppendUint16(3);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), false);
 
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
     // When: 测试数据长度不足
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(5);
-        buffer->AppendUint16(3);
-        buffer->AppendUint16(12);
+    auto buffer3 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer3, 2);
+    buffer3->AppendUint8(7);
+    buffer3->AppendUint8(5);
+    buffer3->AppendUint16(3);
+    buffer3->AppendUint16(12);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer3), false);
 
-        // Then: 验证反序列化失败
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-    // When: 测试正常按键事件
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(5);
-        buffer->AppendUint16(3);
-        buffer->AppendUint16(12);
-        buffer->AppendUint8(4);
-
-        // Then: 验证反序列化成功
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
+    // When: 测试正常滚轮事件
+    auto buffer4 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer4, 2);
+    buffer4->AppendUint8(7);
+    buffer4->AppendUint8(5);
+    buffer4->AppendUint16(3);
+    buffer4->AppendUint16(12);
+    buffer4->AppendUint8(4);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer4), true);
+    EXPECT_EQ(executionCmd->wheelData_.speed, 12);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_008, TestSize.Level1)
