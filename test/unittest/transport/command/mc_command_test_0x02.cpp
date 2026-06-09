@@ -43,12 +43,20 @@
 #include "mc_normal_set_mech_protocol_ver_cmd.h"
 #include "mc_normal_set_mech_rotation_trace_cmd.h"
 #include "mc_normal_set_mech_protocol_ver_cmd.h"
+#include "mc_normal_set_mech_phone_status_cmd.h"
 
 using namespace testing;
 using namespace testing::ext;
 namespace OHOS {
 namespace MechBodyController {
 namespace {
+
+constexpr uint8_t BUFFER_HEADER_SIZE = 2;
+constexpr uint8_t SUCCESS_RESULT = 1;
+constexpr uint16_t DEFAULT_TASK_ID = 100;
+constexpr uint8_t WHEEL_EVENT_TYPE = 7;
+constexpr uint8_t WHEEL_DATA_SIZE = 4;
+constexpr uint8_t STICK_EVENT_TYPE = 8;
 
 }
 
@@ -79,9 +87,101 @@ void AppendUint8BySize(std::shared_ptr<MechDataBuffer> buffer, int size)
     }
 }
 
+void MechCommandTest0x02::TestRotationAxisLimit(
+    std::shared_ptr<NormalSetMechRotationToLocationCmd> executionCmd,
+    uint8_t limitFlags, RotationAxisLimited expectedYaw,
+    RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint16(DEFAULT_TASK_ID);
+    buffer->AppendUint8(SUCCESS_RESULT);
+    buffer->AppendUint8(limitFlags);
+
+    executionCmd->TriggerResponse(buffer);
+
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, expectedYaw);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, expectedRoll);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, expectedPitch);
+}
+
+void MechCommandTest0x02::TestRotationBySpeedAxisLimit(
+    std::shared_ptr<NormalSetMechRotationBySpeedCmd> executionCmd,
+    uint8_t limitFlags, RotationAxisLimited expectedYaw,
+    RotationAxisLimited expectedRoll, RotationAxisLimited expectedPitch)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint16(++g_taskId);
+    buffer->AppendUint8(SUCCESS_RESULT);
+    buffer->AppendUint8(limitFlags);
+
+    executionCmd->TriggerResponse(buffer);
+
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, expectedYaw);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, expectedRoll);
+    EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, expectedPitch);
+}
+
+void MechCommandTest0x02::TestKeyEventUnmarshal(
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+    uint8_t eventType, uint8_t buttonCount, uint8_t buttonFrequency,
+    CameraKeyEvent expectedEvent)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint8(eventType);
+    buffer->AppendUint8(buttonCount);
+    buffer->AppendUint8(buttonFrequency);
+
+    bool result = executionCmd->Unmarshal(buffer);
+    EXPECT_EQ(result, true);
+    if (result && eventType != 0xFF) {
+        EXPECT_EQ(executionCmd->event_, expectedEvent);
+    }
+}
+
+void MechCommandTest0x02::TestWheelEventUnmarshal(
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+    uint8_t wheelDataLength, uint16_t wheelSpeed, uint8_t wheelDirection,
+    bool expectedResult)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint8(WHEEL_EVENT_TYPE);
+    buffer->AppendUint8(wheelDataLength);
+    buffer->AppendUint16(wheelSpeed);
+    buffer->AppendUint16(wheelDirection);
+    buffer->AppendUint8(WHEEL_DATA_SIZE);
+
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), expectedResult);
+    if (expectedResult) {
+        EXPECT_EQ(executionCmd->wheelData_.speed, wheelSpeed);
+    }
+}
+
+void MechCommandTest0x02::TestStickEventUnmarshal(
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd,
+    uint8_t stickDataLength, uint16_t stickX, uint16_t stickY,
+    bool expectedResult)
+{
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, BUFFER_HEADER_SIZE);
+    buffer->AppendUint8(STICK_EVENT_TYPE);
+    buffer->AppendUint8(stickDataLength);
+    buffer->AppendUint16(stickX);
+    buffer->AppendUint16(stickY);
+
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), expectedResult);
+    if (expectedResult) {
+        EXPECT_EQ(executionCmd->stickY_, stickY);
+    }
+}
+
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationTraceCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 准备旋转轨迹参数
     std::vector<RotateParam> paramsVector;
 
     RotateParam params;
@@ -98,13 +198,19 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationTraceCmd_Marshal_001, TestSiz
         factory.CreateSetMechRotationTraceCmd(++g_taskId, paramsVector);
     std::shared_ptr<NormalSetMechRotationTraceCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechRotationTraceCmd>(executionCmdCommon);
-    
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(executionCmd, nullptr);
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 准备旋转到位置参数
     RotateToLocationParam params;
     params.rotateMap = 8;
     params.rotateTime = 16;
@@ -117,13 +223,19 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_Marshal_001, Te
 
     std::shared_ptr<NormalSetMechRotationToLocationCmd> executionCmd =
         factory.CreateSetMechRotationToLocationCmd(params);
-    
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(executionCmd, nullptr);
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 准备测试参数和命令对象
     RotateToLocationParam params;
     params.rotateMap = 8;
     params.rotateTime = 16;
@@ -135,16 +247,21 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
 
     std::shared_ptr<NormalSetMechRotationToLocationCmd> executionCmd =
         factory.CreateSetMechRotationToLocationCmd(params);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(nullptr);
+    executionCmd->TriggerResponse(bufferEmpty);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建旋转到位置命令对象
     RotateToLocationParam params;
     params.rotateMap = 8;
     params.rotateTime = 16;
@@ -156,52 +273,28 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
 
     std::shared_ptr<NormalSetMechRotationToLocationCmd> executionCmd =
         factory.CreateSetMechRotationToLocationCmd(params);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000000);
+    // When & Then: 测试yaw轴未限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NOT_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000001);
+    // When & Then: 测试yaw轴正向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000001, RotationAxisLimited::POS_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::POS_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000010);
+    // When & Then: 测试yaw轴负向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000010, RotationAxisLimited::NEG_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000100);
-
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::POS_LIMITED);
-    }
+    // When & Then: 测试roll轴正向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00000100, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::POS_LIMITED, RotationAxisLimited::NOT_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse_002_001, TestSize.Level1)
 {
+    // Given: 创建旋转到位置命令对象
     RotateToLocationParam params;
     params.rotateMap = 8;
     params.rotateTime = 16;
@@ -213,42 +306,25 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationToLocationCmd_TriggerResponse
 
     std::shared_ptr<NormalSetMechRotationToLocationCmd> executionCmd =
         factory.CreateSetMechRotationToLocationCmd(params);
-    EXPECT_NE(executionCmd, nullptr);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00001000);
+    ASSERT_NE(executionCmd, nullptr);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00010000);
+    // When & Then: 测试roll轴负向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00001000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NEG_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::POS_LIMITED);
-    }
+    // When & Then: 测试pitch轴正向限制状态
+    TestRotationAxisLimit(executionCmd, 0b00010000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::POS_LIMITED);
+
+    // When: 设置回调并测试pitch轴负向限制状态
     executionCmd->SetResponseCallback(ResponseCb);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(100);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00100000);
-
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::NEG_LIMITED);
-    }
+    TestRotationAxisLimit(executionCmd, 0b00100000, RotationAxisLimited::NOT_LIMITED,
+                          RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NEG_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建按速度旋转命令对象
     RotateBySpeedParam params;
     params.speed.yawSpeed = 1.1;
     params.speed.rollSpeed = 2.2;
@@ -260,13 +336,19 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_Marshal_001, TestS
         factory.CreateSetMechRotationBySpeedCmd(params);
     std::shared_ptr<NormalSetMechRotationBySpeedCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechRotationBySpeedCmd>(executionCmdCommon);
-    
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 准备测试参数和命令对象
     RotateBySpeedParam params;
     params.speed.yawSpeed = 1.1;
     params.speed.rollSpeed = 2.2;
@@ -278,16 +360,21 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_00
         factory.CreateSetMechRotationBySpeedCmd(params);
     std::shared_ptr<NormalSetMechRotationBySpeedCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechRotationBySpeedCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(nullptr);
+    executionCmd->TriggerResponse(bufferEmpty);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建按速度旋转命令对象
     RotateBySpeedParam params;
     params.speed.yawSpeed = 1.1;
     params.speed.rollSpeed = 2.2;
@@ -299,52 +386,28 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_00
         factory.CreateSetMechRotationBySpeedCmd(params);
     std::shared_ptr<NormalSetMechRotationBySpeedCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechRotationBySpeedCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000000);
+    // When & Then: 测试yaw轴未限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NOT_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000001);
+    // When & Then: 测试yaw轴正向限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000001, RotationAxisLimited::POS_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::POS_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000010);
+    // When & Then: 测试yaw轴负向限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000010, RotationAxisLimited::NEG_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().yawLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00000100);
-
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::POS_LIMITED);
-    }
+    // When & Then: 测试roll轴正向限制状态
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00000100, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::POS_LIMITED, RotationAxisLimited::NOT_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_002_001, TestSize.Level1)
 {
+    // Given: 创建按速度旋转命令对象
     RotateBySpeedParam params;
     params.speed.yawSpeed = 1.1;
     params.speed.rollSpeed = 2.2;
@@ -356,166 +419,197 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechRotationBySpeedCmd_TriggerResponse_00
         factory.CreateSetMechRotationBySpeedCmd(params);
     std::shared_ptr<NormalSetMechRotationBySpeedCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechRotationBySpeedCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00001000);
+    ASSERT_NE(executionCmd, nullptr);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().rollLimited, RotationAxisLimited::NEG_LIMITED);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00010000);
+    // When & Then: 测试roll轴负方向限制
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00001000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NEG_LIMITED, RotationAxisLimited::NOT_LIMITED);
 
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::POS_LIMITED);
-    }
+    // When & Then: 测试pitch轴正方向限制
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00010000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::POS_LIMITED);
+
+    // When: 设置回调并测试pitch轴负方向限制
     executionCmd->SetResponseCallback(ResponseCb);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint16(++g_taskId);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(0b00100000);
-
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->GetRotationAxesStatus().pitchLimited, RotationAxisLimited::NEG_LIMITED);
-    }
+    TestRotationBySpeedAxisLimit(executionCmd, 0b00100000, RotationAxisLimited::NOT_LIMITED,
+                                  RotationAxisLimited::NOT_LIMITED, RotationAxisLimited::NEG_LIMITED);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechProtocolVerCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建协议版本命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechProtocolVerCmd> executionCmd =
         factory.CreateNormalSetMechProtocolVerCmd(10);
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechProtocolVerCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建协议版本命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechProtocolVerCmd> executionCmd =
         factory.CreateNormalSetMechProtocolVerCmd(10);
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试空指针异常处理
+    executionCmd->TriggerResponse(nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    executionCmd->TriggerResponse(nullptr);
+
+    // Then: 验证命令属性
+    EXPECT_EQ(executionCmd->GetCmdSet(), NormalSetMechProtocolVerCmd::CMD_SET);
+    EXPECT_EQ(executionCmd->GetCmdId(), NormalSetMechProtocolVerCmd::CMD_ID);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechMotionControlCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建运动控制命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechMotionControlCmd> executionCmd =
         factory.CreateSetMechMotionControlCmd(ControlCommand::STOP);
-    EXPECT_NE(executionCmd, nullptr);
-    executionCmd->GetAction();
-    executionCmd->GetResult();
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 获取命令属性和执行序列化
+    auto action = executionCmd->GetAction();
+    auto result = executionCmd->GetResult();
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证命令属性和序列化结果
+    EXPECT_EQ(action, ControlCommand::STOP);
+    EXPECT_EQ(result, 0);
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechMotionControlCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建运动控制命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechMotionControlCmd> executionCmd =
         factory.CreateSetMechMotionControlCmd(ControlCommand::STOP);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试空指针和空buffer的异常处理
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+    executionCmd->TriggerResponse(nullptr);
+    executionCmd->TriggerResponse(bufferEmpty);
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechMotionControlCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建运动控制命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechMotionControlCmd> executionCmd =
         factory.CreateSetMechMotionControlCmd(ControlCommand::STOP);
-    EXPECT_NE(executionCmd, nullptr);
-    auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
+    ASSERT_NE(executionCmd, nullptr);
+
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
 
+    // When: 设置回调并触发响应
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建位置上报命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechLocationReportCmd> executionCmd =
         factory.CreateSetMechLocationReportCmd(10, 20);
-    EXPECT_NE(executionCmd, nullptr);
-    executionCmd->GetResult();
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 获取结果和执行序列化
+    auto result = executionCmd->GetResult();
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证结果和序列化
+    EXPECT_EQ(result, 0);
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建位置上报命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechLocationReportCmd> executionCmd =
         factory.CreateSetMechLocationReportCmd(10, 20);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+    executionCmd->TriggerResponse(nullptr);
+    executionCmd->TriggerResponse(bufferEmpty);
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechLocationReportCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建位置上报命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<NormalSetMechLocationReportCmd> executionCmd =
         factory.CreateSetMechLocationReportCmd(10, 20);
+    ASSERT_NE(executionCmd, nullptr);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
 
-    EXPECT_NE(executionCmd, nullptr);
+    // When: 设置回调并触发响应
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingFrameCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建相机追踪帧命令对象
     TrackingFrameParams params;
     params.cameraType = CameraType::BACK;
     params.confidence = ConfidenceLevel::HIGH;
@@ -537,25 +631,32 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingFrameCmd_Marshal_001, T
         factory.CreateSetMechCameraTrackingFrameCmd(params);
     std::shared_ptr<NormalSetMechCameraTrackingFrameCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingFrameCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingFrameCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建追踪帧命令对象
     TrackingFrameParams params;
     params.cameraType = CameraType::BACK;
     params.confidence = ConfidenceLevel::HIGH;
-    params.objectType = 3;
-    params.targetId = 21;
-    params.roi.x = 3.12;
-    params.roi.y = 1.23;
-    params.roi.width = 10;
-    params.roi.height = 20;
-    params.fovV = 234;
-    params.fovH = 5345;
-    params.isRecording = true;
-    params.timeDelay = 3000;
+    params.objectType = 1;
+    params.targetId = 1;
+    params.roi.x = 1.0;
+    params.roi.y = 1.0;
+    params.roi.width = 1.0;
+    params.roi.height = 1.0;
+    params.fovV = 1;
+    params.fovH = 1;
+    params.isRecording = 1;
+    params.timeDelay = 1;
 
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
@@ -564,15 +665,21 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingFrameCmd_TriggerRespons
         factory.CreateSetMechCameraTrackingFrameCmd(params);
     std::shared_ptr<NormalSetMechCameraTrackingFrameCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingFrameCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    // When: 测试空指针异常处理
+    executionCmd->TriggerResponse(nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    executionCmd->TriggerResponse(nullptr);
+
+    // Then: 验证命令属性
+    EXPECT_EQ(executionCmd->GetCmdSet(), NormalSetMechCameraTrackingFrameCmd::CMD_SET);
+    EXPECT_EQ(executionCmd->GetCmdId(), NormalSetMechCameraTrackingFrameCmd::CMD_ID);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建相机追踪使能命令对象
     MechTrackingStatus status = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
 
     CommandFactory factory;
@@ -582,14 +689,23 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_Marshal_001, 
         factory.CreateSetMechCameraTrackingEnableCmd(status);
     std::shared_ptr<NormalSetMechCameraTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingEnableCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
-    executionCmd->GetStatus();
-    executionCmd->GetResult();
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 获取属性和执行序列化
+    auto cmdStatus = executionCmd->GetStatus();
+    auto result = executionCmd->GetResult();
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证属性和序列化结果
+    EXPECT_EQ(cmdStatus, MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET);
+    EXPECT_EQ(result, 0);
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建相机追踪使能命令对象
     MechTrackingStatus status = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
 
     CommandFactory factory;
@@ -599,20 +715,25 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerRespon
         factory.CreateSetMechCameraTrackingEnableCmd(status);
     std::shared_ptr<NormalSetMechCameraTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingEnableCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+
+    executionCmd->TriggerResponse(nullptr);
+    executionCmd->TriggerResponse(bufferEmpty);
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建相机追踪使能命令对象
     MechTrackingStatus status = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
 
     CommandFactory factory;
@@ -622,18 +743,23 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraTrackingEnableCmd_TriggerRespon
         factory.CreateSetMechCameraTrackingEnableCmd(status);
     std::shared_ptr<NormalSetMechCameraTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraTrackingEnableCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
+
+    // When: 设置回调并触发响应
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_EQ(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalSetMechCameraInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建相机信息命令对象
     CameraInfoParams params;
     params.fovV = 1;
     params.fovH = 1;
@@ -647,35 +773,19 @@ HWTEST_F(MechCommandTest0x02, NormalSetMechCameraInfoCmd_Marshal_001, TestSize.L
     std::shared_ptr<CommonSetMechCameraInfoCmd> executionCmdCommon = factory.CreateSetMechCameraInfoCmd(params);
     std::shared_ptr<NormalSetMechCameraInfoCmd> executionCmd =
         std::static_pointer_cast<NormalSetMechCameraInfoCmd>(executionCmdCommon);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
-}
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
 
-HWTEST_F(MechCommandTest0x02, NormalSetMechCameraInfoCmd_TriggerResponse_001, TestSize.Level1)
-{
-    CameraInfoParams params;
-    params.fovV = 1;
-    params.fovH = 1;
-    params.zoomFactor = 3.23;
-    params.isRecording = 128;
-    params.cameraType = CameraType::BACK;
-
-    CommandFactory factory;
-    factory.SetFactoryProtocolVer(0x02);
-
-    std::shared_ptr<CommonSetMechCameraInfoCmd> executionCmdCommon = factory.CreateSetMechCameraInfoCmd(params);
-    std::shared_ptr<NormalSetMechCameraInfoCmd> executionCmd =
-        std::static_pointer_cast<NormalSetMechCameraInfoCmd>(executionCmdCommon);
-
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建注册追踪使能命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
@@ -683,13 +793,19 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Marshal_001, T
         factory.CreateRegisterMechTrackingEnableCmd();
     std::shared_ptr<NormalRegisterMechTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建注册追踪使能命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
@@ -697,32 +813,42 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_TriggerRespons
         factory.CreateRegisterMechTrackingEnableCmd();
     std::shared_ptr<NormalRegisterMechTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     size_t capacity = 100;
     auto bufferEmpty = std::make_shared<MechDataBuffer>(capacity);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
-
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    executionCmd->TriggerResponse(bufferEmpty);
+    executionCmd->TriggerResponse(nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    executionCmd->TriggerResponse(nullptr);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
+
+    // When: 测试正常响应
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         buffer->AppendUint8(10);
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->result_, 10);
+        executionCmd->TriggerResponse(buffer);
+
+        // Then: 验证结果
+        EXPECT_EQ(executionCmd->GetResult(), 10);
     }
     {
         auto buffer = std::make_shared<MechDataBuffer>(100);
         buffer->AppendUint8(10);
         executionCmd->SetResponseCallback(ResponseCb);
-        EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-        EXPECT_EQ(executionCmd->result_, 10);
+        executionCmd->TriggerResponse(buffer);
+
+        // Then: 验证结果
+        EXPECT_EQ(executionCmd->GetResult(), 10);
     }
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Unmarshal_001, TestSize.Level1)
 {
+    // Given: 创建注册追踪使能命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
@@ -730,65 +856,83 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechTrackingEnableCmd_Unmarshal_001,
         factory.CreateRegisterMechTrackingEnableCmd();
     std::shared_ptr<NormalRegisterMechTrackingEnableCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechTrackingEnableCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     EXPECT_EQ(executionCmd->Unmarshal(nullptr), false);
 
     size_t capacity = 100;
     auto bufferEmpty = std::make_shared<MechDataBuffer>(capacity);
     EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), false);
 
+    // When: 测试正常情况下的反序列化
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
     EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+
+    // Then: 验证反序列化结果
     EXPECT_EQ(executionCmd->isEnabled_, true);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechStateInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建注册状态信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechStateInfoCmd> executionCmdCommon = factory.CreateRegisterMechStateInfoCmd();
     std::shared_ptr<NormalRegisterMechStateInfoCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechStateInfoCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechStateInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建注册状态信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechStateInfoCmd> executionCmdCommon = factory.CreateRegisterMechStateInfoCmd();
     std::shared_ptr<NormalRegisterMechStateInfoCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechStateInfoCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    // When: 测试空指针异常处理
+    executionCmd->TriggerResponse(nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    executionCmd->TriggerResponse(nullptr);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechStateInfoCmd_Unmarshal_001, TestSize.Level1)
 {
+    // Given: 创建注册状态信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechStateInfoCmd> executionCmdCommon = factory.CreateRegisterMechStateInfoCmd();
     std::shared_ptr<NormalRegisterMechStateInfoCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechStateInfoCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     EXPECT_EQ(executionCmd->Unmarshal(nullptr), false);
 
     size_t capacity = 100;
     auto bufferEmpty = std::make_shared<MechDataBuffer>(capacity);
     EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), false);
-    
+
+    // When: 测试正常情况下的反序列化
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(0);
@@ -797,58 +941,76 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechStateInfoCmd_Unmarshal_001, Test
     buffer->AppendUint8(0);
     buffer->AppendUint8(0);
     EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+
+    // Then: 验证反序列化结果
     EXPECT_EQ(executionCmd->info_.isPhoneOn, true);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建注册位置信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechPositionInfoCmd> executionCmdCommon = factory.CreateRegisterMechPositionInfoCmd();
     std::shared_ptr<NormalRegisterMechPositionInfoCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechPositionInfoCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建注册位置信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonRegisterMechPositionInfoCmd> executionCmdCommon = factory.CreateRegisterMechPositionInfoCmd();
     std::shared_ptr<NormalRegisterMechPositionInfoCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechPositionInfoCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
+
+    // When: 测试正常响应
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(8);
     executionCmd->TriggerResponse(buffer);
-    EXPECT_EQ(executionCmd->result_, 0);
+
+    // Then: 验证结果
+    EXPECT_EQ(executionCmd->GetResult(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_Unmarshal_001, TestSize.Level1)
 {
+    // Given: 创建注册位置信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonRegisterMechPositionInfoCmd> executionCmdCommon = factory.CreateRegisterMechPositionInfoCmd();
     std::shared_ptr<NormalRegisterMechPositionInfoCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechPositionInfoCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     EXPECT_EQ(executionCmd->Unmarshal(nullptr), false);
 
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), false);
 
-
+    // When: 测试正常情况下的反序列化
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(8);
@@ -856,256 +1018,210 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechPositionInfoCmd_Unmarshal_001, T
     buffer->AppendFloat(2.22);
     buffer->AppendFloat(3.33);
     EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+
+    // Then: 验证反序列化结果
     EXPECT_GT(executionCmd->position_.pitch, 3);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建注册按键事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建注册按键事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    // When: 测试空指针异常处理
+    executionCmd->TriggerResponse(nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    executionCmd->TriggerResponse(nullptr);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_001, TestSize.Level1)
 {
+    // Given: 创建注册按键事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
 
     std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     EXPECT_EQ(executionCmd->Unmarshal(nullptr), false);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), false);
+
+    // When: 测试正常情况下的反序列化
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+
+    // Then: 验证反序列化结果
+    EXPECT_EQ(executionCmd->buttonFrequency_, 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_002, TestSize.Level1)
 {
+    // Given: 创建注册按键事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    // When: 测试异常情况 - 按键数量不匹配
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(2);
+    buffer->AppendUint8(3);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
 
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(3);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(2);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->buttonFrequency_, 2);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::SWITCH_TRACKING);
-    }
+    // When & Then: 测试正常情况 - 追踪切换事件
+    TestKeyEventUnmarshal(executionCmd, 2, 1, 1, CameraKeyEvent::SWITCH_TRACKING);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_002_001, TestSize.Level1)
 {
+    // Given: 创建注册按键事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    // When & Then: 测试缩放放大事件
+    TestKeyEventUnmarshal(executionCmd, 3, 1, 1, CameraKeyEvent::ZOOM_IN);
 
-        buffer->AppendUint8(3);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::ZOOM_IN);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    // When & Then: 测试缩放缩小事件
+    TestKeyEventUnmarshal(executionCmd, 4, 1, 1, CameraKeyEvent::ZOOM_OUT);
 
-        buffer->AppendUint8(4);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::ZOOM_OUT);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    // When & Then: 测试切换相机事件
+    TestKeyEventUnmarshal(executionCmd, 5, 1, 1, CameraKeyEvent::SWITCH_CAMERA);
 
-        buffer->AppendUint8(5);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::SWITCH_CAMERA);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
-
-        buffer->AppendUint8(6);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->event_, CameraKeyEvent::START_FILMING);
-    }
+    // When & Then: 测试开始录像事件
+    TestKeyEventUnmarshal(executionCmd, 6, 1, 1, CameraKeyEvent::START_FILMING);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003, TestSize.Level1)
 {
+    // Given: 创建注册按键事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    ASSERT_NE(executionCmd, nullptr);
 
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(4);
-        buffer->AppendUint8(3);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    // When: 测试异常情况 - 滚轮数据长度不足
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(7);
+    buffer->AppendUint8(4);
+    buffer->AppendUint8(3);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
 
-        buffer->AppendUint8(7);
-        buffer->AppendUint8(5);
-        buffer->AppendUint16(3);
-        buffer->AppendUint16(12);
-        buffer->AppendUint8(4);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->wheelData_.speed, 12);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    // When & Then: 测试正常情况 - 滚轮事件
+    TestWheelEventUnmarshal(executionCmd, 5, 4, 4, true);
 
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
+    // When: 测试异常情况 - 事件类型不匹配
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), false);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_003_001, TestSize.Level1)
 {
+    // Given: 创建注册按键事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
     std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
-    EXPECT_NE(executionCmd, nullptr);
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    ASSERT_NE(executionCmd, nullptr);
 
-        buffer->AppendUint8(8);
-        buffer->AppendUint8(4);
-        buffer->AppendUint16(1);
-        buffer->AppendUint16(2);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->stickY_, 2);
-    }
-    {
-        auto buffer = std::make_shared<MechDataBuffer>(100);
-        AppendUint8BySize(buffer, 2);
+    // When & Then: 测试正常情况 - 摇杆事件
+    TestStickEventUnmarshal(executionCmd, 4, 1, 2, true);
 
-        buffer->AppendUint8(8);
-        buffer->AppendUint8(5);
-        buffer->AppendUint16(1);
-        buffer->AppendUint16(2);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
+    // When: 测试异常情况 - 摇杆数据长度不足
+    TestStickEventUnmarshal(executionCmd, 5, 1, 2, false);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建注册通用事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建注册通用事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-
-
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetParams();
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_NE(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建注册通用事件命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
@@ -1114,59 +1230,72 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_TriggerResponse_
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(1);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetParams();
+
+    // When: 触发响应
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
     EXPECT_NE(executionCmd->GetResult(), 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_001, TestSize.Level1)
 {
+    // Given: 创建注册通用事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
+    // When: 测试空指针和空buffer的异常处理
     EXPECT_EQ(executionCmd->Unmarshal(nullptr), false);
 
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
     EXPECT_EQ(executionCmd->Unmarshal(bufferEmpty), false);
+
+    // When: 测试正常情况下的反序列化
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(0);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(10);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+
+    // Then: 验证反序列化结果
+    EXPECT_EQ(executionCmd->GetParams().attached, 10);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002, TestSize.Level1)
 {
+    // Given: 创建注册通用事件命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(0);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(1);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(0);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(10);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->GetParams().attached, 10);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(10);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
+    // When: 测试异常情况 - 数据长度不足
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(0);
+    buffer->AppendUint8(2);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+
+    // When: 测试正常情况 - attached状态
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(0);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(10);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), true);
+    EXPECT_EQ(executionCmd->GetParams().attached, 10);
+
+    // When: 测试异常情况 - 事件类型不匹配
+    auto buffer3 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer3, 2);
+    buffer3->AppendUint8(1);
+    buffer3->AppendUint8(2);
+    buffer3->AppendUint8(10);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer3), false);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_001, TestSize.Level1)
@@ -1174,175 +1303,237 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_00
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-        EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
-    }
-    {
-        int capacity = 100;
-        auto buffer = std::make_shared<MechDataBuffer>(capacity);
-        AppendUint8BySize(buffer, 2);
-        buffer->AppendUint8(2);
-        buffer->AppendUint8(1);
-        buffer->AppendUint8(7);
-        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
-    }
+    // When: 测试正常情况 - pitchDisable
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
+
+    // When: 测试异常情况 - 数据长度不匹配
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(2);
+    buffer2->AppendUint8(2);
+    buffer2->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), false);
+
+    // When: 测试正常情况 - yawDisable
+    auto buffer3 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer3, 2);
+    buffer3->AppendUint8(2);
+    buffer3->AppendUint8(1);
+    buffer3->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer3), true);
+
+    // When: 测试异常情况 - 数据长度不匹配
+    auto buffer4 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer4, 2);
+    buffer4->AppendUint8(2);
+    buffer4->AppendUint8(2);
+    buffer4->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer4), false);
+
+    // When: 测试正常情况 - rollDisable
+    auto buffer5 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer5, 2);
+    buffer5->AppendUint8(2);
+    buffer5->AppendUint8(1);
+    buffer5->AppendUint8(7);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer5), true);
 }
 
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechStateInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建获取状态信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechStateInfoCmd> executionCmd = factory.CreateGetMechStateInfoCmd();
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechStateInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建获取状态信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechStateInfoCmd> executionCmd = factory.CreateGetMechStateInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(2);
     buffer->AppendUint8(255);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_EQ(params.pitchDisable, 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechStateInfoCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建获取状态信息命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechStateInfoCmd> executionCmd = factory.CreateGetMechStateInfoCmd();
     executionCmd->SetResponseCallback(ResponseCb);
-    
+
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(2);
     buffer->AppendUint8(255);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().pitchDisable, 1);
+
+    // When: 触发响应
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_EQ(params.pitchDisable, 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechPoseInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建获取姿态信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechPoseInfoCmd> executionCmd = factory.CreateGetMechPoseInfoCmd();
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechPoseInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建获取姿态信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechPoseInfoCmd> executionCmd = factory.CreateGetMechPoseInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
+
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 3);
     for (size_t i = 0; i < 3; i++) {
         buffer->AppendUint16(100);
     }
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().accelerationZ, 100);
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_EQ(params.accelerationZ, 100);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechPoseInfoCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建获取姿态信息命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechPoseInfoCmd> executionCmd = factory.CreateGetMechPoseInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
+
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 3);
     for (size_t i = 0; i < 3; i++) {
         buffer->AppendUint16(100);
     }
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().accelerationZ, 100);
+    // When: 触发响应
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_EQ(params.accelerationZ, 100);
 }
 
 HWTEST_F(MechCommandTest0x02, CommonGetMechLimitInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建获取限制信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonGetMechLimitInfoCmd> executionCmd = factory.CreateGetMechLimitInfoCmd();
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, CommonGetMechLimitInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建获取限制信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonGetMechLimitInfoCmd> executionCmd = factory.CreateGetMechLimitInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 3);
     for (int i = 0; i < 6; i++) {
         buffer->AppendFloat(3.2434);
     }
-    
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_GT(executionCmd->GetParams().negMax.pitch, 3);
+
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_GT(params.negMax.pitch, 3);
 }
 
 
 HWTEST_F(MechCommandTest0x02, CommonGetMechLimitInfoCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建获取限制信息命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<CommonGetMechLimitInfoCmd> executionCmd = factory.CreateGetMechLimitInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
     executionCmd->SetResponseCallback(ResponseCb);
 
@@ -1352,33 +1543,49 @@ HWTEST_F(MechCommandTest0x02, CommonGetMechLimitInfoCmd_TriggerResponse_002, Tes
         buffer->AppendFloat(3.2434);
     }
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_GT(executionCmd->GetParams().negMax.pitch, 3);
+    // When: 触发响应
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_GT(params.negMax.pitch, 3);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建获取基础信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.CreateGetMechBaseInfoCmd();
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建获取设备基本信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.CreateGetMechBaseInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
+
+    // When: 测试正常情况下的响应处理
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(0);
@@ -1394,19 +1601,22 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_001, Test
     for (const char ch : deviceName) {
         buffer->AppendUint8(ch);
     }
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证设备名称正确解析
     EXPECT_EQ(executionCmd->GetParams().realName, deviceName);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建获取设备基本信息命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechBaseInfoCmd> executionCmd = factory.CreateGetMechBaseInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
-
+    ASSERT_NE(executionCmd, nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
 
+    // When: 测试正常情况下的响应处理
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
     buffer->AppendUint8(0);
@@ -1422,32 +1632,40 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechBaseInfoCmd_TriggerResponse_002, Test
     for (const char ch : deviceName) {
         buffer->AppendUint8(ch);
     }
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证设备名称正确解析
     EXPECT_EQ(executionCmd->GetParams().realName, deviceName);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechCapabilityInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建获取能力信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechCapabilityInfoCmd> executionCmd = factory.CreateGetMechCapabilityInfoCmd();
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechCapabilityInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建获取能力信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechCapabilityInfoCmd> executionCmd = factory.CreateGetMechCapabilityInfoCmd();
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NE(executionCmd, nullptr);
-
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     for (int i = 0; i < 9; i++) {
@@ -1459,18 +1677,22 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechCapabilityInfoCmd_TriggerResponse_001
     int maxturntime = 120;
     buffer->AppendUint16(maxturntime);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().maxturntime, maxturntime);
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_EQ(params.maxturntime, maxturntime);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechCapabilityInfoCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建获取能力信息命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechCapabilityInfoCmd> executionCmd = factory.CreateGetMechCapabilityInfoCmd();
-
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
     executionCmd->SetResponseCallback(ResponseCb);
 
@@ -1484,31 +1706,44 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechCapabilityInfoCmd_TriggerResponse_002
     int maxturntime = 120;
     buffer->AppendUint16(maxturntime);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_EQ(executionCmd->GetParams().maxturntime, maxturntime);
+    // When: 触发响应
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_EQ(params.maxturntime, maxturntime);
 }
 
 HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建获取协议版本命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<GetMechProtocolVerCmd> executionCmd = factory.CreateGetMechProtocolVerCmd();
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建获取协议版本命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<GetMechProtocolVerCmd> executionCmd = factory.CreateGetMechProtocolVerCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
@@ -1516,24 +1751,26 @@ HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_TriggerResponse_001, TestSiz
     buffer->AppendUint8(2);
     buffer->AppendUint8(3);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    executionCmd->GetParams();
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 1);
     EXPECT_EQ(executionCmd->lowProtocolVer_, 3);
 }
 
 HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建获取协议版本命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<GetMechProtocolVerCmd> executionCmd = factory.CreateGetMechProtocolVerCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
@@ -1541,33 +1778,44 @@ HWTEST_F(MechCommandTest0x02, GetMechProtocolVerCmd_TriggerResponse_002, TestSiz
     buffer->AppendUint8(2);
     buffer->AppendUint8(3);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    executionCmd->GetParams();
+    // When: 触发响应
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 1);
     EXPECT_EQ(executionCmd->lowProtocolVer_, 3);
 }
 
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_Marshal_001, TestSize.Level1)
 {
+    // Given: 创建获取坐标信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechCoordinateInfoCmd> executionCmd = factory.CreateGetMechCoordinateInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
-    EXPECT_NE(executionCmd->Marshal(), nullptr);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
+    // Given: 创建获取坐标信息命令对象
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechCoordinateInfoCmd> executionCmd = factory.CreateGetMechCoordinateInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    
+    // When: 测试空指针和空buffer的异常处理
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 4);
@@ -1576,22 +1824,26 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_TriggerResponse_001
     }
     buffer->AppendUint8(1);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_GT(executionCmd->GetParams().pitchPose, 5);
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_GT(params.pitchPose, 5);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_TriggerResponse_002, TestSize.Level1)
 {
+    // Given: 创建获取坐标信息命令对象并设置回调
     CommandFactory factory;
     factory.SetFactoryProtocolVer(0x02);
     std::shared_ptr<NormalGetMechCoordinateInfoCmd> executionCmd = factory.CreateGetMechCoordinateInfoCmd();
-    EXPECT_NE(executionCmd, nullptr);
+    ASSERT_NE(executionCmd, nullptr);
     executionCmd->SetResponseCallback(ResponseCb);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
-    
+    executionCmd->TriggerResponse(nullptr);
     auto bufferEmpty = std::make_shared<MechDataBuffer>(100);
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(bufferEmpty));
+    executionCmd->TriggerResponse(bufferEmpty);
 
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 4);
@@ -1600,9 +1852,450 @@ HWTEST_F(MechCommandTest0x02, NormalGetMechCoordinateInfoCmd_TriggerResponse_002
     }
     buffer->AppendUint8(1);
 
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(buffer));
-    executionCmd->GetResult();
-    EXPECT_GT(executionCmd->GetParams().pitchPose, 5);
+    // When: 触发响应
+    executionCmd->TriggerResponse(buffer);
+    auto result = executionCmd->GetResult();
+    auto params = executionCmd->GetParams();
+
+    // Then: 验证结果
+    EXPECT_EQ(result, 2);
+    EXPECT_GT(params.pitchPose, 5);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_Unmarshal_003, TestSize.Level1)
+{
+    // Given: 创建注册通用事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试正常情况 - 0xFF事件类型
+    {
+        int capacity = 100;
+        auto buffer = std::make_shared<MechDataBuffer>(capacity);
+        AppendUint8BySize(buffer, 2);
+        buffer->AppendUint8(0xFF);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(1);
+
+        // Then: 验证反序列化成功
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    }
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_Unmarshal_004, TestSize.Level1)
+{
+    // Given: 创建注册通用事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试异常情况 - 数据长度不足
+    {
+        int capacity = 100;
+        auto buffer = std::make_shared<MechDataBuffer>(capacity);
+        AppendUint8BySize(buffer, 2);
+        buffer->AppendUint8(0);
+        buffer->AppendUint8(1);
+
+        // Then: 验证反序列化失败
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+    }
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_Unmarshal_005, TestSize.Level1)
+{
+    // Given: 创建注册通用事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试异常情况 - 数据长度不足
+    {
+        int capacity = 100;
+        auto buffer = std::make_shared<MechDataBuffer>(capacity);
+        AppendUint8BySize(buffer, 2);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(1);
+
+        // Then: 验证反序列化失败
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+    }
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_Unmarshal_006, TestSize.Level1)
+{
+    // Given: 创建注册通用事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
+    EXPECT_NE(executionCmd, nullptr);
+
+    // When: 测试数据长度不足
+    {
+        int capacity = 100;
+        auto buffer = std::make_shared<MechDataBuffer>(capacity);
+        AppendUint8BySize(buffer, 2);
+        buffer->AppendUint8(2);
+        buffer->AppendUint8(1);
+
+        // Then: 验证反序列化失败
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+    }
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_TriggerResponse_003, TestSize.Level1)
+{
+    // Given: 创建注册通用事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试空buffer的异常处理
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_004, TestSize.Level1)
+{
+    // Given: 创建注册按键事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+
+    std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
+        std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
+    EXPECT_NE(executionCmd, nullptr);
+
+    // When: 测试按键按下事件
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(0xFF);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_005, TestSize.Level1)
+{
+    // Given: 创建注册按键事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+
+    std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
+        std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
+    EXPECT_NE(executionCmd, nullptr);
+
+    // When: 测试数据长度不足
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+
+    // When: 测试正常按键事件
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(1);
+    buffer2->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), true);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_006, TestSize.Level1)
+{
+    // Given: 创建注册按键事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+
+    std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
+        std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
+    EXPECT_NE(executionCmd, nullptr);
+
+    // When & Then: 测试切换照片/视频事件
+    TestKeyEventUnmarshal(executionCmd, 5, 1, 3, CameraKeyEvent::SWITCH_PHOTO_FILM);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_007, TestSize.Level1)
+{
+    // Given: 创建注册按键事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+
+    std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
+        std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
+    EXPECT_NE(executionCmd, nullptr);
+
+    // When: 测试数据长度不足
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer, 2);
+    buffer->AppendUint8(7);
+    buffer->AppendUint8(1);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+
+    // When: 测试数据长度不足
+    auto buffer2 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer2, 2);
+    buffer2->AppendUint8(7);
+    buffer2->AppendUint8(5);
+    buffer2->AppendUint16(3);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer2), false);
+
+    // When: 测试数据长度不足
+    auto buffer3 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer3, 2);
+    buffer3->AppendUint8(7);
+    buffer3->AppendUint8(5);
+    buffer3->AppendUint16(3);
+    buffer3->AppendUint16(12);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer3), false);
+
+    // When: 测试正常滚轮事件
+    auto buffer4 = std::make_shared<MechDataBuffer>(100);
+    AppendUint8BySize(buffer4, 2);
+    buffer4->AppendUint8(7);
+    buffer4->AppendUint8(5);
+    buffer4->AppendUint16(3);
+    buffer4->AppendUint16(12);
+    buffer4->AppendUint8(4);
+    EXPECT_EQ(executionCmd->Unmarshal(buffer4), true);
+    EXPECT_EQ(executionCmd->wheelData_.speed, 12);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_008, TestSize.Level1)
+{
+    // Given: 创建注册按键事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+
+    std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
+        std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
+    EXPECT_NE(executionCmd, nullptr);
+
+    // When: 测试数据长度不足
+    {
+        auto buffer = std::make_shared<MechDataBuffer>(100);
+        AppendUint8BySize(buffer, 2);
+        buffer->AppendUint8(8);
+        buffer->AppendUint8(1);
+
+        // Then: 验证反序列化失败
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+    }
+    // When: 测试数据长度不足
+    {
+        auto buffer = std::make_shared<MechDataBuffer>(100);
+        AppendUint8BySize(buffer, 2);
+        buffer->AppendUint8(8);
+        buffer->AppendUint8(4);
+        buffer->AppendUint16(1);
+
+        // Then: 验证反序列化失败
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+    }
+    // When: 测试正常摇杆事件
+    {
+        auto buffer = std::make_shared<MechDataBuffer>(100);
+        AppendUint8BySize(buffer, 2);
+        buffer->AppendUint8(8);
+        buffer->AppendUint8(4);
+        buffer->AppendUint16(1);
+        buffer->AppendUint16(2);
+
+        // Then: 验证反序列化成功
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+    }
+}
+
+HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_009, TestSize.Level1)
+{
+    // Given: 创建注册按键事件命令对象
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<CommonRegisterMechKeyEventCmd> executionCmdCommon = factory.CreateRegisterMechCameraKeyEventCmd();
+    std::shared_ptr<NormalRegisterMechKeyEventCmd> executionCmd =
+        std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
+    EXPECT_NE(executionCmd, nullptr);
+
+    // When: 测试空数据
+    {
+        auto buffer = std::make_shared<MechDataBuffer>(100);
+        AppendUint8BySize(buffer, 2);
+
+        // Then: 验证反序列化失败
+        EXPECT_EQ(executionCmd->Unmarshal(buffer), false);
+    }
+
+    // Then: 验证结果值
+    EXPECT_EQ(executionCmd->GetResult(), 0);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalSetMechPhoneStatusCmd_Marshal_001, TestSize.Level1)
+{
+    // Given: 创建设置手机状态命令对象
+    ScreenInfoParams screenInfo;
+    screenInfo.isPortrait = 1;
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<NormalSetMechPhoneStatusCmd> executionCmd = factory.CreateSetMechPhoneStatusCmd(screenInfo);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 执行序列化
+    auto buffer = executionCmd->Marshal();
+
+    // Then: 验证序列化结果
+    ASSERT_NE(buffer, nullptr);
+    EXPECT_GT(buffer->Size(), 0);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalSetMechPhoneStatusCmd_TriggerResponse_001, TestSize.Level1)
+{
+    // Given: 创建设置手机状态命令对象
+    ScreenInfoParams screenInfo;
+    screenInfo.isPortrait = 1;
+
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<NormalSetMechPhoneStatusCmd> executionCmd = factory.CreateSetMechPhoneStatusCmd(screenInfo);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试空指针异常处理
+    executionCmd->TriggerResponse(nullptr);
+    executionCmd->SetResponseCallback(ResponseCb);
+    executionCmd->TriggerResponse(nullptr);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalSetMechPhoneStatusCmd_TriggerResponse_002, TestSize.Level1)
+{
+    // Given: 创建设置手机状态命令对象并设置回调
+    ScreenInfoParams screenInfo;
+    screenInfo.isPortrait = 1;
+
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+
+    std::shared_ptr<NormalSetMechPhoneStatusCmd> executionCmd = factory.CreateSetMechPhoneStatusCmd(screenInfo);
+    ASSERT_NE(executionCmd, nullptr);
+
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    buffer->AppendUint8(0x02);
+    buffer->AppendUint8(0x2A);
+    buffer->AppendUint8(1);
+
+    // When: 设置回调并触发响应
+    executionCmd->SetResponseCallback(ResponseCb);
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
+    EXPECT_EQ(executionCmd->GetResult(), 1);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalSetMechRotationTraceCmd_Constructor_001, TestSize.Level1)
+{
+    // Given: 准备旋转轨迹参数
+    std::vector<RotateParam> paramsVector;
+    RotateParam params;
+    params.duration = 1000;
+    params.degree.yaw = 1.1;
+    params.degree.roll = 2.2;
+    params.degree.pitch = 3.3;
+
+    for (int i = 0; i < 11; i++) {
+        paramsVector.push_back(params);
+    }
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+
+    // When: 创建旋转轨迹命令对象
+    std::shared_ptr<CommonSetMechRotationTraceCmd> executionCmdCommon =
+        factory.CreateSetMechRotationTraceCmd(++g_taskId, paramsVector);
+    std::shared_ptr<NormalSetMechRotationTraceCmd> executionCmd =
+        std::static_pointer_cast<NormalSetMechRotationTraceCmd>(executionCmdCommon);
+
+    // Then: 验证命令对象创建成功且参数正确
+    ASSERT_NE(executionCmd, nullptr);
+    auto cmdParams = executionCmd->GetParams();
+    EXPECT_EQ(cmdParams.size(), 11);
+    EXPECT_EQ(cmdParams[0].duration, 1000);
+    EXPECT_FLOAT_EQ(cmdParams[0].degree.yaw, 1.1);
+    EXPECT_FLOAT_EQ(cmdParams[0].degree.roll, 2.2);
+    EXPECT_FLOAT_EQ(cmdParams[0].degree.pitch, 3.3);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalSetMechRotationTraceCmd_TriggerResponse_001, TestSize.Level1)
+{
+    // Given: 创建旋转轨迹命令对象
+    std::vector<RotateParam> paramsVector;
+    RotateParam params;
+    params.duration = 1000;
+    params.degree.yaw = 1.1;
+    params.degree.roll = 2.2;
+    params.degree.pitch = 3.3;
+    paramsVector.push_back(params);
+
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<CommonSetMechRotationTraceCmd> executionCmdCommon =
+        factory.CreateSetMechRotationTraceCmd(++g_taskId, paramsVector);
+    std::shared_ptr<NormalSetMechRotationTraceCmd> executionCmd =
+        std::static_pointer_cast<NormalSetMechRotationTraceCmd>(executionCmdCommon);
+    ASSERT_NE(executionCmd, nullptr);
+
+    // When: 测试空指针异常处理
+    executionCmd->TriggerResponse(nullptr);
+    executionCmd->SetResponseCallback(ResponseCb);
+    executionCmd->TriggerResponse(nullptr);
+
+    // Then: 验证异常情况下结果未改变
+    EXPECT_EQ(executionCmd->GetResult(), 0);
+}
+
+HWTEST_F(MechCommandTest0x02, NormalSetMechRotationTraceCmd_TriggerResponse_002, TestSize.Level1)
+{
+    // Given: 创建旋转轨迹命令对象
+    std::vector<RotateParam> paramsVector;
+    RotateParam params;
+    params.duration = 1000;
+    params.degree.yaw = 1.1;
+    params.degree.roll = 2.2;
+    params.degree.pitch = 3.3;
+    paramsVector.push_back(params);
+
+    CommandFactory factory;
+    factory.SetFactoryProtocolVer(0x02);
+    std::shared_ptr<CommonSetMechRotationTraceCmd> executionCmdCommon =
+        factory.CreateSetMechRotationTraceCmd(++g_taskId, paramsVector);
+    std::shared_ptr<NormalSetMechRotationTraceCmd> executionCmd =
+        std::static_pointer_cast<NormalSetMechRotationTraceCmd>(executionCmdCommon);
+    ASSERT_NE(executionCmd, nullptr);
+
+    auto buffer = std::make_shared<MechDataBuffer>(100);
+    buffer->AppendUint8(0x02);
+    buffer->AppendUint8(0x27);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(0);
+    buffer->AppendUint8(0);
+
+    // When: 设置回调并触发响应
+    executionCmd->SetResponseCallback(ResponseCb);
+    executionCmd->TriggerResponse(buffer);
+
+    // Then: 验证结果
+    EXPECT_NE(executionCmd->GetResult(), 1);
 }
 }
 }
