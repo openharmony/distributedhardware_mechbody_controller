@@ -1483,8 +1483,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_002_00
         buffer->AppendUint8(2);
         buffer->AppendUint8(1);
         buffer->AppendUint8(7);
-
-        // Then: 验证反序列化成功
         EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
     }
     {
