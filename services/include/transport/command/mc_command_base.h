@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <securec.h>
 
 namespace OHOS {
 namespace MechBodyController {
