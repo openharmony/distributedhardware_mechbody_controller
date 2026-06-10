@@ -141,6 +141,46 @@ void McCameraTrackingController::Init()
     SubscribeEventUtils::GetInstance().AddEventService(&MechBodyEventBaseService::GetInstance());
     RegisterTrackingListener();
     RegisterSensorListener();
+    MechbodyAdapterUtils::RegisterBackgroundTracking(
+        [this](TrackingFrameParams trackingFrameParams) mutable {
+            auto params = std::make_shared<TrackingFrameParams>(trackingFrameParams);
+            if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::LEFT) {
+                params->roi.x = NUM_1 - params->roi.x;
+                params->roi.y = NUM_1 - params->roi.y;
+            } else if (sensorRotation_ == MobileRotation::RIGHT || sensorRotation_ == MobileRotation::DOWN) {
+                params->roi.x = params->roi.x;
+                params->roi.y = params->roi.y;
+            }
+            for (const auto& item : MechBodyControllerService::GetInstance().motionManagers_) {
+                int32_t mechId = item.first;
+                auto motionManager = item.second;
+                
+                if (!motionManager) {
+                    HILOGE("MotionManager not exists; mechId: %{public}d", mechId);
+                    continue;
+                }
+
+                CameraInfoParams cameraInfoParams;
+                cameraInfoParams.fovH = currentCameraInfo_->fovHBasic;
+                cameraInfoParams.fovV = currentCameraInfo_->fovVBasic;
+                cameraInfoParams.zoomFactor = 0;
+                cameraInfoParams.isRecording = currentCameraInfo_->isRecording;
+                cameraInfoParams.cameraType = CameraType::FRONT;
+
+                ScreenInfoParams screenInfoParam;
+                screenInfoParam.isPortrait = IsVertical(sensorRotation_);
+
+                int32_t result = motionManager->SetMechCameraInfo(cameraInfoParams);
+                int32_t screenInfoResult = motionManager->SetMechScreenInfo(screenInfoParam);
+                HILOGI("mech id: %{public}d result code: %{public}d, screenInfoResult %{public}d:",
+                    mechId, result, screenInfoResult);
+
+                int32_t setResult = motionManager->SetMechCameraTrackingFrame(params);
+                HILOGI("Set tracking info for mech id: %{public}d; result: %{public}s; code: %{public}d",
+                    mechId, setResult == ERR_OK ? "success" : "failed", setResult);
+            }
+        }
+    );
     HILOGI("end");
 }
 
@@ -151,6 +191,8 @@ void McCameraTrackingController::UnInit()
     SubscribeEventUtils::GetInstance().UnInit();
     UnRegisterTrackingListener();
     UnRegisterSensorListener();
+    HILOGI("UnRegister background tracking event!");
+    MechbodyAdapterUtils::UnRegisterBackgroundTracking();
     if (eventHandler_ != nullptr) {
         eventHandler_->RemoveTask(SEND_CAMERA_INFO_TASK_NAME);
         eventHandler_->RemoveTask(UPDATE_ACTION_CONTROL_TASK_NAME);

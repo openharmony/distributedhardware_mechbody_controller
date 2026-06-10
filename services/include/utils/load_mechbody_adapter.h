@@ -19,19 +19,25 @@
 #include <functional>
 #include <mutex>
 #include <string>
+#include "mechbody_controller_types.h"
 
 namespace OHOS {
 namespace MechBodyController {
 using PushXYFn = std::function<void(float x, float y)>;
+using GetBackgroundXYFn = std::function<void(TrackingFrameParams trackingFrameParams)>;
 typedef void (*InitTrackingCore)();
 typedef int32_t (*RunTrackingCore)(float, float, float, float, const PushXYFn&);
 typedef void (*ResetTrackingCore)();
+typedef void (*RegisterBackgroundTracking)(const GetBackgroundXYFn&);
+typedef void (*UnRegisterBackgroundTracking)();
 
 class MechbodyAdapterUtils {
 public:
     static int32_t InitTrackingCore();
     static int32_t RunTrackingCore(float x, float y, float width, float height, const PushXYFn& push);
     static int32_t ResetTrackingCore();
+    static void RegisterBackgroundTracking(const GetBackgroundXYFn& GetBackgroundXYFn);
+    static void UnRegisterBackgroundTracking();
     static void Clear();
 
 private:
@@ -40,9 +46,13 @@ private:
 private:
     static std::mutex mechAdapterMutex_;
     static void* mechAdapterHandle_;
+    static std::mutex mechGimbalMutex_;
+    static void* mechBackgroundHandle_;
     static OHOS::MechBodyController::InitTrackingCore initFunc_;
     static OHOS::MechBodyController::RunTrackingCore runFunc_;
     static OHOS::MechBodyController::ResetTrackingCore resetFunc_;
+    static OHOS::MechBodyController::RegisterBackgroundTracking backgroundRegisterFunc_;
+    static OHOS::MechBodyController::UnRegisterBackgroundTracking backgroundUnRegisterFunc_;
 };
 } // namespace MechBodyController
 } // namespace OHOS
