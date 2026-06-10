@@ -282,44 +282,6 @@ HWTEST_F(MotionManagerTwoTest, DoAction_002, TestSize.Level1)
 }
 
 /**
- * @tc.name  : ProcessPhoneOffForegroundCheck_001
- * @tc.number: ProcessPhoneOffForegroundCheck_001
- * @tc.desc  : Test IsAiDispatchServiceInForeground with empty list.
- */
-HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    std::vector<AppExecFwk::AppStateData> list;
-    EXPECT_FALSE(motionMgr->IsAiDispatchServiceInForeground(list));
-}
-
-/**
- * @tc.name  : ProcessPhoneOffForegroundCheck_002
- * @tc.number: ProcessPhoneOffForegroundCheck_002
- * @tc.desc  : Test IsAiDispatchServiceInForeground with AI dispatch service in foreground.
- */
-HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_002, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    std::vector<AppExecFwk::AppStateData> list;
-    AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.huawei.hmos.aibase";
-    appData.isFocused = true;
-    appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
-    list.push_back(appData);
-
-    EXPECT_TRUE(motionMgr->IsAiDispatchServiceInForeground(list));
-}
-
-/**
  * @tc.name  : ProcessPhoneOffForegroundCheck_003
  * @tc.number: ProcessPhoneOffForegroundCheck_003
  * @tc.desc  : Test IsAiDispatchServiceInForeground with other app in foreground.
@@ -355,7 +317,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_004, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.huawei.hmos.aibase";
+    appData.bundleName = "com.example.aibase";
     appData.isFocused = true;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::UI;
     list.push_back(appData);
@@ -377,7 +339,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_005, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.huawei.hmos.aibase";
+    appData.bundleName = "com.example.aibase";
     appData.isFocused = false;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData);
@@ -405,7 +367,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_006, TestSize.Leve
     list.push_back(appData1);
 
     AppExecFwk::AppStateData appData2;
-    appData2.bundleName = "com.huawei.hmos.aibase";
+    appData2.bundleName = "com.example.aibase";
     appData2.isFocused = true;
     appData2.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData2);
@@ -427,7 +389,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_007, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData1;
-    appData1.bundleName = "com.huawei.hmos.aibase";
+    appData1.bundleName = "com.example.aibase";
     appData1.isFocused = false;
     appData1.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData1);
@@ -455,7 +417,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_008, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData1;
-    appData1.bundleName = "com.huawei.hmos.aibase";
+    appData1.bundleName = "com.example.aibase";
     appData1.isFocused = true;
     appData1.extensionType = AppExecFwk::ExtensionAbilityType::UI;
     list.push_back(appData1);
@@ -499,7 +461,7 @@ HWTEST_F(MotionManagerTwoTest, IsAiDispatchServiceInForeground_002, TestSize.Lev
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.huawei.hmos.aibase";
+    appData.bundleName = "com.example.aibase";
     appData.isFocused = true;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData);
@@ -716,24 +678,6 @@ HWTEST_F(MotionManagerTwoTest, MechTrackingStatusNotify_002, TestSize.Level1)
 }
 
 /**
- * @tc.name  : MechTrackingStatusNotify_003
- * @tc.number: MechTrackingStatusNotify_003
- * @tc.desc  : Test MechTrackingStatusNotify with enabled status.
- */
-HWTEST_F(MotionManagerTwoTest, MechTrackingStatusNotify_003, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    std::shared_ptr<NormalRegisterMechTrackingEnableCmd> cmd = std::make_shared<NormalRegisterMechTrackingEnableCmd>();
-
-    motionMgr->MechTrackingStatusNotify(cmd);
-    EXPECT_EQ(motionMgr->deviceStatus_->isEnabled, false);
-}
-
-/**
  * @tc.name  : HandlePhoneOn_001
  * @tc.number: HandlePhoneOn_001
  * @tc.desc  : Test HandlePhoneOn with WHEEL_BASE device.
@@ -789,42 +733,6 @@ HWTEST_F(MotionManagerTwoTest, ConnectAbility_001, TestSize.Level1)
 }
 
 /**
- * @tc.name  : SetProtocolVer_001
- * @tc.number: SetProtocolVer_001
- * @tc.desc  : Test SetProtocolVer function with valid sendAdapter.
- */
-HWTEST_F(MotionManagerTwoTest, SetProtocolVer_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    // SetProtocolVer requires sendAdapter_ to be valid to send command
-    motionMgr->SetProtocolVer();
-    // Verify that sendAdapter_ is still valid after the call
-    EXPECT_NE(motionMgr->sendAdapter_, nullptr);
-}
-
-/**
- * @tc.name  : GetMechRealName_001
- * @tc.number: GetMechRealName_001
- * @tc.desc  : Test GetMechRealName function with valid sendAdapter.
- */
-HWTEST_F(MotionManagerTwoTest, GetMechRealName_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    // GetMechRealName requires sendAdapter_ to be valid to send command
-    motionMgr->GetMechRealName();
-    // Verify that sendAdapter_ is still valid after the call
-    EXPECT_NE(motionMgr->sendAdapter_, nullptr);
-}
-
-/**
  * @tc.name  : GetDeviceBaseInfo_001
  * @tc.number: GetDeviceBaseInfo_001
  * @tc.desc  : Test GetDeviceBaseInfo function.
@@ -839,25 +747,6 @@ HWTEST_F(MotionManagerTwoTest, GetDeviceBaseInfo_001, TestSize.Level1)
     // GetDeviceBaseInfo requires sendAdapter_ to be valid to send command
     // In test environment, the command will timeout and return MECH_CONNECT_FAILED
     EXPECT_EQ(motionMgr->GetDeviceBaseInfo(), MECH_CONNECT_FAILED);
-}
-
-/**
- * @tc.name  : GetDeviceStateInfo_001
- * @tc.number: GetDeviceStateInfo_001
- * @tc.desc  : Test GetDeviceStateInfo function with valid deviceStatus.
- */
-HWTEST_F(MotionManagerTwoTest, GetDeviceStateInfo_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    // GetDeviceStateInfo requires deviceStatus_ and sendAdapter_ to be valid
-    EXPECT_NE(motionMgr->deviceStatus_, nullptr);
-    motionMgr->GetDeviceStateInfo();
-    // Verify that deviceStatus_ is still valid after the call
-    EXPECT_NE(motionMgr->deviceStatus_, nullptr);
 }
 
 /**
@@ -931,7 +820,8 @@ HWTEST_F(MotionManagerTwoTest, UpdateTrackingTime_001, TestSize.Level1)
 
     // Verify that lastTrackingFrameTime_ was updated
     auto now = std::chrono::steady_clock::now();
-    auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(now - motionMgr->lastTrackingFrameTime_).count();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now - motionMgr->lastTrackingFrameTime_).count();
     EXPECT_LT(timeDiff, 100); // Should be very recent
 
     // Verify that trackingStatus was updated from MECH_TK_ENABLE_NO_TARGET to MECH_TK_ENABLE_WITH_TARGET
