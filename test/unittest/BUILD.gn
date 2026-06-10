@@ -84,7 +84,8 @@ ohos_unittest("mc_montion_manager_test") {
     debug = false
   }
 
-  sources = [ "motion/mc_motion_manager_test.cpp" ]
+  sources = [ "motion/mc_motion_manager_test.cpp",
+              "motion/mc_motion_manager_two_test.cpp" ]
 
   configs = [
     ":mech_test_config",
