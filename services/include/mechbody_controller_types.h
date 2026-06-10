@@ -784,8 +784,8 @@ struct SpeedParams : public OHOS::Parcelable {
     float angle;
     MarchingMode mode;
 
-    SpeedParams(int16_t speed = 0, float angle = 0.0, MarchingMode mode = MarchingMode::TURN_THEN_MOVE)
-        :speed(speed), angle(angle), mode(mode) {}
+    SpeedParams(int16_t speed = 0, float angle = 0.0, MarchingMode mode = MarchingMode::TURN_THEN_MOVE):
+        speed(speed), angle(angle), mode(mode) {}
 
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
@@ -851,35 +851,35 @@ struct ActionControlParams {
 };
 
 struct DeviceBaseInfo {
-    uint8_t devType;
-    uint8_t ctrlType;
-    uint8_t protocolVer;
-    std::array<uint8_t, ADDRESS_COUNT> macAddress;
-    std::string realName;
+    uint8_t devType = 0;
+    uint8_t ctrlType = 0;
+    uint8_t protocolVer = 0;
+    std::array<uint8_t, ADDRESS_COUNT> macAddress = {};
+    std::string realName = "";
 };
 
 struct DeviceCapabilityInfo {
-    uint8_t centerAble;
-    uint8_t switchAble;
-    uint8_t trackAble;
-    uint8_t absoluteCoordinate;
-    uint8_t relativeCoordinate;
-    uint8_t poseReport;
-    uint8_t batteryReport;
-    uint8_t trackPoints;
-    uint8_t yawable;
-    uint8_t rollable;
-    uint8_t pitchable;
-    float yawmaxspeed;
-    float rollmaxspeed;
-    float pitchmaxspeed;
-    uint16_t maxturntime;
+    uint8_t centerAble = 0;
+    uint8_t switchAble = 0;
+    uint8_t trackAble = 0;
+    uint8_t absoluteCoordinate = 0;
+    uint8_t relativeCoordinate = 0;
+    uint8_t poseReport = 0;
+    uint8_t batteryReport = 0;
+    uint8_t trackPoints = 0;
+    uint8_t yawable = 0;
+    uint8_t rollable = 0;
+    uint8_t pitchable = 0;
+    float yawmaxspeed = 0.0f;
+    float rollmaxspeed = 0.0f;
+    float pitchmaxspeed = 0.0f;
+    uint16_t maxturntime = 0;
 };
 
 struct DeviceAccelerationInfo {
-    uint16_t accelerationX;
-    uint16_t accelerationY;
-    uint16_t accelerationZ;
+    uint16_t accelerationX = 0;
+    uint16_t accelerationY = 0;
+    uint16_t accelerationZ = 0;
 };
 
 struct DeviceStateInfo {
@@ -890,10 +890,10 @@ struct DeviceStateInfo {
 };
 
 struct DeviceCoordinateInfo {
-    uint8_t ismoving;
-    float yawPose;
-    float rollPose;
-    float pitchPose;
+    uint8_t ismoving = 0;
+    float yawPose = 0.0f;
+    float rollPose = 0.0f;
+    float pitchPose = 0.0f;
 };
 
 struct WheelCapabilityInfo {
@@ -936,6 +936,11 @@ struct ObstacleInfo {
     int16_t pitchAngle;
     uint8_t detailLenth;
     std::vector<ExtraDetail> details;
+};
+
+struct SendCmdInfo {
+    uint16_t cmdWord;
+    uint16_t errorCode;
 };
 }  // namespace MechBodyController
 }  // namespace OHOS

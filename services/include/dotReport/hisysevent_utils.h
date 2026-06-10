@@ -22,8 +22,6 @@
 namespace OHOS {
 namespace MechBodyController {
 
-uint64_t GetTimeStampMs();
-
 struct MechKitStartReportInfo {
     // Connection method: -1-Unknown, 0-Bluetooth connection, 1-NFC connection;
 	// currently unknown
@@ -54,6 +52,10 @@ struct MechkitControlInfo {
     uint32_t stickNum;
     std::vector<std::string> appName;
     std::vector<uint64_t> existenceTime;
+    uint32_t connectDelay;
+    uint32_t connectCode;
+    std::vector<uint16_t> cmdWord;
+    std::vector<uint16_t> errorCode;
 };
 
 struct AppForegroundInfo {

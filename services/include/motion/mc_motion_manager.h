@@ -35,6 +35,7 @@
 #include "iservice_registry.h"
 #include "string_wrapper.h"
 #include "int_wrapper.h"
+#include "notification_utils.h"
 #include "application_state_observer_stub.h"
 #include "../dotReport/hisysevent_utils.h"
 
@@ -150,6 +151,7 @@ public:
     int32_t GetMechId() const;
     uint64_t GetStrackingTime();
     MechkitControlInfo GetDfxInfo();
+    void SetDfxConnectDelay(uint32_t delayTime);
     void UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appStateData);
     void UpdateEndtimeAndCompute();
 
@@ -209,8 +211,6 @@ private:
     std::shared_ptr<CommandBase> ExecuteRotateCommand(const RotateParam &param, uint8_t taskId);
     std::shared_ptr<CommonSetMechRotationBySpeedCmd> CreateAndSendRotateBySpeedCommand(
         std::shared_ptr<RotateBySpeedParam> rotateSpeedParam, uint8_t responseTaskId);
-    void DoActionSendAndTimeout(std::shared_ptr<WheelSetMechSceneControlCmd> sceneControlCmd,
-        uint8_t taskId, bool needRestoreTracking);
     std::shared_ptr<CommandBase> CreateDoActionCommand(ActionType actionType);
     void RegisterDoActionCallback(uint8_t taskId, uint32_t tokenId, std::string &napiCmdId,
         ActionType actionType, std::shared_ptr<CommandBase> command, bool needRestoreTracking);
@@ -229,7 +229,9 @@ private:
     void MechkitIntelligentInfoReport(const CameraInfoParams &mechCameraInfo);
     void InitDfxInfo();
     void GetDfxDeviceTypeInfo();
-
+    void DfxGetSendCmdInfo(uint16_t cmdType, uint8_t result);
+    ExecResult MapDeviceErrorCodeToExecResult(uint16_t cmdType, uint8_t deviceErrorCode);
+    void UpdateSendCmdInfoToDfx();
 private:
     std::shared_ptr<DeviceStatus> deviceStatus_;
     std::mutex deviceStatusMutex_;
@@ -285,6 +287,7 @@ private:
     std::mutex appForegroundInfoMutex_;
     uint64_t trackingTime_ = 0;
     MechkitControlInfo controlInfo_ = {0};
+    std::vector<SendCmdInfo> sendCmdInfo_;
 };
 
 class MechEventListenerImpl : public IMechEventListener {

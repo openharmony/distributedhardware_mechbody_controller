@@ -30,7 +30,6 @@
 #include "hisysevent_utils.h"
 #include "mc_set_mech_motion_control_cmd.h"
 #include "mc_normal_set_mech_motion_control_cmd.h"
-#include <cmath>
 #include "app_scheduler.h"
 
 uint32_t g_capabilityInfo[MAX_CAPABILITY_BIT_NUM] = {0};
@@ -40,7 +39,6 @@ namespace MechBodyController {
 namespace {
 const std::string TAG = "MotionManager";
 const std::string EVENT_THREAD_NAME = "MotionManager_EventHandler";
-const std::string AISERVICE_BUNDLE = "com.example.hmos.aibase";
 constexpr float DEGREE_CIRCLED_MAX = 6.28;
 constexpr float DEGREE_CIRCLED_MIN = -6.28;
 constexpr float DEFAULT_DURATION = 500;
@@ -59,18 +57,17 @@ constexpr int32_t RESPONSE_TIMEOUT = 300000;
 constexpr float YAW_OFFSET = 0.2f;
 constexpr int32_t CMD_SEND_INTERVAL = 100;
 constexpr int32_t TRACKING_CHECKER_INTERVAL = 100;
-const std::string AILIFESVC_BUNDLE_NAME = "com.example.hmos.ailifesvc";
+const std::string AILIFESVC_BUNDLE_NAME = "com.huawei.hmos.ailifesvc";
 const std::string DEVICE_CONNECT_ABILITY_NAME = "OneHopDeviceAbility";
 constexpr int32_t ABILITY_STATE_BACKGROUND = 4;
-constexpr int32_t DO_ACTION_TIME_USED = 500; //ms
+constexpr int32_t DO_ACTION_TIME_USED = 500; // ms
 constexpr uint8_t MECH_LOCATION_REPORT_INTERVAL = 30;
-constexpr int32_t MS_CONVERSION = 1000;
-constexpr int32_t CM_CONVERSION = 10;
 constexpr int32_t PORECAST_MS_TO_S = 1000;
 constexpr size_t MAX_DFX_APP_NUM = 5;
 constexpr int32_t APP_STATE_FOREGROUND = 2;
 constexpr int32_t APP_STATE_BACKGROUND = 4;
 constexpr int32_t APP_STATE_TERMINATED = 5;
+constexpr int32_t CMD_WORD_NUM = 4;
 const std::string SCENEBOARD_BUNDLE_NAME = "com.ohos.sceneboard";
 
 const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
@@ -95,32 +92,6 @@ std::map<SpeedGear, float> ANGLE_SPEED_MAP = {
  
 constexpr float ANGLE_SPEED_DEFAULT = 50.0;
 
-static ExecResult MapDeviceErrorCodeToExecResult(uint8_t deviceErrorCode)
-{
-    switch (deviceErrorCode) {
-        case CODENUM_0: // MACHANIC_SUCCESS
-            return ExecResult::COMPLETED;
-        case CODENUM_1: // MACHANIC_PARA_ERROR
-            return ExecResult::SYSTEM_ERROR;
-        case CODENUM_2: // MACHANIC_EXE_ERROR
-            return ExecResult::SYSTEM_ERROR;
-        case CODENUM_3: // MACHANIC_LIMITED
-            return ExecResult::LIMITED;
-        case CODENUM_4: // MACHANIC_EXE_TIMEOUT
-            return ExecResult::TIMEOUT;
-        case CODENUM_5: // MACHANIC_EXE_INTERRUPTED
-            return ExecResult::INTERRUPTED;
-        case CODENUM_6: // MACHANIC_ERR_CLIFF
-            return ExecResult::TERMINATE_CLIFF;
-        case CODENUM_7: // MACHANIC_ERR_OBSTACLE
-            return ExecResult::TERMINATE_OBSTACLE;
-        case CODENUM_100: // MACHANIC_OTHER_ERR
-            return ExecResult::SYSTEM_ERROR;
-        default:
-            return ExecResult::SYSTEM_ERROR;
-    }
-}
-
 const std::vector<RotateParam> NOD_ACTIONS = {
     {{0.0f, 0.0f, -0.02f}, 100, false},
     {{0.0f, 0.0f, 0.2f}, 600, false},
@@ -144,6 +115,27 @@ const std::vector<RotateParam> HEAD_SHAKE_TWICE_ACTIONS = {
 };
 }
 
+ExecResult MotionManager::MapDeviceErrorCodeToExecResult(uint16_t cmdType, uint8_t deviceErrorCode)
+{
+    DfxGetSendCmdInfo(cmdType, deviceErrorCode);
+    switch (deviceErrorCode) {
+        case 0: // MACHANIC_SUCCESS
+            return ExecResult::COMPLETED;
+        case 1: // MACHANIC_PARA_ERROR
+            return ExecResult::SYSTEM_ERROR;
+        case 2: // MACHANIC_EXE_ERROR
+            return ExecResult::SYSTEM_ERROR;
+        case 3: // MACHANIC_LIMITED
+            return ExecResult::LIMITED;
+        case 4: // MACHANIC_EXE_TIMEOUT
+            return ExecResult::TIMEOUT;
+        case 5: // MACHANIC_EXE_INTERRUPTED
+            return ExecResult::INTERRUPTED;
+        default:
+            return ExecResult::SYSTEM_ERROR;
+    }
+}
+
 template<typename T>
 T GetFinalSpeed(bool isFuShu, T speed)
 {
@@ -154,17 +146,15 @@ T GetFinalSpeed(bool isFuShu, T speed)
     }
 }
 
-static uint16_t SafeMsToUint16(uint64_t ms)
-{
+static uint16_t SafeMsToUint16(uint64_t ms) {
     return static_cast<uint16_t>(std::min<uint64_t>(ms, UINT16_MAX));
 }
 
-static uint64_t DistanceToMs(int32_t distanceCm, int16_t speedCmPerSec)
-{
+static uint64_t DistanceToMs(int32_t distanceCm, int16_t speedCmPerSec) {
     if (speedCmPerSec <= 0) {
         return 0;
     }
-    return static_cast<uint64_t>(std::abs(distanceCm)) * CM_CONVERSION * MS_CONVERSION / speedCmPerSec;
+    return static_cast<uint64_t>(std::abs(distanceCm)) * 10 * 1000 / speedCmPerSec;
 }
 
 bool CheckRotatePointParam(EulerAngles rotateDegree)
@@ -332,6 +322,8 @@ void MotionManager::MechParamNotify(const std::shared_ptr<CommonRegisterMechStat
     HILOGI("notify");
     MechBodyControllerService::GetInstance().OnRotationAxesStatusChange(mechId_, status);
 }
+
+
 void MotionManager::MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd)
 {
     HILOGD("Received generic param change event.");
@@ -383,8 +375,7 @@ void MotionManager::MechObstacleInfoNotify(const std::shared_ptr<RegisterMechObs
     HILOGI("notify end");
 }
 
-void MotionManager::HandleMechPlacementChange(bool isPhoneOn)
-{
+void MotionManager::HandleMechPlacementChange(bool isPhoneOn) {
     HILOGI("start, isPhoneOn = %{public}d.", isPhoneOn);
     if (!isPhoneOn) {
         HandlePhoneOff(isPhoneOn);
@@ -394,17 +385,17 @@ void MotionManager::HandleMechPlacementChange(bool isPhoneOn)
     HILOGI("end.");
 }
 
-void MotionManager::HandlePhoneOff(bool isPhoneOn)
-{
+void MotionManager::HandlePhoneOff(bool isPhoneOn) {
     auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(true);
     CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
 
-    auto callback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), hidCmd, isPhoneOn]() {
+    auto callback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), hidCmd, isPhoneOn, this]() {
         auto sharedThis = weakThis.lock();
         if (!sharedThis) {
             return;
         }
         uint8_t result = hidCmd->GetResult();
+        DfxGetSendCmdInfo(hidCmd->GetCmdType(), result);
         HILOGI("SetMechHidPreemptiveCmd result: %{public}u.", result);
         MechConnectManager::GetInstance().NotifyMechState(sharedThis->mechId_, isPhoneOn);
     };
@@ -415,8 +406,7 @@ void MotionManager::HandlePhoneOff(bool isPhoneOn)
     MechConnectManager::GetInstance().NotifyMechState(mechId_, isPhoneOn);
 }
 
-void MotionManager::HandlePhoneOn(bool isPhoneOn)
-{
+void MotionManager::HandlePhoneOn(bool isPhoneOn) {
     if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE)) {
         ConnectAbility();
     }
@@ -424,8 +414,7 @@ void MotionManager::HandlePhoneOn(bool isPhoneOn)
     MechConnectManager::GetInstance().NotifyMechState(mechId_, isPhoneOn);
 }
 
-void MotionManager::ProcessPhoneOffForegroundCheck()
-{
+void MotionManager::ProcessPhoneOffForegroundCheck() {
     auto appManager = GetAppManagerInstance();
     if (appManager == nullptr) {
         HILOGE("appManager is null, cannot check foreground app");
@@ -440,8 +429,7 @@ void MotionManager::ProcessPhoneOffForegroundCheck()
     }
 }
 
-void MotionManager::ProcessPhoneOnForegroundCheck()
-{
+void MotionManager::ProcessPhoneOnForegroundCheck() {
     auto appManager = GetAppManagerInstance();
     if (appManager == nullptr) {
         HILOGE("appManager is null, cannot check desktop scene");
@@ -476,11 +464,12 @@ sptr<AppExecFwk::IAppMgr> MotionManager::GetAppManagerInstance()
 
 bool MotionManager::IsAiDispatchServiceInForeground(const std::vector<AppExecFwk::AppStateData> &list)
 {
+    const std::string AI_DISPATCH_SERVICE_BUNDLE = "com.huawei.hmos.aibase";
     for (const AppExecFwk::AppStateData &appStateData : list) {
         if (AppExecFwk::AppStateData::IsUIExtension(appStateData.extensionType)) {
             continue;
         }
-        if (appStateData.bundleName == AISERVICE_BUNDLE && appStateData.isFocused) {
+        if (appStateData.bundleName == AI_DISPATCH_SERVICE_BUNDLE && appStateData.isFocused) {
             HILOGI("AI dispatch service found in foreground and focused, bundleName: %{public}s,"
                 "state: %{public}d, pid: %{public}d",
                 appStateData.bundleName.c_str(), appStateData.state, appStateData.pid);
@@ -575,8 +564,8 @@ void MotionManager::ConnectServiceExtension(
 {
     HILOGI("connect service extension start");
     AAFwk::Want want;
-    AppExecFwk::ElementName element("", "com.example.hmos.aibase", "WakeUpExtAbility", "");
-    HILOGI("connect service extension bundleName:com.example.hmos.aibase, abilityName:example");
+    AppExecFwk::ElementName element("", "com.huawei.hmos.aibase", "WakeUpExtAbility", "");
+    HILOGI("connect service extension bundleName:com.huawei.hmos.aibase, abilityName:WakeUpExtAbility");
     want.SetElement(element);
     want.SetParams(wantParams);
     std::string identity = IPCSkeleton::ResetCallingIdentity();
@@ -828,6 +817,46 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     HILOGI("MotionManager end.");
 }
 
+void MotionManager::DfxGetSendCmdInfo(uint16_t cmdType, uint8_t result)
+{
+    HILOGI("enter");
+    if (result != 0) {
+        bool cmdWordExists = false;
+        for (const auto& cmdInfo : sendCmdInfo_) {
+            if (cmdInfo.cmdWord == cmdType) {
+                cmdWordExists = true;
+                break;
+            }
+        }
+        if (!cmdWordExists) {
+            SendCmdInfo info;
+            info.cmdWord = cmdType;
+            info.errorCode = result;
+            sendCmdInfo_.push_back(info);
+        }
+    }
+}
+
+void MotionManager::UpdateSendCmdInfoToDfx()
+{
+    HILOGI("start. nums:%{public}lu", sendCmdInfo_.size());
+    size_t topCount = std::min(sendCmdInfo_.size(), static_cast<size_t>(CMD_WORD_NUM));
+
+    for (size_t i = 0; i < topCount; ++i) {
+        controlInfo_.cmdWord.push_back(sendCmdInfo_[i].cmdWord);
+        controlInfo_.errorCode.push_back(sendCmdInfo_[i].errorCode);
+    }
+    SendCmdInfo cmdInfo;
+    if (sendCmdInfo_.size() > CMD_WORD_NUM) {
+        cmdInfo.cmdWord = 0;
+        cmdInfo.errorCode = static_cast<uint16_t>(sendCmdInfo_.size());
+        controlInfo_.cmdWord.push_back(cmdInfo.cmdWord);
+        controlInfo_.errorCode.push_back(cmdInfo.errorCode);
+    }
+    // 清空set中的数据
+    sendCmdInfo_.clear();
+}
+
 void MotionManager::InitDfxInfo()
 {
     HILOGI("InitDfxInfo start.");
@@ -849,14 +878,17 @@ void MotionManager::InitDfxInfo()
         controlInfo_.failNumber = 0;
         controlInfo_.deviceType = 0;
         controlInfo_.stickNum = 0;
- 
-        // 单独处理vector成员
+        controlInfo_.connectCode = 0;
+        controlInfo_.connectDelay = 0;
+
         controlInfo_.appName.clear();
         controlInfo_.appName.resize(MAX_DFX_APP_NUM);
         controlInfo_.existenceTime.clear();
         controlInfo_.existenceTime.resize(MAX_DFX_APP_NUM);
- 
-        // 清空字符串
+        controlInfo_.cmdWord.clear();
+        controlInfo_.cmdWord.resize(MAX_DFX_APP_NUM);
+        controlInfo_.errorCode.clear();
+        controlInfo_.errorCode.resize(MAX_DFX_APP_NUM);
         controlInfo_.packageName.clear();
         // 初始化在前台的APP的数据
         auto appManager = GetAppManagerInstance();
@@ -881,9 +913,15 @@ void MotionManager::InitDfxInfo()
  
 MechkitControlInfo MotionManager::GetDfxInfo()
 {
+    UpdateSendCmdInfoToDfx();
     return controlInfo_;
 }
- 
+
+void MotionManager::SetDfxConnectDelay(uint32_t delayTime)
+{
+    controlInfo_.connectDelay = delayTime;
+}
+
 void MotionManager::GetDfxDeviceTypeInfo()
 {
     if (protocolVer_ == 0x01) {
@@ -915,6 +953,7 @@ int32_t MotionManager::Init()
         GetDeviceCapabilityInfo();
         if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE)) {
             GetWheelCapabilityInfo();
+            GetWheelMovementCapabilityInfo();
             if (isFirstConnect_) {
                 SetDevicePairingInfo(deviceIdentifier_);
             }
@@ -1097,6 +1136,7 @@ int32_t MotionManager::GetDeviceBaseInfo()
             return deviceBaseInfoReady_;
         });
         if (!ready) {
+            MechConnectManager::GetInstance().NotifyMechState(mechId_, false);
             HILOGE("GetDeviceBaseInfo timeout");
             return MECH_CONNECT_FAILED;
         }
@@ -1254,6 +1294,7 @@ void MotionManager::SetDevicePairingInfo(const uint32_t deviceIdentifier)
     CHECK_POINTER_RETURN(pairingInfoCmd, "pairingInfoCmd is empty.");
     auto pairingInfoCallback = [this, pairingInfoCmd]() {
         auto result = pairingInfoCmd->GetResult();
+        DfxGetSendCmdInfo(pairingInfoCmd->GetCmdType(), result);
         HILOGI("device callback devicePairingInfo_  result: %{public}d", result);
     };
 
@@ -1430,6 +1471,24 @@ void MotionManager::UnRegisterNotifyEvent()
     mechEventListener_ = nullptr;
 }
 
+void MotionManager::TrggerMechLocationReport()
+{
+    std::shared_ptr<NormalSetMechLocationReportCmd> cmd =
+        factory.CreateSetMechLocationReportCmd(1, MECH_LOCATION_REPORT_INTERVAL);
+    
+    auto cmdCallback = [cmd, this] () {
+        HILOGI("NormalSetMechLocationReportCmd callback %{public}u", cmd->GetResult());
+        DfxGetSendCmdInfo(cmd->GetCmdType(), cmd->GetResult());
+    };
+    cmd->SetResponseCallback(cmdCallback);
+ 
+    cmd->SetTimeoutCallback([] () {
+        HILOGE("NormalSetMechLocationReportCmd timeout");
+    });
+ 
+    sendAdapter_->SendCommand(cmd);
+}
+
 RotateToLocationParam GenerateRotateToLocationParam(const RotateParam &param)
 {
     RotateToLocationParam rotateToLocationParam;
@@ -1443,23 +1502,6 @@ RotateToLocationParam GenerateRotateToLocationParam(const RotateParam &param)
         rotateToLocationParam.rotateMap = 0b00010111;
     }
     return rotateToLocationParam;
-}
-
-void MotionManager::TrggerMechLocationReport()
-{
-    std::shared_ptr<NormalSetMechLocationReportCmd> cmd =
-        factory.CreateSetMechLocationReportCmd(1, MECH_LOCATION_REPORT_INTERVAL);
-
-    auto cmdCallback = [cmd] () {
-        HILOGI("NormalSetMechLocationReportCmd callback %{public}u", cmd->GetResult());
-    };
-    cmd->SetResponseCallback(cmdCallback);
-
-    cmd->SetTimeoutCallback([] () {
-        HILOGE("NormalSetMechLocationReportCmd timeout");
-    });
-
-    sendAdapter_->SendCommand(cmd);
 }
 
 int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
@@ -1540,7 +1582,7 @@ std::shared_ptr<CommandBase> MotionManager::ExecuteRotateCommand(const RotatePar
             } else {
                 cmdResult = static_cast<SetMechRotationCmd*>(rotationCmd.get())->GetResult();
             }
-            ExecResult result = MapDeviceErrorCodeToExecResult(cmdResult);
+            ExecResult result = MapDeviceErrorCodeToExecResult(rotationCmd->GetCmdType(), cmdResult);
             auto cbInfo = it->second;
             seqCallbacks_.erase(it);
             lock.unlock();
@@ -1848,7 +1890,7 @@ void MotionManager::SendRotateCommandImpl(
             std::unique_lock<std::mutex> lock(seqCallbackMutex_);
             auto it = seqCallbacks_.find(responseTaskId);
             if (it != seqCallbacks_.end()) {
-                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetResult());
+                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetCmdType(), cmd->GetResult());
                 auto cbInfo = it->second;
                 seqCallbacks_.erase(it);
                 lock.unlock();
@@ -1864,7 +1906,7 @@ void MotionManager::SendRotateCommandImpl(
             std::unique_lock<std::mutex> lock(seqCallbackMutex_);
             auto it = seqCallbacks_.find(responseTaskId);
             if (it != seqCallbacks_.end()) {
-                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetResult());
+                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetCmdType(), cmd->GetResult());
                 auto cbInfo = it->second;
                 seqCallbacks_.erase(it);
                 lock.unlock();
@@ -1943,7 +1985,6 @@ int32_t MotionManager::DoAction(uint32_t tokenId, std::string &napiCmdId, Action
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
-
     auto command = CreateDoActionCommand(actionType);
     CHECK_POINTER_RETURN_VALUE(command, INVALID_PARAMETERS_ERR, "command is empty.");
 
@@ -2094,10 +2135,10 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
     } else if (actionType == ActionType::HEAD_UP || actionType == ActionType::HEAD_DOWN) {
         result = ExtractRotationBySpeedResult(command);
     } else {
-        result = MapDeviceErrorCodeToExecResult(
+        result = MapDeviceErrorCodeToExecResult(command->GetCmdType(),
             static_cast<WheelSetMechSceneControlCmd *>(command.get())->GetResult());
     }
-
+    
     auto cbInfo = it->second;
     seqCallbacks_.erase(it);
     lock.unlock();
@@ -2115,41 +2156,50 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
 ExecResult MotionManager::ExtractMotionControlResult(std::shared_ptr<CommandBase> command)
 {
     uint8_t cmdResult = 0;
+    CommandBase* motionCmd = nullptr;
     if (protocolVer_ == 0x01) {
-        auto motionCmd = static_cast<SetMechMotionControlCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<SetMechMotionControlCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     } else {
-        auto motionCmd = static_cast<NormalSetMechMotionControlCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<NormalSetMechMotionControlCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     }
     controlInfo_.landScapePortrait++;
-    return MapDeviceErrorCodeToExecResult(cmdResult);
+    return MapDeviceErrorCodeToExecResult(motionCmd->GetCmdType(), cmdResult);
 }
 
 ExecResult MotionManager::ExtractRotationTraceResult(std::shared_ptr<CommandBase> command)
 {
     uint8_t cmdResult = 0;
+    CommandBase* motionCmd = nullptr;
     if (protocolVer_ >= 0x02) {
-        auto motionCmd = static_cast<NormalSetMechRotationTraceCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<NormalSetMechRotationTraceCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     } else {
-        auto motionCmd = static_cast<SetMechRotationTraceCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<SetMechRotationTraceCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     }
-    return MapDeviceErrorCodeToExecResult(cmdResult);
+    return MapDeviceErrorCodeToExecResult(motionCmd->GetCmdType(), cmdResult);
 }
 
 ExecResult MotionManager::ExtractRotationBySpeedResult(std::shared_ptr<CommandBase> command)
 {
     uint8_t cmdResult = 0;
+    CommandBase* motionCmd = nullptr;
     if (protocolVer_ >= 0x02) {
-        auto motionCmd = static_cast<NormalSetMechRotationBySpeedCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<NormalSetMechRotationBySpeedCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     } else {
-        auto motionCmd = static_cast<SetMechRotationBySpeedCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<SetMechRotationBySpeedCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     }
-    return MapDeviceErrorCodeToExecResult(cmdResult);
+    return MapDeviceErrorCodeToExecResult(motionCmd->GetCmdType(), cmdResult);
 }
 
 void MotionManager::CreateDoActionTimeoutCallback(uint8_t taskId, bool needRestoreTracking)
@@ -2310,9 +2360,8 @@ std::shared_ptr<CommonSetMechRotationBySpeedCmd> MotionManager::CreateAndSendRot
         std::unique_lock<std::mutex> lock(seqCallbackMutex_);
         auto it = seqCallbacks_.find(responseTaskId);
         if (it != seqCallbacks_.end()) {
-            ExecResult result = MapDeviceErrorCodeToExecResult(
-                static_cast<CommonSetMechRotationBySpeedCmd *>(rotationBySpeedCmd.get())
-                    ->GetResult());
+            ExecResult result = MapDeviceErrorCodeToExecResult(rotationBySpeedCmd->GetCmdType(),
+                static_cast<CommonSetMechRotationBySpeedCmd *>(rotationBySpeedCmd.get())->GetResult());
             auto cbInfo = it->second;
             seqCallbacks_.erase(it);
             lock.unlock();
@@ -2487,12 +2536,6 @@ int32_t MotionManager::StopRotate(uint32_t &tokenId, std::string &napiCmdId)
         std::shared_ptr<CommandBase> motionCmd = factory.CreateSetMechMotionControlCmd(ControlCommand::STOP);
         CHECK_POINTER_RETURN_VALUE(motionCmd, INVALID_PARAMETERS_ERR, "StopCmd is empty.");
         sendAdapter_->SendCommand(motionCmd);
-        if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE)) {
-            std::shared_ptr<CommandBase> motionWheelCmd =
-                factory.CreateWheelSetMechMotionControlCmd(ControlCommand::STOP);
-            CHECK_POINTER_RETURN_VALUE(motionWheelCmd, INVALID_PARAMETERS_ERR, "Wheel StopCmd is empty.");
-            sendAdapter_->SendCommand(motionWheelCmd);
-        }
         MechBodyControllerService::GetInstance().NotifyOperationResult(tokenId, napiCmdId, ExecResult::COMPLETED);
     }
     HILOGI("Stop rotate end.");
@@ -2593,6 +2636,7 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
         return ERR_OK;
     }
 
+    HILOGI("Start tracking.");
     UpdateTrackingTime();
 
     std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory
@@ -3009,15 +3053,15 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
             foregroundInfo.state = appStateData.state;
             foregroundInfo.startTime = timeNow;
             appForegroundInfos_.insert(foregroundInfo);
-            HILOGI("app foreground info init, appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64,
+            HILOGI("app foreground info init, appName:%{public}s, state:%{public}d, startTime:%{public}ld",
                 foregroundInfo.bundleName.c_str(), foregroundInfo.state, foregroundInfo.startTime);
         }
         return;
     }
 
     AppForegroundInfo newForegroundInfo = *it;
-    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64", nowTime:%{public}" PRId64", "
-        "duration:%{public}" PRIu64, newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
+    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}ld, nowTime:%{public}ld,duration:%{public}lu",
+        newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, timeNow, newForegroundInfo.duration);
     if (appStateData.state == APP_STATE_FOREGROUND) {
         if (newForegroundInfo.state != APP_STATE_FOREGROUND) {
@@ -3039,11 +3083,11 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
     }
     appForegroundInfos_.erase(it);
     appForegroundInfos_.insert(newForegroundInfo);
-    HILOGI("end. appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64",duration:%{public}" PRIu64,
+    HILOGI("end. appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
         newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, newForegroundInfo.duration);
 }
- 
+
 void MotionManager::UpdateEndtimeAndCompute()
 {
     std::lock_guard<std::mutex> lock(appForegroundInfoMutex_);
@@ -3051,16 +3095,16 @@ void MotionManager::UpdateEndtimeAndCompute()
         system_clock::now().time_since_epoch()).count();
     
     std::vector<AppForegroundInfo> appInfos(appForegroundInfos_.begin(), appForegroundInfos_.end());
-    HILOGI("start. timeNow:%{public}" PRId64", app nums:%{public}zu, appInfo size: %{public}zu",
+    HILOGI("start. timeNow:%{public}ld, app nums:%{public}lu, appInfo size: %{public}lu",
         timeNow, appForegroundInfos_.size(), appInfos.size());
     for (auto& info : appInfos) {
         if (info.state == APP_STATE_FOREGROUND) {
-            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64", "
-            "duration:%{public}" PRIu64, info.bundleName.c_str(), info.state, info.startTime, info.duration);
+            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
+                info.bundleName.c_str(), info.state, info.startTime, info.duration);
             uint64_t duration = static_cast<uint64_t>(timeNow - info.startTime);
             info.duration += duration;
         }
-        HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64",duration:%{public}" PRIu64,
+        HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
             info.bundleName.c_str(), info.state, info.startTime, info.duration);
     }
     std::sort(appInfos.begin(), appInfos.end(),
@@ -3149,13 +3193,12 @@ MechNapiCommandCallbackInfo::MechNapiCommandCallbackInfo(uint32_t &tokenId, std:
     : tokenId(tokenId), napiCmdId(napiCmdId)
 {
 }
-
 AbilityStateListener::AbilityStateListener(std::shared_ptr<MotionManager> motionManager)
 {
     HILOGI("AbilityStateListener called");
     motionManager_ = motionManager;
 }
-
+ 
 AbilityStateListener::~AbilityStateListener()
 {
     HILOGI("AbilityStateListener destroyed");
