@@ -570,7 +570,7 @@ void MotionManager::ConnectServiceExtension(
 {
     HILOGI("connect service extension start");
     AAFwk::Want want;
-    AppExecFwk::ElementName element("", "com.example.hmos.aibase", "WakeUpExtAbility", "");	 
+    AppExecFwk::ElementName element("", "com.huawei.hmos.aibase", "WakeUpExtAbility", "");
     HILOGI("connect service extension bundleName:com.example.hmos.aibase, abilityName:example");
     want.SetElement(element);
     want.SetParams(wantParams);
