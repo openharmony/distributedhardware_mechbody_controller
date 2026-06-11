@@ -399,13 +399,13 @@ void MotionManager::HandlePhoneOff(bool isPhoneOn)
     auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(true);
     CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
 
-    auto callback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), hidCmd, isPhoneOn, this]() {
+    auto callback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), hidCmd, isPhoneOn]() {
         auto sharedThis = weakThis.lock();
         if (!sharedThis) {
             return;
         }
         uint8_t result = hidCmd->GetResult();
-        DfxGetSendCmdInfo(hidCmd->GetCmdType(), result);
+        sharedThis->DfxGetSendCmdInfo(hidCmd->GetCmdType(), result);
         HILOGI("SetMechHidPreemptiveCmd result: %{public}u.", result);
         MechConnectManager::GetInstance().NotifyMechState(sharedThis->mechId_, isPhoneOn);
     };
@@ -1488,9 +1488,13 @@ void MotionManager::TrggerMechLocationReport()
     std::shared_ptr<NormalSetMechLocationReportCmd> cmd =
         factory.CreateSetMechLocationReportCmd(1, MECH_LOCATION_REPORT_INTERVAL);
     
-    auto cmdCallback = [cmd, this] () {
+    auto cmdCallback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), cmd] () {
+        auto sharedThis = weakThis.lock();
+        if (!sharedThis) {
+            return;
+        }
         HILOGI("NormalSetMechLocationReportCmd callback %{public}u", cmd->GetResult());
-        DfxGetSendCmdInfo(cmd->GetCmdType(), cmd->GetResult());
+        sharedThis->DfxGetSendCmdInfo(cmd->GetCmdType(), cmd->GetResult());
     };
     cmd->SetResponseCallback(cmdCallback);
  
