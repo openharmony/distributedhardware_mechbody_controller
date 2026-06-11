@@ -2686,7 +2686,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustXOffset_VirtualCenter_002, Tes
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_001, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_001 begin" << std::endl;
+    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_001 "
+              << "begin" << std::endl;
 
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1001;
@@ -2695,7 +2696,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
     wptr<IRemoteObject> object;
     listener.OnRemoteDied(object);
 
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_001 end" << std::endl;
+    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_001 "
+              << "end" << std::endl;
 }
 
 /**
@@ -2705,7 +2707,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_002, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_002 begin" << std::endl;
+    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_002 "
+              << "begin" << std::endl;
 
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1002;
@@ -2714,7 +2717,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
     wptr<IRemoteObject> object;
     listener.OnRemoteDied(object);
 
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_002 end" << std::endl;
+    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_002 "
+              << "end" << std::endl;
 }
 
 /**
@@ -2724,7 +2728,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_003, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_003 begin" << std::endl;
+    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_003 "
+              << "begin" << std::endl;
 
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1003;
@@ -2733,7 +2738,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
     wptr<IRemoteObject> object;
     listener.OnRemoteDied(object);
 
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_003 end" << std::endl;
+    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_003 "
+              << "end" << std::endl;
 }
 
 /**
@@ -2743,7 +2749,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_004, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_004 begin" << std::endl;
+    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_004 "
+              << "begin" << std::endl;
 
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1004;
