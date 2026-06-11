@@ -34,6 +34,7 @@ ohos_fuzztest("McCameraTrackingControllerThreeFuzzTest") {
     "${mechbody_path}/services/include/transport/command/0x03",
     "${mechbody_path}/interface/napi/mech_manager",
     "${mechbody_path}/services/include/utils",
+    "${mechbody_path}/test/fuzztest/common",
   ]
   cflags = [
     "-g",

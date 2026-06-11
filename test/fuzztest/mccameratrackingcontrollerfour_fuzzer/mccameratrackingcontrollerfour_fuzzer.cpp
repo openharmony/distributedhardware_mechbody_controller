@@ -44,6 +44,27 @@ void FuzzSearchTargetStop(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
     InitCameraTrackingController();
     g_cameraTrackingController->SearchTargetStop();
+    // 测试 searchingTarget 为 true 的情况
+    auto cameraInfo = g_cameraTrackingController->GetCurrentCameraInfo();
+    if (cameraInfo != nullptr) {
+        cameraInfo->searchingTarget = true;
+        cameraInfo->tokenId = provider.ConsumeIntegral<uint32_t>();
+        cameraInfo->trackingTargetNum = provider.ConsumeIntegral<int32_t>();
+    }
+    g_cameraTrackingController->SearchTargetStop();
+
+    // 测试 searchingTarget 为 true 且 motionManagers 为空的情况
+    if (cameraInfo != nullptr) {
+        cameraInfo->searchingTarget = true;
+        cameraInfo->tokenId = provider.ConsumeIntegral<uint32_t>();
+        cameraInfo->trackingTargetNum = provider.ConsumeIntegral<int32_t>();
+    }
+    // 清空 motionManagers
+    {
+        std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+        MechBodyControllerService::GetInstance().motionManagers_.clear();
+    }
+    g_cameraTrackingController->SearchTargetStop();
 }
 
 void FuzzGetTokenIdOfCurrentCameraInfo(const uint8_t *data, size_t size)

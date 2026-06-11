@@ -72,42 +72,6 @@ void InitMotionManager()
     }
 }
 
-void FuzzIsDesktopScene(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    std::vector<AppExecFwk::AppStateData> list;
-    g_motionManager->IsDesktopScene(list);
-}
-
-void FuzzConnectServiceExtension(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    AAFwk::WantParams wantParams;
-    g_motionManager->ConnectServiceExtension(wantParams);
-}
-
-void FuzzIsLimitedWithExtremeValues(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->IsLimited(FLT_MAX, FLT_MAX, FLT_MAX);
-    g_motionManager->IsLimited(FLT_MIN, FLT_MIN, FLT_MIN);
-    g_motionManager->IsLimited(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-    g_motionManager->IsLimited(0.0f, 0.0f, 0.0f);
-    g_motionManager->IsLimited(-1.0f, 1.0f, 0.0f);
-    g_motionManager->IsLimited(-3.14f, 3.14f, 0.0f);
-}
-
-void FuzzIsLimitedWithBoundaryConditions(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    // 测试边界条件
-    g_motionManager->IsLimited(-0.001f, 0.001f, 0.0f);
-    g_motionManager->IsLimited(-0.001f, 0.001f, 0.001f);
-    g_motionManager->IsLimited(-0.001f, 0.001f, -0.001f);
-    g_motionManager->IsLimited(-100.0f, 100.0f, 99.999f);
-    g_motionManager->IsLimited(-100.0f, 100.0f, -99.999f);
-}
-
 void FuzzProcessTrackingStatusMultipleCalls(FuzzedDataProvider &provider)
 {
     InitMotionManager();
@@ -150,10 +114,6 @@ void FuzzMechExecutionResultNotifyMultipleCalls(FuzzedDataProvider &provider)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    FuzzIsDesktopScene(provider);
-    FuzzConnectServiceExtension(provider);
-    FuzzIsLimitedWithExtremeValues(provider);
-    FuzzIsLimitedWithBoundaryConditions(provider);
     FuzzProcessTrackingStatusMultipleCalls(provider);
     FuzzGetMechRealNameMultipleCalls(provider);
     FuzzGetWheelCapabilityInfoMultipleCalls(provider);

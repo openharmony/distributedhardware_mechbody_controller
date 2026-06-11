@@ -43,7 +43,8 @@
 
 namespace {
 constexpr int32_t TEST_MECH_ID = 1;
-constexpr int32_t MAX_ACTION_TYPE_VALUE = 2006;
+constexpr size_t MIN_BUFFER_SIZE = 3;
+constexpr int32_t RANGE_MAX_VALUE = 2006;
 }
 
 using namespace OHOS;
@@ -74,8 +75,22 @@ void InitMotionManager()
 
 void FuzzMechTrackingStatusNotify(const uint8_t *data, size_t size)
 {
+    FuzzedDataProvider provider(data, size);
     InitMotionManager();
     auto cmd = std::make_shared<RegisterMechTrackingEnableCmd>();
+    g_motionManager->MechTrackingStatusNotify(cmd);
+    std::shared_ptr<MechDataBuffer> unmarshalBuffer = std::make_shared<MechDataBuffer>(MIN_BUFFER_SIZE);
+    if (unmarshalBuffer != nullptr) {
+        // 设置cmdSet和cmdId
+        unmarshalBuffer->AppendUint8(0x02);
+        unmarshalBuffer->AppendUint8(0x45);
+
+        // 添加测试数据
+        uint8_t isEnabled = provider.ConsumeIntegralInRange<uint8_t>(1, RANGE_MAX_VALUE);
+        unmarshalBuffer->AppendUint8(isEnabled);
+        // 调用Unmarshal
+        (void)cmd->Unmarshal(unmarshalBuffer);
+    }
     g_motionManager->MechTrackingStatusNotify(cmd);
 }
 

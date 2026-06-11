@@ -20,15 +20,10 @@
 #include "mc_motion_manager.h"
 #include "mechbody_controller_types.h"
 #include "mechbody_controller_enums.h"
+#include "mock_transport_send_adapter.h"
 
 namespace OHOS {
 namespace MechBodyController {
-
-class MockTransportSendAdapter : public TransportSendAdapter {
-public:
-    MockTransportSendAdapter() = default;
-    ~MockTransportSendAdapter() override = default;
-};
 
 } // namespace MechBodyController
 } // namespace OHOS
