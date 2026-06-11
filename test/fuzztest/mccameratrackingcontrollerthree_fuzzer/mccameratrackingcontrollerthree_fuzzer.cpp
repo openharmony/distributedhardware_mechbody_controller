@@ -101,7 +101,9 @@ void FuzzSearchTarget(const uint8_t *data, size_t size)
         cameraInfo->trackingTargetNum = 0;
     }
     // 测试正常情况
-    searchParams->direction = static_cast<SearchDirection>(provider.ConsumeIntegralInRange<int32_t>(0, 2));
+    int32_t dataRangeMaxValue = 2;
+    searchParams->direction =
+        static_cast<SearchDirection>(provider.ConsumeIntegralInRange<int32_t>(0, dataRangeMaxValue));
     g_cameraTrackingController->SearchTarget(napiCmdId, tokenId, targetInfo, searchParams);
 }
 
