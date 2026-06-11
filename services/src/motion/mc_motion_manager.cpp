@@ -118,22 +118,28 @@ const std::vector<RotateParam> HEAD_SHAKE_TWICE_ACTIONS = {
 ExecResult MotionManager::MapDeviceErrorCodeToExecResult(uint16_t cmdType, uint8_t deviceErrorCode)
 {
     DfxGetSendCmdInfo(cmdType, deviceErrorCode);
-    switch (deviceErrorCode) {
-        case CODENUM_0: // MACHANIC_SUCCESS
-            return ExecResult::COMPLETED;
-        case CODENUM_1: // MACHANIC_PARA_ERROR
-            return ExecResult::SYSTEM_ERROR;
-        case CODENUM_2: // MACHANIC_EXE_ERROR
-            return ExecResult::SYSTEM_ERROR;
-        case CODENUM_3: // MACHANIC_LIMITED
-            return ExecResult::LIMITED;
-        case CODENUM_4: // MACHANIC_EXE_TIMEOUT
-            return ExecResult::TIMEOUT;
-        case CODENUM_5: // MACHANIC_EXE_INTERRUPTED
-            return ExecResult::INTERRUPTED;
-        default:
-            return ExecResult::SYSTEM_ERROR;
-    }
+    switch (deviceErrorCode) { 
+         case CODENUM_0: // MACHANIC_SUCCESS 
+             return ExecResult::COMPLETED; 
+         case CODENUM_1: // MACHANIC_PARA_ERROR 
+             return ExecResult::SYSTEM_ERROR; 
+         case CODENUM_2: // MACHANIC_EXE_ERROR 
+             return ExecResult::SYSTEM_ERROR; 
+         case CODENUM_3: // MACHANIC_LIMITED 
+             return ExecResult::LIMITED; 
+         case CODENUM_4: // MACHANIC_EXE_TIMEOUT 
+             return ExecResult::TIMEOUT; 
+         case CODENUM_5: // MACHANIC_EXE_INTERRUPTED 
+             return ExecResult::INTERRUPTED; 
+         case CODENUM_6: // MACHANIC_ERR_CLIFF 
+             return ExecResult::TERMINATE_CLIFF; 
+         case CODENUM_7: // MACHANIC_ERR_OBSTACLE 
+             return ExecResult::TERMINATE_OBSTACLE; 
+         case CODENUM_100: // MACHANIC_OTHER_ERR 
+             return ExecResult::SYSTEM_ERROR; 
+         default: 
+             return ExecResult::SYSTEM_ERROR; 
+     }
 }
 
 template<typename T>
