@@ -56,7 +56,8 @@ class TestMotionManager : public MotionManager {
 public:
     TestMotionManager(std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isWheel,
         uint32_t deviceIdentifier) : MotionManager(sendAdapter, mechId, isWheel, deviceIdentifier) {}
-    void SetProtocolVerForTest(uint8_t ver) {
+    void SetProtocolVerForTest(uint8_t ver)
+    {
         protocolVer_ = ver;
     }
 };
