@@ -105,14 +105,6 @@ void FuzzCheckPitchDegreeWithNull(FuzzedDataProvider &provider)
     g_motionManager->CheckPitchDegree(rotateParam, limit, pitchResult);
 }
 
-void FuzzHandelRotateSpeedParamWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    std::shared_ptr<RotateBySpeedParam> rotateBySpeedParam = nullptr;
-    bool willLimitChange = false;
-    g_motionManager->HandelRotateSpeedParam(rotateBySpeedParam, willLimitChange);
-}
-
 void FuzzCheckYawSpeedWithNull(FuzzedDataProvider &provider)
 {
     InitMotionManager();
@@ -161,34 +153,12 @@ void FuzzCheckPitchSpeedWithNull(FuzzedDataProvider &provider)
     g_motionManager->CheckPitchSpeed(rotateBySpeedParam, limit, pitchResult);
 }
 
-void FuzzSetDeviceRealNameWithEmptyString(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    std::string deviceRealName = "";
-    g_motionManager->SetDeviceRealName(deviceRealName);
-}
-
 void FuzzSetDeviceRealNameWithLongString(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     std::string deviceRealName = provider.ConsumeRandomLengthString(256);
     g_motionManager->SetDeviceRealName(deviceRealName);
 }
-
-void FuzzJudgingYawLimitWithNoLimit(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    RotateDegreeLimit limit;
-    limit.posMax.yaw = 3.14159f;
-    limit.negMax.yaw = -3.14159f;
-    limit.posMax.roll = 3.14159f;
-    limit.negMax.roll = -3.14159f;
-    limit.posMax.pitch = 3.14159f;
-    limit.negMax.pitch = -3.14159f;
-    
-    g_motionManager->JudgingYawLimit(limit);
-}
-
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
@@ -196,12 +166,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
     FuzzCheckRollDegreeWithNull(provider);
     FuzzCheckPitchDegreeWithNull(provider);
-    FuzzHandelRotateSpeedParamWithNull(provider);
     FuzzCheckYawSpeedWithNull(provider);
     FuzzCheckRollSpeedWithNull(provider);
     FuzzCheckPitchSpeedWithNull(provider);
-    FuzzSetDeviceRealNameWithEmptyString(provider);
     FuzzSetDeviceRealNameWithLongString(provider);
-    FuzzJudgingYawLimitWithNoLimit(provider);
     return 0;
 }

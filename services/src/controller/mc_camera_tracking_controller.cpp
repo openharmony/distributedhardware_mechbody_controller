@@ -941,35 +941,6 @@ bool McCameraTrackingController::IsAllowedConversion(
     }
 }
 
-bool McCameraTrackingController::FilterDetectedObject(sptr<CameraStandard::MetadataObject> &detectedObject)
-{
-    CameraStandard::MetadataObjectType cameraObjectType = detectedObject->GetType();
-    switch (cameraObjectType) {
-        case CameraStandard::MetadataObjectType::INVALID :
-            return false;
-        case CameraStandard::MetadataObjectType::FACE :
-            return true;
-        case CameraStandard::MetadataObjectType::HUMAN_BODY :
-            return true;
-        case CameraStandard::MetadataObjectType::CAT_FACE :
-            return false;
-        case CameraStandard::MetadataObjectType::CAT_BODY :
-            return false;
-        case CameraStandard::MetadataObjectType::DOG_FACE :
-            return false;
-        case CameraStandard::MetadataObjectType::DOG_BODY :
-            return false;
-        case CameraStandard::MetadataObjectType::SALIENT_DETECTION :
-            return false;
-        case CameraStandard::MetadataObjectType::BAR_CODE_DETECTION :
-            return false;
-        case CameraStandard::MetadataObjectType::BASE_FACE_DETECTION :
-            return false;
-        default:
-            return false;
-    }
-}
-
 void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> &trackingFrameParams,
     CameraStandard::Rect &rect)
 {

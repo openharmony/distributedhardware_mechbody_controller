@@ -149,13 +149,7 @@ void FuzzActionGimbalFeatureControl(const uint8_t *data, size_t size)
     actionControlParams.pitchControl = provider.ConsumeIntegral<uint32_t>();
     actionControlParams.rollControl = provider.ConsumeIntegral<uint32_t>();
     g_motionManager->ActionGimbalFeatureControl(actionControlParams);
-}
-
-void FuzzGetDeviceRealName(const uint8_t *data, size_t size)
-{
-    FuzzedDataProvider provider(data, size);
-    InitMotionManager();
-    const std::string &realName = g_motionManager->GetDeviceRealName();
+    g_motionManager->GetDeviceRealName();
 }
 
 void FuzzConvertMoveParamsToRotateParams(const uint8_t *data, size_t size)
@@ -192,7 +186,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzSetMechScreenInfo(data, size);
     FuzzPerformPresetAction(data, size);
     FuzzActionGimbalFeatureControl(data, size);
-    FuzzGetDeviceRealName(data, size);
     FuzzConvertMoveParamsToRotateParams(data, size);
     FuzzConvertSpeedParamsToRotateParams(data, size);
     return 0;

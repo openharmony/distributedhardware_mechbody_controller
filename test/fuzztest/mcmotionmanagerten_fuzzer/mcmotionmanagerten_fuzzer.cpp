@@ -104,7 +104,30 @@ void FuzzMechButtonEventNotify(const uint8_t *data, size_t size)
 void FuzzMechParamNotify(const uint8_t *data, size_t size)
 {
     InitMotionManager();
+    FuzzedDataProvider provider(data, size);
+    
     auto cmd = std::make_shared<RegisterMechStateInfoCmd>();
+    
+    auto buffer = std::make_shared<MechDataBuffer>(BIT_OFFSET_2 + 10);
+    if (buffer == nullptr) {
+        return;
+    }
+    
+    buffer->AppendUint8(0);
+    buffer->AppendUint8(0);
+    buffer->AppendUint8(RegisterMechStateInfoCmd::CMD_SET);
+    buffer->AppendUint8(RegisterMechStateInfoCmd::CMD_ID);
+    
+    uint8_t mechMode = provider.ConsumeIntegralInRange<uint8_t>(0, 4);
+    uint8_t isCaptureVertical = provider.ConsumeBool() ? 1 : 0;
+    uint8_t isPhoneOn = provider.ConsumeBool() ? 1 : 0;
+    
+    buffer->AppendUint8(mechMode);
+    buffer->AppendUint8(isCaptureVertical);
+    buffer->AppendUint8(isPhoneOn);
+    
+    cmd->Unmarshal(buffer);
+    
     g_motionManager->MechParamNotify(cmd);
 }
 

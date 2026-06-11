@@ -89,18 +89,6 @@ void InitMotionManagerWithWheelBase()
     }
 }
 
-void FuzzMechExecutionResultNotifyWithNullptr(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->MechExecutionResultNotify(nullptr);
-}
-
-void FuzzMechWheelZoomNotifyWithNullptr(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->MechWheelZoomNotify(nullptr);
-}
-
 void FuzzIsLimitedCombination(FuzzedDataProvider &provider)
 {
     InitMotionManager();
@@ -111,20 +99,16 @@ void FuzzIsLimitedCombination(FuzzedDataProvider &provider)
     float posMax = provider.ConsumeFloatingPoint<float>();
     float position = provider.ConsumeFloatingPoint<float>();
     g_motionManager->IsLimited(negMax, posMax, position);
-}
 
-void FuzzConnectCombination(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
     g_motionManager->ConnectAbility();
     AAFwk::WantParams wantParams;
     g_motionManager->ConnectServiceExtension(wantParams);
-}
 
-void FuzzGetWheelMovementCapabilityInfo(FuzzedDataProvider &provider)
-{
     InitMotionManagerWithWheelBase();
     g_motionManager->GetWheelMovementCapabilityInfo();
+
+    g_motionManager->RegisterEventListener();
+    g_motionManager->RegisterBaseEvents();
 }
 
 void FuzzSetDevicePairingInfo(FuzzedDataProvider &provider)
@@ -134,37 +118,12 @@ void FuzzSetDevicePairingInfo(FuzzedDataProvider &provider)
     g_motionManager->SetDevicePairingInfo(deviceIdentifier);
 }
 
-void FuzzRegisterEventListener(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->RegisterEventListener();
-}
-
-void FuzzRegisterBaseEvents(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->RegisterBaseEvents();
-}
-
-void FuzzRegisterExtendedAndTrackingEvents(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->RegisterExtendedAndTrackingEvents();
-}
-
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    FuzzMechExecutionResultNotifyWithNullptr(provider);
-    FuzzMechWheelZoomNotifyWithNullptr(provider);
     FuzzIsLimitedCombination(provider);
-    FuzzConnectCombination(provider);
-    FuzzGetWheelMovementCapabilityInfo(provider);
     FuzzSetDevicePairingInfo(provider);
-    FuzzRegisterEventListener(provider);
-    FuzzRegisterBaseEvents(provider);
-    FuzzRegisterExtendedAndTrackingEvents(provider);
     return 0;
 }

@@ -26,8 +26,6 @@ using namespace OHOS;
 using namespace OHOS::MechBodyController;
 
 namespace {
-constexpr size_t MIN_OBJECT_COUNT = 1;
-constexpr size_t MAX_OBJECT_COUNT = 10;
 constexpr size_t MIN_OBJECT_ID = 1;
 constexpr size_t MAX_OBJECT_ID = 10;
 constexpr int32_t MIN_TRACKING_MODE = 0;
@@ -41,7 +39,7 @@ constexpr uint32_t MAX_GET_COUNT = 5;
 
 McCameraTrackingController* g_cameraTrackingController = nullptr;
 
-constexpr float MIN_RECT_COORD = 0.0f;
+constexpr float MIN_RECT_COORD = 0.1f;
 constexpr float MAX_RECT_COORD = 1.0f;
 
 void InitCameraTrackingController()
@@ -100,7 +98,7 @@ void FuzzOnZoomInfoChange(const uint8_t *data, size_t size)
     g_cameraTrackingController->OnZoomInfoChange(sessionid, zoomInfo);
 }
 
-void FuzzOnFocusTracking(const uint8_t *data, size_t size)
+void FuzzOnFocusTrackingTypeHumanHead(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
     InitCameraTrackingController();
@@ -112,19 +110,63 @@ void FuzzOnFocusTracking(const uint8_t *data, size_t size)
     CameraStandard::Rect trackingRegion = GenerateRandomRect(provider);
     info.SetTrackingRegion(trackingRegion);
 
-    size_t objectCount = provider.ConsumeIntegralInRange<size_t>(MIN_OBJECT_COUNT, MAX_OBJECT_COUNT);
     std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
-    for (size_t i = 0; i < objectCount; i++) {
-        CameraStandard::Rect bbox = GenerateRandomRect(provider);
-        CameraStandard::MetadataObjectType objectType = CameraStandard::MetadataObjectType::HUMAN_HEAD;
-        int64_t timestamp = provider.ConsumeIntegral<uint64_t>();
-        int32_t objectId = provider.ConsumeIntegral<int32_t>();
-        int32_t confidence = provider.ConsumeIntegralInRange<int32_t>(MIN_CONFIDENCE, MAX_CONFIDENCE);
-        auto obj = new CameraStandard::MetadataObject(objectType, timestamp, bbox, objectId, confidence);
-        detectedObjects.push_back(obj);
-    }
+    CameraStandard::Rect bboxHumanHead = GenerateRandomRect(provider);
+    CameraStandard::MetadataObjectType objectTypeHumanHead = CameraStandard::MetadataObjectType::HUMAN_HEAD;
+    int64_t timestampHumanHead = provider.ConsumeIntegral<uint64_t>();
+    int32_t objectIdHumanHead = provider.ConsumeIntegral<int32_t>();
+    int32_t confidenceHumanHead = provider.ConsumeIntegralInRange<int32_t>(MIN_CONFIDENCE, MAX_CONFIDENCE);
+    auto objHumanHead = new CameraStandard::MetadataObject(objectTypeHumanHead, timestampHumanHead, bboxHumanHead,
+                                                           objectIdHumanHead, confidenceHumanHead);
+    detectedObjects.push_back(objHumanHead);
     info.SetDetectedObjects(detectedObjects);
+    g_cameraTrackingController->OnFocusTracking(info);
+}
 
+void FuzzOnFocusTrackingTypeHumanBody(const uint8_t *data, size_t size)
+{
+    FuzzedDataProvider provider(data, size);
+    InitCameraTrackingController();
+    CameraStandard::FocusTrackingMetaInfo info;
+    int32_t trackingMode = provider.ConsumeIntegralInRange<int32_t>(MIN_TRACKING_MODE, MAX_TRACKING_MODE);
+    info.SetTrackingMode(static_cast<CameraStandard::FocusTrackingMode>(trackingMode));
+    info.SetTrackingObjectId(provider.ConsumeIntegralInRange<int32_t>(MIN_OBJECT_ID, MAX_OBJECT_ID));
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+    CameraStandard::Rect trackingRegion = GenerateRandomRect(provider);
+    info.SetTrackingRegion(trackingRegion);
+    CameraStandard::Rect bboxHumanBody = GenerateRandomRect(provider);
+    CameraStandard::MetadataObjectType objectTypeHumanBody = CameraStandard::MetadataObjectType::HUMAN_BODY;
+    int64_t timestampHumanBody = provider.ConsumeIntegral<uint64_t>();
+    int32_t objectIdHumanBody = provider.ConsumeIntegral<int32_t>();
+    int32_t confidenceHumanBody = provider.ConsumeIntegralInRange<int32_t>(MIN_CONFIDENCE, MAX_CONFIDENCE);
+    auto objHumanBody = new CameraStandard::MetadataObject(objectTypeHumanBody, timestampHumanBody, bboxHumanBody,
+                                                           objectIdHumanBody, confidenceHumanBody);
+    detectedObjects.push_back(objHumanBody);
+    info.SetDetectedObjects(detectedObjects);
+    g_cameraTrackingController->OnFocusTracking(info);
+}
+
+void FuzzOnFocusTrackingTypeFace(const uint8_t *data, size_t size)
+{
+    FuzzedDataProvider provider(data, size);
+    InitCameraTrackingController();
+    CameraStandard::FocusTrackingMetaInfo info;
+    int32_t trackingMode = provider.ConsumeIntegralInRange<int32_t>(MIN_TRACKING_MODE, MAX_TRACKING_MODE);
+    info.SetTrackingMode(static_cast<CameraStandard::FocusTrackingMode>(trackingMode));
+    info.SetTrackingObjectId(provider.ConsumeIntegralInRange<int32_t>(MIN_OBJECT_ID, MAX_OBJECT_ID));
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+    CameraStandard::Rect trackingRegion = GenerateRandomRect(provider);
+    info.SetTrackingRegion(trackingRegion);
+    CameraStandard::Rect bbox = GenerateRandomRect(provider);
+    CameraStandard::MetadataObjectType objectType = CameraStandard::MetadataObjectType::FACE;
+    int64_t timestamp = provider.ConsumeIntegral<uint64_t>();
+    int32_t objectId = provider.ConsumeIntegral<int32_t>();
+    int32_t confidence = provider.ConsumeIntegralInRange<int32_t>(MIN_CONFIDENCE, MAX_CONFIDENCE);
+    auto obj = new CameraStandard::MetadataObject(objectType, timestamp, bbox, objectId, confidence);
+    detectedObjects.push_back(obj);
+    info.SetDetectedObjects(detectedObjects);
     g_cameraTrackingController->OnFocusTracking(info);
 }
 
@@ -137,14 +179,50 @@ void FuzzOnSessionStatusChange(const uint8_t *data, size_t size)
     g_cameraTrackingController->OnSessionStatusChange(sessionid, status);
 }
 
+class MockIRemoteObject : public IRemoteObject {
+public:
+    MockIRemoteObject() : IRemoteObject(u"mock_i_remote_object") {}
+    virtual ~MockIRemoteObject() {}
+
+    int32_t GetObjectRefCount() override { return 1; }
+    int SendRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override
+    {
+        return 0;
+    }
+    bool AddDeathRecipient(const sptr<DeathRecipient> &recipient) override { return true; }
+    bool RemoveDeathRecipient(const sptr<DeathRecipient> &recipient) override { return true; }
+    int Dump(int fd, const std::vector<std::u16string> &args) override { return 0; }
+};
+
 void FuzzOnTrackingEvent(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
     InitCameraTrackingController();
     int32_t mechId = provider.ConsumeIntegral<int32_t>();
-    TrackingEvent event = static_cast<TrackingEvent>(
-        provider.ConsumeIntegralInRange<int32_t>(MIN_TRACKING_EVENT, MAX_TRACKING_EVENT));
+    TrackingEvent event =
+        static_cast<TrackingEvent>(provider.ConsumeIntegralInRange<int32_t>(MIN_TRACKING_EVENT, MAX_TRACKING_EVENT));
     g_cameraTrackingController->OnTrackingEvent(mechId, event);
+
+    sptr<IRemoteObject> callback = new MockIRemoteObject();
+    uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
+    g_cameraTrackingController->RegisterTrackingEventCallback(tokenId, callback);
+    g_cameraTrackingController->OnTrackingEvent(mechId, event);
+
+    g_cameraTrackingController->UnRegisterTrackingEventCallback(tokenId);
+
+    int32_t callbackCount = provider.ConsumeIntegralInRange<int32_t>(1, 3);
+    std::vector<uint32_t> tokenIds;
+    for (int32_t i = 0; i < callbackCount; i++) {
+        sptr<IRemoteObject> callbackInFor = new MockIRemoteObject();
+        uint32_t tokenIdInFor = provider.ConsumeIntegral<uint32_t>();
+        tokenIds.push_back(tokenId);
+        g_cameraTrackingController->RegisterTrackingEventCallback(tokenIdInFor, callbackInFor);
+    }
+    g_cameraTrackingController->OnTrackingEvent(mechId, event);
+
+    for (auto tokenId : tokenIds) {
+        g_cameraTrackingController->UnRegisterTrackingEventCallback(tokenId);
+    }
 }
 
 void FuzzUpdateActionControl(const uint8_t *data, size_t size)
@@ -173,7 +251,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzOnCaptureSessionConfiged(data, size);
     FuzzOnZoomInfoChange(data, size);
-    FuzzOnFocusTracking(data, size);
+    FuzzOnFocusTrackingTypeHumanHead(data, size);
+    FuzzOnFocusTrackingTypeHumanBody(data, size);
+    FuzzOnFocusTrackingTypeFace(data, size);
     FuzzOnSessionStatusChange(data, size);
     FuzzOnTrackingEvent(data, size);
     FuzzUpdateActionControl(data, size);

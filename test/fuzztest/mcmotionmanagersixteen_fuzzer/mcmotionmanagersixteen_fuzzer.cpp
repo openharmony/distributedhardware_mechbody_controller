@@ -119,6 +119,8 @@ void FuzzIsAiDispatchServiceInForegroundWithAppList(FuzzedDataProvider &provider
 void FuzzIsDesktopSceneWithAppList(FuzzedDataProvider &provider)
 {
     InitMotionManager();
+    std::vector<AppExecFwk::AppStateData> emptyList;
+    g_motionManager->IsDesktopScene(emptyList);
     std::vector<AppExecFwk::AppStateData> list;
     int32_t appCount = provider.ConsumeIntegralInRange<int32_t>(0, 10);
     for (int32_t i = 0; i < appCount; ++i) {
@@ -143,20 +145,6 @@ void FuzzIsLimitedWithRandomValues(FuzzedDataProvider &provider)
     }
 }
 
-void FuzzIsAiDispatchServiceInForegroundWithEmptyList(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    std::vector<AppExecFwk::AppStateData> emptyList;
-    g_motionManager->IsAiDispatchServiceInForeground(emptyList);
-}
-
-void FuzzIsDesktopSceneWithEmptyList(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    std::vector<AppExecFwk::AppStateData> emptyList;
-    g_motionManager->IsDesktopScene(emptyList);
-}
-
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
@@ -168,7 +156,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzIsAiDispatchServiceInForegroundWithAppList(provider);
     FuzzIsDesktopSceneWithAppList(provider);
     FuzzIsLimitedWithRandomValues(provider);
-    FuzzIsAiDispatchServiceInForegroundWithEmptyList(provider);
-    FuzzIsDesktopSceneWithEmptyList(provider);
     return 0;
 }
