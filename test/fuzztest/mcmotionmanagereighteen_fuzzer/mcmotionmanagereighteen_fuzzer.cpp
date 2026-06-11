@@ -52,14 +52,24 @@ using namespace OHOS::MechBodyController;
 namespace {
 const std::string TAG = "MotionManagerEighteenFuzz";
 
-std::shared_ptr<MotionManager> g_motionManager = nullptr;
+class TestMotionManager : public MotionManager {
+public:
+    TestMotionManager(std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isWheel,
+        uint32_t deviceIdentifier) : MotionManager(sendAdapter, mechId, isWheel, deviceIdentifier) {}
+    void SetProtocolVerForTest(uint8_t ver)
+    {
+        protocolVer_ = ver;
+    }
+};
+
+std::shared_ptr<TestMotionManager> g_motionManager = nullptr;
 std::shared_ptr<MockTransportSendAdapter> g_mockAdapter = nullptr;
 
 void InitMotionManager()
 {
     if (g_motionManager == nullptr) {
         g_mockAdapter = std::make_shared<MockTransportSendAdapter>();
-        g_motionManager = std::make_shared<MotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
+        g_motionManager = std::make_shared<TestMotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
 
         MechInfo testMech;
         testMech.mechId = TEST_MECH_ID;
@@ -70,19 +80,6 @@ void InitMotionManager()
         MechConnectManager::GetInstance().AddMechInfo(testMech);
         MechConnectManager::GetInstance().NotifyMechState(TEST_MECH_ID, true);
     }
-}
-
-void FuzzRegisterEventListenerV01(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->RegisterEventListenerV01();
-}
-
-void FuzzUnRegisterNotifyEvent(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->RegisterEventListener();
-    g_motionManager->UnRegisterNotifyEvent();
 }
 
 void FuzzExecuteRotateCommand(FuzzedDataProvider &provider)
@@ -97,6 +94,11 @@ void FuzzExecuteRotateCommand(FuzzedDataProvider &provider)
     
     uint8_t taskId = provider.ConsumeIntegral<uint8_t>();
     std::shared_ptr<CommandBase> result = g_motionManager->ExecuteRotateCommand(param, taskId);
+    g_motionManager->SetProtocolVerForTest(0x01);
+    g_motionManager->RegisterEventListenerV01();
+
+    g_motionManager->RegisterEventListener();
+    g_motionManager->UnRegisterNotifyEvent();
 }
 
 void FuzzHandelRotateParam(FuzzedDataProvider &provider)
@@ -193,8 +195,6 @@ void FuzzRegisterEventsMultipleTimes(FuzzedDataProvider &provider)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    FuzzRegisterEventListenerV01(provider);
-    FuzzUnRegisterNotifyEvent(provider);
     FuzzExecuteRotateCommand(provider);
     FuzzHandelRotateParam(provider);
     FuzzCheckYawDegree(provider);

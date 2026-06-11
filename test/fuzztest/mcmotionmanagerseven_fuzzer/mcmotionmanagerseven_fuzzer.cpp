@@ -84,14 +84,6 @@ void FuzzGetSpeedControlTimeLimit(const uint8_t *data, size_t size)
     g_motionManager->GetSpeedControlTimeLimit(timeLimit);
 }
 
-void FuzzGetRotateSpeedLimit(const uint8_t *data, size_t size)
-{
-    FuzzedDataProvider provider(data, size);
-    InitMotionManager();
-    RotateSpeedLimit speedLimit;
-    g_motionManager->GetRotateSpeedLimit(speedLimit);
-}
-
 void FuzzGetCurrentPosition(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
@@ -102,22 +94,10 @@ void FuzzGetCurrentPosition(const uint8_t *data, size_t size)
         eulerAngles = std::make_shared<EulerAngles>();
     }
     g_motionManager->GetCurrentPosition(eulerAngles);
-}
-
-void FuzzGetRotationLimit(const uint8_t *data, size_t size)
-{
-    FuzzedDataProvider provider(data, size);
-    InitMotionManager();
+    RotateSpeedLimit speedLimit;
+    g_motionManager->GetRotateSpeedLimit(speedLimit);
     RotateDegreeLimit rotationLimit;
     g_motionManager->GetRotationLimit(rotationLimit);
-}
-
-void FuzzGetMechCameraTrackingEnabled(const uint8_t *data, size_t size)
-{
-    FuzzedDataProvider provider(data, size);
-    InitMotionManager();
-    bool isEnabled = false;
-    g_motionManager->GetMechCameraTrackingEnabled(isEnabled);
 }
 
 void FuzzSetMechCameraTrackingEnabled(const uint8_t *data, size_t size)
@@ -126,6 +106,7 @@ void FuzzSetMechCameraTrackingEnabled(const uint8_t *data, size_t size)
     InitMotionManager();
     bool isEnabled = provider.ConsumeBool();
     g_motionManager->SetMechCameraTrackingEnabled(isEnabled);
+    g_motionManager->GetMechCameraTrackingEnabled(isEnabled);
 }
 
 void FuzzGetMechCameraTrackingLayout(const uint8_t *data, size_t size)
@@ -172,10 +153,7 @@ void FuzzGetMechBaseInfo(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzGetSpeedControlTimeLimit(data, size);
-    FuzzGetRotateSpeedLimit(data, size);
     FuzzGetCurrentPosition(data, size);
-    FuzzGetRotationLimit(data, size);
-    FuzzGetMechCameraTrackingEnabled(data, size);
     FuzzSetMechCameraTrackingEnabled(data, size);
     FuzzGetMechCameraTrackingLayout(data, size);
     FuzzSetMechCameraTrackingLayout(data, size);

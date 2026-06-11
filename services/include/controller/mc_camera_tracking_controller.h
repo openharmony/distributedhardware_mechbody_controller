@@ -201,7 +201,6 @@ private:
     bool IsAllowedConversion(CameraStandard::Rect &lastTrackingRect, CameraStandard::Rect &trackingRect);
     int32_t UpdateMotionsWithTrackingData(
         const std::shared_ptr<TrackingFrameParams> &params, int32_t trackingObjectId);
-    bool FilterDetectedObject(sptr<CameraStandard::MetadataObject> &detectedObject);
     void UpdateROI(std::shared_ptr<TrackingFrameParams> &trackingFrameParams, CameraStandard::Rect &rect);
     static void SensorCallback(SensorEvent* event);
     static MobileRotation CalculateSensorRotation(GravityData* gravityData);

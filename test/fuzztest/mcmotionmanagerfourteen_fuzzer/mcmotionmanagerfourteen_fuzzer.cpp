@@ -44,6 +44,7 @@
 namespace {
 constexpr int32_t TEST_MECH_ID = 1;
 constexpr int32_t MAX_ACTION_TYPE_VALUE = 2006;
+constexpr int TASK_COMPLETED = 2;
 }
 
 using namespace OHOS;
@@ -52,14 +53,25 @@ using namespace OHOS::MechBodyController;
 namespace {
 const std::string TAG = "MotionManagerFourteenFuzz";
 
-std::shared_ptr<MotionManager> g_motionManager = nullptr;
+class TestMotionManager : public MotionManager {
+public:
+    TestMotionManager(std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isWheel,
+        uint32_t deviceIdentifier) : MotionManager(sendAdapter, mechId, isWheel, deviceIdentifier) {}
+    void AddCallbackForTest(uint8_t taskId, const MechNapiCommandCallbackInfo& callbackInfo)
+    {
+        std::unique_lock<std::mutex> lock(seqCallbackMutex_);
+        seqCallbacks_.insert(std::make_pair(taskId, callbackInfo));
+    }
+};
+
+std::shared_ptr<TestMotionManager> g_motionManager = nullptr;
 std::shared_ptr<MockTransportSendAdapter> g_mockAdapter = nullptr;
 
 void InitMotionManager()
 {
     if (g_motionManager == nullptr) {
         g_mockAdapter = std::make_shared<MockTransportSendAdapter>();
-        g_motionManager = std::make_shared<MotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
+        g_motionManager = std::make_shared<TestMotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
 
         MechInfo testMech;
         testMech.mechId = TEST_MECH_ID;
@@ -72,79 +84,60 @@ void InitMotionManager()
     }
 }
 
-void FuzzIsLimited(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->IsLimited();
-}
-
 void FuzzIsLimitedWithParams(FuzzedDataProvider &provider)
 {
     InitMotionManager();
+    g_motionManager->IsLimited();
     float negMax = provider.ConsumeFloatingPoint<float>();
     float posMax = provider.ConsumeFloatingPoint<float>();
     float position = provider.ConsumeFloatingPoint<float>();
     g_motionManager->IsLimited(negMax, posMax, position);
-}
-
-void FuzzProcessTrackingStatus(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
     g_motionManager->ProcessTrackingStatus();
-}
-
-void FuzzGetMechRealName(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
     g_motionManager->GetMechRealName();
-}
-
-void FuzzGetWheelCapabilityInfo(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
     g_motionManager->GetWheelCapabilityInfo();
+    g_motionManager->ConnectAbility();
+    std::vector<AppExecFwk::AppStateData> list;
+    g_motionManager->IsAiDispatchServiceInForeground(list);
 }
 
 void FuzzMechExecutionResultNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
+    
+    uint8_t taskId = provider.ConsumeIntegralInRange<uint8_t>(1, 255);
+    uint32_t tokenId = provider.ConsumeIntegral<uint32_t>();
+    std::string napiCmdId = "test_cmd_" + std::to_string(taskId);
+    
+    MechNapiCommandCallbackInfo callbackInfo(tokenId, napiCmdId);
+    callbackInfo.willLimitChange = provider.ConsumeBool();
+    callbackInfo.needRestoreTracking = provider.ConsumeBool();
+    
+    g_motionManager->AddCallbackForTest(taskId, callbackInfo);
+    
     auto cmd = std::make_shared<RegisterMechControlResultCmd>();
+    
+    auto buffer = std::make_shared<MechDataBuffer>(BIT_OFFSET_3 + 10);
+    if (buffer == nullptr) {
+        return;
+    }
+    
+    buffer->AppendUint8(RegisterMechControlResultCmd::CMD_SET);
+    buffer->AppendUint8(RegisterMechControlResultCmd::CMD_ID);
+    buffer->AppendUint8(TASK_COMPLETED);
+    buffer->AppendUint8(taskId);
+    
+    cmd->Unmarshal(buffer);
+    
     g_motionManager->MechExecutionResultNotify(cmd);
+    auto registerMechWheelDataCmd = std::make_shared<RegisterMechWheelDataCmd>();
+    g_motionManager->MechWheelZoomNotify(registerMechWheelDataCmd);
 }
-
-void FuzzMechWheelZoomNotify(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto cmd = std::make_shared<RegisterMechWheelDataCmd>();
-    g_motionManager->MechWheelZoomNotify(cmd);
-}
-
-void FuzzConnectAbility(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->ConnectAbility();
-}
-
-void FuzzIsAiDispatchServiceInForeground(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    std::vector<AppExecFwk::AppStateData> list;
-    g_motionManager->IsAiDispatchServiceInForeground(list);
-}
-
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    FuzzIsLimited(provider);
     FuzzIsLimitedWithParams(provider);
-    FuzzProcessTrackingStatus(provider);
-    FuzzGetMechRealName(provider);
-    FuzzGetWheelCapabilityInfo(provider);
     FuzzMechExecutionResultNotify(provider);
-    FuzzMechWheelZoomNotify(provider);
-    FuzzConnectAbility(provider);
-    FuzzIsAiDispatchServiceInForeground(provider);
     return 0;
 }

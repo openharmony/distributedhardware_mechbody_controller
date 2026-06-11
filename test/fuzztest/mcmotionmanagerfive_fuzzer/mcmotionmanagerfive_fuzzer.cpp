@@ -143,13 +143,8 @@ void FuzzTryGetDeviceRealNameSync(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     uint32_t timeoutMs = provider.ConsumeIntegral<uint32_t>();
-    const std::string &deviceRealName = g_motionManager->TryGetDeviceRealNameSync(timeoutMs);
-}
-
-void FuzzTryGetDeviceRealNameSyncWithZeroTimeout(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    const std::string &deviceRealName = g_motionManager->TryGetDeviceRealNameSync(0);
+    g_motionManager->TryGetDeviceRealNameSync(timeoutMs);
+    g_motionManager->TryGetDeviceRealNameSync(0);
 }
 
 void FuzzTryGetDeviceRealNameSyncWithTimeout(FuzzedDataProvider &provider)
@@ -181,20 +176,16 @@ void FuzzFormatLimit(FuzzedDataProvider &provider)
     params.negMax.pitch = provider.ConsumeFloatingPointInRange<float>(-10.0f, 0.0f);
     
     g_motionManager->FormatLimit(params);
-}
 
-void FuzzFormatLimitWithNoLimit(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    RotateDegreeLimit params;
-    params.posMax.yaw = 3.1415927f;
-    params.negMax.yaw = -3.1415926f;
-    params.posMax.roll = 3.1415927f;
-    params.negMax.roll = -3.1415926f;
-    params.posMax.pitch = 3.1415927f;
-    params.negMax.pitch = -3.1415926f;
+    RotateDegreeLimit paramsNoLimit;
+    paramsNoLimit.posMax.yaw = 3.1415927f;
+    paramsNoLimit.negMax.yaw = -3.1415926f;
+    paramsNoLimit.posMax.roll = 3.1415927f;
+    paramsNoLimit.negMax.roll = -3.1415926f;
+    paramsNoLimit.posMax.pitch = 3.1415927f;
+    paramsNoLimit.negMax.pitch = -3.1415926f;
     
-    g_motionManager->FormatLimit(params);
+    g_motionManager->FormatLimit(paramsNoLimit);
 }
 
 }  // namespace
@@ -205,10 +196,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzAllCheckDegreeMethods(provider);
     FuzzAllCheckSpeedMethods(provider);
     FuzzTryGetDeviceRealNameSync(provider);
-    FuzzTryGetDeviceRealNameSyncWithZeroTimeout(provider);
     FuzzTryGetDeviceRealNameSyncWithTimeout(provider);
     FuzzTryGetDeviceRealNameSyncAfterSetName(provider);
     FuzzFormatLimit(provider);
-    FuzzFormatLimitWithNoLimit(provider);
     return 0;
 }

@@ -105,17 +105,12 @@ void FuzzAllThreeMethods(FuzzedDataProvider &provider)
     g_motionManager->FormatLimit(params);
 }
 
-void FuzzMechEventListenerImpl(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-}
-
 void FuzzMechAttitudeNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    std::shared_ptr<RegisterMechPositionInfoCmd> cmdNull = nullptr;
+    listener->MechAttitudeNotify(cmdNull);
     auto cmd = std::make_shared<RegisterMechPositionInfoCmd>();
     auto data = std::make_shared<MechDataBuffer>(12);
     if (data != nullptr) {
@@ -130,19 +125,13 @@ void FuzzMechAttitudeNotify(FuzzedDataProvider &provider)
     }
 }
 
-void FuzzMechAttitudeNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechPositionInfoCmd> cmd = nullptr;
-    listener->MechAttitudeNotify(cmd);
-}
-
 void FuzzMechButtonEventNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    std::shared_ptr<RegisterMechCameraKeyEventCmd> cmdNull = nullptr;
+    listener->MechButtonEventNotify(cmdNull);
+
     auto cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
     auto data = std::make_shared<MechDataBuffer>(8);
     if (data != nullptr) {
@@ -156,14 +145,6 @@ void FuzzMechButtonEventNotify(FuzzedDataProvider &provider)
         cmd->Unmarshal(data);
         listener->MechButtonEventNotify(cmd);
     }
-}
-
-void FuzzMechButtonEventNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = nullptr;
-    listener->MechButtonEventNotify(cmd);
 }
 
 void FuzzMechButtonEventNotifyWithAllEvents(FuzzedDataProvider &provider)
@@ -214,11 +195,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
     FuzzFormatLimitWithExtremeValues(provider);
     FuzzAllThreeMethods(provider);
-    FuzzMechEventListenerImpl(provider);
     FuzzMechAttitudeNotify(provider);
-    FuzzMechAttitudeNotifyWithNull(provider);
     FuzzMechButtonEventNotify(provider);
-    FuzzMechButtonEventNotifyWithNull(provider);
     FuzzMechButtonEventNotifyWithAllEvents(provider);
     FuzzMechParamNotify(provider);
     return 0;

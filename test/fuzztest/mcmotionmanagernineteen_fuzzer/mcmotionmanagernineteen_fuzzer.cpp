@@ -52,14 +52,28 @@ using namespace OHOS::MechBodyController;
 namespace {
 const std::string TAG = "MotionManagerNineteenFuzz";
 
-std::shared_ptr<MotionManager> g_motionManager = nullptr;
+class TestMotionManager : public MotionManager {
+public:
+    TestMotionManager(std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isWheel,
+        uint32_t deviceIdentifier) : MotionManager(sendAdapter, mechId, isWheel, deviceIdentifier) {}
+    void SetProtocolVerForTest(uint8_t ver)
+    {
+        protocolVer_ = ver;
+    }
+    void SetDeviceBaseInfoForTest(const DeviceBaseInfo& info)
+    {
+        deviceBaseInfo_ = info;
+    }
+};
+
+std::shared_ptr<TestMotionManager> g_motionManager = nullptr;
 std::shared_ptr<MockTransportSendAdapter> g_mockAdapter = nullptr;
 
 void InitMotionManager()
 {
     if (g_motionManager == nullptr) {
         g_mockAdapter = std::make_shared<MockTransportSendAdapter>();
-        g_motionManager = std::make_shared<MotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
+        g_motionManager = std::make_shared<TestMotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
 
         MechInfo testMech;
         testMech.mechId = TEST_MECH_ID;
@@ -76,7 +90,7 @@ void InitMotionManagerWithWheelBase()
 {
     if (g_motionManager == nullptr) {
         g_mockAdapter = std::make_shared<MockTransportSendAdapter>();
-        g_motionManager = std::make_shared<MotionManager>(g_mockAdapter, TEST_MECH_ID, true, 0x00000000);
+        g_motionManager = std::make_shared<TestMotionManager>(g_mockAdapter, TEST_MECH_ID, true, 0x00000000);
 
         MechInfo testMech;
         testMech.mechId = TEST_MECH_ID;
@@ -116,14 +130,6 @@ void FuzzExecuteRotateCommandWithDifferentTaskIds(FuzzedDataProvider &provider)
     }
 }
 
-void FuzzHandelRotateParamWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    std::shared_ptr<RotateParam> rotateParam = nullptr;
-    bool willLimitChange = false;
-    g_motionManager->HandelRotateParam(rotateParam, willLimitChange);
-}
-
 void FuzzCheckYawDegreeWithNull(FuzzedDataProvider &provider)
 {
     InitMotionManager();
@@ -147,13 +153,20 @@ void FuzzSetDevicePairingInfoWithExtremeValues(FuzzedDataProvider &provider)
     g_motionManager->SetDevicePairingInfo(deviceIdentifier);
 }
 
-void FuzzAllRegisterEvents(FuzzedDataProvider &provider)
+void FuzzAllRegisterExtendedAndTrackingEvents(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     g_motionManager->RegisterEventListener();
-    g_motionManager->RegisterBaseEvents();
+    g_motionManager->SetProtocolVerForTest(0x02);
+
+    DeviceBaseInfo baseInfo;
+    baseInfo.devType = provider.ConsumeBool() ? static_cast<uint8_t>(MechType::WHEEL_BASE) :
+                                                static_cast<uint8_t>(MechType::PORTABLE_GIMBAL);
+    baseInfo.ctrlType = provider.ConsumeIntegral<uint8_t>();
+    baseInfo.protocolVer = 0x02;
+    g_motionManager->SetDeviceBaseInfoForTest(baseInfo);
+
     g_motionManager->RegisterExtendedAndTrackingEvents();
-    g_motionManager->RegisterEventListenerV01();
 }
 
 void FuzzCheckRollDegree(FuzzedDataProvider &provider)
@@ -207,10 +220,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
     FuzzUnRegisterNotifyEventMultipleTimes(provider);
     FuzzExecuteRotateCommandWithDifferentTaskIds(provider);
-    FuzzHandelRotateParamWithNull(provider);
     FuzzCheckYawDegreeWithNull(provider);
     FuzzSetDevicePairingInfoWithExtremeValues(provider);
-    FuzzAllRegisterEvents(provider);
+    FuzzAllRegisterExtendedAndTrackingEvents(provider);
     FuzzCheckRollDegree(provider);
     FuzzCheckPitchDegree(provider);
     return 0;
