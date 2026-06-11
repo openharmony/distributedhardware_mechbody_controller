@@ -57,7 +57,7 @@ constexpr int32_t RESPONSE_TIMEOUT = 300000;
 constexpr float YAW_OFFSET = 0.2f;
 constexpr int32_t CMD_SEND_INTERVAL = 100;
 constexpr int32_t TRACKING_CHECKER_INTERVAL = 100;
-const std::string AILIFESVC_BUNDLE_NAME = "com.huawei.hmos.ailifesvc";
+const std::string AILIFESVC_BUNDLE_NAME = "com.example.hmos.ailifesvc";
 const std::string DEVICE_CONNECT_ABILITY_NAME = "OneHopDeviceAbility";
 constexpr int32_t ABILITY_STATE_BACKGROUND = 4;
 constexpr int32_t DO_ACTION_TIME_USED = 500; // ms
@@ -118,22 +118,28 @@ const std::vector<RotateParam> HEAD_SHAKE_TWICE_ACTIONS = {
 ExecResult MotionManager::MapDeviceErrorCodeToExecResult(uint16_t cmdType, uint8_t deviceErrorCode)
 {
     DfxGetSendCmdInfo(cmdType, deviceErrorCode);
-    switch (deviceErrorCode) {
-        case 0: // MACHANIC_SUCCESS
-            return ExecResult::COMPLETED;
-        case 1: // MACHANIC_PARA_ERROR
-            return ExecResult::SYSTEM_ERROR;
-        case 2: // MACHANIC_EXE_ERROR
-            return ExecResult::SYSTEM_ERROR;
-        case 3: // MACHANIC_LIMITED
-            return ExecResult::LIMITED;
-        case 4: // MACHANIC_EXE_TIMEOUT
-            return ExecResult::TIMEOUT;
-        case 5: // MACHANIC_EXE_INTERRUPTED
-            return ExecResult::INTERRUPTED;
-        default:
-            return ExecResult::SYSTEM_ERROR;
-    }
+    switch (deviceErrorCode) { 
+         case CODENUM_0: // MACHANIC_SUCCESS 
+             return ExecResult::COMPLETED; 
+         case CODENUM_1: // MACHANIC_PARA_ERROR 
+             return ExecResult::SYSTEM_ERROR; 
+         case CODENUM_2: // MACHANIC_EXE_ERROR 
+             return ExecResult::SYSTEM_ERROR; 
+         case CODENUM_3: // MACHANIC_LIMITED 
+             return ExecResult::LIMITED; 
+         case CODENUM_4: // MACHANIC_EXE_TIMEOUT 
+             return ExecResult::TIMEOUT; 
+         case CODENUM_5: // MACHANIC_EXE_INTERRUPTED 
+             return ExecResult::INTERRUPTED; 
+         case CODENUM_6: // MACHANIC_ERR_CLIFF 
+             return ExecResult::TERMINATE_CLIFF; 
+         case CODENUM_7: // MACHANIC_ERR_OBSTACLE 
+             return ExecResult::TERMINATE_OBSTACLE; 
+         case CODENUM_100: // MACHANIC_OTHER_ERR 
+             return ExecResult::SYSTEM_ERROR; 
+         default: 
+             return ExecResult::SYSTEM_ERROR; 
+     }
 }
 
 template<typename T>
@@ -146,15 +152,17 @@ T GetFinalSpeed(bool isFuShu, T speed)
     }
 }
 
-static uint16_t SafeMsToUint16(uint64_t ms) {
+static uint16_t SafeMsToUint16(uint64_t ms)
+{
     return static_cast<uint16_t>(std::min<uint64_t>(ms, UINT16_MAX));
 }
 
-static uint64_t DistanceToMs(int32_t distanceCm, int16_t speedCmPerSec) {
+static uint64_t DistanceToMs(int32_t distanceCm, int16_t speedCmPerSec)
+{
     if (speedCmPerSec <= 0) {
         return 0;
     }
-    return static_cast<uint64_t>(std::abs(distanceCm)) * 10 * 1000 / speedCmPerSec;
+    return static_cast<uint64_t>(std::abs(distanceCm)) * CM_CONVERSION * MS_CONVERSION / speedCmPerSec;
 }
 
 bool CheckRotatePointParam(EulerAngles rotateDegree)
@@ -375,7 +383,8 @@ void MotionManager::MechObstacleInfoNotify(const std::shared_ptr<RegisterMechObs
     HILOGI("notify end");
 }
 
-void MotionManager::HandleMechPlacementChange(bool isPhoneOn) {
+void MotionManager::HandleMechPlacementChange(bool isPhoneOn)
+{
     HILOGI("start, isPhoneOn = %{public}d.", isPhoneOn);
     if (!isPhoneOn) {
         HandlePhoneOff(isPhoneOn);
@@ -385,7 +394,8 @@ void MotionManager::HandleMechPlacementChange(bool isPhoneOn) {
     HILOGI("end.");
 }
 
-void MotionManager::HandlePhoneOff(bool isPhoneOn) {
+void MotionManager::HandlePhoneOff(bool isPhoneOn)
+{
     auto hidCmd = factory.CreateSetMechHidPreemptiveCmd(true);
     CHECK_POINTER_RETURN(hidCmd, "hidCmd is empty.");
 
@@ -406,7 +416,8 @@ void MotionManager::HandlePhoneOff(bool isPhoneOn) {
     MechConnectManager::GetInstance().NotifyMechState(mechId_, isPhoneOn);
 }
 
-void MotionManager::HandlePhoneOn(bool isPhoneOn) {
+void MotionManager::HandlePhoneOn(bool isPhoneOn)
+{
     if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE)) {
         ConnectAbility();
     }
@@ -414,7 +425,8 @@ void MotionManager::HandlePhoneOn(bool isPhoneOn) {
     MechConnectManager::GetInstance().NotifyMechState(mechId_, isPhoneOn);
 }
 
-void MotionManager::ProcessPhoneOffForegroundCheck() {
+void MotionManager::ProcessPhoneOffForegroundCheck()
+{
     auto appManager = GetAppManagerInstance();
     if (appManager == nullptr) {
         HILOGE("appManager is null, cannot check foreground app");
@@ -429,7 +441,8 @@ void MotionManager::ProcessPhoneOffForegroundCheck() {
     }
 }
 
-void MotionManager::ProcessPhoneOnForegroundCheck() {
+void MotionManager::ProcessPhoneOnForegroundCheck()
+{
     auto appManager = GetAppManagerInstance();
     if (appManager == nullptr) {
         HILOGE("appManager is null, cannot check desktop scene");
@@ -464,12 +477,11 @@ sptr<AppExecFwk::IAppMgr> MotionManager::GetAppManagerInstance()
 
 bool MotionManager::IsAiDispatchServiceInForeground(const std::vector<AppExecFwk::AppStateData> &list)
 {
-    const std::string AI_DISPATCH_SERVICE_BUNDLE = "com.huawei.hmos.aibase";
     for (const AppExecFwk::AppStateData &appStateData : list) {
         if (AppExecFwk::AppStateData::IsUIExtension(appStateData.extensionType)) {
             continue;
         }
-        if (appStateData.bundleName == AI_DISPATCH_SERVICE_BUNDLE && appStateData.isFocused) {
+        if (appStateData.bundleName == AISERVICE_BUNDLE && appStateData.isFocused) {
             HILOGI("AI dispatch service found in foreground and focused, bundleName: %{public}s,"
                 "state: %{public}d, pid: %{public}d",
                 appStateData.bundleName.c_str(), appStateData.state, appStateData.pid);
@@ -564,8 +576,8 @@ void MotionManager::ConnectServiceExtension(
 {
     HILOGI("connect service extension start");
     AAFwk::Want want;
-    AppExecFwk::ElementName element("", "com.huawei.hmos.aibase", "WakeUpExtAbility", "");
-    HILOGI("connect service extension bundleName:com.huawei.hmos.aibase, abilityName:WakeUpExtAbility");
+    AppExecFwk::ElementName element("", "com.example.hmos.aibase", "WakeUpExtAbility", "");
+    HILOGI("connect service extension bundleName:com.example.hmos.aibase, abilityName:example");
     want.SetElement(element);
     want.SetParams(wantParams);
     std::string identity = IPCSkeleton::ResetCallingIdentity();

@@ -784,8 +784,8 @@ struct SpeedParams : public OHOS::Parcelable {
     float angle;
     MarchingMode mode;
 
-    SpeedParams(int16_t speed = 0, float angle = 0.0, MarchingMode mode = MarchingMode::TURN_THEN_MOVE):
-        speed(speed), angle(angle), mode(mode) {}
+    SpeedParams(int16_t speed = 0, float angle = 0.0, MarchingMode mode = MarchingMode::TURN_THEN_MOVE)
+        :speed(speed), angle(angle), mode(mode) {}
 
     bool Marshalling(OHOS::Parcel &parcel) const override
     {
