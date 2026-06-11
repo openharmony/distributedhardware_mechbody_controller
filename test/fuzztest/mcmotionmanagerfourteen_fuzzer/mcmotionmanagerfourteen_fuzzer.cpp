@@ -57,7 +57,8 @@ class TestMotionManager : public MotionManager {
 public:
     TestMotionManager(std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isWheel,
         uint32_t deviceIdentifier) : MotionManager(sendAdapter, mechId, isWheel, deviceIdentifier) {}
-    void AddCallbackForTest(uint8_t taskId, const MechNapiCommandCallbackInfo& callbackInfo) {
+    void AddCallbackForTest(uint8_t taskId, const MechNapiCommandCallbackInfo& callbackInfo)
+    {
         std::unique_lock<std::mutex> lock(seqCallbackMutex_);
         seqCallbacks_.insert(std::make_pair(taskId, callbackInfo));
     }
