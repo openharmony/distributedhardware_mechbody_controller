@@ -22,7 +22,6 @@ ohos_fuzztest("McMotionManagerSeventeenFuzzTest") {
   include_dirs = [
     "//foundation/distributedhardware/mechbody_controller/services/include",
     "//foundation/distributedhardware/mechbody_controller/services/include/motion",
-    "//foundation/distributedhardware/mechbody_controller/services/include/swing",
     "//foundation/distributedhardware/mechbody_controller/services/include/transport",
     "//foundation/distributedhardware/mechbody_controller/services/include/transport/command",
     "//foundation/distributedhardware/mechbody_controller/services/include/transport/command/0x01",
@@ -30,7 +29,6 @@ ohos_fuzztest("McMotionManagerSeventeenFuzzTest") {
     "//foundation/distributedhardware/mechbody_controller/services/include/transport/command/0x03",
     "//foundation/distributedhardware/mechbody_controller/services/include/controller",
     "//foundation/distributedhardware/mechbody_controller/services/include/connect",
-    "//foundation/distributedhardware/mechbody_controller/services/include/swing",
     "//foundation/distributedhardware/mechbody_controller/services/include/utils",
     "//foundation/distributedhardware/mechbody_controller/interface/inner_api",
     "//foundation/distributedhardware/mechbody_controller/test/fuzztest/common",
