@@ -726,9 +726,12 @@ void BleSendManager::ConnectMechbodyInternal(std::string mac, std::string device
     do {
         int32_t gattRet = MechbodyGattcConnect(mechInfo.mac, mechInfo.mechName);
         HILOGE("MECHBODY_EXEC_CONNECT gatt connect result: %{public}d", gattRet);
+        MechkitControlInfo controlInfo = {0};
         if (gattRet != ERR_OK) {
             MechbodyDisConnectSync(mechInfo);
             DotReportMechKitStartGattConnectFail(mechInfo);
+            controlInfo.connectCode = static_cast<uint32_t>(gattRet);
+            HisyseventUtils::DoReportMechkitControlStatisticEvent(controlInfo);
             break;
         }
         if (connectFailed_.load()) {
@@ -775,7 +778,7 @@ int32_t BleSendManager::MechbodyGattcConnect(std::string mac, std::string device
     int result = gattClient_->Connect(bleGattClientCallBack_, false, BT_TRANSPORT_BLE);
     if (result != 0) {
         HILOGE("MECHBODY_EXEC_CONNECT Failed to connect, result: %{public}d", result);
-        return MECHBODY_GATT_CONNECT_FAILED;
+        return MECHBODY_GATT_CONNECT_FAIL;
     }
 
     std::unique_lock<std::mutex> lock(gattMutex_);
@@ -786,7 +789,7 @@ int32_t BleSendManager::MechbodyGattcConnect(std::string mac, std::string device
                               return gattState || connectFailed_.load();
                           })) {
         HILOGE("MECHBODY_EXEC_CONNECT wait for gatt connect timeout");
-        return MECHBODY_GATT_CONNECT_FAILED;
+        return MECHBODY_GATT_CONNECT_TIMEOUT;
     }
     HILOGI("MECHBODY_EXEC_CONNECT connect end mac: %{public}s", GetAnonymStr(mac).c_str());
     return ERR_OK;
