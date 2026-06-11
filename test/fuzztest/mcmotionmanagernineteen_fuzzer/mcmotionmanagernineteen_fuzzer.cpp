@@ -56,10 +56,12 @@ class TestMotionManager : public MotionManager {
 public:
     TestMotionManager(std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isWheel,
         uint32_t deviceIdentifier) : MotionManager(sendAdapter, mechId, isWheel, deviceIdentifier) {}
-    void SetProtocolVerForTest(uint8_t ver) {
+    void SetProtocolVerForTest(uint8_t ver)
+    {
         protocolVer_ = ver;
     }
-    void SetDeviceBaseInfoForTest(const DeviceBaseInfo& info) {
+    void SetDeviceBaseInfoForTest(const DeviceBaseInfo& info)
+    {
         deviceBaseInfo_ = info;
     }
 };
@@ -218,7 +220,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
     FuzzUnRegisterNotifyEventMultipleTimes(provider);
     FuzzExecuteRotateCommandWithDifferentTaskIds(provider);
-    // FuzzHandelRotateParamWithNull(provider);
     FuzzCheckYawDegreeWithNull(provider);
     FuzzSetDevicePairingInfoWithExtremeValues(provider);
     FuzzAllRegisterExtendedAndTrackingEvents(provider);
