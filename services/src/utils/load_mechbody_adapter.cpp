@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,8 @@ OHOS::MechBodyController::RunTrackingCore MechbodyAdapterUtils::runFunc_ = nullp
 OHOS::MechBodyController::ResetTrackingCore MechbodyAdapterUtils::resetFunc_ = nullptr;
 OHOS::MechBodyController::RegisterBackgroundTracking MechbodyAdapterUtils::backgroundRegisterFunc_ = nullptr;
 OHOS::MechBodyController::UnRegisterBackgroundTracking MechbodyAdapterUtils::backgroundUnRegisterFunc_ = nullptr;
+OHOS::MechBodyController::IsSupportBackground MechbodyAdapterUtils::isSupportBackgroundFunc_ = nullptr;
+
 
 int32_t MechbodyAdapterUtils::InitTrackingCore()
 {
@@ -67,6 +69,7 @@ int32_t MechbodyAdapterUtils::InitTrackingCore()
         resetFunc_ = nullptr;
         backgroundRegisterFunc_ = nullptr;
         backgroundUnRegisterFunc_ = nullptr;
+        isSupportBackgroundFunc_ = nullptr;
         return ret;
     }
     if (initFunc_ != nullptr) {
@@ -108,6 +111,13 @@ int32_t MechbodyAdapterUtils::LoadFunction()
     if (dlsymError != nullptr) {
         return LOAD_MECH_ADAPTER_FUNCTION_ERROR;
     }
+    isSupportBackgroundFunc_ = reinterpret_cast<OHOS::MechBodyController::IsSupportBackground>(
+        dlsym(mechBackgroundHandle_, "IsSupportBackground"));
+    dlsymError = dlerror();
+    if (dlsymError != nullptr) {
+        return LOAD_MECH_ADAPTER_FUNCTION_ERROR;
+    }
+
     return ERR_OK;
 }
 
@@ -155,6 +165,18 @@ void MechbodyAdapterUtils::UnRegisterBackgroundTracking()
     backgroundUnRegisterFunc_();
 }
 
+bool MechbodyAdapterUtils::IsSupportBackground()
+{
+    HILOGI("IsSupportBackground called");
+    std::lock_guard<std::mutex> lock(mechGimbalMutex_);
+    if (isSupportBackgroundFunc_ == nullptr) {
+        HILOGE("isSupportBackgroundFunc_ is null.");
+        return false;
+    }
+    HILOGI("IsSupportBackground exec.");
+    return isSupportBackgroundFunc_();
+}
+
 void MechbodyAdapterUtils::Clear()
 {
     HILOGI("clear exec.");
@@ -162,8 +184,10 @@ void MechbodyAdapterUtils::Clear()
     
     if (mechAdapterHandle_ != nullptr) {
         dlclose(mechAdapterHandle_);
-        dlclose(mechBackgroundHandle_);
         mechAdapterHandle_ = nullptr;
+    }
+    if (mechBackgroundHandle_ != nullptr) {
+        dlclose(mechBackgroundHandle_);
         mechBackgroundHandle_ = nullptr;
     }
     initFunc_ = nullptr;
@@ -171,6 +195,7 @@ void MechbodyAdapterUtils::Clear()
     resetFunc_ = nullptr;
     backgroundRegisterFunc_ = nullptr;
     backgroundUnRegisterFunc_ = nullptr;
+    isSupportBackgroundFunc_ = nullptr;
 }
 } // namespace MechBodyController
 } // namespace OHOS
