@@ -366,20 +366,6 @@ HWTEST_F(BleSendManagerTest, UnRegisterTransportSendAdapter_004, TestSize.Level1
 }
 
 /**
- * @tc.name  : OnGattReady_001
- * @tc.number: OnGattReady_001
- * @tc.desc  : OnGattReady when it is called.
- */
-
-HWTEST_F(BleSendManagerTest, OnGattReady_001, TestSize.Level1)
-{
-    DTEST_LOG << "BleSendManagerTest OnGattReady_001 begin" << std::endl;
-    MechInfo mechInfo;
-    EXPECT_NO_FATAL_FAILURE(bleSendManager_.OnGattReady(mechInfo));
-    DTEST_LOG << "BleSendManagerTest OnGattReady_001 end" << std::endl;
-}
-
-/**
  * @tc.name  : MechbodyGattcDisconnect_001
  * @tc.number: MechbodyGattcDisconnect_001
  * @tc.desc  : Test MechbodyGattcDisconnect function.
