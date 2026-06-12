@@ -77,6 +77,8 @@ ohos_fuzztest("ResourcemanagerutilsFuzzTest") {
     "distributed_notification_service:ans_innerkits",
     "ability_runtime:ability_manager",  
     "ability_runtime:app_manager",
+    "i18n:intl_util",
+    "icu:shared_icuuc",
   ]
 }
 
