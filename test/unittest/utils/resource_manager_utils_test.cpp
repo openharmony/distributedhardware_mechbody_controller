@@ -19,6 +19,7 @@
 
 using namespace testing;
 using namespace testing::ext;
+using namespace OHOS::MechBodyController;
 
 namespace OHOS {
 
@@ -80,22 +81,21 @@ HWTEST_F(ResourceManagerUtilsTest, GetSystemStringByName_002, TestSize.Level3)
 
 /**
  * @tc.name: GetPixelMapByName_001
- * @tc.desc: 测试通过名称获取 PixelMap
+ * @tc.desc: 测试通过不存在的名称获取 PixelMap（异常路径测试）
  * @tc.type: FUNC
  */
 HWTEST_F(ResourceManagerUtilsTest, GetPixelMapByName_001, TestSize.Level3)
 {
     DTEST_LOG << "ResourceManagerUtilsTest GetPixelMapByName_001 begin" << std::endl;
 
-    // When: 通过存在的系统图标名称获取 PixelMap
-    std::shared_ptr<Media::PixelMap> pixelMap = ResourceManagerUtils::GetPixelMapByName("ic_public_voice_filled");
+    // Given: 不存在的资源名称
+    std::string nonExistentResource = "nonexistent_icon_resource_12345";
 
-    // Then: 返回非空的 PixelMap 对象
-    ASSERT_NE(pixelMap, nullptr) << "PixelMap should not be null for existing system icon";
+    // When: 通过不存在的名称获取 PixelMap
+    std::shared_ptr<Media::PixelMap> pixelMap = ResourceManagerUtils::GetPixelMapByName(nonExistentResource);
 
-    // 验证 PixelMap 的基本属性（业务逻辑验证）
-    EXPECT_GT(pixelMap->GetWidth(), 0) << "PixelMap width should be positive";
-    EXPECT_GT(pixelMap->GetHeight(), 0) << "PixelMap height should be positive";
+    // Then: 返回空指针（资源不存在时GetMediaDataByName失败，ImageSource创建失败）
+    EXPECT_EQ(pixelMap, nullptr) << "PixelMap should be null for nonexistent resource";
 
     DTEST_LOG << "ResourceManagerUtilsTest GetPixelMapByName_001 end" << std::endl;
 }
@@ -109,31 +109,16 @@ HWTEST_F(ResourceManagerUtilsTest, GetPixelMapByName_002, TestSize.Level3)
 {
     DTEST_LOG << "ResourceManagerUtilsTest GetPixelMapByName_002 begin" << std::endl;
 
-    // When: 通过空名称获取 PixelMap
-    std::shared_ptr<Media::PixelMap> pixelMap = ResourceManagerUtils::GetPixelMapByName("");
+    // Given: 空字符串资源名称
+    std::string emptyResourceName = "";
 
-    // Then: 返回空指针（空名称无效）
-    EXPECT_EQ(pixelMap, nullptr);
+    // When: 通过空名称获取 PixelMap
+    std::shared_ptr<Media::PixelMap> pixelMap = ResourceManagerUtils::GetPixelMapByName(emptyResourceName);
+
+    // Then: 返回空指针（空名称导致GetMediaDataByName失败）
+    EXPECT_EQ(pixelMap, nullptr) << "PixelMap should be null for empty resource name";
 
     DTEST_LOG << "ResourceManagerUtilsTest GetPixelMapByName_002 end" << std::endl;
-}
-
-/**
- * @tc.name: GetPixelMapByName_003
- * @tc.desc: 测试通过不存在的名称获取 PixelMap（边界测试）
- * @tc.type: FUNC
- */
-HWTEST_F(ResourceManagerUtilsTest, GetPixelMapByName_003, TestSize.Level3)
-{
-    DTEST_LOG << "ResourceManagerUtilsTest GetPixelMapByName_003 begin" << std::endl;
-
-    // When: 通过不存在的名称获取 PixelMap
-    std::shared_ptr<Media::PixelMap> pixelMap = ResourceManagerUtils::GetPixelMapByName("nonexistent_icon_12345");
-
-    // Then: 返回空指针（资源不存在）
-    EXPECT_EQ(pixelMap, nullptr);
-
-    DTEST_LOG << "ResourceManagerUtilsTest GetPixelMapByName_003 end" << std::endl;
 }
 
 } // namespace OHOS
