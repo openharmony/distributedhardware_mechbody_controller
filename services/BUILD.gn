@@ -108,6 +108,7 @@ ohos_shared_library("mechbody_service") {
       "src/dotReport/hisysevent_utils.cpp",
       "src/utils/subscribe_event_utils.cpp",
       "src/utils/resource_manager_utils.cpp",
+      "src/utils/notification_utils.cpp",
     ]
  }
   include_dirs = [
@@ -165,7 +166,9 @@ ohos_shared_library("mechbody_service") {
     "drivers_interface_camera:metadata",
     "distributed_notification_service:ans_innerkits",
     "ability_runtime:ability_manager",  
-    "ability_runtime:app_manager"
+    "ability_runtime:app_manager",
+    "i18n:intl_util",
+    "icu:shared_icuuc"
   ]
 
   install_images = [ system_base_dir ]
