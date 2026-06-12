@@ -916,6 +916,7 @@ HWTEST_F(MotionManagerTest, GetMechCameraTrackingEnabled_001, TestSize.Level1)
 
     int32_t result = motionMgr->GetMechCameraTrackingEnabled(isEnabled);
     EXPECT_EQ(result, ERR_OK);
+    EXPECT_EQ(isEnabled, motionMgr->deviceStatus_->isEnabled);
 }
 
 /**
@@ -1280,10 +1281,13 @@ HWTEST_F(MotionManagerTest, MechWheelZoomNotify_001, TestSize.Level1)
     // Test with degree = 0 (should not increment wheelFilterCnt_)
     cmd->wheelData_.degree = 0;
     motionMgr->MechWheelZoomNotify(cmd);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    EXPECT_EQ(motionMgr->wheelFilterCnt_, 0);
 
-    // Test with degree != 0 and wheelFilterCnt_ < WHEEL_FILTER_COUNT
-    // First call: wheelFilterCnt_ should be incremented from 0 to 1
+    // Third call: wheelFilterCnt_ should be reset to 0 (reaches WHEEL_FILTER_COUNT)
     cmd->wheelData_.degree = 10;
+    motionMgr->MechWheelZoomNotify(cmd);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     EXPECT_EQ(motionMgr->wheelFilterCnt_, 0);
 }
 
@@ -1782,7 +1786,7 @@ HWTEST_F(MotionManagerTest, MechGenericEventNotify_002, TestSize.Level1)
 /**
  * @tc.name  : MechGenericEventNotify_003
  * @tc.number: MechGenericEventNotify_003
- * @tc.desc  : Test MechGenericEventNotify with low power state.
+ * @tc.desc  : Test MechGenericEventNotify with low power state and rotation axes update.
  */
 HWTEST_F(MotionManagerTest, MechGenericEventNotify_003, TestSize.Level1)
 {
@@ -1793,12 +1797,16 @@ HWTEST_F(MotionManagerTest, MechGenericEventNotify_003, TestSize.Level1)
 
     std::shared_ptr<NormalRegisterMechGenericEventCmd> cmd = std::make_shared<NormalRegisterMechGenericEventCmd>();
     cmd->lowPower = BIT_1; // Set low power state to trigger low power notification
-    cmd->params_.yawDisable = static_cast<uint8_t>(-1);
+    cmd->params_.yawDisable = 1;
+    cmd->params_.rollDisable = 0;
+    cmd->params_.pitchDisable = 0;
 
     motionMgr->MechGenericEventNotify(cmd);
 
-    // The function should handle low power notification gracefully
-    // No specific state change to verify for low power event
+    // Verify rotationAxesStatus is updated correctly even with low power event
+    EXPECT_FALSE(motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.rollEnabled);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.pitchEnabled);
 }
 
 /**
@@ -1851,6 +1859,9 @@ HWTEST_F(MotionManagerTest, MechGenericEventNotify_005, TestSize.Level1)
 
     // When yawDisable is -1, function returns early without updating rotationAxesStatus
     // Verify rotationAxesStatus remains unchanged (default values)
+    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.rollEnabled);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.pitchEnabled);
 }
 
 /**
