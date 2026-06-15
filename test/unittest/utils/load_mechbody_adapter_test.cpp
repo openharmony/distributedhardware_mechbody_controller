@@ -67,8 +67,15 @@ HWTEST_F(MechbodyAdapterUtilsTest, InitTrackingCore_001, TestSize.Level3)
     // Then: 根据环境验证具体的返回值
     // 如果动态库存在，应该返回成功
     if (ret == ERR_OK) {
-        // 验证初始化成功后，句柄和函数指针不为空
-        // 需要添加对内部状态的验证
+        // 验证初始化成功后，通过调用依赖内部状态的公共方法来验证
+        // RunTrackingCore 和 ResetTrackingCore 依赖内部句柄和函数指针
+        auto pushFn = [](float x, float y) {};
+        int32_t runRet = MechbodyAdapterUtils::RunTrackingCore(100.0f, 100.0f, 640.0f, 480.0f, pushFn);
+        int32_t resetRet = MechbodyAdapterUtils::ResetTrackingCore();
+
+        // 如果初始化成功，这些方法应该能够正常执行
+        EXPECT_EQ(runRet, ERR_OK);
+        EXPECT_EQ(resetRet, ERR_OK);
     } else {
         // 验证返回了具体的错误码
         EXPECT_TRUE(ret == LOAD_MECH_ADAPTER_SO_ERROR || ret == LOAD_MECH_ADAPTER_FUNCTION_ERROR);
@@ -202,7 +209,9 @@ HWTEST_F(MechbodyAdapterUtilsTest, RunTrackingCore_004, TestSize.Level3)
     // In test environment, the dynamic library may not be available
     if (initRet != ERR_OK && initRet != DEVICE_NOT_NEED_SCREEN_INFO) {
         DTEST_LOG << "MechbodyAdapterUtilsTest RunTrackingCore_004 skipped, initRet=" << initRet << std::endl;
-        return;
+        // Split into two test cases instead of early return
+        // This case only tests the initialization failure scenario
+        GTEST_SKIP() << "Initialization failed, skipping RunTrackingCore test";
     }
 
     // When: 多次调用 RunTrackingCore
@@ -234,7 +243,8 @@ HWTEST_F(MechbodyAdapterUtilsTest, ResetTrackingCore_003, TestSize.Level3)
     // In test environment, the dynamic library may not be available
     if (initRet != ERR_OK && initRet != DEVICE_NOT_NEED_SCREEN_INFO) {
         DTEST_LOG << "MechbodyAdapterUtilsTest ResetTrackingCore_003 skipped, initRet=" << initRet << std::endl;
-        return;
+        // Split test cases instead of early return
+        GTEST_SKIP() << "Initialization failed, skipping ResetTrackingCore test";
     }
 
     // When: 多次调用 ResetTrackingCore
