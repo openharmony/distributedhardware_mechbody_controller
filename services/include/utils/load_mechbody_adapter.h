@@ -30,6 +30,7 @@ typedef int32_t (*RunTrackingCore)(float, float, float, float, const PushXYFn&);
 typedef void (*ResetTrackingCore)();
 typedef void (*RegisterBackgroundTracking)(const GetBackgroundXYFn&);
 typedef void (*UnRegisterBackgroundTracking)();
+typedef bool (*IsSupportBackground)();
 
 class MechbodyAdapterUtils {
 public:
@@ -39,6 +40,7 @@ public:
     static void RegisterBackgroundTracking(const GetBackgroundXYFn& GetBackgroundXYFn);
     static void UnRegisterBackgroundTracking();
     static void Clear();
+    static bool IsSupportBackground();
 
 private:
     static int32_t LoadFunction();
@@ -53,6 +55,7 @@ private:
     static OHOS::MechBodyController::ResetTrackingCore resetFunc_;
     static OHOS::MechBodyController::RegisterBackgroundTracking backgroundRegisterFunc_;
     static OHOS::MechBodyController::UnRegisterBackgroundTracking backgroundUnRegisterFunc_;
+    static OHOS::MechBodyController::IsSupportBackground isSupportBackgroundFunc_;
 };
 } // namespace MechBodyController
 } // namespace OHOS

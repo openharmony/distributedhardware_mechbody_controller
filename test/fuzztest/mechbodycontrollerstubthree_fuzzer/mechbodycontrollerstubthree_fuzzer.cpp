@@ -82,7 +82,7 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
     return 0;
 }
 
-int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled)
+int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled, bool isCapsuleSet)
 {
     return 0;
 }

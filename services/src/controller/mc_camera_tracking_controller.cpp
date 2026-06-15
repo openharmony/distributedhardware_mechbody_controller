@@ -24,6 +24,7 @@
 #include "capture_scene_const.h"
 #include "mechbody_controller_utils.h"
 #include "hisysevent_utils.h"
+#include "notification_utils.h"
 
 namespace OHOS {
 namespace MechBodyController {
@@ -141,6 +142,10 @@ void McCameraTrackingController::Init()
     SubscribeEventUtils::GetInstance().AddEventService(&MechBodyEventBaseService::GetInstance());
     RegisterTrackingListener();
     RegisterSensorListener();
+    if (!MechbodyAdapterUtils::IsSupportBackground()) {
+        HILOGI("Do not support background tracking event!");
+        return;
+    }
     MechbodyAdapterUtils::RegisterBackgroundTracking(
         [this](TrackingFrameParams trackingFrameParams) mutable {
             auto params = std::make_shared<TrackingFrameParams>(trackingFrameParams);
@@ -191,8 +196,10 @@ void McCameraTrackingController::UnInit()
     SubscribeEventUtils::GetInstance().UnInit();
     UnRegisterTrackingListener();
     UnRegisterSensorListener();
-    HILOGI("UnRegister background tracking event!");
-    MechbodyAdapterUtils::UnRegisterBackgroundTracking();
+    if (MechbodyAdapterUtils::IsSupportBackground()) {
+        HILOGI("UnRegister background tracking event!");
+        MechbodyAdapterUtils::UnRegisterBackgroundTracking();
+    }
     if (eventHandler_ != nullptr) {
         eventHandler_->RemoveTask(SEND_CAMERA_INFO_TASK_NAME);
         eventHandler_->RemoveTask(UPDATE_ACTION_CONTROL_TASK_NAME);
@@ -1049,6 +1056,13 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
 {
     HILOGI("start notify tracking event, mechId: %{public}d; event: %{public}d", mechId,
            static_cast<int32_t>(event));
+    if (event == TrackingEvent::CAMERA_TRACKING_USER_ENABLED) {
+        NotificationUtils::isTrackingEnabled_ = true;
+    } else if (event == TrackingEvent::CAMERA_TRACKING_USER_DISABLED) {
+        NotificationUtils::isTrackingEnabled_ = false;
+    }
+    NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+
     std::lock_guard<std::mutex> lock(trackingEventCallbackMutex_);
     for (const auto &item: trackingEventCallback_) {
         uint32_t tokenId = item.first;

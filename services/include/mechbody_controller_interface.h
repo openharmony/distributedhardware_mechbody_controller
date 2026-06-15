@@ -36,7 +36,7 @@ public:
     virtual int32_t SetUserOperation(const std::shared_ptr<Operation> &operation,
         const std::string &mac, const std::string &param) = 0;
 
-    virtual int32_t SetTrackingEnabled(bool &isEnabled) = 0;
+    virtual int32_t SetTrackingEnabled(bool &isEnabled, bool isCapsuleSet = false) = 0;
     virtual int32_t GetTrackingEnabled(bool &isEnabled) = 0;
     virtual int32_t RegisterTrackingEventCallback(sptr<IRemoteObject> callback) = 0;
     virtual int32_t UnRegisterTrackingEventCallback() = 0;

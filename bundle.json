@@ -52,7 +52,9 @@
           "device_manager",
           "selinux_adapter",
           "distributed_notification_service",
-          "api_metrics"
+          "api_metrics",
+          "icu",
+          "i18n"
         ],
         "third_party": []
       },

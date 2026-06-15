@@ -16,8 +16,10 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include "resource_manager_utils.h"
 
+
 using namespace OHOS;
 
+using MechBodyController::ResourceManagerUtils;
 namespace {
 
 enum class TestFunctionId {

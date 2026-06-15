@@ -45,8 +45,8 @@ MechBodyControllerService::~MechBodyControllerService()
 {
 }
 
-int32_t MechBodyControllerService::OnDeviceConnected(int32_t mechId, bool isFirstConnect,
-    const uint32_t &deviceIdentifier)
+int32_t MechBodyControllerService::OnDeviceConnected(
+    int32_t mechId, bool isFirstConnect, const uint32_t &deviceIdentifier)
 {
     return 0;
 }
@@ -78,7 +78,7 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
     return 0;
 }
 
-int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled)
+int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled, bool isCapsuleSet)
 {
     return 0;
 }
@@ -170,6 +170,56 @@ int32_t MechBodyControllerService::UnRegisterRotationAxesStatusChangeCallback()
 {
     return 0;
 }
+
+int32_t MechBodyControllerService::SearchTarget(std::string &napiCmdId,
+    const std::shared_ptr<TargetInfo> &targetInfo, const std::shared_ptr<SearchParams> &searchParams)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::Move(const int32_t &mechId, std::string &cmdId,
+    const std::shared_ptr<MoveParams> &moveParams)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::MoveBySpeed(const int32_t &mechId, std::string &cmdId, uint16_t duration,
+    const std::shared_ptr<SpeedParams> &speedParams)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::TurnBySpeed(const int32_t &mechId, std::string &cmdId,
+    float angleSpeed, uint16_t duration)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::DoAction(const int32_t &mechId, std::string &cmdId, ActionType actionType)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::SubscribeCallback(sptr <IRemoteObject> &callback, MechEventType mechEventType)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::UnSubscribeCallback(MechEventType mechEventType)
+{
+    return 0;
+}
+
+int32_t MechBodyControllerService::OnDeviceDisconnected(int32_t mechId)
+{
+    return 0;
+}
+
 } // namespace MechBodyController
 } // namespace OHOS
 #endif // MECHBODY_CONTROLLER_STUB_TEST_H

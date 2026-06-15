@@ -29,6 +29,7 @@
 #include "tokenid_kit.h"
 #include "ipc_skeleton.h"
 #include "hisysevent_utils.h"
+#include "notification_utils.h"
 
 using namespace OHOS::Security;
 using namespace OHOS::Security::AccessToken;
@@ -165,6 +166,13 @@ int32_t MechBodyControllerService::OnAttachStateChange(const AttachmentState &at
                                                        const MechInfo &mechInfo)
 {
     HILOGI("start");
+    if (attachmentState == AttachmentState::ATTACHED) {
+        NotificationUtils::isTrackingEnabled_ = true;
+        NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    } else if (attachmentState == AttachmentState::DETACHED) {
+        NotificationUtils::CancelNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    }
+    
     std::lock_guard<std::mutex> lock(deviceAttachCallbackMutex);
     for (const auto &item: deviceAttachCallback_) {
         uint32_t tokenId = item.first;
@@ -363,16 +371,16 @@ void MechBodyControllerService::JudgeAppEnableSwitchAndReportFocustrackingStartE
     }
 }
 
-int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled)
+int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled, bool isCapsuleSet)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
-
-    HILOGI("start, tokenId: %{public}s; isEnabled: %{public}s;",
+ 
+    HILOGI("start, tokenId: %{public}s; isEnabled: %{public}s; isCapsuleSet: %{public}s",
         GetAnonymUint32(tokenId).c_str(),
-        isEnabled ? "true" : "false");
-
+        isEnabled ? "true" : "false", isCapsuleSet ? "true" : "false");
+ 
     int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
-    if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+    if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED || isCapsuleSet) {
         HILOGI("Has permission.");
         {
             std::lock_guard<std::mutex> lock(motionManagersMutex);

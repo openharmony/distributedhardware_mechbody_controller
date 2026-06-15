@@ -23,6 +23,7 @@
 #include <mutex>
 
 namespace OHOS {
+namespace MechBodyController {
 
 class ResourceManagerUtils {
 public:
@@ -31,10 +32,13 @@ public:
 
 private:
     static void InitResourceManager();
+    static void RefreshResConfig();
 
 private:
     static std::mutex resourceManagerMutex_;
     inline static Global::Resource::ResourceManager *resourceManager_ = nullptr;
+    inline static Global::Resource::ResConfig *resConfig_ = nullptr;
 };
+} // namespace MechBodyController
 } // namespace OHOS
 #endif // OHOS_RESOURCE_MANAGER_UTILS_H
