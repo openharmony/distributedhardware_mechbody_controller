@@ -2383,18 +2383,19 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustXOffset_VirtualCenter_002, Tes
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_001, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_001 "
-              << "begin" << std::endl;
-
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1001;
     listener.objectType_ = RemoteObjectType::DEVICE_ATTACH_CALLBACK;
 
+    // 预置：确保callback map中有对应tokenId的条目
+    MechBodyControllerService::GetInstance().deviceAttachCallback_[listener.tokenId_] = nullptr;
+
     wptr<IRemoteObject> object;
     listener.OnRemoteDied(object);
 
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_001 "
-              << "end" << std::endl;
+    // 验证：确认tokenId_对应的条目已被移除
+    EXPECT_EQ(MechBodyControllerService::GetInstance().deviceAttachCallback_.find(listener.tokenId_),
+              MechBodyControllerService::GetInstance().deviceAttachCallback_.end());
 }
 
 /**
@@ -2404,18 +2405,19 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_002, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_002 "
-              << "begin" << std::endl;
-
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1002;
     listener.objectType_ = RemoteObjectType::TRACKING_EVENT_CALLBACK;
 
+    // 预置：确保callback map中有对应tokenId的条目
+    McCameraTrackingController::GetInstance().trackingEventCallback_[listener.tokenId_] = nullptr;
+
     wptr<IRemoteObject> object;
     listener.OnRemoteDied(object);
 
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_002 "
-              << "end" << std::endl;
+    // 验证：确认tokenId_对应的条目已被移除
+    EXPECT_EQ(McCameraTrackingController::GetInstance().trackingEventCallback_.find(listener.tokenId_),
+              McCameraTrackingController::GetInstance().trackingEventCallback_.end());
 }
 
 /**
@@ -2425,18 +2427,19 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_003, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_003 "
-              << "begin" << std::endl;
-
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1003;
     listener.objectType_ = RemoteObjectType::ROTATION_AXES_STATUS_CALLBACK;
 
+    // 预置：确保callback map中有对应tokenId的条目
+    MechBodyControllerService::GetInstance().rotationAxesStatusChangeCallback_[listener.tokenId_] = nullptr;
+
     wptr<IRemoteObject> object;
     listener.OnRemoteDied(object);
 
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_003 "
-              << "end" << std::endl;
+    // 验证：确认tokenId_对应的条目已被移除
+    EXPECT_EQ(MechBodyControllerService::GetInstance().rotationAxesStatusChangeCallback_.find(listener.tokenId_),
+              MechBodyControllerService::GetInstance().rotationAxesStatusChangeCallback_.end());
 }
 
 /**
@@ -2446,17 +2449,19 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRemoteDied_004, TestSize.Level1)
 {
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_004 "
-              << "begin" << std::endl;
-
     MechControllerIpcDeathListener listener;
     listener.tokenId_ = 1004;
     listener.objectType_ = RemoteObjectType::COMMAND_CHANNEL;
 
+    // 预置：确保cmdChannels map中有对应tokenId的条目
+    MechBodyControllerService::GetInstance().cmdChannels_[listener.tokenId_] = nullptr;
+
     wptr<IRemoteObject> object;
     listener.OnRemoteDied(object);
 
-    DTEST_LOG << "McCameraTrackingControllerTwoTest MechControllerIpcDeathListener_OnRemoteDied_004 end" << std::endl;
+    // 验证：确认tokenId_对应的条目已被移除
+    EXPECT_EQ(MechBodyControllerService::GetInstance().cmdChannels_.find(listener.tokenId_),
+              MechBodyControllerService::GetInstance().cmdChannels_.end());
 }
 }
 }

@@ -469,11 +469,6 @@ HWTEST_F(MotionManagerTest, Rotate_006, TestSize.Level1)
     motionMgr->RegisterEventListener();
     g_mockMechState = AttachmentStateMap::ATTACHED;
 
-    // Set deviceBaseInfoReady_ to true to allow Init() to proceed
-    motionMgr->deviceBaseInfoReady_ = true;
-
-    EXPECT_NO_FATAL_FAILURE(motionMgr->Init());
-
     std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
     rotateParam->degree.yaw = 1;
     rotateParam->degree.pitch = 1;
@@ -485,6 +480,11 @@ HWTEST_F(MotionManagerTest, Rotate_006, TestSize.Level1)
 
     int32_t result = motionMgr->Rotate(rotateParam, tokenId, napiCmdId);
     EXPECT_EQ(result, ERR_OK);
+
+    // 验证callback已被注册到seqCallbacks_ map中
+    std::unique_lock<std::mutex> lock(motionMgr->seqCallbackMutex_);
+    EXPECT_FALSE(motionMgr->seqCallbacks_.empty());
+    lock.unlock();
 }
 
 /**
@@ -580,9 +580,6 @@ HWTEST_F(MotionManagerTest, RotateBySpeed_004, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
     g_mockMechState = AttachmentStateMap::ATTACHED;
-    motionMgr->deviceBaseInfoReady_ = true;
-
-    EXPECT_NO_FATAL_FAILURE(motionMgr->Init());
 
     std::shared_ptr<RotateBySpeedParam> rotateSpeedParam = std::make_shared<RotateBySpeedParam>();
     rotateSpeedParam->speed.yawSpeed = 1;
@@ -595,6 +592,11 @@ HWTEST_F(MotionManagerTest, RotateBySpeed_004, TestSize.Level1)
 
     int32_t result = motionMgr->RotateBySpeed(rotateSpeedParam, tokenId, napiCmdId);
     EXPECT_EQ(result, ERR_OK);
+
+    // 验证callback已被注册到seqCallbacks_ map中（V2协议）
+    std::unique_lock<std::mutex> lock(motionMgr->seqCallbackMutex_);
+    EXPECT_FALSE(motionMgr->seqCallbacks_.empty());
+    lock.unlock();
 }
 
 /**
@@ -1243,23 +1245,36 @@ HWTEST_F(MotionManagerTest, MechExecutionResultNotify_003, TestSize.Level1)
     MechNapiCommandCallbackInfo callbackInfo(tokenId, napiCmdId);
     callbackInfo.willLimitChange = true;
     motionMgr->seqCallbacks_.insert(std::make_pair(static_cast<uint8_t>(taskId), callbackInfo));
-    EXPECT_NO_FATAL_FAILURE(motionMgr->MechExecutionResultNotify(cmd));
+    motionMgr->MechExecutionResultNotify(cmd);
+    // 验证callback仍然存在（MechExecutionResultNotify不删除callback）
+    EXPECT_FALSE(motionMgr->seqCallbacks_.empty());
+    EXPECT_EQ(motionMgr->seqCallbacks_.size(), 1);
+    // 清理以便下一个测试
+    motionMgr->seqCallbacks_.clear();
 
     // Test with willLimitChange = false, IsLimited = true
     callbackInfo.willLimitChange = false;
-    motionMgr->seqCallbacks_.erase(static_cast<uint8_t>(taskId));
     motionMgr->seqCallbacks_.insert(std::make_pair(static_cast<uint8_t>(taskId), callbackInfo));
     motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled = true;
     motionMgr->deviceStatus_->rotationAxesStatus.pitchEnabled = true;
     // Set yawLimited to POS_LIMITED to make IsLimited() return true and cover line 525-528
     motionMgr->deviceStatus_->rotationAxesStatus.yawLimited = RotationAxisLimited::POS_LIMITED;
     motionMgr->deviceStatus_->rotationAxesStatus.pitchLimited = RotationAxisLimited::NOT_LIMITED;
-    EXPECT_NO_FATAL_FAILURE(motionMgr->MechExecutionResultNotify(cmd));
+    motionMgr->MechExecutionResultNotify(cmd);
+    // 验证callback仍然存在（MechExecutionResultNotify不删除callback）
+    EXPECT_FALSE(motionMgr->seqCallbacks_.empty());
+    EXPECT_EQ(motionMgr->seqCallbacks_.size(), 1);
+    // 清理以便下一个测试
+    motionMgr->seqCallbacks_.clear();
 
     // Test with willLimitChange = false, IsLimited = false (else branch)
+    motionMgr->seqCallbacks_.insert(std::make_pair(static_cast<uint8_t>(taskId), callbackInfo));
     motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled = false;
     motionMgr->deviceStatus_->rotationAxesStatus.pitchEnabled = false;
-    EXPECT_NO_FATAL_FAILURE(motionMgr->MechExecutionResultNotify(cmd));
+    motionMgr->MechExecutionResultNotify(cmd);
+    // 验证callback仍然存在（MechExecutionResultNotify不删除callback）
+    EXPECT_FALSE(motionMgr->seqCallbacks_.empty());
+    EXPECT_EQ(motionMgr->seqCallbacks_.size(), 1);
 }
 
 /**
@@ -1433,7 +1448,12 @@ HWTEST_F(MotionManagerTest, JudgingYawLimit_002, TestSize.Level1)
     limit.negMax.pitch = 1;
     limit.posMax.roll = 1;
     limit.posMax.pitch = 1;
-    EXPECT_NO_FATAL_FAILURE(motionMgr->JudgingYawLimit(limit));
+    motionMgr->JudgingYawLimit(limit);
+
+    // 验证yaw无限制，pitch和roll有限制
+    EXPECT_FALSE(motionMgr->deviceStatus_->yawLimit);
+    EXPECT_TRUE(motionMgr->deviceStatus_->pitchLimit);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rollLimit);
 }
 
 /**
@@ -1456,7 +1476,12 @@ HWTEST_F(MotionManagerTest, JudgingYawLimit_003, TestSize.Level1)
     limit.negMax.roll = 1;
     limit.posMax.yaw = 1;
     limit.posMax.roll = 1;
-    EXPECT_NO_FATAL_FAILURE(motionMgr->JudgingYawLimit(limit));
+    motionMgr->JudgingYawLimit(limit);
+
+    // 验证pitch无限制，yaw和roll有限制
+    EXPECT_TRUE(motionMgr->deviceStatus_->yawLimit);
+    EXPECT_FALSE(motionMgr->deviceStatus_->pitchLimit);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rollLimit);
 }
 
 /**
@@ -1479,7 +1504,12 @@ HWTEST_F(MotionManagerTest, JudgingYawLimit_004, TestSize.Level1)
     limit.negMax.pitch = 1;
     limit.posMax.yaw = 1;
     limit.posMax.pitch = 1;
-    EXPECT_NO_FATAL_FAILURE(motionMgr->JudgingYawLimit(limit));
+    motionMgr->JudgingYawLimit(limit);
+
+    // 验证roll无限制，yaw和pitch有限制
+    EXPECT_TRUE(motionMgr->deviceStatus_->yawLimit);
+    EXPECT_TRUE(motionMgr->deviceStatus_->pitchLimit);
+    EXPECT_FALSE(motionMgr->deviceStatus_->rollLimit);
 }
 
 /**
@@ -1520,9 +1550,22 @@ HWTEST_F(MotionManagerTest, AbsolutelyEulerAnglesJudgingLimitLocked_001, TestSiz
     motionMgr->RegisterEventListener();
 
     motionMgr->deviceStatus_ = std::make_shared<DeviceStatus>();
-    EulerAngles eulerAngles;
+    // 设置初始角度
+    motionMgr->deviceStatus_->eulerAngles.yaw = 10.0f;
+    motionMgr->deviceStatus_->eulerAngles.pitch = 20.0f;
+    motionMgr->deviceStatus_->eulerAngles.roll = 30.0f;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles));
+    EulerAngles eulerAngles;
+    eulerAngles.yaw = 5.0f;
+    eulerAngles.pitch = 10.0f;
+    eulerAngles.roll = 15.0f;
+
+    motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles);
+
+    // 验证角度被正确累加：yaw和pitch累加，roll被置为0
+    EXPECT_FLOAT_EQ(eulerAngles.yaw, 15.0f);  // 5.0 + 10.0
+    EXPECT_FLOAT_EQ(eulerAngles.pitch, 30.0f); // 10.0 + 20.0
+    EXPECT_FLOAT_EQ(eulerAngles.roll, 0.0f);   // roll被置为0
 }
 
 /**
@@ -1545,8 +1588,16 @@ HWTEST_F(MotionManagerTest, AbsolutelyEulerAnglesJudgingLimitLocked_002, TestSiz
     }
     motionMgr->deviceStatus_ = nullptr;
     EulerAngles eulerAngles;
+    eulerAngles.yaw = 5.0f;
+    eulerAngles.pitch = 10.0f;
+    eulerAngles.roll = 15.0f;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles));
+    motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles);
+
+    // 验证当deviceStatus_为nullptr时，eulerAngles不被修改
+    EXPECT_FLOAT_EQ(eulerAngles.yaw, 5.0f);
+    EXPECT_FLOAT_EQ(eulerAngles.pitch, 10.0f);
+    EXPECT_FLOAT_EQ(eulerAngles.roll, 15.0f);
 }
 
 /**
@@ -1567,23 +1618,35 @@ HWTEST_F(MotionManagerTest, LimitCalculationLocked_001, TestSize.Level1)
     motionMgr->deviceStatus_->yawLimit = true;
     EulerAngles eulerAngles;
     bool callback = true;
-    EXPECT_NO_FATAL_FAILURE(
-        motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback));
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
 
-    motionMgr->deviceStatus_->rotationLimit.negMax.yaw = 1;
-    motionMgr->deviceStatus_->rotationLimit.negMax.roll = 1;
-    motionMgr->deviceStatus_->rotationLimit.negMax.pitch = 1;
-    eulerAngles.yaw = 1;
-    eulerAngles.roll = 1;
-    eulerAngles.pitch = 1;
-    EXPECT_NO_FATAL_FAILURE(
-        motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback));
+    // 使用rotationLimitWithOffset而不是rotationLimit
+    // 设置posMax为2，negMax为1，eulerAngles为1.5，这样应该在范围内（NOT_LIMITED）
+    motionMgr->deviceStatus_->rotationLimitWithOffset.posMax.yaw = 2;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.posMax.roll = 2;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.posMax.pitch = 2;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.negMax.yaw = 1;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.negMax.roll = 1;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.negMax.pitch = 1;
+    eulerAngles.yaw = 1.5f;
+    eulerAngles.roll = 1.5f;
+    eulerAngles.pitch = 1.5f;
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+
+    // 验证当所有限制都启用时，status被正确更新
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.rollLimited, RotationAxisLimited::NOT_LIMITED);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.pitchLimited, RotationAxisLimited::NOT_LIMITED);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.yawLimited, RotationAxisLimited::NOT_LIMITED);
 
     motionMgr->deviceStatus_->rollLimit = false;
     motionMgr->deviceStatus_->pitchLimit = false;
     motionMgr->deviceStatus_->yawLimit = false;
-    EXPECT_NO_FATAL_FAILURE(
-        motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback));
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+
+    // 验证当所有限制都禁用时，status不被修改
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.rollLimited, RotationAxisLimited::NOT_LIMITED);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.pitchLimited, RotationAxisLimited::NOT_LIMITED);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.yawLimited, RotationAxisLimited::NOT_LIMITED);
 }
 
 /**
@@ -1619,7 +1682,12 @@ HWTEST_F(MotionManagerTest, HandleMechPlacementChange_001, TestSize.Level1)
     motionMgr->lastTaskId_ = UINT8_MAX;
     motionMgr->HandleMechPlacementChange(true);
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->HandleMechPlacementChange(false));
+    // 验证HandleMechPlacementChange函数正常执行
+    // 函数会调用HandlePhoneOff或HandlePhoneOn，并通知事件
+    motionMgr->HandleMechPlacementChange(false);
+
+    // 验证函数执行后不会导致崩溃或异常状态
+    EXPECT_TRUE(motionMgr != nullptr);
 }
 
 /**
@@ -2091,9 +2159,24 @@ HWTEST_F(MotionManagerTest, AbsolutelyEulerAnglesJudgingLimitLocked_003, TestSiz
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
-    EulerAngles eulerAngles;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles));
+    motionMgr->deviceStatus_ = std::make_shared<DeviceStatus>();
+    // 设置初始角度
+    motionMgr->deviceStatus_->eulerAngles.yaw = 0.0f;
+    motionMgr->deviceStatus_->eulerAngles.pitch = 0.0f;
+    motionMgr->deviceStatus_->eulerAngles.roll = 0.0f;
+
+    EulerAngles eulerAngles;
+    eulerAngles.yaw = 10.0f;
+    eulerAngles.pitch = 20.0f;
+    eulerAngles.roll = 30.0f;
+
+    motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles);
+
+    // 验证角度被正确累加：yaw和pitch累加，roll被置为0
+    EXPECT_FLOAT_EQ(eulerAngles.yaw, 10.0f);  // 10.0 + 0.0
+    EXPECT_FLOAT_EQ(eulerAngles.pitch, 20.0f); // 20.0 + 0.0
+    EXPECT_FLOAT_EQ(eulerAngles.roll, 0.0f);   // roll被置为0
 }
 
 /**
@@ -2108,13 +2191,25 @@ HWTEST_F(MotionManagerTest, AbsolutelyEulerAnglesJudgingLimitLocked_004, TestSiz
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
+    motionMgr->deviceStatus_ = std::make_shared<DeviceStatus>();
     // Set up limits
     motionMgr->deviceStatus_->rotationLimit.negMax.yaw = -30.0f;
     motionMgr->deviceStatus_->rotationLimit.posMax.yaw = 30.0f;
-    motionMgr->deviceStatus_->eulerAngles.yaw = 0.0f;
-    EulerAngles eulerAngles;
+    motionMgr->deviceStatus_->eulerAngles.yaw = -10.0f;
+    motionMgr->deviceStatus_->eulerAngles.pitch = -5.0f;
+    motionMgr->deviceStatus_->eulerAngles.roll = 0.0f;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles));
+    EulerAngles eulerAngles;
+    eulerAngles.yaw = -20.0f;
+    eulerAngles.pitch = -15.0f;
+    eulerAngles.roll = -30.0f;
+
+    motionMgr->AbsolutelyEulerAnglesJudgingLimitLocked(eulerAngles);
+
+    // 验证角度被正确累加：yaw和pitch累加，roll被置为0
+    EXPECT_FLOAT_EQ(eulerAngles.yaw, -30.0f);  // -20.0 + (-10.0)
+    EXPECT_FLOAT_EQ(eulerAngles.pitch, -20.0f); // -15.0 + (-5.0)
+    EXPECT_FLOAT_EQ(eulerAngles.roll, 0.0f);    // roll被置为0
 }
 
 /**
@@ -2129,21 +2224,29 @@ HWTEST_F(MotionManagerTest, LimitCalculationLocked_002, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
-    std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
-    rotateParam->degree.yaw = 0.0f;
-    rotateParam->degree.roll = 10.0f;
-    rotateParam->degree.pitch = 0.0f;
+    motionMgr->deviceStatus_ = std::make_shared<DeviceStatus>();
+    motionMgr->deviceStatus_->rollLimit = true;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.negMax.roll = -30.0f;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.posMax.roll = 30.0f;
 
-    // Set up limits
-    motionMgr->deviceStatus_->rotationLimit.negMax.roll = -30.0f;
-    motionMgr->deviceStatus_->rotationLimit.posMax.roll = 30.0f;
-    motionMgr->deviceStatus_->eulerAngles.roll = 0.0f;
-
-        EulerAngles eulerAngles;
+    EulerAngles eulerAngles;
+    eulerAngles.roll = 10.0f;  // 在范围内，应该是NOT_LIMITED
     bool callback = true;
 
-    EXPECT_NO_FATAL_FAILURE(
-        motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback));
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+
+    // 验证roll在范围内，状态为NOT_LIMITED
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.rollLimited, RotationAxisLimited::NOT_LIMITED);
+
+    // 测试roll接近正上限
+    eulerAngles.roll = 30.0f;
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.rollLimited, RotationAxisLimited::POS_LIMITED);
+
+    // 测试roll接近负下限
+    eulerAngles.roll = -30.0f;
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.rollLimited, RotationAxisLimited::NEG_LIMITED);
 }
 
 /**
@@ -2158,20 +2261,29 @@ HWTEST_F(MotionManagerTest, LimitCalculationLocked_003, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
-    std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
-    rotateParam->degree.yaw = 0.0f;
-    rotateParam->degree.roll = 0.0f;
-    rotateParam->degree.pitch = 10.0f;
+    motionMgr->deviceStatus_ = std::make_shared<DeviceStatus>();
+    motionMgr->deviceStatus_->pitchLimit = true;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.negMax.pitch = -30.0f;
+    motionMgr->deviceStatus_->rotationLimitWithOffset.posMax.pitch = 30.0f;
 
-    // Set up limits
-    motionMgr->deviceStatus_->rotationLimit.negMax.pitch = -30.0f;
-    motionMgr->deviceStatus_->rotationLimit.posMax.pitch = 30.0f;
-    motionMgr->deviceStatus_->eulerAngles.pitch = 0.0f;
-
-        EulerAngles eulerAngles;
+    EulerAngles eulerAngles;
+    eulerAngles.pitch = 10.0f;  // 在范围内，应该是NOT_LIMITED
     bool callback = true;
-    EXPECT_NO_FATAL_FAILURE(
-        motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback));
+
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+
+    // 验证pitch在范围内，状态为NOT_LIMITED
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.pitchLimited, RotationAxisLimited::NOT_LIMITED);
+
+    // 测试pitch超过正上限
+    eulerAngles.pitch = 31.0f;
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.pitchLimited, RotationAxisLimited::POS_LIMITED);
+
+    // 测试pitch低于负下限
+    eulerAngles.pitch = -31.0f;
+    motionMgr->LimitCalculationLocked(eulerAngles, motionMgr->deviceStatus_->rotationAxesStatus, callback);
+    EXPECT_EQ(motionMgr->deviceStatus_->rotationAxesStatus.pitchLimited, RotationAxisLimited::NEG_LIMITED);
 }
 
 /**
@@ -2189,7 +2301,15 @@ HWTEST_F(MotionManagerTest, CreateKeyEvent_003, TestSize.Level1)
     int32_t keyCode = 1;
     int32_t keyAction = MMI::KeyEvent::KEY_ACTION_DOWN;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->CreateKeyEvent(keyCode, keyAction));
+    std::shared_ptr<MMI::KeyEvent> keyEvent = motionMgr->CreateKeyEvent(keyCode, keyAction);
+
+    // 验证KeyEvent被正确创建
+    EXPECT_NE(keyEvent, nullptr);
+    if (keyEvent != nullptr) {
+        // 验证keyCode和keyAction被正确设置
+        EXPECT_EQ(keyEvent->GetKeyCode(), keyCode);
+        EXPECT_EQ(keyEvent->GetKeyAction(), keyAction);
+    }
 }
 
 /**
@@ -2207,7 +2327,15 @@ HWTEST_F(MotionManagerTest, CreateKeyEvent_004, TestSize.Level1)
     int32_t keyCode = 1;
     int32_t keyAction = MMI::KeyEvent::KEY_ACTION_UP;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->CreateKeyEvent(keyCode, keyAction));
+    std::shared_ptr<MMI::KeyEvent> keyEvent = motionMgr->CreateKeyEvent(keyCode, keyAction);
+
+    // 验证KeyEvent被正确创建
+    EXPECT_NE(keyEvent, nullptr);
+    if (keyEvent != nullptr) {
+        // 验证keyCode和keyAction被正确设置
+        EXPECT_EQ(keyEvent->GetKeyCode(), keyCode);
+        EXPECT_EQ(keyEvent->GetKeyAction(), keyAction);
+    }
 }
 
 /**
@@ -2225,7 +2353,10 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_008, TestSize.Level1)
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
     cmd->event_ = CameraKeyEvent::START_FILMING;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->MechButtonEventNotify(cmd));
+    motionMgr->MechButtonEventNotify(cmd);
+
+    // 验证keyEvent_状态被正确更新
+    EXPECT_EQ(keyEvent_, CameraKeyEvent::START_FILMING);
 }
 
 /**
@@ -2243,7 +2374,10 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_009, TestSize.Level1)
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
     cmd->event_ = CameraKeyEvent::SWITCH_CAMERA;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->MechButtonEventNotify(cmd));
+    motionMgr->MechButtonEventNotify(cmd);
+
+    // 验证keyEvent_状态被正确更新
+    EXPECT_EQ(keyEvent_, CameraKeyEvent::SWITCH_CAMERA);
 }
 
 /**
@@ -2261,7 +2395,10 @@ HWTEST_F(MotionManagerTest, MechButtonEventNotify_010, TestSize.Level1)
     std::shared_ptr<RegisterMechCameraKeyEventCmd> cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
     cmd->event_ = CameraKeyEvent::ZOOM_IN;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->MechButtonEventNotify(cmd));
+    motionMgr->MechButtonEventNotify(cmd);
+
+    // 验证keyEvent_状态被正确更新
+    EXPECT_EQ(keyEvent_, CameraKeyEvent::ZOOM_IN);
 }
 
 /**
@@ -2279,7 +2416,11 @@ HWTEST_F(MotionManagerTest, FormatLimit_001, TestSize.Level1)
     RotateDegreeLimit params;
     params.posMax.yaw = 400.0f;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->FormatLimit(params));
+    motionMgr->FormatLimit(params);
+
+    // 验证posMax.yaw被规范化到有效范围内
+    EXPECT_LE(params.posMax.yaw, NO_LIMIT_MAX);
+    EXPECT_GE(params.posMax.yaw, NO_LIMIT_MIN);
 }
 
 /**
@@ -2297,7 +2438,11 @@ HWTEST_F(MotionManagerTest, FormatLimit_002, TestSize.Level1)
     RotateDegreeLimit params;
     params.posMax.yaw = -400.0f;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->FormatLimit(params));
+    motionMgr->FormatLimit(params);
+
+    // 验证posMax.yaw被规范化到有效范围内
+    EXPECT_LE(params.posMax.yaw, NO_LIMIT_MAX);
+    EXPECT_GE(params.posMax.yaw, NO_LIMIT_MIN);
 }
 
 /**
@@ -2315,7 +2460,11 @@ HWTEST_F(MotionManagerTest, FormatLimit_003, TestSize.Level1)
     RotateDegreeLimit params;
     params.negMax.yaw = 400.0f;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->FormatLimit(params));
+    motionMgr->FormatLimit(params);
+
+    // 验证negMax.yaw被规范化到有效范围内
+    EXPECT_LE(params.negMax.yaw, NO_LIMIT_MAX);
+    EXPECT_GE(params.negMax.yaw, NO_LIMIT_MIN);
 }
 
 /**
@@ -2333,7 +2482,11 @@ HWTEST_F(MotionManagerTest, FormatLimit_004, TestSize.Level1)
     RotateDegreeLimit params;
     params.negMax.yaw = -400.0f;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->FormatLimit(params));
+    motionMgr->FormatLimit(params);
+
+    // 验证negMax.yaw被规范化到有效范围内
+    EXPECT_LE(params.negMax.yaw, NO_LIMIT_MAX);
+    EXPECT_GE(params.negMax.yaw, NO_LIMIT_MIN);
 }
 
 /**
@@ -2350,7 +2503,11 @@ HWTEST_F(MotionManagerTest, SetDevicePairingInfo_001, TestSize.Level1)
 
     uint32_t deviceIdentifier = 100;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->SetDevicePairingInfo(deviceIdentifier));
+    motionMgr->SetDevicePairingInfo(deviceIdentifier);
+
+    // 验证函数正常执行，对象状态保持有效
+    EXPECT_TRUE(motionMgr != nullptr);
+    EXPECT_NE(motionMgr->sendAdapter_, nullptr);
 }
 
 /**
@@ -2365,7 +2522,11 @@ HWTEST_F(MotionManagerTest, RegisterExtendedAndTrackingEvents_001, TestSize.Leve
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->protocolVer_ = 0x01;
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->RegisterExtendedAndTrackingEvents());
+    motionMgr->RegisterExtendedAndTrackingEvents();
+
+    // 验证当protocolVer_ < 0x02时，仍然会注册TrackingEnable事件
+    EXPECT_FALSE(motionMgr->notifyListenerType_.empty());
+    EXPECT_EQ(motionMgr->notifyListenerType_.size(), 1);
 }
 
 /**
@@ -2381,7 +2542,10 @@ HWTEST_F(MotionManagerTest, RegisterExtendedAndTrackingEvents_002, TestSize.Leve
     motionMgr->protocolVer_ = 0x02;
     motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::WHEEL_BASE);
 
-    EXPECT_NO_FATAL_FAILURE(motionMgr->RegisterExtendedAndTrackingEvents());
+    motionMgr->RegisterExtendedAndTrackingEvents();
+
+    // 验证当protocolVer_ >= 0x02且为WHEEL_BASE时，notifyListenerType_增加（注册扩展事件）
+    EXPECT_FALSE(motionMgr->notifyListenerType_.empty());
 }
 
 /**

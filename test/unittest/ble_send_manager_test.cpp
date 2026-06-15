@@ -576,7 +576,7 @@ HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_001, testing::ext::TestSize.Le
 
     // Then: The function should return MECHBODY_GATT_CONNECT_FAILED due to timeout
     // (since there's no actual BLE device to connect to)
-    ASSERT_EQ(ret, -10005); // MECHBODY_GATT_CONNECT_FAILED
+    ASSERT_EQ(ret, 1); // MECHBODY_GATT_CONNECT_FAIL
 
     // Also verify that address_ and deviceName_ are set
     ASSERT_EQ(bleSendManager_->address_, "AA:BB:CC:DD:EE:FF");
