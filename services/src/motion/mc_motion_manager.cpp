@@ -969,7 +969,6 @@ int32_t MotionManager::Init()
         GetDeviceCapabilityInfo();
         if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE)) {
             GetWheelCapabilityInfo();
-            GetWheelMovementCapabilityInfo();
             if (isFirstConnect_) {
                 SetDevicePairingInfo(deviceIdentifier_);
             }
@@ -1152,7 +1151,6 @@ int32_t MotionManager::GetDeviceBaseInfo()
             return deviceBaseInfoReady_;
         });
         if (!ready) {
-            MechConnectManager::GetInstance().NotifyMechState(mechId_, false);
             HILOGE("GetDeviceBaseInfo timeout");
             return MECH_CONNECT_FAILED;
         }
@@ -1506,7 +1504,7 @@ void MotionManager::TrggerMechLocationReport()
 {
     std::shared_ptr<NormalSetMechLocationReportCmd> cmd =
         factory.CreateSetMechLocationReportCmd(1, MECH_LOCATION_REPORT_INTERVAL);
-    
+
     auto cmdCallback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), cmd] () {
         auto sharedThis = weakThis.lock();
         if (!sharedThis) {
@@ -1516,11 +1514,11 @@ void MotionManager::TrggerMechLocationReport()
         sharedThis->DfxGetSendCmdInfo(cmd->GetCmdType(), cmd->GetResult());
     };
     cmd->SetResponseCallback(cmdCallback);
- 
+
     cmd->SetTimeoutCallback([] () {
         HILOGE("NormalSetMechLocationReportCmd timeout");
     });
- 
+
     sendAdapter_->SendCommand(cmd);
 }
 
