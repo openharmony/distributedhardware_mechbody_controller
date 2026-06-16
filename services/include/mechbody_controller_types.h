@@ -858,7 +858,6 @@ struct DeviceBaseInfo {
     std::string realName;
 };
 
-
 struct DeviceCapabilityInfo {
     uint8_t centerAble;
     uint8_t switchAble;
@@ -873,7 +872,7 @@ struct DeviceCapabilityInfo {
     uint8_t pitchable;
     float yawmaxspeed;
     float rollmaxspeed;
-    float pitchmaxspeed; 
+    float pitchmaxspeed;
     uint16_t maxturntime;
 };
 
