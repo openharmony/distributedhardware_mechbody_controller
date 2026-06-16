@@ -35,7 +35,6 @@
 #include "iservice_registry.h"
 #include "string_wrapper.h"
 #include "int_wrapper.h"
-#include "notification_utils.h"
 #include "application_state_observer_stub.h"
 #include "../dotReport/hisysevent_utils.h"
 
@@ -211,6 +210,8 @@ private:
     std::shared_ptr<CommandBase> ExecuteRotateCommand(const RotateParam &param, uint8_t taskId);
     std::shared_ptr<CommonSetMechRotationBySpeedCmd> CreateAndSendRotateBySpeedCommand(
         std::shared_ptr<RotateBySpeedParam> rotateSpeedParam, uint8_t responseTaskId);
+    void DoActionSendAndTimeout(std::shared_ptr<WheelSetMechSceneControlCmd> sceneControlCmd,
+        uint8_t taskId, bool needRestoreTracking);
     std::shared_ptr<CommandBase> CreateDoActionCommand(ActionType actionType);
     void RegisterDoActionCallback(uint8_t taskId, uint32_t tokenId, std::string &napiCmdId,
         ActionType actionType, std::shared_ptr<CommandBase> command, bool needRestoreTracking);
