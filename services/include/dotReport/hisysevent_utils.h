@@ -22,6 +22,8 @@
 namespace OHOS {
 namespace MechBodyController {
 
+uint64_t GetTimeStampMs();
+
 struct MechKitStartReportInfo {
     // Connection method: -1-Unknown, 0-Bluetooth connection, 1-NFC connection;
 	// currently unknown
