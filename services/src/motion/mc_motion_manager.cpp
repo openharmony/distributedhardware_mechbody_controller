@@ -336,7 +336,6 @@ void MotionManager::MechParamNotify(const std::shared_ptr<CommonRegisterMechStat
     MechBodyControllerService::GetInstance().OnRotationAxesStatusChange(mechId_, status);
 }
 
-
 void MotionManager::MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd)
 {
     HILOGD("Received generic param change event.");
@@ -1488,6 +1487,21 @@ void MotionManager::UnRegisterNotifyEvent()
     mechEventListener_ = nullptr;
 }
 
+RotateToLocationParam GenerateRotateToLocationParam(const RotateParam &param)
+{
+    RotateToLocationParam rotateToLocationParam;
+    rotateToLocationParam.yawRadian = param.degree.yaw;
+    rotateToLocationParam.rollRadian = param.degree.roll;
+    rotateToLocationParam.pitchRadian = param.degree.pitch;
+    rotateToLocationParam.rotateTime = param.duration;
+    if (param.isRelative) {
+        rotateToLocationParam.rotateMap = 0b00010111;
+    } else {
+        rotateToLocationParam.rotateMap = 0b00010111;
+    }
+    return rotateToLocationParam;
+}
+
 void MotionManager::TrggerMechLocationReport()
 {
     std::shared_ptr<NormalSetMechLocationReportCmd> cmd =
@@ -1508,41 +1522,6 @@ void MotionManager::TrggerMechLocationReport()
     });
  
     sendAdapter_->SendCommand(cmd);
-}
-
-RotateToLocationParam GenerateRotateToLocationParam(const RotateParam &param)
-{
-    RotateToLocationParam rotateToLocationParam;
-    rotateToLocationParam.yawRadian = param.degree.yaw;
-    rotateToLocationParam.rollRadian = param.degree.roll;
-    rotateToLocationParam.pitchRadian = param.degree.pitch;
-    rotateToLocationParam.rotateTime = param.duration;
-    if (param.isRelative) {
-        rotateToLocationParam.rotateMap = 0b00010111;
-    } else {
-        rotateToLocationParam.rotateMap = 0b00010111;
-    }
-    return rotateToLocationParam;
-}
-
-void MotionManager::TrggerMechLocationReport() 
-{
-    std::shared_ptr<NormalSetMechLocationReportCmd> cmd = 
-        factory.CreateSetMechLocationReportCmd(1, MECH_LOCATION_REPORT_INTERVAL); 
-
-
-    auto cmdCallback = [cmd] () { 
-        HILOGI("NormalSetMechLocationReportCmd callback %{public}u", cmd->GetResult()); 
-    }; 
-    cmd->SetResponseCallback(cmdCallback); 
-
-
-    cmd->SetTimeoutCallback([] () { 
-        HILOGE("NormalSetMechLocationReportCmd timeout"); 
-    }); 
-
-
-    sendAdapter_->SendCommand(cmd); 
 }
 
 int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
@@ -2582,8 +2561,8 @@ int32_t MotionManager::StopRotate(uint32_t &tokenId, std::string &napiCmdId)
             std::shared_ptr<CommandBase> motionWheelCmd =
                 factory.CreateWheelSetMechMotionControlCmd(ControlCommand::STOP);
             CHECK_POINTER_RETURN_VALUE(motionWheelCmd, INVALID_PARAMETERS_ERR, "Wheel StopCmd is empty.");
-            sendAdapter_->SendCommand(motionWheelCmd); 
-         }
+            sendAdapter_->SendCommand(motionWheelCmd);
+        }
         MechBodyControllerService::GetInstance().NotifyOperationResult(tokenId, napiCmdId, ExecResult::COMPLETED);
     }
     HILOGI("Stop rotate end.");
@@ -3134,7 +3113,7 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
         newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, newForegroundInfo.duration);
 }
-
+ 
 void MotionManager::UpdateEndtimeAndCompute()
 {
     std::lock_guard<std::mutex> lock(appForegroundInfoMutex_);
