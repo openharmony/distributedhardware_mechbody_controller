@@ -63,7 +63,6 @@ const std::string AILIFESVC_BUNDLE_NAME = "com.example.hmos.ailifesvc";
 const std::string DEVICE_CONNECT_ABILITY_NAME = "OneHopDeviceAbility";
 constexpr int32_t ABILITY_STATE_BACKGROUND = 4;
 constexpr int32_t DO_ACTION_TIME_USED = 500; //ms
-constexpr int32_t DO_ACTION_TIME_USED = 500; // ms
 constexpr uint8_t MECH_LOCATION_REPORT_INTERVAL = 30;
 constexpr int32_t MS_CONVERSION = 1000;
 constexpr int32_t CM_CONVERSION = 10;
@@ -123,28 +122,28 @@ const std::vector<RotateParam> HEAD_SHAKE_TWICE_ACTIONS = {
 ExecResult MotionManager::MapDeviceErrorCodeToExecResult(uint16_t cmdType, uint8_t deviceErrorCode)
 {
     DfxGetSendCmdInfo(cmdType, deviceErrorCode);
-    switch (deviceErrorCode) { 
-         case CODENUM_0: // MACHANIC_SUCCESS 
-             return ExecResult::COMPLETED; 
-         case CODENUM_1: // MACHANIC_PARA_ERROR 
-             return ExecResult::SYSTEM_ERROR; 
-         case CODENUM_2: // MACHANIC_EXE_ERROR 
-             return ExecResult::SYSTEM_ERROR; 
-         case CODENUM_3: // MACHANIC_LIMITED 
-             return ExecResult::LIMITED; 
-         case CODENUM_4: // MACHANIC_EXE_TIMEOUT 
-             return ExecResult::TIMEOUT; 
-         case CODENUM_5: // MACHANIC_EXE_INTERRUPTED 
-             return ExecResult::INTERRUPTED; 
-         case CODENUM_6: // MACHANIC_ERR_CLIFF 
-             return ExecResult::TERMINATE_CLIFF; 
-         case CODENUM_7: // MACHANIC_ERR_OBSTACLE 
-             return ExecResult::TERMINATE_OBSTACLE; 
-         case CODENUM_100: // MACHANIC_OTHER_ERR 
-             return ExecResult::SYSTEM_ERROR; 
-         default: 
-             return ExecResult::SYSTEM_ERROR; 
-     }
+    switch (deviceErrorCode) {
+        case CODENUM_0: // MACHANIC_SUCCESS
+            return ExecResult::COMPLETED;
+        case CODENUM_1: // MACHANIC_PARA_ERROR
+            return ExecResult::SYSTEM_ERROR;
+        case CODENUM_2: // MACHANIC_EXE_ERROR
+            return ExecResult::SYSTEM_ERROR;
+        case CODENUM_3: // MACHANIC_LIMITED
+            return ExecResult::LIMITED;
+        case CODENUM_4: // MACHANIC_EXE_TIMEOUT
+            return ExecResult::TIMEOUT;
+        case CODENUM_5: // MACHANIC_EXE_INTERRUPTED
+            return ExecResult::INTERRUPTED;
+        case CODENUM_6: // MACHANIC_ERR_CLIFF
+            return ExecResult::TERMINATE_CLIFF;
+        case CODENUM_7: // MACHANIC_ERR_OBSTACLE
+            return ExecResult::TERMINATE_OBSTACLE;
+        case CODENUM_100: // MACHANIC_OTHER_ERR
+            return ExecResult::SYSTEM_ERROR;
+        default:
+            return ExecResult::SYSTEM_ERROR;
+    }
 }
 
 template<typename T>
