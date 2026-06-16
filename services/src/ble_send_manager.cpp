@@ -717,7 +717,6 @@ void BleSendManager::ConnectMechbodyInternal(std::string mac, std::string device
         }
     }
 
-    HILOGI("MECHBODY_EXEC_CONNECT async connect start, mech info for: %{public}s", mechInfo.ToString().c_str());
     if (mechInfo.gattCoonectState) {
         HILOGE("MECHBODY_EXEC_CONNECT mech has connected: %{public}s", GetAnonymStr(mechInfo.mac).c_str());
         return;
