@@ -29,7 +29,6 @@
 #include "tokenid_kit.h"
 #include "ipc_skeleton.h"
 #include "hisysevent_utils.h"
-#include "notification_utils.h"
 
 using namespace OHOS::Security;
 using namespace OHOS::Security::AccessToken;
@@ -167,13 +166,6 @@ int32_t MechBodyControllerService::OnAttachStateChange(const AttachmentState &at
                                                        const MechInfo &mechInfo)
 {
     HILOGI("start");
-    if (attachmentState == AttachmentState::ATTACHED) {
-        NotificationUtils::isTrackingEnabled_ = true;
-        NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
-    } else if (attachmentState == AttachmentState::DETACHED) {
-        NotificationUtils::CancelNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
-    }
-
     std::lock_guard<std::mutex> lock(deviceAttachCallbackMutex);
     for (const auto &item: deviceAttachCallback_) {
         uint32_t tokenId = item.first;
@@ -221,8 +213,6 @@ int32_t MechBodyControllerService::OnAttachStateChange(const AttachmentState &at
 int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operation> &operation,
                                                     const std::string &mac, const std::string &param)
 {
-    g_connectStartTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now()).time_since_epoch().count());
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start,tokenId: %{public}s; user operation: %{public}d; mac: %{public}s;",
            GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(*operation),
@@ -263,6 +253,8 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
         }
     }
     cJSON_Delete(rootValue);
+    g_connectStartTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now()).time_since_epoch().count());
     BleSendManager::GetInstance().MechbodyConnect(mac, deviceName, deviceIdentifier);
     return ERR_OK;
 }
