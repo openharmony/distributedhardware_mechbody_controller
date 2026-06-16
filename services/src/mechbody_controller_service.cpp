@@ -375,16 +375,16 @@ void MechBodyControllerService::JudgeAppEnableSwitchAndReportFocustrackingStartE
     }
 }
 
-int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled, bool isCapsuleSet)
+int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
 
-    HILOGI("start, tokenId: %{public}s; isEnabled: %{public}s; isCapsuleSet: %{public}s",
+    HILOGI("start, tokenId: %{public}s; isEnabled: %{public}s;",
         GetAnonymUint32(tokenId).c_str(),
-        isEnabled ? "true" : "false", isCapsuleSet ? "true" : "false");
+        isEnabled ? "true" : "false");
 
     int32_t ret = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERMISSION_NAME);
-    if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED || isCapsuleSet) {
+    if (ret == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
         HILOGI("Has permission.");
         {
             std::lock_guard<std::mutex> lock(motionManagersMutex);
@@ -451,7 +451,7 @@ int32_t MechBodyControllerService::NotifyMechEvent(const int32_t &mechId, const 
                 HILOGE("Write interface token failed");
                 return SEND_CALLBACK_INFO_FAILED;
             }
-    
+
             if (!data.WriteInt32(static_cast<int32_t>(mechId))) {
                 HILOGE("Write result failed");
                 return SEND_CALLBACK_INFO_FAILED;
@@ -1127,7 +1127,7 @@ int32_t MechBodyControllerService::Move(const int32_t &mechId, std::string &cmdI
     }
     HILOGI("start, tokenId: %{public}s; mechId: %{public}d; moveParams: %{public}s",
         GetAnonymUint32(tokenId).c_str(), mechId, moveParams->ToString().c_str());
-    
+
     std::lock_guard<std::mutex> lock(motionManagersMutex);
     if (motionManagers_.empty()) {
         return DEVICE_NOT_CONNECTED;
@@ -1169,7 +1169,7 @@ int32_t MechBodyControllerService::MoveBySpeed(const int32_t &mechId, std::strin
     }
     HILOGI("start, tokenId: %{public}s; mechId: %{public}d; duration: %{public}d moveParams: %{public}s",
         GetAnonymUint32(tokenId).c_str(), mechId, duration, speedParams->ToString().c_str());
-    
+
     std::lock_guard<std::mutex> lock(motionManagersMutex);
     if (motionManagers_.empty()) {
         return DEVICE_NOT_CONNECTED;
@@ -1207,7 +1207,7 @@ int32_t MechBodyControllerService::TurnBySpeed(const int32_t &mechId, std::strin
     }
     HILOGI("start, tokenId: %{public}s; mechId: %{public}d; duration: %{public}d, angleSpeed: %{public}s",
         GetAnonymUint32(tokenId).c_str(), mechId, duration, std::to_string(angleSpeed).c_str());
-    
+
     std::lock_guard<std::mutex> lock(motionManagersMutex);
     if (motionManagers_.empty()) {
         return DEVICE_NOT_CONNECTED;
@@ -1272,10 +1272,10 @@ int32_t MechBodyControllerService::DoAction(const int32_t &mechId, std::string &
         HILOGE("Invalid mech id");
         return INVALID_MECH_ID;
     }
- 
+
     HILOGI("start, tokenId: %{public}s; mechId: %{public}d; actionType: %{public}d",
         GetAnonymUint32(tokenId).c_str(), mechId, static_cast<uint32_t>(actionType));
-    
+
     std::lock_guard<std::mutex> lock(motionManagersMutex);
     if (motionManagers_.empty()) {
         return DEVICE_NOT_CONNECTED;
@@ -1308,7 +1308,7 @@ int32_t MechBodyControllerService::SubscribeCallback(sptr <IRemoteObject> &callb
     }
     HILOGI("start, tokenId: %{public}s; mechEventType: %{public}d;",
         GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(mechEventType));
-    
+
     sptr <MechControllerIpcDeathListener> diedListener = new MechControllerIpcDeathListener();
     diedListener->tokenId_ = tokenId;
     diedListener->objectType_ = RemoteObjectType::SUBSCRIBE_CALLBACK;
