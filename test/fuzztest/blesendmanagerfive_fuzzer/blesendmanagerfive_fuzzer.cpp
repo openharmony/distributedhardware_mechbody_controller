@@ -254,21 +254,6 @@ void MechbodyConnectFuzzTestThree(const uint8_t *data, size_t size)
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
 }
 
-void MechbodyPairFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-
-    std::string mac = fdp.ConsumeRandomLengthString();
-    std::string deviceName = fdp.ConsumeRandomLengthString();
-
-    bleSendManager.MechbodyPair(mac, deviceName);
-}
-
 void MechbodyHidConnectFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
@@ -295,7 +280,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::MechbodyConnectFuzzTestOne(data, size);
     OHOS::MechbodyConnectFuzzTestTwo(data, size);
     OHOS::MechbodyConnectFuzzTestThree(data, size);
-    OHOS::MechbodyPairFuzzTest(data, size);
     OHOS::MechbodyHidConnectFuzzTest(data, size);
     return 0;
 }

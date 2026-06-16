@@ -54,70 +54,6 @@ void GetMechStateFuzzTest(const uint8_t *data, size_t size)
     MechConnectManager::GetInstance().GetMechState(mechId);
 }
 
-void AddDeviceChangeListenerFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-
-    MechConnectManager::GetInstance().Init();
-
-    // Test null listener
-    std::shared_ptr<IMechConnectListener> nullListener = nullptr;
-    MechConnectManager::GetInstance().AddDeviceChangeListener(nullListener);
-
-    // Test valid listener
-    auto listener = std::make_shared<MockMechConnectListener>();
-    MechConnectManager::GetInstance().AddDeviceChangeListener(listener);
-
-    // Test duplicate listener (same shared_ptr)
-    MechConnectManager::GetInstance().AddDeviceChangeListener(listener);
-
-    // Test another valid listener
-    auto listener2 = std::make_shared<MockMechConnectListener>();
-    MechConnectManager::GetInstance().AddDeviceChangeListener(listener2);
-
-    MechConnectManager::GetInstance().UnInit();
-}
-
-void RemoveDeviceChangeListenerFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-
-    MechConnectManager::GetInstance().Init();
-
-    // Test null listener
-    std::shared_ptr<IMechConnectListener> nullListener = nullptr;
-    MechConnectManager::GetInstance().RemoveDeviceChangeListener(nullListener);
-
-    // Test removing non-existent listener
-    auto listener1 = std::make_shared<MockMechConnectListener>();
-    MechConnectManager::GetInstance().RemoveDeviceChangeListener(listener1);
-
-    // Test removing existing listener
-    auto listener2 = std::make_shared<MockMechConnectListener>();
-    MechConnectManager::GetInstance().AddDeviceChangeListener(listener2);
-    MechConnectManager::GetInstance().RemoveDeviceChangeListener(listener2);
-
-    // Test removing from non-empty set
-    auto listener3 = std::make_shared<MockMechConnectListener>();
-    auto listener4 = std::make_shared<MockMechConnectListener>();
-    MechConnectManager::GetInstance().AddDeviceChangeListener(listener3);
-    MechConnectManager::GetInstance().AddDeviceChangeListener(listener4);
-    MechConnectManager::GetInstance().RemoveDeviceChangeListener(listener3);
-
-    // Test removing last listener
-    MechConnectManager::GetInstance().RemoveDeviceChangeListener(listener4);
-
-    MechConnectManager::GetInstance().UnInit();
-}
-
 void GetMechInfosFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
@@ -125,11 +61,31 @@ void GetMechInfosFuzzTest(const uint8_t *data, size_t size)
     }
 
     FuzzedDataProvider fdp(data, size);
+    MechConnectManager::GetInstance().Init();
     uint32_t getCount = fdp.ConsumeIntegralInRange<uint32_t>(MIN_CLEAN_COUNT, MAX_CLEAN_COUNT);
     for (uint32_t i = 0; i < getCount; i++) {
         const std::set<MechInfo>& mechInfos = MechConnectManager::GetInstance().GetMechInfos();
         (void)mechInfos;
     }
+    // Test null listener
+    std::shared_ptr<IMechConnectListener> nullListener = nullptr;
+    MechConnectManager::GetInstance().AddDeviceChangeListener(nullListener);
+    MechConnectManager::GetInstance().RemoveDeviceChangeListener(nullListener);
+
+    // Test valid listener
+    auto listener = std::make_shared<MockMechConnectListener>();
+    MechConnectManager::GetInstance().AddDeviceChangeListener(listener);
+
+    // Test duplicate listener (same shared_ptr)
+    MechConnectManager::GetInstance().AddDeviceChangeListener(listener);
+    MechConnectManager::GetInstance().RemoveDeviceChangeListener(listener);
+
+    // Test another valid listener
+    auto listener2 = std::make_shared<MockMechConnectListener>();
+    MechConnectManager::GetInstance().AddDeviceChangeListener(listener2);
+    MechConnectManager::GetInstance().RemoveDeviceChangeListener(listener2);
+
+    MechConnectManager::GetInstance().UnInit();
 }
 
 void NotifyMechConnectFuzzTest(const uint8_t *data, size_t size)
@@ -247,8 +203,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::GetMechStateFuzzTest(data, size);
-    OHOS::AddDeviceChangeListenerFuzzTest(data, size);
-    OHOS::RemoveDeviceChangeListenerFuzzTest(data, size);
     OHOS::GetMechInfosFuzzTest(data, size);
     OHOS::NotifyMechConnectFuzzTest(data, size);
     OHOS::SetMechTypeFuzzTest(data, size);

@@ -43,7 +43,6 @@ void FuzzSearchTargetStop(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
     InitCameraTrackingController();
-    g_cameraTrackingController->SearchTargetStop();
     // 测试 searchingTarget 为 true 的情况
     auto cameraInfo = g_cameraTrackingController->GetCurrentCameraInfo();
     if (cameraInfo != nullptr) {

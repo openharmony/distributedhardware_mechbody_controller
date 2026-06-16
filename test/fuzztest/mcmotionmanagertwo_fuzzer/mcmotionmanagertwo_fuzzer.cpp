@@ -76,7 +76,8 @@ void FuzzMechExecutionResultNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    std::shared_ptr<RegisterMechControlResultCmd> cmdNull = nullptr;
+    listener->MechExecutionResultNotify(cmdNull);
     auto cmd = std::make_shared<RegisterMechControlResultCmd>();
     auto data = std::make_shared<MechDataBuffer>(3);
     if (data != nullptr) {
@@ -88,14 +89,6 @@ void FuzzMechExecutionResultNotify(FuzzedDataProvider &provider)
         cmd->Unmarshal(data);
         listener->MechExecutionResultNotify(cmd);
     }
-}
-
-void FuzzMechExecutionResultNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechControlResultCmd> cmd = nullptr;
-    listener->MechExecutionResultNotify(cmd);
 }
 
 void FuzzMechExecutionResultNotifyWithCompleted(FuzzedDataProvider &provider)
@@ -118,7 +111,8 @@ void FuzzMechWheelZoomNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    std::shared_ptr<RegisterMechWheelDataCmd> cmdNull = nullptr;
+    listener->MechWheelZoomNotify(cmdNull);
     auto cmd = std::make_shared<RegisterMechWheelDataCmd>();
     auto data = std::make_shared<MechDataBuffer>(5);
     if (data != nullptr) {
@@ -131,14 +125,6 @@ void FuzzMechWheelZoomNotify(FuzzedDataProvider &provider)
         cmd->Unmarshal(data);
         listener->MechWheelZoomNotify(cmd);
     }
-}
-
-void FuzzMechWheelZoomNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechWheelDataCmd> cmd = nullptr;
-    listener->MechWheelZoomNotify(cmd);
 }
 
 void FuzzMechWheelZoomNotifyWithZeroDegree(FuzzedDataProvider &provider)
@@ -161,7 +147,8 @@ void FuzzMechTrackingStatusNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    std::shared_ptr<RegisterMechTrackingEnableCmd> cmdNull = nullptr;
+    listener->MechTrackingStatusNotify(cmdNull);
     auto cmd = std::make_shared<RegisterMechTrackingEnableCmd>();
     auto data = std::make_shared<MechDataBuffer>(2);
     if (data != nullptr) {
@@ -171,14 +158,6 @@ void FuzzMechTrackingStatusNotify(FuzzedDataProvider &provider)
         cmd->Unmarshal(data);
         listener->MechTrackingStatusNotify(cmd);
     }
-}
-
-void FuzzMechTrackingStatusNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechTrackingEnableCmd> cmd = nullptr;
-    listener->MechTrackingStatusNotify(cmd);
 }
 
 void FuzzMechTrackingStatusNotifyWithEnabled(FuzzedDataProvider &provider)
@@ -202,13 +181,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
     FuzzMechExecutionResultNotify(provider);
-    FuzzMechExecutionResultNotifyWithNull(provider);
     FuzzMechExecutionResultNotifyWithCompleted(provider);
     FuzzMechWheelZoomNotify(provider);
-    FuzzMechWheelZoomNotifyWithNull(provider);
     FuzzMechWheelZoomNotifyWithZeroDegree(provider);
     FuzzMechTrackingStatusNotify(provider);
-    FuzzMechTrackingStatusNotifyWithNull(provider);
     FuzzMechTrackingStatusNotifyWithEnabled(provider);
     return 0;
 }

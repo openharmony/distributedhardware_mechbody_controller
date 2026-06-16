@@ -60,7 +60,9 @@ void InitMotionManager()
     if (g_motionManager == nullptr) {
         g_mockAdapter = std::make_shared<MockTransportSendAdapter>();
         g_motionManager = std::make_shared<MotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
-
+        g_motionManager->Init();
+        g_motionManager->RegisterAbilityStateChangeListener();
+        g_motionManager->UnRegisterAbilityStateChangeListener();
         MechInfo testMech;
         testMech.mechId = TEST_MECH_ID;
         testMech.mechType = MechType::PORTABLE_GIMBAL;
@@ -72,17 +74,16 @@ void InitMotionManager()
     }
 }
 
-void FuzzMechTrackingStatusNotifyWithDisabled(const uint8_t *data, size_t size)
+void FuzzMechTrackingStatusNotifyWithDisabled(const std::shared_ptr<MechEventListenerImpl> &listener,
+                                              FuzzedDataProvider &provider)
 {
-    FuzzedDataProvider provider(data, size);
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
     auto cmd = std::make_shared<RegisterMechTrackingEnableCmd>();
     auto responseData = std::make_shared<MechDataBuffer>(2);
+    auto isEnabled = provider.ConsumeBool();
     if (responseData != nullptr) {
         responseData->AppendUint8(0x00);
         responseData->AppendUint8(0x00);
+        responseData->AppendUint8(isEnabled);
         cmd->Unmarshal(responseData);
         listener->MechTrackingStatusNotify(cmd);
     }
@@ -212,7 +213,7 @@ void FuzzAllNotifyMethods(const uint8_t *data, size_t size)
     FuzzedDataProvider provider(data, size);
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    FuzzMechTrackingStatusNotifyWithDisabled(listener, provider);
     FuzzAttitudeNotify(listener);
     FuzzButtonEventNotify(listener);
     FuzzParamNotify(listener);
@@ -228,7 +229,6 @@ void FuzzAllNotifyMethods(const uint8_t *data, size_t size)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzMechTrackingStatusNotifyWithDisabled(data, size);
     FuzzAllNotifyMethods(data, size);
     return 0;
 }
