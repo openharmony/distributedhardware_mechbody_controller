@@ -34,6 +34,7 @@
 using namespace OHOS::Security;
 using namespace OHOS::Security::AccessToken;
 
+uint64_t g_connectStartTime = 0;
 namespace OHOS {
 namespace MechBodyController {
 namespace {
@@ -260,6 +261,8 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
         }
     }
     cJSON_Delete(rootValue);
+    g_connectStartTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now()).time_since_epoch().count());
     BleSendManager::GetInstance().MechbodyConnect(mac, deviceName, deviceIdentifier);
     return ERR_OK;
 }
@@ -278,8 +281,17 @@ int32_t MechBodyControllerService::OnDeviceConnected(
         std::shared_ptr<MotionManager> manager =
             std::make_shared<MotionManager>(sendAdapter_, mechId, isFirstConnect, deviceIdentifier);
         int32_t result = manager->Init();
+        MechkitControlInfo controlInfo = {0};
         if (result == MECH_CONNECT_FAILED) {
+            controlInfo.connectCode = static_cast<uint32_t>(MECH_CONNECT_FAILED);
+            HisyseventUtils::DoReportMechkitControlStatisticEvent(controlInfo);
             return MECH_CONNECT_FAILED;
+        }
+        uint64_t succConnectTime = static_cast<uint64_t>(std::chrono::time_point_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now()).time_since_epoch().count());
+        if (succConnectTime > g_connectStartTime) {
+            uint32_t delayTime = static_cast<uint32_t>(succConnectTime - g_connectStartTime);
+            manager->SetDfxConnectDelay(delayTime);
         }
         manager->RegisterEventListener();
         manager->RegisterAbilityStateChangeListener();

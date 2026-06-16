@@ -937,6 +937,11 @@ struct ObstacleInfo {
     uint8_t detailLenth;
     std::vector<ExtraDetail> details;
 };
+
+struct SendCmdInfo {
+    uint16_t cmdWord;
+    uint16_t errorCode;
+};
 }  // namespace MechBodyController
 }  // namespace OHOS
 #endif  // MECHBODY_CONTROLLER_MECHBODY_CONTROLLER_TYPES_H

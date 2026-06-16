@@ -150,6 +150,7 @@ public:
     int32_t GetMechId() const;
     uint64_t GetStrackingTime();
     MechkitControlInfo GetDfxInfo();
+    void SetDfxConnectDelay(uint32_t delayTime);
     void UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appStateData);
     void UpdateEndtimeAndCompute();
 
@@ -229,7 +230,9 @@ private:
     void MechkitIntelligentInfoReport(const CameraInfoParams &mechCameraInfo);
     void InitDfxInfo();
     void GetDfxDeviceTypeInfo();
-
+    void DfxGetSendCmdInfo(uint16_t cmdType, uint8_t result);
+    ExecResult MapDeviceErrorCodeToExecResult(uint16_t cmdType, uint8_t deviceErrorCode);
+    void UpdateSendCmdInfoToDfx();
 private:
     std::shared_ptr<DeviceStatus> deviceStatus_;
     std::mutex deviceStatusMutex_;
@@ -285,6 +288,7 @@ private:
     std::mutex appForegroundInfoMutex_;
     uint64_t trackingTime_ = 0;
     MechkitControlInfo controlInfo_ = {0};
+    std::vector<SendCmdInfo> sendCmdInfo_;
 };
 
 class MechEventListenerImpl : public IMechEventListener {

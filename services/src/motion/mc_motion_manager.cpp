@@ -71,6 +71,7 @@ constexpr size_t MAX_DFX_APP_NUM = 5;
 constexpr int32_t APP_STATE_FOREGROUND = 2;
 constexpr int32_t APP_STATE_BACKGROUND = 4;
 constexpr int32_t APP_STATE_TERMINATED = 5;
+constexpr int32_t CMD_WORD_NUM = 4;
 const std::string SCENEBOARD_BUNDLE_NAME = "com.ohos.sceneboard";
 
 const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
@@ -95,8 +96,32 @@ std::map<SpeedGear, float> ANGLE_SPEED_MAP = {
  
 constexpr float ANGLE_SPEED_DEFAULT = 50.0;
 
-static ExecResult MapDeviceErrorCodeToExecResult(uint8_t deviceErrorCode)
+const std::vector<RotateParam> NOD_ACTIONS = {
+    {{0.0f, 0.0f, -0.02f}, 100, false},
+    {{0.0f, 0.0f, 0.2f}, 600, false},
+    {{0.0f, 0.0f, 0.0f}, 500, false}
+};
+
+const std::vector<RotateParam> NOD_TWICE_ACTIONS = {
+    {{0.0f, 0.0f, -0.02f}, 100, false},
+    {{0.0f, 0.0f, 0.2f}, 600, false},
+    {{0.0f, 0.0f, -0.02f}, 700, false},
+    {{0.0f, 0.0f, 0.2f}, 600, false},
+    {{0.0f, 0.0f, 0.0f}, 500, false}
+};
+
+const std::vector<RotateParam> HEAD_SHAKE_TWICE_ACTIONS = {
+    {{-1.04f, 0.0f, 0.0f}, 400, false},
+    {{1.04f, 0.0f, 0.0f}, 800, false},
+    {{-1.04f, 0.0f, 0.0f}, 800, false},
+    {{1.04f, 0.0f, 0.0f}, 800, false},
+    {{0.0f, 0.0f, 0.0f}, 400, false}
+};
+}
+
+ExecResult MotionManager::MapDeviceErrorCodeToExecResult(uint16_t cmdType, uint8_t deviceErrorCode)
 {
+    DfxGetSendCmdInfo(cmdType, deviceErrorCode);
     switch (deviceErrorCode) {
         case CODENUM_0: // MACHANIC_SUCCESS
             return ExecResult::COMPLETED;
@@ -119,29 +144,6 @@ static ExecResult MapDeviceErrorCodeToExecResult(uint8_t deviceErrorCode)
         default:
             return ExecResult::SYSTEM_ERROR;
     }
-}
-
-const std::vector<RotateParam> NOD_ACTIONS = {
-    {{0.0f, 0.0f, -0.02f}, 100, false},
-    {{0.0f, 0.0f, 0.2f}, 600, false},
-    {{0.0f, 0.0f, 0.0f}, 500, false}
-};
-
-const std::vector<RotateParam> NOD_TWICE_ACTIONS = {
-    {{0.0f, 0.0f, -0.02f}, 100, false},
-    {{0.0f, 0.0f, 0.2f}, 600, false},
-    {{0.0f, 0.0f, -0.02f}, 700, false},
-    {{0.0f, 0.0f, 0.2f}, 600, false},
-    {{0.0f, 0.0f, 0.0f}, 500, false}
-};
-
-const std::vector<RotateParam> HEAD_SHAKE_TWICE_ACTIONS = {
-    {{-1.04f, 0.0f, 0.0f}, 400, false},
-    {{1.04f, 0.0f, 0.0f}, 800, false},
-    {{-1.04f, 0.0f, 0.0f}, 800, false},
-    {{1.04f, 0.0f, 0.0f}, 800, false},
-    {{0.0f, 0.0f, 0.0f}, 400, false}
-};
 }
 
 template<typename T>
@@ -332,6 +334,7 @@ void MotionManager::MechParamNotify(const std::shared_ptr<CommonRegisterMechStat
     HILOGI("notify");
     MechBodyControllerService::GetInstance().OnRotationAxesStatusChange(mechId_, status);
 }
+
 void MotionManager::MechGenericEventNotify(const std::shared_ptr<NormalRegisterMechGenericEventCmd>& cmd)
 {
     HILOGD("Received generic param change event.");
@@ -405,6 +408,7 @@ void MotionManager::HandlePhoneOff(bool isPhoneOn)
             return;
         }
         uint8_t result = hidCmd->GetResult();
+        sharedThis->DfxGetSendCmdInfo(hidCmd->GetCmdType(), result);
         HILOGI("SetMechHidPreemptiveCmd result: %{public}u.", result);
         MechConnectManager::GetInstance().NotifyMechState(sharedThis->mechId_, isPhoneOn);
     };
@@ -828,6 +832,45 @@ MotionManager::MotionManager(const std::shared_ptr<TransportSendAdapter> sendAda
     HILOGI("MotionManager end.");
 }
 
+void MotionManager::DfxGetSendCmdInfo(uint16_t cmdType, uint8_t result)
+{
+    HILOGI("enter");
+    if (result != 0) {
+        bool cmdWordExists = false;
+        for (const auto& cmdInfo : sendCmdInfo_) {
+            if (cmdInfo.cmdWord == cmdType) {
+                cmdWordExists = true;
+                break;
+            }
+        }
+        if (!cmdWordExists) {
+            SendCmdInfo info;
+            info.cmdWord = cmdType;
+            info.errorCode = result;
+            sendCmdInfo_.push_back(info);
+        }
+    }
+}
+
+void MotionManager::UpdateSendCmdInfoToDfx()
+{
+    size_t topCount = std::min(sendCmdInfo_.size(), static_cast<size_t>(CMD_WORD_NUM));
+
+    for (size_t i = 0; i < topCount; ++i) {
+        controlInfo_.cmdWord.push_back(sendCmdInfo_[i].cmdWord);
+        controlInfo_.errorCode.push_back(sendCmdInfo_[i].errorCode);
+    }
+    SendCmdInfo cmdInfo;
+    if (sendCmdInfo_.size() > CMD_WORD_NUM) {
+        cmdInfo.cmdWord = 0;
+        cmdInfo.errorCode = static_cast<uint16_t>(sendCmdInfo_.size());
+        controlInfo_.cmdWord.push_back(cmdInfo.cmdWord);
+        controlInfo_.errorCode.push_back(cmdInfo.errorCode);
+    }
+    // 清空set中的数据
+    sendCmdInfo_.clear();
+}
+
 void MotionManager::InitDfxInfo()
 {
     HILOGI("InitDfxInfo start.");
@@ -849,14 +892,17 @@ void MotionManager::InitDfxInfo()
         controlInfo_.failNumber = 0;
         controlInfo_.deviceType = 0;
         controlInfo_.stickNum = 0;
- 
-        // 单独处理vector成员
+        controlInfo_.connectCode = 0;
+        controlInfo_.connectDelay = 0;
+
         controlInfo_.appName.clear();
         controlInfo_.appName.resize(MAX_DFX_APP_NUM);
         controlInfo_.existenceTime.clear();
         controlInfo_.existenceTime.resize(MAX_DFX_APP_NUM);
- 
-        // 清空字符串
+        controlInfo_.cmdWord.clear();
+        controlInfo_.cmdWord.resize(MAX_DFX_APP_NUM);
+        controlInfo_.errorCode.clear();
+        controlInfo_.errorCode.resize(MAX_DFX_APP_NUM);
         controlInfo_.packageName.clear();
         // 初始化在前台的APP的数据
         auto appManager = GetAppManagerInstance();
@@ -881,9 +927,15 @@ void MotionManager::InitDfxInfo()
  
 MechkitControlInfo MotionManager::GetDfxInfo()
 {
+    UpdateSendCmdInfoToDfx();
     return controlInfo_;
 }
- 
+
+void MotionManager::SetDfxConnectDelay(uint32_t delayTime)
+{
+    controlInfo_.connectDelay = delayTime;
+}
+
 void MotionManager::GetDfxDeviceTypeInfo()
 {
     if (protocolVer_ == 0x01) {
@@ -1254,6 +1306,7 @@ void MotionManager::SetDevicePairingInfo(const uint32_t deviceIdentifier)
     CHECK_POINTER_RETURN(pairingInfoCmd, "pairingInfoCmd is empty.");
     auto pairingInfoCallback = [this, pairingInfoCmd]() {
         auto result = pairingInfoCmd->GetResult();
+        DfxGetSendCmdInfo(pairingInfoCmd->GetCmdType(), result);
         HILOGI("device callback devicePairingInfo_  result: %{public}d", result);
     };
 
@@ -1450,8 +1503,13 @@ void MotionManager::TrggerMechLocationReport()
     std::shared_ptr<NormalSetMechLocationReportCmd> cmd =
         factory.CreateSetMechLocationReportCmd(1, MECH_LOCATION_REPORT_INTERVAL);
 
-    auto cmdCallback = [cmd] () {
+    auto cmdCallback = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()), cmd] () {
+        auto sharedThis = weakThis.lock();
+        if (!sharedThis) {
+            return;
+        }
         HILOGI("NormalSetMechLocationReportCmd callback %{public}u", cmd->GetResult());
+        sharedThis->DfxGetSendCmdInfo(cmd->GetCmdType(), cmd->GetResult());
     };
     cmd->SetResponseCallback(cmdCallback);
 
@@ -1540,7 +1598,7 @@ std::shared_ptr<CommandBase> MotionManager::ExecuteRotateCommand(const RotatePar
             } else {
                 cmdResult = static_cast<SetMechRotationCmd*>(rotationCmd.get())->GetResult();
             }
-            ExecResult result = MapDeviceErrorCodeToExecResult(cmdResult);
+            ExecResult result = MapDeviceErrorCodeToExecResult(rotationCmd->GetCmdType(), cmdResult);
             auto cbInfo = it->second;
             seqCallbacks_.erase(it);
             lock.unlock();
@@ -1848,7 +1906,7 @@ void MotionManager::SendRotateCommandImpl(
             std::unique_lock<std::mutex> lock(seqCallbackMutex_);
             auto it = seqCallbacks_.find(responseTaskId);
             if (it != seqCallbacks_.end()) {
-                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetResult());
+                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetCmdType(), cmd->GetResult());
                 auto cbInfo = it->second;
                 seqCallbacks_.erase(it);
                 lock.unlock();
@@ -1864,7 +1922,7 @@ void MotionManager::SendRotateCommandImpl(
             std::unique_lock<std::mutex> lock(seqCallbackMutex_);
             auto it = seqCallbacks_.find(responseTaskId);
             if (it != seqCallbacks_.end()) {
-                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetResult());
+                ExecResult result = MapDeviceErrorCodeToExecResult(cmd->GetCmdType(), cmd->GetResult());
                 auto cbInfo = it->second;
                 seqCallbacks_.erase(it);
                 lock.unlock();
@@ -2094,7 +2152,7 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
     } else if (actionType == ActionType::HEAD_UP || actionType == ActionType::HEAD_DOWN) {
         result = ExtractRotationBySpeedResult(command);
     } else {
-        result = MapDeviceErrorCodeToExecResult(
+        result = MapDeviceErrorCodeToExecResult(command->GetCmdType(),
             static_cast<WheelSetMechSceneControlCmd *>(command.get())->GetResult());
     }
 
@@ -2115,41 +2173,50 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
 ExecResult MotionManager::ExtractMotionControlResult(std::shared_ptr<CommandBase> command)
 {
     uint8_t cmdResult = 0;
+    CommandBase* motionCmd = nullptr;
     if (protocolVer_ == 0x01) {
-        auto motionCmd = static_cast<SetMechMotionControlCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<SetMechMotionControlCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     } else {
-        auto motionCmd = static_cast<NormalSetMechMotionControlCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<NormalSetMechMotionControlCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     }
     controlInfo_.landScapePortrait++;
-    return MapDeviceErrorCodeToExecResult(cmdResult);
+    return MapDeviceErrorCodeToExecResult(motionCmd->GetCmdType(), cmdResult);
 }
 
 ExecResult MotionManager::ExtractRotationTraceResult(std::shared_ptr<CommandBase> command)
 {
     uint8_t cmdResult = 0;
+    CommandBase* motionCmd = nullptr;
     if (protocolVer_ >= 0x02) {
-        auto motionCmd = static_cast<NormalSetMechRotationTraceCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<NormalSetMechRotationTraceCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     } else {
-        auto motionCmd = static_cast<SetMechRotationTraceCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<SetMechRotationTraceCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     }
-    return MapDeviceErrorCodeToExecResult(cmdResult);
+    return MapDeviceErrorCodeToExecResult(motionCmd->GetCmdType(), cmdResult);
 }
 
 ExecResult MotionManager::ExtractRotationBySpeedResult(std::shared_ptr<CommandBase> command)
 {
     uint8_t cmdResult = 0;
+    CommandBase* motionCmd = nullptr;
     if (protocolVer_ >= 0x02) {
-        auto motionCmd = static_cast<NormalSetMechRotationBySpeedCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<NormalSetMechRotationBySpeedCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     } else {
-        auto motionCmd = static_cast<SetMechRotationBySpeedCmd *>(command.get());
-        cmdResult = motionCmd->GetResult();
+        auto cmd = static_cast<SetMechRotationBySpeedCmd *>(command.get());
+        motionCmd = cmd;
+        cmdResult = cmd->GetResult();
     }
-    return MapDeviceErrorCodeToExecResult(cmdResult);
+    return MapDeviceErrorCodeToExecResult(motionCmd->GetCmdType(), cmdResult);
 }
 
 void MotionManager::CreateDoActionTimeoutCallback(uint8_t taskId, bool needRestoreTracking)
@@ -2310,9 +2377,8 @@ std::shared_ptr<CommonSetMechRotationBySpeedCmd> MotionManager::CreateAndSendRot
         std::unique_lock<std::mutex> lock(seqCallbackMutex_);
         auto it = seqCallbacks_.find(responseTaskId);
         if (it != seqCallbacks_.end()) {
-            ExecResult result = MapDeviceErrorCodeToExecResult(
-                static_cast<CommonSetMechRotationBySpeedCmd *>(rotationBySpeedCmd.get())
-                    ->GetResult());
+            ExecResult result = MapDeviceErrorCodeToExecResult(rotationBySpeedCmd->GetCmdType(),
+                static_cast<CommonSetMechRotationBySpeedCmd *>(rotationBySpeedCmd.get())->GetResult());
             auto cbInfo = it->second;
             seqCallbacks_.erase(it);
             lock.unlock();
