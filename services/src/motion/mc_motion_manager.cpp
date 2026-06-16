@@ -30,6 +30,7 @@
 #include "hisysevent_utils.h"
 #include "mc_set_mech_motion_control_cmd.h"
 #include "mc_normal_set_mech_motion_control_cmd.h"
+#include <cmath>
 #include "app_scheduler.h"
 
 uint32_t g_capabilityInfo[MAX_CAPABILITY_BIT_NUM] = {0};
@@ -39,6 +40,7 @@ namespace MechBodyController {
 namespace {
 const std::string TAG = "MotionManager";
 const std::string EVENT_THREAD_NAME = "MotionManager_EventHandler";
+const std::string AISERVICE_BUNDLE = "com.example.hmos.aibase";
 constexpr float DEGREE_CIRCLED_MAX = 6.28;
 constexpr float DEGREE_CIRCLED_MIN = -6.28;
 constexpr float DEFAULT_DURATION = 500;
@@ -60,8 +62,11 @@ constexpr int32_t TRACKING_CHECKER_INTERVAL = 100;
 const std::string AILIFESVC_BUNDLE_NAME = "com.example.hmos.ailifesvc";
 const std::string DEVICE_CONNECT_ABILITY_NAME = "OneHopDeviceAbility";
 constexpr int32_t ABILITY_STATE_BACKGROUND = 4;
+constexpr int32_t DO_ACTION_TIME_USED = 500; //ms
 constexpr int32_t DO_ACTION_TIME_USED = 500; // ms
 constexpr uint8_t MECH_LOCATION_REPORT_INTERVAL = 30;
+constexpr int32_t MS_CONVERSION = 1000;
+constexpr int32_t CM_CONVERSION = 10;
 constexpr int32_t PORECAST_MS_TO_S = 1000;
 constexpr size_t MAX_DFX_APP_NUM = 5;
 constexpr int32_t APP_STATE_FOREGROUND = 2;
@@ -1520,6 +1525,26 @@ RotateToLocationParam GenerateRotateToLocationParam(const RotateParam &param)
     return rotateToLocationParam;
 }
 
+void MotionManager::TrggerMechLocationReport() 
+{
+    std::shared_ptr<NormalSetMechLocationReportCmd> cmd = 
+        factory.CreateSetMechLocationReportCmd(1, MECH_LOCATION_REPORT_INTERVAL); 
+
+
+    auto cmdCallback = [cmd] () { 
+        HILOGI("NormalSetMechLocationReportCmd callback %{public}u", cmd->GetResult()); 
+    }; 
+    cmd->SetResponseCallback(cmdCallback); 
+
+
+    cmd->SetTimeoutCallback([] () { 
+        HILOGE("NormalSetMechLocationReportCmd timeout"); 
+    }); 
+
+
+    sendAdapter_->SendCommand(cmd); 
+}
+
 int32_t MotionManager::Rotate(std::shared_ptr<RotateParam> rotateParam,
     uint32_t &tokenId, std::string &napiCmdId)
 {
@@ -2001,6 +2026,7 @@ int32_t MotionManager::DoAction(uint32_t tokenId, std::string &napiCmdId, Action
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;
     }
+
     auto command = CreateDoActionCommand(actionType);
     CHECK_POINTER_RETURN_VALUE(command, INVALID_PARAMETERS_ERR, "command is empty.");
 
@@ -2154,7 +2180,7 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
         result = MapDeviceErrorCodeToExecResult(command->GetCmdType(),
             static_cast<WheelSetMechSceneControlCmd *>(command.get())->GetResult());
     }
-    
+
     auto cbInfo = it->second;
     seqCallbacks_.erase(it);
     lock.unlock();
@@ -2552,6 +2578,12 @@ int32_t MotionManager::StopRotate(uint32_t &tokenId, std::string &napiCmdId)
         std::shared_ptr<CommandBase> motionCmd = factory.CreateSetMechMotionControlCmd(ControlCommand::STOP);
         CHECK_POINTER_RETURN_VALUE(motionCmd, INVALID_PARAMETERS_ERR, "StopCmd is empty.");
         sendAdapter_->SendCommand(motionCmd);
+        if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE)) {
+            std::shared_ptr<CommandBase> motionWheelCmd =
+                factory.CreateWheelSetMechMotionControlCmd(ControlCommand::STOP);
+            CHECK_POINTER_RETURN_VALUE(motionWheelCmd, INVALID_PARAMETERS_ERR, "Wheel StopCmd is empty.");
+            sendAdapter_->SendCommand(motionWheelCmd); 
+         }
         MechBodyControllerService::GetInstance().NotifyOperationResult(tokenId, napiCmdId, ExecResult::COMPLETED);
     }
     HILOGI("Stop rotate end.");
@@ -2652,7 +2684,6 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
         return ERR_OK;
     }
 
-    HILOGI("Start tracking.");
     UpdateTrackingTime();
 
     std::shared_ptr<CommandBase> cameraTrackingFrameCmd = factory
@@ -3069,15 +3100,15 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
             foregroundInfo.state = appStateData.state;
             foregroundInfo.startTime = timeNow;
             appForegroundInfos_.insert(foregroundInfo);
-            HILOGI("app foreground info init, appName:%{public}s, state:%{public}d, startTime:%{public}ld",
+            HILOGI("app foreground info init, appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64,
                 foregroundInfo.bundleName.c_str(), foregroundInfo.state, foregroundInfo.startTime);
         }
         return;
     }
 
     AppForegroundInfo newForegroundInfo = *it;
-    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}ld, nowTime:%{public}ld,duration:%{public}lu",
-        newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
+    HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64", nowTime:%{public}" PRId64", "
+        "duration:%{public}" PRIu64, newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, timeNow, newForegroundInfo.duration);
     if (appStateData.state == APP_STATE_FOREGROUND) {
         if (newForegroundInfo.state != APP_STATE_FOREGROUND) {
@@ -3099,7 +3130,7 @@ void MotionManager::UpdateAppForegroundInfo(const AppExecFwk::AppStateData &appS
     }
     appForegroundInfos_.erase(it);
     appForegroundInfos_.insert(newForegroundInfo);
-    HILOGI("end. appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
+    HILOGI("end. appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64",duration:%{public}" PRIu64,
         newForegroundInfo.bundleName.c_str(), newForegroundInfo.state,
         newForegroundInfo.startTime, newForegroundInfo.duration);
 }
@@ -3111,16 +3142,16 @@ void MotionManager::UpdateEndtimeAndCompute()
         system_clock::now().time_since_epoch()).count();
     
     std::vector<AppForegroundInfo> appInfos(appForegroundInfos_.begin(), appForegroundInfos_.end());
-    HILOGI("start. timeNow:%{public}ld, app nums:%{public}lu, appInfo size: %{public}lu",
+    HILOGI("start. timeNow:%{public}" PRId64", app nums:%{public}zu, appInfo size: %{public}zu",
         timeNow, appForegroundInfos_.size(), appInfos.size());
     for (auto& info : appInfos) {
         if (info.state == APP_STATE_FOREGROUND) {
-            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
-                info.bundleName.c_str(), info.state, info.startTime, info.duration);
+            HILOGI("compute duration.appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64", "
+            "duration:%{public}" PRIu64, info.bundleName.c_str(), info.state, info.startTime, info.duration);
             uint64_t duration = static_cast<uint64_t>(timeNow - info.startTime);
             info.duration += duration;
         }
-        HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}ld,duration:%{public}lu",
+        HILOGI("appName:%{public}s, state:%{public}d, startTime:%{public}" PRId64",duration:%{public}" PRIu64,
             info.bundleName.c_str(), info.state, info.startTime, info.duration);
     }
     std::sort(appInfos.begin(), appInfos.end(),
@@ -3209,12 +3240,13 @@ MechNapiCommandCallbackInfo::MechNapiCommandCallbackInfo(uint32_t &tokenId, std:
     : tokenId(tokenId), napiCmdId(napiCmdId)
 {
 }
+
 AbilityStateListener::AbilityStateListener(std::shared_ptr<MotionManager> motionManager)
 {
     HILOGI("AbilityStateListener called");
     motionManager_ = motionManager;
 }
- 
+
 AbilityStateListener::~AbilityStateListener()
 {
     HILOGI("AbilityStateListener destroyed");
