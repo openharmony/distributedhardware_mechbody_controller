@@ -850,39 +850,38 @@ struct ActionControlParams {
     }
 };
 
-struct DeviceBaseInfo {	 
-    uint8_t devType;	 
-    uint8_t ctrlType;	 
-    uint8_t protocolVer;	 
-    std::array<uint8_t, ADDRESS_COUNT> macAddress;	 
-    std::string realName;	 
-};	 
+struct DeviceBaseInfo {
+    uint8_t devType;
+    uint8_t ctrlType;
+    uint8_t protocolVer;
+    std::array<uint8_t, ADDRESS_COUNT> macAddress;
+    std::string realName;
+};
 
 
-struct DeviceCapabilityInfo {	 
-    uint8_t centerAble;	 
-    uint8_t switchAble;	 
-    uint8_t trackAble;	 
-    uint8_t absoluteCoordinate;	 
-    uint8_t relativeCoordinate;	 
-    uint8_t poseReport;	 
-    uint8_t batteryReport;	 
-    uint8_t trackPoints;	 
-    uint8_t yawable;	 
-    uint8_t rollable;	 
-    uint8_t pitchable;	 
-    float yawmaxspeed;	 
-    float rollmaxspeed;	 
-    float pitchmaxspeed;	 
-    uint16_t maxturntime;	 
-};	 
- 
- 
- struct DeviceAccelerationInfo {	 
-     uint16_t accelerationX;	 
-     uint16_t accelerationY;	 
-     uint16_t accelerationZ;	 
- };
+struct DeviceCapabilityInfo {
+    uint8_t centerAble;
+    uint8_t switchAble;
+    uint8_t trackAble;
+    uint8_t absoluteCoordinate;
+    uint8_t relativeCoordinate;
+    uint8_t poseReport;
+    uint8_t batteryReport;
+    uint8_t trackPoints;
+    uint8_t yawable;
+    uint8_t rollable;
+    uint8_t pitchable;
+    float yawmaxspeed;
+    float rollmaxspeed;
+    float pitchmaxspeed; 
+    uint16_t maxturntime;
+};
+
+struct DeviceAccelerationInfo {
+    uint16_t accelerationX;
+    uint16_t accelerationY;
+    uint16_t accelerationZ;
+};
 
 struct DeviceStateInfo {
     uint8_t attached = -1;
@@ -892,10 +891,10 @@ struct DeviceStateInfo {
 };
 
 struct DeviceCoordinateInfo {
-    uint8_t ismoving;	 
-    float yawPose;	 
-    float rollPose;	 
-    float pitchPose;	 
+    uint8_t ismoving;
+    float yawPose;
+    float rollPose;
+    float pitchPose;
 };
 
 struct WheelCapabilityInfo {
