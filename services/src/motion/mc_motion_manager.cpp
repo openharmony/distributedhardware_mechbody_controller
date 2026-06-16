@@ -854,7 +854,6 @@ void MotionManager::DfxGetSendCmdInfo(uint16_t cmdType, uint8_t result)
 
 void MotionManager::UpdateSendCmdInfoToDfx()
 {
-    HILOGI("start. nums:%{public}u", sendCmdInfo_.size());
     size_t topCount = std::min(sendCmdInfo_.size(), static_cast<size_t>(CMD_WORD_NUM));
 
     for (size_t i = 0; i < topCount; ++i) {
