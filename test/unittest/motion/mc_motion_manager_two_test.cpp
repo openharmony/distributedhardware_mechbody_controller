@@ -317,7 +317,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_004, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.huawei.hmos.aibase";
+    appData.bundleName = "com.example.aibase";
     appData.isFocused = true;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::UI;
     list.push_back(appData);
@@ -339,7 +339,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_005, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.huawei.hmos.aibase";
+    appData.bundleName = "com.example.aibase";
     appData.isFocused = false;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData);
@@ -367,7 +367,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_006, TestSize.Leve
     list.push_back(appData1);
 
     AppExecFwk::AppStateData appData2;
-    appData2.bundleName = "com.huawei.hmos.aibase";
+    appData2.bundleName = "com.example.aibase";
     appData2.isFocused = true;
     appData2.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData2);
@@ -389,7 +389,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_007, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData1;
-    appData1.bundleName = "com.huawei.hmos.aibase";
+    appData1.bundleName = "com.example.aibase";
     appData1.isFocused = false;
     appData1.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData1);
@@ -417,7 +417,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_008, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData1;
-    appData1.bundleName = "com.huawei.hmos.aibase";
+    appData1.bundleName = "com.example.aibase";
     appData1.isFocused = true;
     appData1.extensionType = AppExecFwk::ExtensionAbilityType::UI;
     list.push_back(appData1);
@@ -461,7 +461,7 @@ HWTEST_F(MotionManagerTwoTest, IsAiDispatchServiceInForeground_002, TestSize.Lev
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.huawei.hmos.aibase";
+    appData.bundleName = "com.example.aibase";
     appData.isFocused = true;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData);
