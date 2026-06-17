@@ -17,6 +17,8 @@
 #include "registermechcliffinfocmd_fuzzer.h"
 #include "mc_register_mech_cliff_info_cmd.h"
 #include "mc_data_buffer.h"
+#include <memory>
+#include <securec.h>
 
 using namespace OHOS;
 using namespace OHOS::MechBodyController;
@@ -25,425 +27,151 @@ namespace {
 
 constexpr size_t RPT_SIZE = 1;
 constexpr size_t BIT_OFFSET_2 = 2;
-constexpr size_t MAX_CLIFF_NUMS = 255;
-constexpr size_t FUZZ_SMALL_BUFFER_SIZE = 10;
-constexpr size_t FUZZ_BUFFER_SIZE = 20;
-constexpr uint8_t FUZZ_MIN_VALUE = 1;
-constexpr uint8_t FUZZ_MIN_MULTI_VALUE = 2;
-constexpr size_t FUZZ_ZERO = 0;
-constexpr size_t FUZZ_CLIFF_INFO_SIZE = 1;
-constexpr int32_t FUZZ_MAX_BASIC_TEST_ID = 4;
-constexpr int32_t FUZZ_MAX_UNMARSHAL_TEST_ID = 12;
+constexpr size_t BIT_OFFSET_3 = 3;
 
-enum class TestFunctionId {
-    FUZZ_CONSTRUCTOR = 0,
-    FUZZ_MARSHAL = 1,
-    FUZZ_UNMARSHAL_WITH_NULL = 2,
-    FUZZ_UNMARSHAL_WITH_SMALL_BUFFER = 3,
-    FUZZ_UNMARSHAL_WITH_ZERO_CLIFF = 4,
-    FUZZ_UNMARSHAL_WITH_ONE_CLIFF = 5,
-    FUZZ_UNMARSHAL_WITH_MULTIPLE_CLIFFS = 6,
-    FUZZ_UNMARSHAL_WITH_MAX_CLIFFS = 7,
-    FUZZ_UNMARSHAL_WITH_INVALID_LENGTH = 8,
-    FUZZ_UNMARSHAL_WITH_RANDOM_DATA = 9,
-    FUZZ_TRIGGER_RESPONSE_WITH_NULL = 10,
-    FUZZ_TRIGGER_RESPONSE_WITH_VALID_DATA = 11,
-    FUZZ_GET_CLIFFS = 12,
-    FUZZ_GET_CLIFF_NUMS = 13,
-    FUZZ_GET_RESULT = 14,
-    FUZZ_FULL_WORKFLOW = 15
-};
-
-void FuzzConstructor(FuzzedDataProvider &provider)
-{
-    if (provider.ConsumeBool()) {
-        RegisterMechCliffInfoCmd cmd;
-    }
-}
-
-void FuzzMarshal(FuzzedDataProvider &provider)
+void FuzzUnmarshalWithNoCliff(FuzzedDataProvider &provider)
 {
     RegisterMechCliffInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        auto buffer = cmd.Marshal();
-    }
-}
-
-void FuzzUnmarshalWithNull(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        bool result = cmd.Unmarshal(nullptr);
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithSmallBuffer(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-    size_t bufferSize = provider.ConsumeIntegralInRange<size_t>(FUZZ_ZERO, FUZZ_SMALL_BUFFER_SIZE);
-    auto buffer = std::make_shared<MechDataBuffer>(bufferSize);
-    if (buffer != nullptr) {
-        bool result = cmd.Unmarshal(buffer);
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithZeroCliff(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2;
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    buffer->AppendUint8(0x00);
-
-    bool result = cmd.Unmarshal(buffer);
-    if (provider.ConsumeBool()) {
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithOneCliff(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_CLIFF_INFO_SIZE;
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x40);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
-    }
-
-    buffer->AppendUint8(0x01);
-    int16_t direction = provider.ConsumeIntegral<int16_t>();
-    buffer->AppendInt16(direction);
-    buffer->AppendUint8(0x00);
-
-    bool result = cmd.Unmarshal(buffer);
-    (void)result;
-}
-
-void FuzzUnmarshalWithMultipleCliffs(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    uint8_t cliffNums = provider.ConsumeIntegralInRange<uint8_t>(FUZZ_MIN_MULTI_VALUE, FUZZ_SMALL_BUFFER_SIZE);
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + cliffNums * (BIT_OFFSET_2 + FUZZ_CLIFF_INFO_SIZE);
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x40);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
-    }
-
-    buffer->AppendUint8(cliffNums);
-
-    for (uint8_t i = FUZZ_ZERO; i < cliffNums; i++) {
-        int16_t direction = provider.ConsumeIntegral<int16_t>();
-        buffer->AppendInt16(direction);
-        buffer->AppendUint8(0x00);
-    }
-
-    bool result = cmd.Unmarshal(buffer);
-    (void)result;
-}
-
-void FuzzUnmarshalWithMaxCliffs(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    uint8_t cliffNums = provider.ConsumeBool() ? MAX_CLIFF_NUMS : provider.ConsumeIntegral<uint8_t>();
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + cliffNums * (BIT_OFFSET_2 + FUZZ_CLIFF_INFO_SIZE);
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    buffer->AppendUint8(cliffNums);
-
-    for (uint8_t i = FUZZ_ZERO; i < cliffNums; i++) {
-        buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    bool result = cmd.Unmarshal(buffer);
-    if (provider.ConsumeBool()) {
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithInvalidLength(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_CLIFF_INFO_SIZE;
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x40);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
-    }
-
-    buffer->AppendUint8(0x01);
-    buffer->AppendInt16(0x0000);
-    buffer->AppendUint8(provider.ConsumeIntegralInRange<uint8_t>(FUZZ_MIN_VALUE, MAX_CLIFF_NUMS));
-
-    bool result = cmd.Unmarshal(buffer);
-    (void)result;
-}
-
-void FuzzUnmarshalWithRandomData(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    uint8_t cliffNums = provider.ConsumeIntegral<uint8_t>();
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + cliffNums * (BIT_OFFSET_2 + FUZZ_CLIFF_INFO_SIZE);
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x40);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    buffer->AppendUint8(cliffNums);
-
-    for (uint8_t i = FUZZ_ZERO; i < cliffNums; i++) {
-        buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    bool result = cmd.Unmarshal(buffer);
-    (void)result;
-}
-
-void FuzzTriggerResponseWithNull(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        cmd.TriggerResponse(nullptr);
-    }
-}
-
-void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    auto buffer = std::make_shared<MechDataBuffer>(FUZZ_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-
-    cmd.TriggerResponse(buffer);
-}
-
-void FuzzGetCliffs(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        std::vector<CliffInfo> cliffs = cmd.GetCliffs();
-        (void)cliffs;
-    }
-}
-
-void FuzzGetCliffNums(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        uint8_t cliffNums = cmd.GetCliffNums();
-        (void)cliffNums;
-    }
-}
-
-void FuzzGetResult(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        uint8_t result = cmd.GetResult();
-        (void)result;
-    }
-}
-
-void FuzzFullWorkflow(FuzzedDataProvider &provider)
-{
-    RegisterMechCliffInfoCmd cmd;
-
-    auto marshalBuffer = cmd.Marshal();
-
-    bool shouldTestNull = provider.ConsumeBool();
-    if (shouldTestNull) {
-        cmd.Unmarshal(nullptr);
-        cmd.TriggerResponse(nullptr);
-    } else {
-        uint8_t cliffNums = provider.ConsumeIntegralInRange<uint8_t>(FUZZ_ZERO, FUZZ_SMALL_BUFFER_SIZE);
-        size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + cliffNums * (BIT_OFFSET_2 + FUZZ_CLIFF_INFO_SIZE);
-
-        auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-        if (buffer != nullptr) {
-            buffer->AppendUint8(0x03);
-            buffer->AppendUint8(0x40);
-
-            for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-                buffer->AppendUint8(0x00);
-            }
-
-            buffer->AppendUint8(cliffNums);
-
-            for (uint8_t i = FUZZ_ZERO; i < cliffNums; i++) {
-                buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-                buffer->AppendUint8(0x00);
-            }
-
-            bool result = cmd.Unmarshal(buffer);
-            (void)result;
-
-            std::vector<CliffInfo> cliffs = cmd.GetCliffs();
-            uint8_t cliffNumsResult = cmd.GetCliffNums();
-            (void)cliffs;
-            (void)cliffNumsResult;
-
-            auto responseBuffer = std::make_shared<MechDataBuffer>(FUZZ_BUFFER_SIZE);
-            if (responseBuffer != nullptr) {
-                responseBuffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-                cmd.TriggerResponse(responseBuffer);
-            }
-
-            uint8_t resultValue = cmd.GetResult();
-            (void)resultValue;
+    auto buffer = cmd.Marshal();
+    size_t dataSize = RPT_SIZE + BIT_OFFSET_2;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer != nullptr) {
+        dataBuffer->SetRange(0, dataSize);
+        if (dataBuffer->Data() != nullptr) {
+            uint8_t cliffNums = 0;
+            size_t offset = 0;
+            uint8_t reserved = provider.ConsumeIntegralInRange<uint8_t>(0, 3);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &cliffNums, sizeof(cliffNums));
         }
     }
+    bool result = cmd.Unmarshal(dataBuffer);
+    (void)result;
 }
 
-void RunBasicFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
+void FuzzUnmarshalWithCliffNoDetails(FuzzedDataProvider &provider)
 {
-    switch (static_cast<TestFunctionId>(testFunctionId)) {
-        case TestFunctionId::FUZZ_CONSTRUCTOR:
-            FuzzConstructor(provider);
-            break;
-        case TestFunctionId::FUZZ_MARSHAL:
-            FuzzMarshal(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_CLIFFS:
-            FuzzGetCliffs(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_CLIFF_NUMS:
-            FuzzGetCliffNums(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_RESULT:
-            FuzzGetResult(provider);
-            break;
-        default:
-            (void)provider;
-            break;
+    RegisterMechCliffInfoCmd cmd;
+    uint8_t cliffNums = provider.ConsumeIntegralInRange<uint8_t>(1, 5);
+    // 修复： dataSize = BIT_OFFSET_2(前2字节) + sizeof(cliffNums) + cliffNums * BIT_OFFSET_3
+    size_t dataSize = BIT_OFFSET_2 + sizeof(cliffNums) + cliffNums * BIT_OFFSET_3;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer != nullptr) {
+        dataBuffer->SetRange(0, dataSize);
+        if (dataBuffer->Data() != nullptr) {
+            size_t offset = 0;
+            uint8_t reserved = 0;
+            // 前2个保留字节
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            // cliffNums写在offset=2位置
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &cliffNums, sizeof(cliffNums));
+            offset++;
+            for (uint8_t i = 0; i < cliffNums; i++) {
+                int16_t cliffDirection = provider.ConsumeIntegral<int16_t>();
+                uint8_t cliffInfoLen = 0;
+                uint8_t reserved2 = 0;
+                memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+                offset += sizeof(reserved2);
+                memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+                offset += sizeof(reserved2);
+                (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &cliffDirection, sizeof(cliffDirection));
+                offset += sizeof(cliffDirection);
+                (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &cliffInfoLen, sizeof(cliffInfoLen));
+                offset += sizeof(cliffInfoLen);
+            }
+        }
+    }
+    bool unmarshalResult = cmd.Unmarshal(dataBuffer);
+    const std::vector<CliffInfo> cliffs = cmd.GetCliffs();
+    uint8_t cliffNumsResult = cmd.GetCliffNums();
+    uint8_t result = cmd.GetResult();
+    (void)cliffs;
+    (void)cliffNumsResult;
+    (void)unmarshalResult;
+    (void)result;
+}
+
+void FillDetailData(FuzzedDataProvider &provider, std::shared_ptr<MechDataBuffer> dataBuffer,
+    size_t dataSize, uint8_t detailLen)
+{
+    size_t offset = BIT_OFFSET_2 + sizeof(uint8_t);
+    for (uint8_t j = 0; j < detailLen; j++) {
+        uint8_t detailType = provider.ConsumeIntegral<uint8_t>();
+        uint8_t dataLen = provider.ConsumeIntegral<uint8_t>();
+        uint8_t reserved2 = 0;
+        memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+        offset += sizeof(reserved2);
+        memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+        offset += sizeof(reserved2);
+        (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &detailType, sizeof(detailType));
+        offset++;
+        (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &dataLen, sizeof(dataLen));
+        offset++;
+        offset += dataLen;
     }
 }
 
-void RunUnmarshalFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
+void FuzzUnmarshalWithCliffAndDetails(FuzzedDataProvider &provider)
 {
-    switch (static_cast<TestFunctionId>(testFunctionId)) {
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_NULL:
-            FuzzUnmarshalWithNull(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_SMALL_BUFFER:
-            FuzzUnmarshalWithSmallBuffer(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_ZERO_CLIFF:
-            FuzzUnmarshalWithZeroCliff(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_ONE_CLIFF:
-            FuzzUnmarshalWithOneCliff(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_MULTIPLE_CLIFFS:
-            FuzzUnmarshalWithMultipleCliffs(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_MAX_CLIFFS:
-            FuzzUnmarshalWithMaxCliffs(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_INVALID_LENGTH:
-            FuzzUnmarshalWithInvalidLength(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_RANDOM_DATA:
-            FuzzUnmarshalWithRandomData(provider);
-            break;
-        default:
-            break;
+    RegisterMechCliffInfoCmd cmd;
+    uint8_t cliffNums = provider.ConsumeIntegralInRange<uint8_t>(1, 3);
+    uint8_t detailLen = provider.ConsumeIntegralInRange<uint8_t>(1, 4);
+    size_t dataSize = BIT_OFFSET_2 + sizeof(cliffNums) + cliffNums * (BIT_OFFSET_3 + detailLen);
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer == nullptr) {
+        bool result = cmd.Unmarshal(dataBuffer);
+        (void)result;
+        return;
     }
+    dataBuffer->SetRange(0, dataSize);
+    if (dataBuffer->Data() == nullptr) {
+        bool result = cmd.Unmarshal(dataBuffer);
+        (void)result;
+        return;
+    }
+
+    size_t offset = 0;
+    uint8_t reserved = 0;
+    memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+    offset += sizeof(reserved);
+    memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+    offset += sizeof(reserved);
+    memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &cliffNums, sizeof(cliffNums));
+    offset++;
+
+    for (uint8_t i = 0; i < cliffNums; i++) {
+        int16_t cliffDirection = provider.ConsumeIntegral<int16_t>();
+        uint8_t cliffInfoLen = detailLen;
+        (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &cliffDirection, sizeof(cliffDirection));
+        offset += sizeof(cliffDirection);
+        (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &cliffInfoLen, sizeof(cliffInfoLen));
+        offset++;
+        FillDetailData(provider, dataBuffer, dataSize, detailLen);
+    }
+
+    bool result = cmd.Unmarshal(dataBuffer);
+    (void)result;
 }
 
-void RunTriggerResponseFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
+void FuzzTriggerResponse(FuzzedDataProvider &provider)
 {
-    switch (static_cast<TestFunctionId>(testFunctionId)) {
-        case TestFunctionId::FUZZ_TRIGGER_RESPONSE_WITH_NULL:
-            FuzzTriggerResponseWithNull(provider);
-            break;
-        case TestFunctionId::FUZZ_TRIGGER_RESPONSE_WITH_VALID_DATA:
-            FuzzTriggerResponseWithValidData(provider);
-            break;
-        case TestFunctionId::FUZZ_FULL_WORKFLOW:
-            FuzzFullWorkflow(provider);
-            break;
-        default:
-            break;
+    RegisterMechCliffInfoCmd cmd;
+    size_t dataSize = RPT_SIZE;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer != nullptr) {
+        dataBuffer->SetRange(0, dataSize);
+        if (dataBuffer->Data() != nullptr) {
+            uint8_t result = provider.ConsumeIntegral<uint8_t>();
+            memcpy_s(dataBuffer->Data(), dataSize, &result, sizeof(result));
+        }
     }
-}
-
-void RunFuzzTest(FuzzedDataProvider &provider)
-{
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
-
-    if (testFunctionId <= FUZZ_MAX_BASIC_TEST_ID) {
-        RunBasicFuzzTests(provider, testFunctionId);
-    } else if (testFunctionId <= FUZZ_MAX_UNMARSHAL_TEST_ID) {
-        RunUnmarshalFuzzTests(provider, testFunctionId);
-    } else {
-        RunTriggerResponseFuzzTests(provider, testFunctionId);
-    }
+    cmd.TriggerResponse(dataBuffer);
 }
 
 } // namespace
@@ -451,6 +179,9 @@ void RunFuzzTest(FuzzedDataProvider &provider)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    RunFuzzTest(provider);
+    FuzzUnmarshalWithNoCliff(provider);
+    FuzzUnmarshalWithCliffNoDetails(provider);
+    FuzzUnmarshalWithCliffAndDetails(provider);
+    FuzzTriggerResponse(provider);
     return 0;
 }

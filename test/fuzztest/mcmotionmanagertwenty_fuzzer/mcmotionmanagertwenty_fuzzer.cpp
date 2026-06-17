@@ -56,11 +56,24 @@ const std::string TAG = "MotionManagerTwentyFuzz";
 std::shared_ptr<MotionManager> g_motionManager = nullptr;
 std::shared_ptr<MockTransportSendAdapter> g_mockAdapter = nullptr;
 
+class TestMotionManager : public MotionManager {
+public:
+    TestMotionManager(const std::shared_ptr<TransportSendAdapter> sendAdapter, int32_t mechId, bool isFirstConnect,
+        const uint32_t &deviceIdentifier)
+        : MotionManager(sendAdapter, mechId, isFirstConnect, deviceIdentifier) {}
+
+    void SetTrackingStatusForTest(MechTrackingStatus status)
+    {
+        std::lock_guard<std::mutex> lock(deviceStatusMutex_);
+        deviceStatus_->trackingStatus = status;
+    }
+};
+
 void InitMotionManager()
 {
     if (g_motionManager == nullptr) {
         g_mockAdapter = std::make_shared<MockTransportSendAdapter>();
-        g_motionManager = std::make_shared<MotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
+        g_motionManager = std::make_shared<TestMotionManager>(g_mockAdapter, TEST_MECH_ID, false, 0x00000000);
 
         MechInfo testMech;
         testMech.mechId = TEST_MECH_ID;
@@ -147,11 +160,9 @@ void FuzzCheckPitchSpeed(FuzzedDataProvider &provider)
     
     float pitchResult = provider.ConsumeFloatingPointInRange<float>(-6.28f, 6.28f);
     g_motionManager->CheckPitchSpeed(rotateBySpeedParam, limit, pitchResult);
-}
 
-void FuzzUpdateTrackingTime(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
+    auto testManager = std::static_pointer_cast<TestMotionManager>(g_motionManager);
+    testManager->SetTrackingStatusForTest(MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET);
     g_motionManager->UpdateTrackingTime();
 }
 
@@ -213,7 +224,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzCheckYawSpeed(provider);
     FuzzCheckRollSpeed(provider);
     FuzzCheckPitchSpeed(provider);
-    FuzzUpdateTrackingTime(provider);
     FuzzJudgingYawLimit(provider);
     FuzzAbsolutelyEulerAnglesJudgingLimitLocked(provider);
     FuzzLimitCalculationLocked(provider);

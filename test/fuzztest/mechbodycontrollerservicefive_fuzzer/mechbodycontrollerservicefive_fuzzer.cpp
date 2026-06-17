@@ -162,15 +162,6 @@ void IsSupportActionFuzzTest(const uint8_t *data, size_t size)
 
     MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
     mechBodyControllerService.IsSupportAction(mechId, actionType, isSupport);
-}
-
-void OnStopFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    MechBodyControllerService& mechBodyControllerService = MechBodyControllerService::GetInstance();
     mechBodyControllerService.OnStop();
 }
 }
@@ -185,6 +176,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnRotationAxesStatusChangeFuzzTest(data, size);
     OHOS::NotifyMechEventFuzzTest(data, size);
     OHOS::IsSupportActionFuzzTest(data, size);
-    OHOS::OnStopFuzzTest(data, size);
     return 0;
 }

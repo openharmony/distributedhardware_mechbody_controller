@@ -90,15 +90,23 @@ void FuzzCheckWheelSpeedLimit(const uint8_t *data, size_t size)
 void FuzzMechAttitudeNotify(const uint8_t *data, size_t size)
 {
     InitMotionManager();
+    FuzzedDataProvider provider(data, size);
     auto cmd = std::make_shared<RegisterMechPositionInfoCmd>();
-    g_motionManager->MechAttitudeNotify(cmd);
-}
-
-void FuzzMechButtonEventNotify(const uint8_t *data, size_t size)
-{
-    InitMotionManager();
-    auto cmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
-    g_motionManager->MechButtonEventNotify(cmd);
+    auto dataBuffer = std::make_shared<MechDataBuffer>(8);
+    if (dataBuffer != nullptr) {
+        float pitch = provider.ConsumeFloatingPointInRange<float>(0.0f, 1.0f);
+        float roll = provider.ConsumeFloatingPointInRange<float>(0.0f, 1.0f);
+        float yaw = provider.ConsumeFloatingPointInRange<float>(0.0f, 1.0f);
+        dataBuffer->AppendUint8(0);
+        dataBuffer->AppendUint8(0);
+        dataBuffer->AppendFloat(pitch);
+        dataBuffer->AppendFloat(roll);
+        dataBuffer->AppendFloat(yaw);
+        cmd->Unmarshal(dataBuffer);
+        g_motionManager->MechAttitudeNotify(cmd);
+        auto registerMechCameraKeyEventCmd = std::make_shared<RegisterMechCameraKeyEventCmd>();
+        g_motionManager->MechButtonEventNotify(registerMechCameraKeyEventCmd);
+    }
 }
 
 void FuzzMechParamNotify(const uint8_t *data, size_t size)
@@ -134,36 +142,48 @@ void FuzzMechParamNotify(const uint8_t *data, size_t size)
 void FuzzMechGenericEventNotify(const uint8_t *data, size_t size)
 {
     InitMotionManager();
+    FuzzedDataProvider provider(data, size);
+    
     auto cmd = std::make_shared<NormalRegisterMechGenericEventCmd>();
+    
+    auto buffer = std::make_shared<MechDataBuffer>(BIT_OFFSET_2 + 20);
+    if (buffer == nullptr) {
+        return;
+    }
+    
+    uint8_t attached = provider.ConsumeBool() ? 1 : 0;
+    uint8_t yawDisable = provider.ConsumeBool() ? 1 : 0;
+    uint8_t rollDisable = provider.ConsumeBool() ? 1 : 0;
+    uint8_t pitchDisable = provider.ConsumeBool() ? 1 : 0;
+    uint8_t lowPower = provider.ConsumeBool() ? 1 : 0;
+    
+    buffer->AppendUint8(0x00);
+    buffer->AppendUint8(0x01);
+    buffer->AppendUint8(attached);
+    
+    buffer->AppendUint8(0x01);
+    buffer->AppendUint8(0x01);
+    uint8_t axisBits = (yawDisable << 0) | (rollDisable << 1) | (pitchDisable << 2);
+    buffer->AppendUint8(axisBits);
+    
+    buffer->AppendUint8(0x02);
+    buffer->AppendUint8(0x01);
+    buffer->AppendUint8(lowPower);
+    
+    cmd->Unmarshal(buffer);
+    
     g_motionManager->MechGenericEventNotify(cmd);
-}
+    auto registerMechCliffInfoCmd = std::make_shared<RegisterMechCliffInfoCmd>();
+    g_motionManager->MechCliffInfoNotify(registerMechCliffInfoCmd);
 
-void FuzzMechCliffInfoNotify(const uint8_t *data, size_t size)
-{
-    InitMotionManager();
-    auto cmd = std::make_shared<RegisterMechCliffInfoCmd>();
-    g_motionManager->MechCliffInfoNotify(cmd);
-}
+    auto registerMechObstacleInfoCmd = std::make_shared<RegisterMechObstacleInfoCmd>();
+    g_motionManager->MechObstacleInfoNotify(registerMechObstacleInfoCmd);
 
-void FuzzMechObstacleInfoNotify(const uint8_t *data, size_t size)
-{
-    InitMotionManager();
-    auto cmd = std::make_shared<RegisterMechObstacleInfoCmd>();
-    g_motionManager->MechObstacleInfoNotify(cmd);
-}
+    auto registerMechControlResultCmd = std::make_shared<RegisterMechControlResultCmd>();
+    g_motionManager->MechExecutionResultNotify(registerMechControlResultCmd);
 
-void FuzzMechExecutionResultNotify(const uint8_t *data, size_t size)
-{
-    InitMotionManager();
-    auto cmd = std::make_shared<RegisterMechControlResultCmd>();
-    g_motionManager->MechExecutionResultNotify(cmd);
-}
-
-void FuzzMechWheelZoomNotify(const uint8_t *data, size_t size)
-{
-    InitMotionManager();
-    auto cmd = std::make_shared<RegisterMechWheelDataCmd>();
-    g_motionManager->MechWheelZoomNotify(cmd);
+    auto registerMechWheelDataCmd = std::make_shared<RegisterMechWheelDataCmd>();
+    g_motionManager->MechWheelZoomNotify(registerMechWheelDataCmd);
 }
 
 }  // namespace
@@ -172,12 +192,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzCheckWheelSpeedLimit(data, size);
     FuzzMechAttitudeNotify(data, size);
-    FuzzMechButtonEventNotify(data, size);
     FuzzMechParamNotify(data, size);
     FuzzMechGenericEventNotify(data, size);
-    FuzzMechCliffInfoNotify(data, size);
-    FuzzMechObstacleInfoNotify(data, size);
-    FuzzMechExecutionResultNotify(data, size);
-    FuzzMechWheelZoomNotify(data, size);
     return 0;
 }

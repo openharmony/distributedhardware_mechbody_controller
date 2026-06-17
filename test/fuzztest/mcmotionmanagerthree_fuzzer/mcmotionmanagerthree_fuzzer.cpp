@@ -73,19 +73,13 @@ void InitMotionManager()
     }
 }
 
-void FuzzMechParamNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<RegisterMechStateInfoCmd> cmd = nullptr;
-    listener->MechParamNotify(cmd);
-}
-
 void FuzzMechParamNotifyWithAllModes(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    std::shared_ptr<RegisterMechStateInfoCmd> cmdNull = nullptr;
+    listener->MechParamNotify(cmdNull);
+
     for (uint8_t mechMode = 0; mechMode <= MAX_MECH_MODE_VALUE; mechMode++) {
         auto cmd = std::make_shared<RegisterMechStateInfoCmd>();
         auto data = std::make_shared<MechDataBuffer>(5);
@@ -106,7 +100,9 @@ void FuzzMechGenericEventNotify(FuzzedDataProvider &provider)
 {
     InitMotionManager();
     auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> cmdNull = nullptr;
+    listener->MechGenericEventNotify(cmdNull);
+
     auto cmd = std::make_shared<NormalRegisterMechGenericEventCmd>();
     auto data = std::make_shared<MechDataBuffer>(5);
     if (data != nullptr) {
@@ -123,14 +119,6 @@ void FuzzMechGenericEventNotify(FuzzedDataProvider &provider)
         cmd->Unmarshal(data);
         listener->MechGenericEventNotify(cmd);
     }
-}
-
-void FuzzMechGenericEventNotifyWithNull(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    auto listener = std::make_shared<MechEventListenerImpl>(g_motionManager);
-    std::shared_ptr<NormalRegisterMechGenericEventCmd> cmd = nullptr;
-    listener->MechGenericEventNotify(cmd);
 }
 
 void FuzzMechGenericEventNotifyWithLowPower(FuzzedDataProvider &provider)
@@ -183,10 +171,8 @@ void FuzzMechObstacleInfoNotify(FuzzedDataProvider &provider)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    FuzzMechParamNotifyWithNull(provider);
     FuzzMechParamNotifyWithAllModes(provider);
     FuzzMechGenericEventNotify(provider);
-    FuzzMechGenericEventNotifyWithNull(provider);
     FuzzMechGenericEventNotifyWithLowPower(provider);
     FuzzMechCliffInfoNotify(provider);
     FuzzMechObstacleInfoNotify(provider);

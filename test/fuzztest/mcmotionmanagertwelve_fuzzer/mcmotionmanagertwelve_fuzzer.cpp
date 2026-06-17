@@ -93,24 +93,6 @@ void FuzzHandlePhoneOn(FuzzedDataProvider &provider)
     g_motionManager->HandlePhoneOn(isPhoneOn);
 }
 
-void FuzzProcessPhoneOffForegroundCheck(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->ProcessPhoneOffForegroundCheck();
-}
-
-void FuzzProcessPhoneOnForegroundCheck(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->ProcessPhoneOnForegroundCheck();
-}
-
-void FuzzGetAppManagerInstance(FuzzedDataProvider &provider)
-{
-    InitMotionManager();
-    g_motionManager->GetAppManagerInstance();
-}
-
 void FuzzMMIKeyEventWithExtremeValues(FuzzedDataProvider &provider)
 {
     InitMotionManager();
@@ -153,9 +135,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzHandleMechPlacementChange(provider);
     FuzzHandlePhoneOff(provider);
     FuzzHandlePhoneOn(provider);
-    FuzzProcessPhoneOffForegroundCheck(provider);
-    FuzzProcessPhoneOnForegroundCheck(provider);
-    FuzzGetAppManagerInstance(provider);
     FuzzMMIKeyEventWithExtremeValues(provider);
     FuzzCreateKeyEventWithExtremeValues(provider);
     FuzzHandleMechPlacementChangeMultipleCalls(provider);

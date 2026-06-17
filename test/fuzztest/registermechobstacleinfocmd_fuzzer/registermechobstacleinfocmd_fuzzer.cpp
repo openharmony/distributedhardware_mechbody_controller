@@ -17,6 +17,8 @@
 #include "registermechobstacleinfocmd_fuzzer.h"
 #include "mc_register_mech_obstacle_info_cmd.h"
 #include "mc_data_buffer.h"
+#include <memory>
+#include <securec.h>
 
 using namespace OHOS;
 using namespace OHOS::MechBodyController;
@@ -25,441 +27,185 @@ namespace {
 
 constexpr size_t RPT_SIZE = 1;
 constexpr size_t BIT_OFFSET_2 = 2;
-constexpr size_t MAX_OBSTACLE_NUMS = 255;
-constexpr size_t FUZZ_SMALL_BUFFER_SIZE = 10;
-constexpr size_t FUZZ_BUFFER_SIZE = 20;
-constexpr uint8_t FUZZ_MIN_VALUE = 1;
-constexpr uint8_t FUZZ_MIN_MULTI_VALUE = 2;
-constexpr size_t FUZZ_ZERO = 0;
-constexpr size_t FUZZ_OBSTACLE_INFO_SIZE = 1;
-constexpr int32_t FUZZ_MAX_BASIC_TEST_ID = 4;
-constexpr int32_t FUZZ_MAX_UNMARSHAL_TEST_ID = 12;
+constexpr size_t BIT_OFFSET_5 = 5;
 
-enum class TestFunctionId {
-    FUZZ_CONSTRUCTOR = 0,
-    FUZZ_MARSHAL = 1,
-    FUZZ_UNMARSHAL_WITH_NULL = 2,
-    FUZZ_UNMARSHAL_WITH_SMALL_BUFFER = 3,
-    FUZZ_UNMARSHAL_WITH_ZERO_OBSTACLE = 4,
-    FUZZ_UNMARSHAL_WITH_ONE_OBSTACLE = 5,
-    FUZZ_UNMARSHAL_WITH_MULTIPLE_OBSTACLES = 6,
-    FUZZ_UNMARSHAL_WITH_MAX_OBSTACLES = 7,
-    FUZZ_UNMARSHAL_WITH_INVALID_LENGTH = 8,
-    FUZZ_UNMARSHAL_WITH_RANDOM_DATA = 9,
-    FUZZ_TRIGGER_RESPONSE_WITH_NULL = 10,
-    FUZZ_TRIGGER_RESPONSE_WITH_VALID_DATA = 11,
-    FUZZ_GET_OBSTACLES = 12,
-    FUZZ_GET_OBSTACLE_NUMS = 13,
-    FUZZ_GET_RESULT = 14,
-    FUZZ_FULL_WORKFLOW = 15
-};
-
-void FuzzConstructor(FuzzedDataProvider &provider)
-{
-    if (provider.ConsumeBool()) {
-        RegisterMechObstacleInfoCmd cmd;
-    }
-}
-
-void FuzzMarshal(FuzzedDataProvider &provider)
+void FuzzUnmarshalWithNoObstacle(FuzzedDataProvider &provider)
 {
     RegisterMechObstacleInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        auto buffer = cmd.Marshal();
+    auto buffer = cmd.Marshal();
+    size_t dataSize = RPT_SIZE + BIT_OFFSET_2;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer != nullptr) {
+        dataBuffer->SetRange(0, dataSize);
+        if (dataBuffer->Data() != nullptr) {
+            uint8_t obstacleNums = 0;
+            size_t offset = 0;
+            uint8_t reserved = provider.ConsumeIntegralInRange<uint8_t>(0, 3);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &obstacleNums, sizeof(obstacleNums));
+        }
     }
-}
-
-void FuzzUnmarshalWithNull(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        bool result = cmd.Unmarshal(nullptr);
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithSmallBuffer(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-    size_t bufferSize = provider.ConsumeIntegralInRange<size_t>(FUZZ_ZERO, FUZZ_SMALL_BUFFER_SIZE);
-    auto buffer = std::make_shared<MechDataBuffer>(bufferSize);
-    if (buffer != nullptr) {
-        bool result = cmd.Unmarshal(buffer);
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithZeroObstacle(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2;
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    buffer->AppendUint8(0x00);
-
-    bool result = cmd.Unmarshal(buffer);
-    if (provider.ConsumeBool()) {
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithOneObstacle(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE;
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x41);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
-    }
-
-    buffer->AppendUint8(0x01);
-    int16_t direction = provider.ConsumeIntegral<int16_t>();
-    int16_t pitchAngle = provider.ConsumeIntegral<int16_t>();
-    buffer->AppendInt16(direction);
-    buffer->AppendInt16(pitchAngle);
-    buffer->AppendUint8(0x00);
-
-    bool result = cmd.Unmarshal(buffer);
+    bool result = cmd.Unmarshal(dataBuffer);
     (void)result;
 }
 
-void FuzzUnmarshalWithMultipleObstacles(FuzzedDataProvider &provider)
+void FuzzUnmarshalWithObstacleNoDetails(FuzzedDataProvider &provider)
 {
     RegisterMechObstacleInfoCmd cmd;
+    uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(1, 5);
+    // 修复： dataSize = BIT_OFFSET_2(前2字节) + sizeof(obstacleNums) + obstacleNums * BIT_OFFSET_5
+    size_t dataSize = BIT_OFFSET_2 + sizeof(obstacleNums) + obstacleNums * BIT_OFFSET_5;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer != nullptr) {
+        dataBuffer->SetRange(0, dataSize);
+        if (dataBuffer->Data() != nullptr) {
+            size_t offset = 0;
+            uint8_t reserved = 0;
+            // 前2个保留字节
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            // obstacleNums写在offset=2位置
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &obstacleNums, sizeof(obstacleNums));
+            offset++;
+            for (uint8_t i = 0; i < obstacleNums; i++) {
+                int16_t direction = provider.ConsumeIntegral<int16_t>();
+                int16_t pitchAngle = provider.ConsumeIntegral<int16_t>();
+                uint8_t detailLength = 0;
+                uint8_t reserved2 = 0;
+                memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+                offset += sizeof(reserved2);
+                memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+                offset += sizeof(reserved2);
+                (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &direction, sizeof(direction));
+                offset += sizeof(direction);
+                (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &pitchAngle, sizeof(pitchAngle));
+                offset += sizeof(pitchAngle);
+                (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &detailLength, sizeof(detailLength));
+                offset += sizeof(detailLength);
+            }
+        }
+    }
+    bool result = cmd.Unmarshal(dataBuffer);
+    (void)result;
+}
 
-    uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(FUZZ_MIN_MULTI_VALUE, FUZZ_SMALL_BUFFER_SIZE);
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
+std::shared_ptr<MechDataBuffer> FuzzCreateAndInitBufferForDetails(FuzzedDataProvider &provider, uint8_t obstacleNums,
+                                                                  uint8_t detailLen)
+{
+    size_t dataSize = BIT_OFFSET_2 + sizeof(obstacleNums) + obstacleNums * (BIT_OFFSET_5 + detailLen);
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer == nullptr) {
+        return nullptr;
     }
 
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x41);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
+    dataBuffer->SetRange(0, dataSize);
+    if (dataBuffer->Data() == nullptr) {
+        return nullptr;
     }
 
-    buffer->AppendUint8(obstacleNums);
+    size_t offset = 0;
+    uint8_t reserved = provider.ConsumeIntegralInRange<uint8_t>(0, 3);
+    memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+    offset += sizeof(reserved);
+    memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+    offset += sizeof(reserved);
+    memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &obstacleNums, sizeof(obstacleNums));
 
-    for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
+    return dataBuffer;
+}
+
+void FuzzWriteObstacleDetails(FuzzedDataProvider &provider, std::shared_ptr<MechDataBuffer> dataBuffer, size_t dataSize,
+                              uint8_t obstacleNums, uint8_t detailLen)
+{
+    size_t offset = BIT_OFFSET_2 + sizeof(obstacleNums);
+
+    for (uint8_t i = 0; i < obstacleNums; i++) {
         int16_t direction = provider.ConsumeIntegral<int16_t>();
         int16_t pitchAngle = provider.ConsumeIntegral<int16_t>();
-        buffer->AppendInt16(direction);
-        buffer->AppendInt16(pitchAngle);
-        buffer->AppendUint8(0x00);
-    }
+        uint8_t detailLength = detailLen;
+        (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &direction, sizeof(direction));
+        offset += sizeof(direction);
+        (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &pitchAngle, sizeof(pitchAngle));
+        offset += sizeof(pitchAngle);
+        (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &detailLength, sizeof(detailLength));
+        offset++;
 
-    bool result = cmd.Unmarshal(buffer);
-    (void)result;
-}
-
-void FuzzUnmarshalWithMaxObstacles(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-
-    uint8_t obstacleNums = provider.ConsumeBool() ? MAX_OBSTACLE_NUMS : provider.ConsumeIntegral<uint8_t>();
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    buffer->AppendUint8(obstacleNums);
-
-    for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
-        buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-        buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    bool result = cmd.Unmarshal(buffer);
-    if (provider.ConsumeBool()) {
-        (void)result;
-    }
-}
-
-void FuzzUnmarshalWithInvalidLength(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE;
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x41);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(0x00);
-    }
-
-    buffer->AppendUint8(0x01);
-    buffer->AppendInt16(0x0000);
-    buffer->AppendInt16(0x0000);
-    buffer->AppendUint8(provider.ConsumeIntegralInRange<uint8_t>(FUZZ_MIN_VALUE, MAX_OBSTACLE_NUMS));
-
-    bool result = cmd.Unmarshal(buffer);
-    (void)result;
-}
-
-void FuzzUnmarshalWithRandomData(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-
-    uint8_t obstacleNums = provider.ConsumeIntegral<uint8_t>();
-    size_t totalSize = RPT_SIZE + BIT_OFFSET_2 + obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
-
-    auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(0x03);
-    buffer->AppendUint8(0x41);
-
-    for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    buffer->AppendUint8(obstacleNums);
-
-    for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
-        buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-        buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-        buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-    }
-
-    bool result = cmd.Unmarshal(buffer);
-    (void)result;
-}
-
-void FuzzTriggerResponseWithNull(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        cmd.TriggerResponse(nullptr);
-    }
-}
-
-void FuzzTriggerResponseWithValidData(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-
-    auto buffer = std::make_shared<MechDataBuffer>(FUZZ_BUFFER_SIZE);
-    if (buffer == nullptr) {
-        return;
-    }
-
-    buffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-
-    cmd.TriggerResponse(buffer);
-}
-
-void FuzzGetObstacles(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        std::vector<ObstacleInfo> obstacles = cmd.GetObstacles();
-        (void)obstacles;
-    }
-}
-
-void FuzzGetObstacleNums(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        uint8_t obstacleNums = cmd.GetObstacleNums();
-        (void)obstacleNums;
-    }
-}
-
-void FuzzGetResult(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-    if (provider.ConsumeBool()) {
-        uint8_t result = cmd.GetResult();
-        (void)result;
-    }
-}
-
-void FuzzFullWorkflow(FuzzedDataProvider &provider)
-{
-    RegisterMechObstacleInfoCmd cmd;
-
-    auto marshalBuffer = cmd.Marshal();
-
-    bool shouldTestNull = provider.ConsumeBool();
-    if (shouldTestNull) {
-        cmd.Unmarshal(nullptr);
-        cmd.TriggerResponse(nullptr);
-    } else {
-        uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(FUZZ_ZERO, FUZZ_SMALL_BUFFER_SIZE);
-            size_t totalSize = RPT_SIZE + BIT_OFFSET_2 +
-            obstacleNums * (BIT_OFFSET_2 + BIT_OFFSET_2 + FUZZ_OBSTACLE_INFO_SIZE);
-
-        auto buffer = std::make_shared<MechDataBuffer>(totalSize + FUZZ_SMALL_BUFFER_SIZE);
-        if (buffer != nullptr) {
-            buffer->AppendUint8(0x03);
-            buffer->AppendUint8(0x41);
-
-            for (size_t i = FUZZ_ZERO; i < BIT_OFFSET_2; i++) {
-                buffer->AppendUint8(0x00);
-            }
-
-            buffer->AppendUint8(obstacleNums);
-
-            for (uint8_t i = FUZZ_ZERO; i < obstacleNums; i++) {
-                buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-                buffer->AppendInt16(provider.ConsumeIntegral<int16_t>());
-                buffer->AppendUint8(0x00);
-            }
-
-            bool result = cmd.Unmarshal(buffer);
-            (void)result;
-
-            std::vector<ObstacleInfo> obstacles = cmd.GetObstacles();
-            uint8_t obstacleNumsResult = cmd.GetObstacleNums();
-            (void)obstacles;
-            (void)obstacleNumsResult;
-
-            auto responseBuffer = std::make_shared<MechDataBuffer>(FUZZ_BUFFER_SIZE);
-            if (responseBuffer != nullptr) {
-                responseBuffer->AppendUint8(provider.ConsumeIntegral<uint8_t>());
-                cmd.TriggerResponse(responseBuffer);
-            }
-
-            uint8_t resultValue = cmd.GetResult();
-            (void)resultValue;
+        for (uint8_t j = 0; j < detailLen; j++) {
+            uint8_t detailType = provider.ConsumeIntegral<uint8_t>();
+            uint8_t dataLen = provider.ConsumeIntegral<uint8_t>();
+            uint8_t reserved2 = 0;
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+            offset += sizeof(reserved2);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved2, sizeof(reserved2));
+            offset += sizeof(reserved2);
+            (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &detailType, sizeof(detailType));
+            offset++;
+            (void)memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &dataLen, sizeof(dataLen));
+            offset++;
+            offset += dataLen;
         }
     }
 }
 
-void RunBasicFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
+void FuzzUnmarshalWithObstacleAndDetails(FuzzedDataProvider &provider)
 {
-    switch (static_cast<TestFunctionId>(testFunctionId)) {
-        case TestFunctionId::FUZZ_CONSTRUCTOR:
-            FuzzConstructor(provider);
-            break;
-        case TestFunctionId::FUZZ_MARSHAL:
-            FuzzMarshal(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_OBSTACLES:
-            FuzzGetObstacles(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_OBSTACLE_NUMS:
-            FuzzGetObstacleNums(provider);
-            break;
-        case TestFunctionId::FUZZ_GET_RESULT:
-            FuzzGetResult(provider);
-            break;
-        default:
-            (void)provider;
-            break;
+    RegisterMechObstacleInfoCmd cmd;
+    uint8_t obstacleNums = provider.ConsumeIntegralInRange<uint8_t>(1, 3);
+    uint8_t detailLen = provider.ConsumeIntegralInRange<uint8_t>(1, 4);
+
+    std::shared_ptr<MechDataBuffer> dataBuffer = FuzzCreateAndInitBufferForDetails(provider, obstacleNums, detailLen);
+    if (dataBuffer == nullptr) {
+        bool unmarshalResult = cmd.Unmarshal(dataBuffer);
+        (void)unmarshalResult;
+        return;
     }
+
+    size_t dataSize = BIT_OFFSET_2 + sizeof(obstacleNums) + obstacleNums * (BIT_OFFSET_5 + detailLen);
+    FuzzWriteObstacleDetails(provider, dataBuffer, dataSize, obstacleNums, detailLen);
+
+    bool unmarshalResult = cmd.Unmarshal(dataBuffer);
+    const std::vector<ObstacleInfo> obstacles = cmd.GetObstacles();
+    uint8_t obstacleNumsResult = cmd.GetObstacleNums();
+    uint8_t result = cmd.GetResult();
+    (void)obstacles;
+    (void)obstacleNumsResult;
+    (void)unmarshalResult;
+    (void)result;
 }
 
-void RunUnmarshalFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
+void FuzzTriggerResponse(FuzzedDataProvider &provider)
 {
-    switch (static_cast<TestFunctionId>(testFunctionId)) {
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_NULL:
-            FuzzUnmarshalWithNull(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_SMALL_BUFFER:
-            FuzzUnmarshalWithSmallBuffer(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_ZERO_OBSTACLE:
-            FuzzUnmarshalWithZeroObstacle(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_ONE_OBSTACLE:
-            FuzzUnmarshalWithOneObstacle(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_MULTIPLE_OBSTACLES:
-            FuzzUnmarshalWithMultipleObstacles(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_MAX_OBSTACLES:
-            FuzzUnmarshalWithMaxObstacles(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_INVALID_LENGTH:
-            FuzzUnmarshalWithInvalidLength(provider);
-            break;
-        case TestFunctionId::FUZZ_UNMARSHAL_WITH_RANDOM_DATA:
-            FuzzUnmarshalWithRandomData(provider);
-            break;
-        default:
-            break;
+    RegisterMechObstacleInfoCmd cmd;
+    size_t dataSize = RPT_SIZE;
+    std::shared_ptr<MechDataBuffer> dataBuffer = std::make_shared<MechDataBuffer>(dataSize);
+    if (dataBuffer != nullptr) {
+        dataBuffer->SetRange(0, dataSize);
+        if (dataBuffer->Data() != nullptr) {
+            uint8_t result = provider.ConsumeIntegral<uint8_t>();
+            uint8_t reserved = 0;
+            size_t offset = 0;
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data() + offset, dataSize - offset, &reserved, sizeof(reserved));
+            offset += sizeof(reserved);
+            memcpy_s(dataBuffer->Data(), dataSize, &result, sizeof(result));
+        }
     }
+    cmd.TriggerResponse(dataBuffer);
 }
-
-void RunTriggerResponseFuzzTests(FuzzedDataProvider &provider, int32_t testFunctionId)
-{
-    switch (static_cast<TestFunctionId>(testFunctionId)) {
-        case TestFunctionId::FUZZ_TRIGGER_RESPONSE_WITH_NULL:
-            FuzzTriggerResponseWithNull(provider);
-            break;
-        case TestFunctionId::FUZZ_TRIGGER_RESPONSE_WITH_VALID_DATA:
-            FuzzTriggerResponseWithValidData(provider);
-            break;
-        case TestFunctionId::FUZZ_FULL_WORKFLOW:
-            FuzzFullWorkflow(provider);
-            break;
-        default:
-            break;
-    }
-}
-
-void RunFuzzTest(FuzzedDataProvider &provider)
-{
-    int32_t testFunctionId = provider.ConsumeIntegralInRange<int32_t>(0, 15);
-
-    if (testFunctionId <= FUZZ_MAX_BASIC_TEST_ID) {
-        RunBasicFuzzTests(provider, testFunctionId);
-    } else if (testFunctionId <= FUZZ_MAX_UNMARSHAL_TEST_ID) {
-        RunUnmarshalFuzzTests(provider, testFunctionId);
-    } else {
-        RunTriggerResponseFuzzTests(provider, testFunctionId);
-    }
-}
-
 } // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider provider(data, size);
-    RunFuzzTest(provider);
+    FuzzUnmarshalWithNoObstacle(provider);
+    FuzzUnmarshalWithObstacleNoDetails(provider);
+    FuzzUnmarshalWithObstacleAndDetails(provider);
+    FuzzTriggerResponse(provider);
     return 0;
 }

@@ -212,17 +212,6 @@ void GetRealNameFuzzTest(const uint8_t *data, size_t size)
     mechInfo.mechType = static_cast<MechType>(fdp.ConsumeIntegral<int32_t>());
 
     bleSendManager.GetRealName(mechInfo);
-}
-
-void NotifyGetRealNameFuzzTest(const uint8_t *data, size_t size)
-{
-    if ((data == nullptr) || (size == 0)) {
-        return;
-    }
-
-    FuzzedDataProvider fdp(data, size);
-    BleSendManager& bleSendManager = BleSendManager::GetInstance();
-
     bleSendManager.NotifyGetRealName();
 }
 }
@@ -236,6 +225,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CancelDelayedUnloadFuzzTest(data, size);
     OHOS::HasBluetoothServiceStopedFuzzTest(data, size);
     OHOS::GetRealNameFuzzTest(data, size);
-    OHOS::NotifyGetRealNameFuzzTest(data, size);
     return 0;
 }

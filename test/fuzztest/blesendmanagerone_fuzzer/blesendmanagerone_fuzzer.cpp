@@ -333,6 +333,21 @@ void OnCharacteristicWriteResultFuzzTest(const uint8_t *data, size_t size)
     }
     bleGattClientCallBack->OnCharacteristicWriteResult(characteristic, ret);
 }
+
+void MechbodyPairFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+
+    FuzzedDataProvider fdp(data, size);
+    BleSendManager& bleSendManager = BleSendManager::GetInstance();
+
+    std::string mac = fdp.ConsumeRandomLengthString();
+    std::string deviceName = fdp.ConsumeRandomLengthString();
+
+    bleSendManager.MechbodyPair(mac, deviceName);
+}
 }
 
 /* Fuzzer entry point */
@@ -345,5 +360,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnSetNotifyCharacteristicFuzzTest(data, size);
     OHOS::OnCharacteristicChangedFuzzTest(data, size);
     OHOS::OnCharacteristicWriteResultFuzzTest(data, size);
+    OHOS::MechbodyPairFuzzTest(data, size);
     return 0;
 }
