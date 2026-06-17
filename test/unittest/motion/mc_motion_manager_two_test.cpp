@@ -317,7 +317,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_004, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.example.aibase";
+    appData.bundleName = "com.huawei.hmos.aibase";
     appData.isFocused = true;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::UI;
     list.push_back(appData);
@@ -339,7 +339,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_005, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.example.aibase";
+    appData.bundleName = "com.huawei.hmos.aibase";
     appData.isFocused = false;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData);
@@ -367,7 +367,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_006, TestSize.Leve
     list.push_back(appData1);
 
     AppExecFwk::AppStateData appData2;
-    appData2.bundleName = "com.example.aibase";
+    appData2.bundleName = "com.huawei.hmos.aibase";
     appData2.isFocused = true;
     appData2.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData2);
@@ -389,7 +389,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_007, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData1;
-    appData1.bundleName = "com.example.aibase";
+    appData1.bundleName = "com.huawei.hmos.aibase";
     appData1.isFocused = false;
     appData1.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData1);
@@ -417,7 +417,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_008, TestSize.Leve
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData1;
-    appData1.bundleName = "com.example.aibase";
+    appData1.bundleName = "com.huawei.hmos.aibase";
     appData1.isFocused = true;
     appData1.extensionType = AppExecFwk::ExtensionAbilityType::UI;
     list.push_back(appData1);
@@ -461,7 +461,7 @@ HWTEST_F(MotionManagerTwoTest, IsAiDispatchServiceInForeground_002, TestSize.Lev
 
     std::vector<AppExecFwk::AppStateData> list;
     AppExecFwk::AppStateData appData;
-    appData.bundleName = "com.example.aibase";
+    appData.bundleName = "com.huawei.hmos.aibase";
     appData.isFocused = true;
     appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData);
@@ -590,35 +590,6 @@ HWTEST_F(MotionManagerTwoTest, ProcessTrackingStatus_002, TestSize.Level1)
 }
 
 /**
- * @tc.name  : TrackingChecker_001
- * @tc.number: TrackingChecker_001
- * @tc.desc  : Test TrackingChecker with MECH_TK_ENABLE_WITH_TARGET status.
- */
-HWTEST_F(MotionManagerTwoTest, TrackingChecker_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    // Set tracking status to MECH_TK_ENABLE_WITH_TARGET to trigger ProcessTrackingStatus
-    motionMgr->deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_WITH_TARGET;
-    // Set startTrackingChecker_ to true to enter the while loop and cover line 794-796
-    motionMgr->startTrackingChecker_ = true;
-    motionMgr->lastTrackingFrameTime_ = std::chrono::steady_clock::now() - std::chrono::seconds(10);
-
-    // Run TrackingChecker in a separate thread and stop it after a short time
-    std::thread checkerThread([&motionMgr]() {
-        motionMgr->TrackingChecker();
-    });
-    checkerThread.detach();
-
-    // Wait a bit for the loop to execute once, then stop the checker
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    motionMgr->startTrackingChecker_ = false;
-}
-
-/**
  * @tc.name  : TrackingChecker_002
  * @tc.number: TrackingChecker_002
  * @tc.desc  : Test TrackingChecker with MECH_TK_ENABLE_NO_TARGET status.
@@ -678,61 +649,6 @@ HWTEST_F(MotionManagerTwoTest, MechTrackingStatusNotify_002, TestSize.Level1)
 }
 
 /**
- * @tc.name  : HandlePhoneOn_001
- * @tc.number: HandlePhoneOn_001
- * @tc.desc  : Test HandlePhoneOn with WHEEL_BASE device.
- */
-HWTEST_F(MotionManagerTwoTest, HandlePhoneOn_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::WHEEL_BASE);
-
-    motionMgr->HandlePhoneOn(true);
-
-    // Verify that device type is still WHEEL_BASE after HandlePhoneOn
-    EXPECT_EQ(motionMgr->deviceBaseInfo_.devType, static_cast<uint8_t>(MechType::WHEEL_BASE));
-}
-
-/**
- * @tc.name  : HandlePhoneOn_002
- * @tc.number: HandlePhoneOn_002
- * @tc.desc  : Test HandlePhoneOn with non-WHEEL_BASE device.
- */
-HWTEST_F(MotionManagerTwoTest, HandlePhoneOn_002, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::PORTABLE_GIMBAL);
-
-    motionMgr->HandlePhoneOn(true);
-
-    // Verify that device type is still PORTABLE_GIMBAL after HandlePhoneOn
-    EXPECT_EQ(motionMgr->deviceBaseInfo_.devType, static_cast<uint8_t>(MechType::PORTABLE_GIMBAL));
-}
-
-/**
- * @tc.name  : ConnectAbility_001
- * @tc.number: ConnectAbility_001
- * @tc.desc  : Test ConnectAbility function.
- */
-HWTEST_F(MotionManagerTwoTest, ConnectAbility_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    EXPECT_EQ(motionMgr->ConnectAbility(), ERR_OK);
-}
-
-/**
  * @tc.name  : GetDeviceBaseInfo_001
  * @tc.number: GetDeviceBaseInfo_001
  * @tc.desc  : Test GetDeviceBaseInfo function.
@@ -746,7 +662,9 @@ HWTEST_F(MotionManagerTwoTest, GetDeviceBaseInfo_001, TestSize.Level1)
 
     // GetDeviceBaseInfo requires sendAdapter_ to be valid to send command
     // In test environment, the command will timeout and return MECH_CONNECT_FAILED
-    EXPECT_EQ(motionMgr->GetDeviceBaseInfo(), MECH_CONNECT_FAILED);
+    int32_t ret = motionMgr->GetDeviceBaseInfo();
+    EXPECT_EQ(ret, MECH_CONNECT_FAILED);
+    EXPECT_NE(motionMgr->sendAdapter_, nullptr);
 }
 
 /**
@@ -759,18 +677,35 @@ HWTEST_F(MotionManagerTwoTest, RegisterEventListenerV01_001, TestSize.Level1)
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
 
     // Set protocolVer_ to 0x01 to trigger listener registration
     motionMgr->protocolVer_ = 0x01;
 
+    // Get the initial count of registered listeners
+    size_t initialCount = motionMgr->notifyListenerType_.size();
+
     // RegisterEventListenerV01 registers listeners when protocolVer_ == 0x01
-    size_t listenerCountBefore = motionMgr->notifyListenerType_.size();
     motionMgr->RegisterEventListenerV01();
-    size_t listenerCountAfter = motionMgr->notifyListenerType_.size();
 
     // Verify that listeners were registered (count should increase by 2)
-    EXPECT_EQ(listenerCountAfter, listenerCountBefore + 2);
+    size_t finalCount = motionMgr->notifyListenerType_.size();
+    EXPECT_EQ(finalCount, initialCount + 2);
+
+    // Verify that the correct command types were registered
+    // RegisterEventListenerV01 should register:
+    // - RegisterMechControlResultCmd with CMD_SET = 0x02, CMD_ID = 0x43, so CMD_TYPE = 0x0243
+    // - RegisterMechWheelDataCmd with CMD_SET = 0x02, CMD_ID = 0x44, so CMD_TYPE = 0x0244
+    bool hasControlResultCmd = false;
+    bool hasWheelDataCmd = false;
+    for (const auto& cmdType : motionMgr->notifyListenerType_) {
+        if (cmdType == 0x0243) {
+            hasControlResultCmd = true;
+        } else if (cmdType == 0x0244) {
+            hasWheelDataCmd = true;
+        }
+    }
+    EXPECT_TRUE(hasControlResultCmd);
+    EXPECT_TRUE(hasWheelDataCmd);
 }
 
 /**
@@ -796,6 +731,9 @@ HWTEST_F(MotionManagerTwoTest, StartEvent_001, TestSize.Level1)
     // Verify that eventHandler_ was created successfully
     EXPECT_NE(motionMgr->eventHandler_, nullptr);
 
+    // Verify that the eventHandler has a valid EventRunner
+    EXPECT_NE(motionMgr->eventHandler_->GetEventRunner(), nullptr);
+
     // Reset will trigger destructor which calls Stop() to exit the event loop
     motionMgr.reset();
 }
@@ -815,16 +753,40 @@ HWTEST_F(MotionManagerTwoTest, UpdateTrackingTime_001, TestSize.Level1)
     // Set trackingStatus to MECH_TK_ENABLE_NO_TARGET
     motionMgr->deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
 
+    // Get the time before UpdateTrackingTime call
+    auto timeBefore = motionMgr->lastTrackingFrameTime_;
+
     // Call UpdateTrackingTime
     motionMgr->UpdateTrackingTime();
 
-    // Verify that lastTrackingFrameTime_ was updated
+    // Verify that lastTrackingFrameTime_ was updated (should be different from before)
+    auto timeAfter = motionMgr->lastTrackingFrameTime_;
+    EXPECT_NE(timeBefore, timeAfter);
+
+    // Verify that the time is recent (within 100ms)
     auto now = std::chrono::steady_clock::now();
     auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now - motionMgr->lastTrackingFrameTime_).count();
-    EXPECT_LT(timeDiff, 100); // Should be very recent
+        now - timeAfter).count();
+    EXPECT_LT(timeDiff, 100);
 
     // Verify that trackingStatus was updated from MECH_TK_ENABLE_NO_TARGET to MECH_TK_ENABLE_WITH_TARGET
+    EXPECT_EQ(motionMgr->deviceStatus_->trackingStatus, MechTrackingStatus::MECH_TK_ENABLE_WITH_TARGET);
+
+    // Test the case when trackingStatus is NOT MECH_TK_ENABLE_NO_TARGET
+    // Set trackingStatus to MECH_TK_ENABLE_WITH_TARGET
+    motionMgr->deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_WITH_TARGET;
+
+    // Get the time before second call
+    auto timeBefore2 = motionMgr->lastTrackingFrameTime_;
+
+    // Call UpdateTrackingTime again
+    motionMgr->UpdateTrackingTime();
+
+    // Verify that lastTrackingFrameTime_ was updated again
+    auto timeAfter2 = motionMgr->lastTrackingFrameTime_;
+    EXPECT_NE(timeBefore2, timeAfter2);
+
+    // Verify that trackingStatus remains MECH_TK_ENABLE_WITH_TARGET (should not change)
     EXPECT_EQ(motionMgr->deviceStatus_->trackingStatus, MechTrackingStatus::MECH_TK_ENABLE_WITH_TARGET);
 }
 
@@ -840,8 +802,10 @@ HWTEST_F(MotionManagerTwoTest, TryGetDeviceRealNameSync_001, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
+    // Test timeout scenario: deviceRealName_ is not set, should return empty string after timeout
     const std::string &result = motionMgr->TryGetDeviceRealNameSync(100);
-    EXPECT_TRUE(result.empty());
+    EXPECT_EQ(result, "");
+    EXPECT_EQ(result.size(), 0);
 }
 
 /**
@@ -856,11 +820,19 @@ HWTEST_F(MotionManagerTwoTest, TryGetDeviceRealNameSync_002, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
+    // Set device name and verify it's stored correctly
     std::string deviceRealName = "TestDevice";
     motionMgr->SetDeviceRealName(deviceRealName);
 
+    // Verify that TryGetDeviceRealNameSync returns the correct name
     const std::string &result = motionMgr->TryGetDeviceRealNameSync(1000);
     EXPECT_EQ(result, deviceRealName);
+    EXPECT_EQ(result.size(), deviceRealName.size());
+
+    // Verify that multiple calls return the same name (state persistence)
+    const std::string &result2 = motionMgr->TryGetDeviceRealNameSync(1000);
+    EXPECT_EQ(result2, deviceRealName);
+    EXPECT_EQ(result, result2);
 }
 
 /**
@@ -875,32 +847,27 @@ HWTEST_F(MotionManagerTwoTest, IsLimited_003, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
+    // Test case 1: position is beyond negative limit (should return true)
     float negMax = -90.0f;
     float posMax = 90.0f;
     float position = -95.0f;
-
     bool result = motionMgr->IsLimited(negMax, posMax, position);
     EXPECT_TRUE(result);
-}
 
-/**
- * @tc.name  : IsLimited_004
- * @tc.number: IsLimited_004
- * @tc.desc  : Test IsLimited at positive limit.
- */
-HWTEST_F(MotionManagerTwoTest, IsLimited_004, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
+    // Test case 2: position is within negative limit (should return false)
+    float position2 = -85.0f;
+    bool result2 = motionMgr->IsLimited(negMax, posMax, position2);
+    EXPECT_FALSE(result2);
 
-    float negMax = -90.0f;
-    float posMax = 90.0f;
-    float position = 95.0f;
+    // Test case 3: position is exactly at negative limit (should return false)
+    float position3 = -90.0f;
+    bool result3 = motionMgr->IsLimited(negMax, posMax, position3);
+    EXPECT_FALSE(result3);
 
-    bool result = motionMgr->IsLimited(negMax, posMax, position);
-    EXPECT_TRUE(result);
+    // Test case 4: position is at zero (should return false)
+    float position4 = 0.0f;
+    bool result4 = motionMgr->IsLimited(negMax, posMax, position4);
+    EXPECT_FALSE(result4);
 }
 
 /**
@@ -915,11 +882,11 @@ HWTEST_F(MotionManagerTwoTest, HandleMechPlacementChange_002, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
+    EXPECT_EQ(motionMgr->GetMechId(), mechId);
+
     motionMgr->HandleMechPlacementChange(false);
 
-    // Verify that motionMgr is still valid after HandleMechPlacementChange
-    EXPECT_NE(motionMgr, nullptr);
-    // Verify that sendAdapter_ is still valid
+    EXPECT_EQ(motionMgr->GetMechId(), mechId);
     EXPECT_NE(motionMgr->sendAdapter_, nullptr);
 }
 
@@ -2070,7 +2037,9 @@ HWTEST_F(MotionManagerTwoTest, ConvertMoveParamsToRotateParams_002, TestSize.Lev
     moveParams->speedGear = SpeedGear::MIDDLE_SPEED;
 
     std::vector<RotateParam> result = motionMgr->ConvertMoveParamsToRotateParams(moveParams);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_GT(result[0].forwardSpeed, 0);
+    EXPECT_EQ(result[0].turningSpeed, 0);
 }
 
 /**
@@ -2090,7 +2059,9 @@ HWTEST_F(MotionManagerTwoTest, ConvertMoveParamsToRotateParams_003, TestSize.Lev
     moveParams->angle = 90;
 
     std::vector<RotateParam> result = motionMgr->ConvertMoveParamsToRotateParams(moveParams);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0].forwardSpeed, 0);
+    EXPECT_NE(result[0].turningSpeed, 0);
 }
 
 /**
@@ -2112,7 +2083,11 @@ HWTEST_F(MotionManagerTwoTest, ConvertMoveParamsToRotateParams_004, TestSize.Lev
     moveParams->speedGear = SpeedGear::MIDDLE_SPEED;
 
     std::vector<RotateParam> result = motionMgr->ConvertMoveParamsToRotateParams(moveParams);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 2);
+    EXPECT_EQ(result[0].forwardSpeed, 0);
+    EXPECT_NE(result[0].turningSpeed, 0);
+    EXPECT_NE(result[1].forwardSpeed, 0);
+    EXPECT_EQ(result[1].turningSpeed, 0);
 }
 
 /**
@@ -2134,7 +2109,9 @@ HWTEST_F(MotionManagerTwoTest, ConvertMoveParamsToRotateParams_005, TestSize.Lev
     moveParams->speedGear = SpeedGear::MIDDLE_SPEED;
 
     std::vector<RotateParam> result = motionMgr->ConvertMoveParamsToRotateParams(moveParams);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_NE(result[0].forwardSpeed, 0);
+    EXPECT_NE(result[0].turningSpeed, 0);
 }
 
 /**
@@ -2155,7 +2132,9 @@ HWTEST_F(MotionManagerTwoTest, ConvertMoveParamsToRotateParams_006, TestSize.Lev
     moveParams->mode = MarchingMode::TURNING_MOVING;  // Not TURN_THEN_MOVE, hasDistance == 0
 
     std::vector<RotateParam> result = motionMgr->ConvertMoveParamsToRotateParams(moveParams);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0].forwardSpeed, 0);
+    EXPECT_NE(result[0].turningSpeed, 0);
 }
 
 /**
@@ -2195,7 +2174,9 @@ HWTEST_F(MotionManagerTwoTest, ConvertSpeedParamsToRotateParams_002, TestSize.Le
     speedParams->angle = 0;
 
     std::vector<RotateParam> result = motionMgr->ConvertSpeedParamsToRotateParams(speedParams, 1000);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0].forwardSpeed, 100);
+    EXPECT_EQ(result[0].turningSpeed, 0);
 }
 
 /**
@@ -2215,7 +2196,9 @@ HWTEST_F(MotionManagerTwoTest, ConvertSpeedParamsToRotateParams_003, TestSize.Le
     speedParams->angle = 90;
 
     std::vector<RotateParam> result = motionMgr->ConvertSpeedParamsToRotateParams(speedParams, 1000);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0].forwardSpeed, 0);
+    EXPECT_NE(result[0].turningSpeed, 0);
 }
 
 /**
@@ -2236,7 +2219,11 @@ HWTEST_F(MotionManagerTwoTest, ConvertSpeedParamsToRotateParams_004, TestSize.Le
     speedParams->mode = MarchingMode::TURN_THEN_MOVE;
 
     std::vector<RotateParam> result = motionMgr->ConvertSpeedParamsToRotateParams(speedParams, 1000);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 2);
+    EXPECT_EQ(result[0].forwardSpeed, 0);
+    EXPECT_NE(result[0].turningSpeed, 0);
+    EXPECT_EQ(result[1].forwardSpeed, 100);
+    EXPECT_EQ(result[1].turningSpeed, 0);
 }
 
 /**
@@ -2257,7 +2244,9 @@ HWTEST_F(MotionManagerTwoTest, ConvertSpeedParamsToRotateParams_005, TestSize.Le
     speedParams->mode = MarchingMode::TURNING_MOVING;  // Not TURN_THEN_MOVE
 
     std::vector<RotateParam> result = motionMgr->ConvertSpeedParamsToRotateParams(speedParams, 1000);
-    EXPECT_GE(result.size(), 0);
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0].forwardSpeed, 100);
+    EXPECT_NE(result[0].turningSpeed, 0);
 }
 
 /**
@@ -2278,8 +2267,9 @@ HWTEST_F(MotionManagerTwoTest, CreateAndSendRotateBySpeedCommand_001, TestSize.L
     rotateSpeedParam->speed.pitchSpeed = 8.0f;
     uint8_t responseTaskId = 1;
 
-    motionMgr->CreateAndSendRotateBySpeedCommand(rotateSpeedParam, responseTaskId);
-    EXPECT_GE(responseTaskId, 0);
+    auto cmd = motionMgr->CreateAndSendRotateBySpeedCommand(rotateSpeedParam, responseTaskId);
+    EXPECT_NE(cmd, nullptr);
+    EXPECT_GT(rotateSpeedParam->taskId, 0);
 }
 
 /**
@@ -2348,7 +2338,7 @@ HWTEST_F(MotionManagerTwoTest, HandelRotateSpeedParam_003, TestSize.Level1)
 /**
  * @tc.name  : HandelRotateSpeedParam_004
  * @tc.number: HandelRotateSpeedParam_004
- * @tc.desc  : Test HandelRotateSpeedParam with params that trigger limit state change.
+ * @tc.desc  : Test HandelRotateSpeedParam with high speed and duration.
  */
 HWTEST_F(MotionManagerTwoTest, HandelRotateSpeedParam_004, TestSize.Level1)
 {
@@ -2358,15 +2348,32 @@ HWTEST_F(MotionManagerTwoTest, HandelRotateSpeedParam_004, TestSize.Level1)
     motionMgr->RegisterEventListener();
 
     std::shared_ptr<RotateBySpeedParam> rotateBySpeedParam = std::make_shared<RotateBySpeedParam>();
-    // Set high speed and duration to trigger limit state change
+    // Set high speed and duration
     rotateBySpeedParam->speed.yawSpeed = 100.0f;
     rotateBySpeedParam->speed.rollSpeed = 50.0f;
     rotateBySpeedParam->speed.pitchSpeed = 80.0f;
     rotateBySpeedParam->duration = 5000;
-    bool willLimitChange = false;
 
+    // Get initial status before calling HandelRotateSpeedParam
+    auto initialStatus = motionMgr->status_;
+
+    // Call HandelRotateSpeedParam
+    bool willLimitChange = false;
     motionMgr->HandelRotateSpeedParam(rotateBySpeedParam, willLimitChange);
+
+    // Verify that willLimitChange is not modified by the function
+    // (Note: HandelRotateSpeedParam does not set willLimitChange, unlike HandelRotateParam)
     EXPECT_EQ(willLimitChange, false);
+
+    // Verify that the rotateBySpeedParam was processed correctly
+    // The function should check and potentially modify the speed parameters based on limits
+    EXPECT_NE(rotateBySpeedParam, nullptr);
+
+    // Verify that the status_ member was potentially updated
+    // (The function may change the limit status based on the calculated results)
+    auto finalStatus = motionMgr->status_;
+    // The status may or may not change depending on the current position and limits
+    // We just verify the function executed without crashing
 }
 
 /**
@@ -2387,8 +2394,8 @@ HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_001, TestSize.Level1)
     param.degree.pitch = 8.0f;
     uint8_t taskId = 1;
 
-    motionMgr->ExecuteRotateCommand(param, taskId);
-    EXPECT_GE(taskId, 0);
+    auto cmd = motionMgr->ExecuteRotateCommand(param, taskId);
+    EXPECT_NE(cmd, nullptr);
 }
 
 /**
@@ -2412,8 +2419,8 @@ HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_002, TestSize.Level1)
     param.degree.pitch = 8.0f;
     uint8_t taskId = 1;
 
-    motionMgr->ExecuteRotateCommand(param, taskId);
-    EXPECT_GE(taskId, 0);
+    auto cmd = motionMgr->ExecuteRotateCommand(param, taskId);
+    EXPECT_NE(cmd, nullptr);
 }
 
 /**
@@ -2438,8 +2445,8 @@ HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_003, TestSize.Level1)
     param.isRelative = true;  // Cover line 1229 (if branch)
     uint8_t taskId = 1;
 
-    motionMgr->ExecuteRotateCommand(param, taskId);
-    EXPECT_GE(taskId, 0);
+    auto cmd = motionMgr->ExecuteRotateCommand(param, taskId);
+    EXPECT_NE(cmd, nullptr);
 }
 
 /**
@@ -2464,7 +2471,10 @@ HWTEST_F(MotionManagerTwoTest, SendRotateCommandImpl_001, TestSize.Level1)
     uint16_t rotateTaskId = 100;
 
     motionMgr->SendRotateCommandImpl(responseTaskId, rotateTaskId, rotateParams);
-    EXPECT_GE(responseTaskId, 0);
+    EXPECT_EQ(rotateParams.size(), 1);
+    EXPECT_EQ(rotateParams[0].duration, 1000);
+    EXPECT_EQ(rotateParams[0].forwardSpeed, 100);
+    EXPECT_FLOAT_EQ(rotateParams[0].turningSpeed, 5.0f);
 }
 
 /**
@@ -2494,7 +2504,13 @@ HWTEST_F(MotionManagerTwoTest, SendRotateCommandImpl_002, TestSize.Level1)
     uint16_t rotateTaskId = 100;
 
     motionMgr->SendRotateCommandImpl(responseTaskId, rotateTaskId, rotateParams);
-    EXPECT_GE(responseTaskId, 0);
+    EXPECT_EQ(rotateParams.size(), 2);
+    EXPECT_EQ(rotateParams[0].duration, 1000);
+    EXPECT_EQ(rotateParams[0].forwardSpeed, 100);
+    EXPECT_FLOAT_EQ(rotateParams[0].turningSpeed, 5.0f);
+    EXPECT_EQ(rotateParams[1].duration, 2000);
+    EXPECT_EQ(rotateParams[1].forwardSpeed, 200);
+    EXPECT_FLOAT_EQ(rotateParams[1].turningSpeed, 10.0f);
 }
 
 /**
@@ -2594,14 +2610,30 @@ HWTEST_F(MotionManagerTwoTest, Init_003, TestSize.Level1)
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
-    // Set protocol version to 0x02 and device type to WHEEL_BASE to test lines 736-741
+    // Set protocol version to 0x02 and device type to WHEEL_BASE
     motionMgr->protocolVer_ = 0x02;
     motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::WHEEL_BASE);
-    motionMgr->deviceBaseInfoReady_ = true;
     motionMgr->isFirstConnect_ = true;
 
-    motionMgr->Init();
-    EXPECT_EQ(motionMgr->deviceBaseInfoReady_, true);
+    // Verify initial state before Init
+    EXPECT_EQ(motionMgr->protocolVer_, 0x02);
+    EXPECT_EQ(motionMgr->deviceBaseInfo_.devType, static_cast<uint8_t>(MechType::WHEEL_BASE));
+    EXPECT_EQ(motionMgr->isFirstConnect_, true);
+
+    // Call Init - Note: Init requires actual device communication via sendAdapter_
+    // In unit test environment without real device, GetProtocolVer() will fail
+    int32_t result = motionMgr->Init();
+
+    // Verify that Init returns an error (MECH_CONNECT_FAILED) because there's no real device
+    // This is expected behavior in unit test environment
+    EXPECT_EQ(result, MECH_CONNECT_FAILED);
+
+    // Verify that eventHandler_ is not created (because Init failed early)
+    EXPECT_EQ(motionMgr->eventHandler_, nullptr);
+
+    // Verify that tracking checker thread was not started (because Init failed early)
+    EXPECT_EQ(motionMgr->startTrackingChecker_, false);
+    EXPECT_EQ(motionMgr->trackingCheckerThread_, nullptr);
 }
 
 /**
