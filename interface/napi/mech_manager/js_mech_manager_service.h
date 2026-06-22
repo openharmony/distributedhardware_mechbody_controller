@@ -76,9 +76,9 @@ public:
     static JsMechManagerService& GetInstance();
 private:
     JsMechManagerService(const JsMechManagerService&) = delete;
-    JsMechManagerService& operator= (const JsMechManagerService&) = delete;
+    JsMechManagerService& operator=(const JsMechManagerService&) = delete;
     JsMechManagerService(JsMechManagerService&&) = delete;
-    JsMechManagerService& operator= (JsMechManagerService&&) = delete;
+    JsMechManagerService& operator=(JsMechManagerService&&) = delete;
 
 public:
 
