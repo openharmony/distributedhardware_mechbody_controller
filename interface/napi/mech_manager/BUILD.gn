@@ -24,6 +24,7 @@ ohos_shared_library("mechanicmanager_napi") {
     integer_overflow = true
     ubsan = true
   }
+  stack_protector_ret = true
 
   sources = [
     "js_mech_manager_client.cpp",
