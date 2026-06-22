@@ -24,6 +24,7 @@ ohos_shared_library("mechbody_service") {
     integer_overflow = true
     ubsan = true
   }
+  stack_protector_ret = true
 
   install_enable = true
 
