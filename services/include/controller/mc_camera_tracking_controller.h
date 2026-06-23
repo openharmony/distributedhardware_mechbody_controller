@@ -137,6 +137,7 @@ public:
     ~McCameraTrackingController();
     void Init();
     void UnInit();
+    void HandleTrackingFrame(TrackingFrameParams trackingFrameParams);
     int32_t OnCaptureSessionConfiged(const CameraStandard::CaptureSessionInfo& captureSessionInfo);
     int32_t OnMetadataInfo(const std::shared_ptr<OHOS::Camera::CameraMetadata>& result);
     void UpdateCurrentCameraInfoByCaptureSessionInfo(
