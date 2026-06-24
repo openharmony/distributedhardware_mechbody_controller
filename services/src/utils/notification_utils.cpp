@@ -46,7 +46,7 @@ const std::string TRACKING_ENABLED_CHANGE_BUTTON_CALL = "mech_intelligent_tracki
 const std::string MECHBODY_CONNECTED_CAPSULE_ICON_NAME = "dot_viewfinder";
 const std::string MECHBODY_TRACKING_OPEN_BUTTON_ICON_NAME = "intelligent_tracking_1";
 const std::string MECHBODY_TRACKING_CLOSE_BUTTON_ICON_NAME = "intelligent_tracking_0";
-const std::string TRACKING_ENABLE_CHANGE_BUTTON_NAME = "TrackingEnableChange";
+static constexpr const char* TRACKING_ENABLE_CHANGE_BUTTON_NAME = "TrackingEnableChange";
 
 void NotificationUtils::SendNotification(NotificationType notificationType)
 {

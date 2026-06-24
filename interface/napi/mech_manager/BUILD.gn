@@ -47,11 +47,16 @@ ohos_shared_library("mechanicmanager_napi") {
   }
   cflags_cc = [
       "-fstack-protector-strong",
+      "-O2",
+      "-fno-rtti",
+      "-fno-exceptions",
   ]
   ldflags = [
     "-fpie",
     "-Wl,-z,relro",
     "-Wl,-z,now",
+    "-Wl,--version-script=" + rebase_path("export_symbols.map"),
+    "-Wl,--strip-all",
   ]
 
   deps = []

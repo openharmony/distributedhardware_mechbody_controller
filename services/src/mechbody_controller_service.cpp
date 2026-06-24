@@ -40,7 +40,7 @@ namespace MechBodyController {
 namespace {
     const std::string TAG = "MechBodyControllerService";
     const std::string PERMISSION_NAME = "ohos.permission.CONNECT_MECHANIC_HARDWARE";
-    const std::string START_REASON_RESTART = "restart";
+    static constexpr const char* START_REASON_RESTART = "restart";
 }
 
 MechBodyControllerService& MechBodyControllerService::GetInstance()

@@ -59,8 +59,8 @@ constexpr int32_t RESPONSE_TIMEOUT = 300000;
 constexpr float YAW_OFFSET = 0.2f;
 constexpr int32_t CMD_SEND_INTERVAL = 100;
 constexpr int32_t TRACKING_CHECKER_INTERVAL = 100;
-const std::string AILIFESVC_BUNDLE_NAME = "com.example.hmos.ailifesvc";
-const std::string DEVICE_CONNECT_ABILITY_NAME = "OneHopDeviceAbility";
+static constexpr const char* AILIFESVC_BUNDLE_NAME = "com.example.hmos.ailifesvc";
+static constexpr const char* DEVICE_CONNECT_ABILITY_NAME = "OneHopDeviceAbility";
 constexpr int32_t ABILITY_STATE_BACKGROUND = 4;
 constexpr int32_t DO_ACTION_TIME_USED = 500; //ms
 constexpr uint8_t MECH_LOCATION_REPORT_INTERVAL = 30;
@@ -72,7 +72,7 @@ constexpr int32_t APP_STATE_FOREGROUND = 2;
 constexpr int32_t APP_STATE_BACKGROUND = 4;
 constexpr int32_t APP_STATE_TERMINATED = 5;
 constexpr int32_t CMD_WORD_NUM = 4;
-const std::string SCENEBOARD_BUNDLE_NAME = "com.ohos.sceneboard";
+static constexpr const char* SCENEBOARD_BUNDLE_NAME = "com.ohos.sceneboard";
 
 const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
     {CameraKeyEvent::START_FILMING, MMI::KeyEvent::KEYCODE_VOLUME_UP},

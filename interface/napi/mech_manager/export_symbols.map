@@ -1,0 +1,13 @@
+{
+    global:
+        # NAPI 模块初始化函数
+        MechManagerModuleRegister;
+        Init;
+        # NAPI 相关符号
+        napi_*;
+        # 标准C库符号
+        *libc*;
+        *libm*;
+    local:
+        *;
+};

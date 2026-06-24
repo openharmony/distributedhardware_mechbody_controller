@@ -1,0 +1,14 @@
+{
+    global:
+        # ANI 胶水层接口函数
+        ohos_distributedHardware_mechanicManager_*;
+        # ANI 模块注册函数
+        _ZN4ohos19distributedHardware15mechanicManager11ANIRegisterEP9__ani_env;
+        # AniMechManager 类方法（被ANI胶水层调用）
+        _ZN4OHOS18MechBodyController14AniMechManager*;
+        # 标准C库符号
+        *libc*;
+        *libm*;
+    local:
+        *;
+};

@@ -40,7 +40,7 @@ namespace OHOS {
 namespace MechBodyController {
 namespace {
 const std::string TAG = "BleSendManager";
-const std::string TARGET_DEVICE_NAME = "TARGET_DEVICE_NAME";
+static constexpr const char* TARGET_DEVICE_NAME = "TARGET_DEVICE_NAME";
 const std::string DEVICE_NAME_SUFFIX = "-mechanic";
 constexpr long SCAN_REPORT_DELAY_MILLIS = 3 * 1000;
 constexpr size_t NOTIFY_DATA_MAX_SIZE = 1024 * 1024;
