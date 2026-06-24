@@ -1361,6 +1361,113 @@ HWTEST_F(McCameraTrackingControllerTest, SensorCallback_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name  : UpdateScreenInfo_001
+ * @tc.number: UpdateScreenInfo_001
+ * @tc.desc  : Testing UpdateScreenInfo function with no motion managers.
+ */
+HWTEST_F(McCameraTrackingControllerTest, UpdateScreenInfo_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest UpdateScreenInfo_001 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    // Test with no motion managers - should not crash
+    mcCameraTrackingController.UpdateScreenInfo(MobileRotation::UP);
+
+    DTEST_LOG << "McCameraTrackingControllerTest UpdateScreenInfo_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : UpdateScreenInfo_002
+ * @tc.number: UpdateScreenInfo_002
+ * @tc.desc  : Testing UpdateScreenInfo function with valid motion manager.
+ */
+HWTEST_F(McCameraTrackingControllerTest, UpdateScreenInfo_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest UpdateScreenInfo_002 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // Test with valid motion manager - should not crash
+    mcCameraTrackingController.UpdateScreenInfo(MobileRotation::UP);
+    mcCameraTrackingController.UpdateScreenInfo(MobileRotation::RIGHT);
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.clear();
+
+    DTEST_LOG << "McCameraTrackingControllerTest UpdateScreenInfo_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : UpdateScreenInfo_003
+ * @tc.number: UpdateScreenInfo_003
+ * @tc.desc  : Testing UpdateScreenInfo function with different rotations.
+ */
+HWTEST_F(McCameraTrackingControllerTest, UpdateScreenInfo_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest UpdateScreenInfo_003 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // Test with different rotations
+    mcCameraTrackingController.UpdateScreenInfo(MobileRotation::UP);
+    mcCameraTrackingController.UpdateScreenInfo(MobileRotation::DOWN);
+    mcCameraTrackingController.UpdateScreenInfo(MobileRotation::LEFT);
+    mcCameraTrackingController.UpdateScreenInfo(MobileRotation::RIGHT);
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.clear();
+
+    DTEST_LOG << "McCameraTrackingControllerTest UpdateScreenInfo_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SensorCallback_002
+ * @tc.number: SensorCallback_002
+ * @tc.desc  : Testing SensorCallback with rotation change and motion manager.
+ */
+HWTEST_F(McCameraTrackingControllerTest, SensorCallback_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTest SensorCallback_002 begin" << std::endl;
+
+    McCameraTrackingController& mcCameraTrackingController = McCameraTrackingController::GetInstance();
+
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // Set initial rotation
+    mcCameraTrackingController.sensorRotation_ = MobileRotation::UP;
+
+    // Create sensor event with rotation change
+    SensorEvent sensorEvent;
+    GravityData gravityData;
+    gravityData.x = 0;
+    gravityData.y = 1;
+    gravityData.z = 0;
+    sensorEvent.data = reinterpret_cast<uint8_t*>(&gravityData);
+
+    // Trigger rotation change
+    mcCameraTrackingController.SensorCallback(&sensorEvent);
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.clear();
+
+    DTEST_LOG << "McCameraTrackingControllerTest SensorCallback_002 end" << std::endl;
+}
+
+/**
  * @tc.name  : CalculateSensorRotation_001
  * @tc.number: CalculateSensorRotation_001
  * @tc.desc  : Testing CalculateSensorRotation function.

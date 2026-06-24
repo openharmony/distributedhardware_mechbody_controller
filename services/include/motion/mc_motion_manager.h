@@ -203,6 +203,7 @@ private:
     void ConnectServiceExtension(AAFwk::WantParams wantParams);
     void GetWheelMovementCapabilityInfo();
     bool isSupportMoveCapability(ActionType type);
+    bool isNeedSendTrackingData(ActionType type);
     int32_t RotateBySpeedV1(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
         uint32_t tokenId, std::string napiCmdId);
     int32_t RotateBySpeedV2(std::shared_ptr<RotateBySpeedParam> rotateSpeedParam,
@@ -277,6 +278,7 @@ private:
     uint16_t taskId_ = 1;
     bool SetMechCameraInfo_ = false;
     bool setMechScreenInfo_ = false;
+    std::atomic<bool> needSendTrackingData_ = true;
 
     std::mutex deviceBaseInfoMutex_;
     std::condition_variable deviceBaseInfoCon_;

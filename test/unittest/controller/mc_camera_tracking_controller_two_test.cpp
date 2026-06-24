@@ -191,7 +191,7 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_001, TestSize.Level1)
 /**
  * @tc.name  : ComputeFov_002
  * @tc.number: ComputeFov_002
- * @tc.desc  : Testing ComputeFov with UP sensor rotation.
+ * @tc.desc  : Testing ComputeFov with UP sensor rotation and fovFromMetadata_ = false.
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_002, TestSize.Level1)
 {
@@ -202,6 +202,7 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_002, TestSize.Level1)
     controller.currentCameraInfo_->tokenId = 1001;
     controller.currentCameraInfo_->fovH = 0;
     controller.currentCameraInfo_->fovV = 0;
+    controller.fovFromMetadata_ = false;
 
     controller.sensorRotation_ = MobileRotation::UP;
 
@@ -214,7 +215,7 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_002, TestSize.Level1)
 /**
  * @tc.name  : ComputeFov_003
  * @tc.number: ComputeFov_003
- * @tc.desc  : Testing ComputeFov with RIGHT sensor rotation.
+ * @tc.desc  : Testing ComputeFov with RIGHT sensor rotation and fovFromMetadata_ = false.
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_003, TestSize.Level1)
 {
@@ -225,6 +226,7 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_003, TestSize.Level1)
     controller.currentCameraInfo_->tokenId = 1001;
     controller.currentCameraInfo_->fovH = 0;
     controller.currentCameraInfo_->fovV = 0;
+    controller.fovFromMetadata_ = false;
 
     controller.sensorRotation_ = MobileRotation::RIGHT;
 
@@ -232,6 +234,33 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_003, TestSize.Level1)
     EXPECT_EQ(result, ERR_OK);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest ComputeFov_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : ComputeFov_005
+ * @tc.number: ComputeFov_005
+ * @tc.desc  : Testing ComputeFov with fovFromMetadata_ = true (FOV from metadata, should not recompute).
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest ComputeFov_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->tokenId = 1001;
+    controller.currentCameraInfo_->fovH = 90;
+    controller.currentCameraInfo_->fovV = 60;
+    controller.fovFromMetadata_ = true;
+
+    controller.sensorRotation_ = MobileRotation::UP;
+
+    int32_t result = controller.ComputeFov();
+    EXPECT_EQ(result, ERR_OK);
+    // When fovFromMetadata_ is true, FOV values should remain unchanged
+    EXPECT_EQ(controller.currentCameraInfo_->fovH, 90);
+    EXPECT_EQ(controller.currentCameraInfo_->fovV, 60);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest ComputeFov_005 end" << std::endl;
 }
 
 /**
