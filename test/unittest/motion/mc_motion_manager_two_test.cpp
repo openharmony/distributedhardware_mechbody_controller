@@ -711,28 +711,40 @@ HWTEST_F(MotionManagerTwoTest, RegisterEventListenerV01_001, TestSize.Level1)
 /**
  * @tc.name  : StartEvent_001
  * @tc.number: StartEvent_001
- * @tc.desc  : Test StartEvent function creates eventHandler.
+ * @tc.desc  : Test StartEvent function creates eventHandler and starts event loop.
  */
 HWTEST_F(MotionManagerTwoTest, StartEvent_001, TestSize.Level1)
 {
+    // Given: Create MotionManager and register event listener
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
     motionMgr->RegisterEventListener();
 
-    // StartEvent contains runner->Run() which is a blocking call
+    // When: StartEvent contains runner->Run() which is a blocking call
     // Run it in a separate thread to avoid blocking the test
     std::thread eventThread(&MotionManager::StartEvent, motionMgr);
     eventThread.detach();
 
-    // Wait a bit for the event handler to be initialized
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // Then: Wait for the event handler to be initialized via condition variable
+    std::unique_lock<std::mutex> lock(motionMgr->eventMutex_);
+    bool waitResult = motionMgr->eventCon_.wait_for(lock, std::chrono::milliseconds(500), [motionMgr] {
+        return motionMgr->eventHandler_ != nullptr;
+    });
+    lock.unlock();
+
+    // Verify that the condition variable was notified and eventHandler_ was created
+    EXPECT_TRUE(waitResult);
 
     // Verify that eventHandler_ was created successfully
     EXPECT_NE(motionMgr->eventHandler_, nullptr);
 
     // Verify that the eventHandler has a valid EventRunner
-    EXPECT_NE(motionMgr->eventHandler_->GetEventRunner(), nullptr);
+    auto runner = motionMgr->eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+
+    // Verify that the event runner is running
+    EXPECT_TRUE(runner->IsRunning());
 
     // Reset will trigger destructor which calls Stop() to exit the event loop
     motionMgr.reset();
@@ -2383,6 +2395,7 @@ HWTEST_F(MotionManagerTwoTest, HandelRotateSpeedParam_004, TestSize.Level1)
  */
 HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_001, TestSize.Level1)
 {
+    // Given
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
@@ -2394,8 +2407,25 @@ HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_001, TestSize.Level1)
     param.degree.pitch = 8.0f;
     uint8_t taskId = 1;
 
+    // When
     auto cmd = motionMgr->ExecuteRotateCommand(param, taskId);
-    EXPECT_NE(cmd, nullptr);
+
+    // Then
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), SetMechRotationCmd::CMD_SET);
+    EXPECT_EQ(cmd->GetCmdId(), SetMechRotationCmd::CMD_ID);
+    EXPECT_TRUE(cmd->NeedResponse());
+
+    // Verify the command is of correct type
+    auto rotationCmd = std::static_pointer_cast<SetMechRotationCmd>(cmd);
+    ASSERT_NE(rotationCmd, nullptr);
+
+    // Verify the parameters are correctly set
+    const RotateParam& cmdParams = rotationCmd->GetParams();
+    EXPECT_FLOAT_EQ(cmdParams.degree.yaw, 10.0f);
+    EXPECT_FLOAT_EQ(cmdParams.degree.roll, 5.0f);
+    EXPECT_FLOAT_EQ(cmdParams.degree.pitch, 8.0f);
+    EXPECT_EQ(cmdParams.taskId, taskId);
 }
 
 /**
@@ -2405,6 +2435,7 @@ HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_001, TestSize.Level1)
  */
 HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_002, TestSize.Level1)
 {
+    // Given
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
@@ -2419,8 +2450,22 @@ HWTEST_F(MotionManagerTwoTest, ExecuteRotateCommand_002, TestSize.Level1)
     param.degree.pitch = 8.0f;
     uint8_t taskId = 1;
 
+    // When
     auto cmd = motionMgr->ExecuteRotateCommand(param, taskId);
-    EXPECT_NE(cmd, nullptr);
+
+    // Then
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), NormalSetMechRotationToLocationCmd::CMD_SET);
+    EXPECT_EQ(cmd->GetCmdId(), NormalSetMechRotationToLocationCmd::CMD_ID);
+    EXPECT_TRUE(cmd->NeedResponse());
+
+    // Verify the command is of correct type
+    auto rotationToLocationCmd = std::static_pointer_cast<NormalSetMechRotationToLocationCmd>(cmd);
+    ASSERT_NE(rotationToLocationCmd, nullptr);
+
+    // Verify the taskId is correctly set
+    const RotateToLocationParam& cmdParams = rotationToLocationCmd->GetParams();
+    EXPECT_EQ(cmdParams.taskId, taskId);
 }
 
 /**
