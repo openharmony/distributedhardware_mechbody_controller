@@ -148,10 +148,10 @@ void McCameraTrackingController::Init()
             return;
         }
         MechbodyAdapterUtils::RegisterBackgroundTracking(
- 	         [this](TrackingFrameParams trackingFrameParams) mutable {
- 	             HandleTrackingFrame(std::move(trackingFrameParams));
+ 	        [this](TrackingFrameParams trackingFrameParams) mutable {
+ 	            HandleTrackingFrame(std::move(trackingFrameParams));
             }
- 	     );
+ 	    );
     #endif
     HILOGI("end");
 }
