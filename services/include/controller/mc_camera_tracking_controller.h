@@ -166,6 +166,7 @@ public:
     void UserIdChangeCallback();
     uint8_t GetCamereModeInfo();
     uint64_t GetPredictDfxCurTime();
+    void UpdateScreenInfo(MobileRotation sensorRotation);
 
 private:
     int32_t ComputeFov();
@@ -259,6 +260,7 @@ private:
     std::chrono::steady_clock::time_point lastStickTime_;
     bool isStick_ = false;
     bool isSalientDetectionLocked_ = false;
+    bool fovFromMetadata_ = false;
     uint8_t cameraMode_ = 0;
     uint64_t trackingTimeCur_ = 0;
 };

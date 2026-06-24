@@ -1257,6 +1257,11 @@ bool MotionManager::isSupportMoveCapability(ActionType type)
     }
 }
 
+bool MotionManager::isNeedSendTrackingData(ActionType type)
+{
+    return type == ActionType::GREET_MODE;
+}
+
 void MotionManager::GetWheelMovementCapabilityInfo()
 {
     HILOGI("start");
@@ -2006,14 +2011,13 @@ int32_t MotionManager::DoAction(uint32_t tokenId, std::string &napiCmdId, Action
     CHECK_POINTER_RETURN_VALUE(command, INVALID_PARAMETERS_ERR, "command is empty.");
 
     bool needRestoreTracking = false;
-    if (isSupportMoveCapability(actionType)) {
+    if (isSupportMoveCapability(actionType) && !isNeedSendTrackingData(actionType)) {
         bool trackingEnabled = false;
         GetMechCameraTrackingEnabled(trackingEnabled);
         if (trackingEnabled) {
             HILOGI("Disable camera tracking before DoAction");
-            bool disableTracking = false;
-            SetMechCameraTrackingEnabled(disableTracking);
             needRestoreTracking = true;
+            needSendTrackingData_ = false;
         }
     }
     uint8_t taskId = CreateResponseTaskId();
@@ -2162,8 +2166,7 @@ void MotionManager::HandleDoActionResponse(uint8_t taskId, ActionType actionType
 
     if (cbInfo.needRestoreTracking) {
         HILOGI("Restore tracking after DoAction.");
-        bool enabled = true;
-        SetMechCameraTrackingEnabled(enabled);
+        needSendTrackingData_ = true;
     }
 
     MechBodyControllerService::GetInstance().NotifyOperationResult(
@@ -2230,8 +2233,7 @@ void MotionManager::CreateDoActionTimeoutCallback(uint8_t taskId, bool needResto
             lock.unlock();
             if (cbInfo.needRestoreTracking) {
                 HILOGI("Restore camera tracking after DoAction timeout");
-                bool enableTracking = true;
-                SetMechCameraTrackingEnabled(enableTracking);
+                needSendTrackingData_ = true;
             }
             MechBodyControllerService::GetInstance().NotifyOperationResult(
                 cbInfo.tokenId, cbInfo.napiCmdId, ExecResult::TIMEOUT);
@@ -2649,7 +2651,8 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     auto cameraTrackingFrameCallback = [this]() {
     };
 
-    if (!deviceStatus_->isEnabled || deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_DISABLE) {
+    if (!deviceStatus_->isEnabled || deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_DISABLE
+            || !needSendTrackingData_) {
         HILOGE("device tracking is not enabled");
         return ERR_OK;
     }
