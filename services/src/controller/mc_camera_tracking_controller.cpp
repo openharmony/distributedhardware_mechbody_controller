@@ -142,16 +142,17 @@ void McCameraTrackingController::Init()
     SubscribeEventUtils::GetInstance().AddEventService(&MechBodyEventBaseService::GetInstance());
     RegisterTrackingListener();
     RegisterSensorListener();
+    UpdateScreenInfo(sensorRotation_);
     #ifdef MECHBODY_CONTROLLER_EXTENDED
         if (!MechbodyAdapterUtils::IsSupportBackground()) {
             HILOGI("Do not support background tracking event!");
             return;
         }
         MechbodyAdapterUtils::RegisterBackgroundTracking(
- 	        [this](TrackingFrameParams trackingFrameParams) mutable {
- 	            HandleTrackingFrame(std::move(trackingFrameParams));
+            [this](TrackingFrameParams trackingFrameParams) mutable {
+                HandleTrackingFrame(std::move(trackingFrameParams));
             }
- 	    );
+        );
     #endif
     HILOGI("end");
 }
@@ -302,11 +303,13 @@ int32_t McCameraTrackingController::OnMetadataInfo(const std::shared_ptr<OHOS::C
     if (ret == CAM_META_SUCCESS && item.count == META_DATA_SIZE) {
         currentCameraInfo_->fovH = static_cast<uint8_t>(item.data.f[0]);
         currentCameraInfo_->fovV = static_cast<uint8_t>(item.data.f[1]);
+        fovFromMetadata_ = true;
         HILOGI("currentCameraInfo Get FOV: [%{public}f, %{public}f]",
             static_cast<double>(currentCameraInfo_->fovH),
             static_cast<double>(currentCameraInfo_->fovV));
         return ERR_OK;
     } else {
+        fovFromMetadata_ = false;
         HILOGI("Find Tag OHOS_STATUS_FOV_INFOS failed, ret: %{public}d, count: %{public}d",
             ret, item.count);
         return GET_FOV_INFO_TAG_FAILED;
@@ -384,7 +387,7 @@ int32_t McCameraTrackingController::ComputeFov()
     float shortSideBasic = (fovA < fovB) ? fovABasic : fovBBasic;
     float longSide = (fovA < fovB) ? fovB : fovA;
     float longSideBasic = (fovA < fovB) ? fovBBasic : fovABasic;
-    if (currentCameraInfo_->fovH == 0 && currentCameraInfo_->fovV == 0) {
+    if (!fovFromMetadata_) {
         if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
             currentCameraInfo_->fovH = static_cast<uint8_t>(shortSide);
             currentCameraInfo_->fovV = static_cast<uint8_t>(longSide);
@@ -452,11 +455,6 @@ bool McCameraTrackingController::IsCurrentFocus()
     return FOCUS_MODE_WHITELIST.find(currentCameraInfo_->focusMode) == FOCUS_MODE_WHITELIST.end();
 }
 
-bool McCameraTrackingController::IsVertical(MobileRotation sensorRotation)
-{
-    return sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN;
-}
-
 int32_t McCameraTrackingController::UpdateMotionManagers()
 {
     HILOGI("start");
@@ -474,10 +472,6 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
     cameraInfoParams.isRecording = currentCameraInfo_->isRecording;
     cameraInfoParams.cameraType = currentCameraInfo_->cameraType;
 
-    ScreenInfoParams screenInfoParam;
-    screenInfoParam.isPortrait = IsVertical(sensorRotation_);
-    HILOGI("screenInfoParam isPortrait: %{public}d.", screenInfoParam.isPortrait);
-
     std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
     for (const auto &item : motionManagers) {
         int32_t mechId = item.first;
@@ -488,9 +482,7 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
         }
 
         int32_t result = motionManager->SetMechCameraInfo(cameraInfoParams);
-        int32_t screenInfoResult = motionManager->SetMechScreenInfo(screenInfoParam);
-        HILOGI("mech id: %{public}d result code: %{public}d, screenInfoResult %{public}d:",
-            mechId, result, screenInfoResult);
+        HILOGI("mech id: %{public}d result code: %{public}d", mechId, result);
         if (result != ERR_OK) {
             return result;
         }
@@ -1389,6 +1381,11 @@ std::shared_ptr<CameraInfo> McCameraTrackingController::GetCurrentCameraInfo() c
     return currentCameraInfo_;
 }
 
+bool McCameraTrackingController::IsVertical(MobileRotation sensorRotation)
+{
+    return sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN;
+}
+
 void McCameraTrackingController::SensorCallback(SensorEvent* event)
 {
     if (event == nullptr) {
@@ -1404,6 +1401,7 @@ void McCameraTrackingController::SensorCallback(SensorEvent* event)
         McCameraTrackingController::GetInstance().targetHorizontal_ = 0.0f;
         McCameraTrackingController::GetInstance().targetVertical_ = 0.0f;
         McCameraTrackingController::GetInstance().sensorRotation_ = sensorRotation;
+        McCameraTrackingController::GetInstance().UpdateScreenInfo(sensorRotation);
         std::shared_ptr<CameraInfo> currentCameraInfo =
             McCameraTrackingController::GetInstance().GetCurrentCameraInfo();
         if (currentCameraInfo == nullptr) {
@@ -1445,6 +1443,25 @@ MobileRotation McCameraTrackingController::CalculateSensorRotation(GravityData* 
         return MobileRotation::LEFT;
     } else {
         return MobileRotation::UP;
+    }
+}
+
+void McCameraTrackingController::UpdateScreenInfo(MobileRotation sensorRotation)
+{
+    ScreenInfoParams screenInfoParam;
+    screenInfoParam.isPortrait = IsVertical(sensorRotation);
+    HILOGI("screenInfoParam isPortrait: %{public}d.", screenInfoParam.isPortrait);
+    std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
+    const auto& motionManagers = MechBodyControllerService::GetInstance().motionManagers_;
+    for (const auto &item : motionManagers) {
+        int32_t mechId = item.first;
+        std::shared_ptr<MotionManager> motionManager = item.second;
+        if (!motionManager) {
+            HILOGE("MotionManager not exits; mechId: %{public}d", mechId);
+            continue;
+        }
+        int32_t screenInfoResult = motionManager->SetMechScreenInfo(screenInfoParam);
+        HILOGI("mech id: %{public}d screenInfoResult: %{public}d", mechId, screenInfoResult);
     }
 }
 
