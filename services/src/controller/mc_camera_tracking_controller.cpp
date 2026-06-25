@@ -143,15 +143,17 @@ void McCameraTrackingController::Init()
     RegisterTrackingListener();
     RegisterSensorListener();
     UpdateScreenInfo(sensorRotation_);
-    if (!MechbodyAdapterUtils::IsSupportBackground()) {
-        HILOGI("Do not support background tracking event!");
-        return;
-    }
-    MechbodyAdapterUtils::RegisterBackgroundTracking(
-        [this](TrackingFrameParams trackingFrameParams) mutable {
-            HandleTrackingFrame(std::move(trackingFrameParams));
+    #ifdef MECHBODY_CONTROLLER_EXTENDED
+        if (!MechbodyAdapterUtils::IsSupportBackground()) {
+            HILOGI("Do not support background tracking event!");
+            return;
         }
-    );
+        MechbodyAdapterUtils::RegisterBackgroundTracking(
+            [this](TrackingFrameParams trackingFrameParams) mutable {
+                HandleTrackingFrame(std::move(trackingFrameParams));
+            }
+        );
+    #endif
     HILOGI("end");
 }
 
@@ -211,10 +213,12 @@ void McCameraTrackingController::UnInit()
     SubscribeEventUtils::GetInstance().UnInit();
     UnRegisterTrackingListener();
     UnRegisterSensorListener();
-    if (MechbodyAdapterUtils::IsSupportBackground()) {
-        HILOGI("UnRegister background tracking event!");
-        MechbodyAdapterUtils::UnRegisterBackgroundTracking();
-    }
+    #ifdef MECHBODY_CONTROLLER_EXTENDED
+        if (MechbodyAdapterUtils::IsSupportBackground()) {
+            HILOGI("UnRegister background tracking event!");
+            MechbodyAdapterUtils::UnRegisterBackgroundTracking();
+        }
+    #endif
     if (eventHandler_ != nullptr) {
         eventHandler_->RemoveTask(SEND_CAMERA_INFO_TASK_NAME);
         eventHandler_->RemoveTask(UPDATE_ACTION_CONTROL_TASK_NAME);
