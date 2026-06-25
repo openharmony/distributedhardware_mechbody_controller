@@ -134,10 +134,19 @@ ohos_shared_library("mechbody_service") {
   }
   cflags_cc = [
       "-fstack-protector-strong",
+      "-O2",
+      "-fno-rtti",
+      "-fno-exceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
   ]
   ldflags = [
     "-Wl,-z,relro",
     "-Wl,-z,now",
+    "-Wl,--gc-sections",
+    "-Wl,--strip-all",
+    "-Wl,--icf=all",
+    "-Wl,--as-needed",
   ]
 
   external_deps = [

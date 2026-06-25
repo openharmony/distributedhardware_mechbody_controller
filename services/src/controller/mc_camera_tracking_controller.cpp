@@ -90,7 +90,7 @@ namespace {
         static_cast<int32_t>(CameraStandard::SceneMode::VIDEO),     // 2
     };
 
-    const std::string SEARCH_TARGET_TASK_NAME = "searchTargetTaskName";
+    static constexpr const char* SEARCH_TARGET_TASK_NAME = "searchTargetTaskName";
     constexpr float ROTATE_LIMITED_MAX = 3.14f;
     constexpr float ROTATE_LIMITED_MIN = -3.14f;
     constexpr float PI = 3.1415926f;
