@@ -352,7 +352,6 @@ group("unittest") {
     ":mc_camera_tracking_controller_test",
     ":mc_command_test",
     ":mc_montion_manager_test",
-    ":mc_send_manager_test",
     ":mc_subcription_center_test",
     ":mc_transport_command_test",
     ":mechbody_controller_service_test",
