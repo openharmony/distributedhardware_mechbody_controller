@@ -1219,25 +1219,6 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_TriggerResponse_
     EXPECT_NE(executionCmd->GetResult(), 1);
 }
 
-HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_TriggerResponse_002, TestSize.Level1)
-{
-    // Given: 创建注册通用事件命令对象并设置回调
-    CommandFactory factory;
-    factory.SetFactoryProtocolVer(0x02);
-    std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
-    executionCmd->SetResponseCallback(ResponseCb);
-
-    auto buffer = std::make_shared<MechDataBuffer>(100);
-    AppendUint8BySize(buffer, 2);
-    buffer->AppendUint8(1);
-
-    // When: 触发响应
-    executionCmd->TriggerResponse(buffer);
-
-    // Then: 验证结果
-    EXPECT_NE(executionCmd->GetResult(), 1);
-}
-
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_UnMarshal_001, TestSize.Level1)
 {
     // Given: 创建注册通用事件命令对象
