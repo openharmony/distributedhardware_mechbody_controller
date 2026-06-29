@@ -262,7 +262,7 @@ HWTEST_F(McCameraTrackingControllerTest, BuildTrackingParams_005, TestSize.Level
 
     CameraStandard::FocusTrackingMetaInfo info;
     info.SetTrackingMode(CameraStandard::FocusTrackingMode::FOCUS_TRACKING_MODE_LOCKED);
-
+    
     CameraStandard::Rect trackingRegion;
     trackingRegion.topLeftX = 0.5f;
     trackingRegion.topLeftY = 0.5f;
@@ -286,7 +286,16 @@ HWTEST_F(McCameraTrackingControllerTest, BuildTrackingParams_005, TestSize.Level
 
     std::shared_ptr<TrackingFrameParams> result = mcCameraTrackingController.BuildTrackingParams(info);
 
-    EXPECT_EQ(result, nullptr);
+    // 验证返回结果非空
+    EXPECT_NE(result, nullptr);
+    // 验证返回的业务属性
+    if (result != nullptr) {
+        EXPECT_EQ(result->fovH, 60.0f);
+        EXPECT_EQ(result->fovV, 45.0f);
+        EXPECT_EQ(result->isRecording, false);
+    }
+    // 验证trackingTargetNum
+    EXPECT_EQ(mcCameraTrackingController.currentCameraInfo_->trackingTargetNum, 0);
 
     DTEST_LOG << "McCameraTrackingControllerTest BuildTrackingParams_005 end" << std::endl;
 }

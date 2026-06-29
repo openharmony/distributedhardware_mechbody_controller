@@ -1951,8 +1951,13 @@ HWTEST_F(MechCommandTest, TriggerTimeoutReset_WithoutCallback_001, TestSize.Leve
     ASSERT_NE(executionResultCmd, nullptr);
     
     // When: 触发超时重置
-    // Then: 程序正常执行，不崩溃
-    EXPECT_NO_FATAL_FAILURE(executionResultCmd->TriggerTimeoutReset());
+    // Then: 验证函数正常执行不崩溃，通过设置一个标志验证函数被调用
+    bool resetTriggered = false;
+    executionResultCmd->SetTimeoutResetCallback([&resetTriggered]() {
+        resetTriggered = true;
+    });
+    executionResultCmd->TriggerTimeoutReset();
+    EXPECT_TRUE(resetTriggered);
 }
 
 /**

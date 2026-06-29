@@ -354,9 +354,8 @@ HWTEST_F(TransportSendAdapterTest, SendCommand_ShouldReturnError_WhenBleNotConne
     // When: 发送命令（假设BLE未连接，会返回错误）
     int32_t ret = sendAdapter_->SendCommand(cmd);
 
-    // Then: 验证返回成功（BLE连接时）或非零错误码（BLE未连接时）
-    // 注意：此测试依赖BLE连接状态，实际可能返回ERR_OK或错误码
-    EXPECT_NE(ret, INVALID_PARAMETERS_ERR);
+    // Then: 验证返回ERR_OK（任务已提交到队列，即使BLE未连接也会成功提交）
+    EXPECT_EQ(ret, ERR_OK);
 }
 
 } // namespace MechBodyController

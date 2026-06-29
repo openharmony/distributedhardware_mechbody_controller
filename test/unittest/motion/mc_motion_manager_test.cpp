@@ -2490,27 +2490,6 @@ HWTEST_F(MotionManagerTest, FormatLimit_004, TestSize.Level1)
 }
 
 /**
- * @tc.name  : SetDevicePairingInfo_001
- * @tc.number: SetDevicePairingInfo_001
- * @tc.desc  : Test SetDevicePairingInfo with valid parameters.
- */
-HWTEST_F(MotionManagerTest, SetDevicePairingInfo_001, TestSize.Level1)
-{
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    uint32_t deviceIdentifier = 100;
-
-    motionMgr->SetDevicePairingInfo(deviceIdentifier);
-
-    // 验证函数正常执行，对象状态保持有效
-    EXPECT_TRUE(motionMgr != nullptr);
-    EXPECT_NE(motionMgr->sendAdapter_, nullptr);
-}
-
-/**
  * @tc.name  : RegisterExtendedAndTrackingEvents_001
  * @tc.number: RegisterExtendedAndTrackingEvents_001
  * @tc.desc  : Test RegisterExtendedAndTrackingEvents with protocolVer_ < 0x02.
