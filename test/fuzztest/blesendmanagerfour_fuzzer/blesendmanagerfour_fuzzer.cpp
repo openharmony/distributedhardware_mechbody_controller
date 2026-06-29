@@ -135,9 +135,6 @@ void CleanAllLocalInfoFuzzTest(const uint8_t *data, size_t size)
     }
 
     bleSendManager.CleanAllLocalInfo();
-
-    // 清理：重置状态
-    MechConnectManager::GetInstance().CleanMechInfo();
 }
 
 void UnInitFuzzTest(const uint8_t *data, size_t size)
