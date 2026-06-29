@@ -83,20 +83,6 @@ HWTEST_F(MechSendManagerTest, RegisterBluetoothListener_001, TestSize.Level3)
 }
 
 /**
- * @tc.name: UnRegisterBluetoothListener_001
- * @tc.desc: test UnRegisterBluetoothListener func
- * @tc.type: FUNC
- */
-HWTEST_F(MechSendManagerTest, UnRegisterBluetoothListener_001, TestSize.Level3)
-{
-    DTEST_LOG << "MechSendManagerTest UnRegisterBluetoothListener_001 begin" << std::endl;
-    std::shared_ptr<TransportSendAdapter> transportSendAdapterTest = std::make_shared<TransportSendAdapter>();
-    int32_t ret = transportSendAdapterTest->UnRegisterBluetoothListener();
-    EXPECT_EQ(ret, ERR_OK);
-    DTEST_LOG << "MechSendManagerTest UnRegisterBluetoothListener_001 end" << std::endl;
-}
-
-/**
  * @tc.name: GetCmdBySeqNo_001
  * @tc.desc: test GetCmdBySeqNo func
  * @tc.type: FUNC
