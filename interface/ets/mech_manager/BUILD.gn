@@ -100,8 +100,6 @@ taihe_shared_library("mechanic_manager_ani") {
     "-fpie",
     "-Wl,-z,relro",
     "-Wl,-z,now",
-    "-Wl,--version-script=" + rebase_path("export_symbols.map"),
-    "-Wl,--strip-all",
   ]
   deps = [ ":run_taihe" ]
   external_deps = [
