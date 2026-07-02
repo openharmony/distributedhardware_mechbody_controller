@@ -79,10 +79,8 @@ napi_value MechManager::On(napi_env env, napi_callback_info info)
     if (!ParseOnParams(env, info, eventType, callbackRef)) {
         return nullptr;
     }
-
     CallbackFunctionInfo callbackFunctionInfo = {env, callbackRef};
     int32_t result = ExecuteOn(eventType, callbackFunctionInfo);
-
     if (result != ERR_OK) {
         napi_delete_reference(env, callbackRef);
     }
