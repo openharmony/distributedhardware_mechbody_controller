@@ -79,10 +79,12 @@ napi_value MechManager::On(napi_env env, napi_callback_info info)
     if (!ParseOnParams(env, info, eventType, callbackRef)) {
         return nullptr;
     }
-
     CallbackFunctionInfo callbackFunctionInfo = {env, callbackRef};
     int32_t result = ExecuteOn(eventType, callbackFunctionInfo);
-    
+    if (result != ERR_OK) {
+        napi_delete_reference(env, callbackRef);
+    }
+
     if (eventType == ATTACH_STATE_CHANGE_EVENT) {
         HISTOGRAM_BOOLEAN("mechanicKit.onAttachStateChange.counts", result == ERR_OK ? 1 : 0);
     } else if (eventType == TRACKING_EVENT) {
@@ -346,6 +348,10 @@ napi_value MechManager::Off(napi_env env, napi_callback_info info)
         result = ExecuteOff(eventType, callbackFunctionInfo);
     } else {
         result = ExecuteOff(eventType);
+    }
+
+    if (result != ERR_OK && callbackRef != nullptr) {
+        napi_delete_reference(env, callbackRef);
     }
 
     if (eventType == ATTACH_STATE_CHANGE_EVENT) {
@@ -1875,6 +1881,10 @@ bool MechManager::ParseSubscribeParams(
         HILOGE("Failed to create reference to callback");
         napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
                          "Failed to create callback reference");
+        if (outCallbackRef != nullptr) {
+            napi_delete_reference(env, outCallbackRef);
+            outCallbackRef = nullptr;
+        }
         return false;
     }
     return true;
