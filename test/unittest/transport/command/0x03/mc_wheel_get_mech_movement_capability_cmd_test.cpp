@@ -237,7 +237,6 @@ HWTEST_F(WheelGetMechMovementCapabilityCmdTest, WheelGetMechMovementCapabilityCm
 HWTEST_F(WheelGetMechMovementCapabilityCmdTest, WheelGetMechMovementCapabilityCmd_OnDataReceive_005, TestSize.Level1)
 {
     WheelGetMechMovementCapabilityCmd cmd;
-    // segNum=2, segment1: start=0, len=1, data=0x01; segment2: start=32, len=1, data=0x01
     uint8_t data[] = {
         2,                          // segNum = 2
         0x00, 0x00, 0x00, 0x00,    // start = 0
