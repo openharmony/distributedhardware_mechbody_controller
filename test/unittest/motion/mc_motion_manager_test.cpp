@@ -38,9 +38,6 @@ constexpr int TASK_COMPLETED = 2;
 constexpr float NO_LIMIT_MAX = 3.1415927f;
 constexpr float NO_LIMIT_MIN = -3.1415926f;
 
-
-
-
 void MotionManagerTest::SetUpTestCase()
 {
 }
