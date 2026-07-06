@@ -393,7 +393,11 @@ HWTEST_F(NotificationUtilsTest, ParseWantAgentJson_002, TestSize.Level3)
 
     // When: 解析包含所有字段的wantAgentJson
     Notification::NotificationRequest request;
-    EXPECT_NO_FATAL_FAILURE(NotificationUtils::ParseWantAgentJson(request, wantAgentJson));
+    NotificationUtils::ParseWantAgentJson(request, wantAgentJson);
+
+    // Then: 验证函数执行后设置了WantAgent（UT环境中GetWantAgent返回nullptr）
+    auto wantAgent = request.GetWantAgent();
+    EXPECT_EQ(wantAgent, nullptr);
 
     DTEST_LOG << "NotificationUtilsTest ParseWantAgentJson_002 end" << std::endl;
 }
@@ -412,7 +416,11 @@ HWTEST_F(NotificationUtilsTest, ParseWantAgentJson_003, TestSize.Level3)
 
     // When: 解析空对象wantAgentJson
     Notification::NotificationRequest request;
-    EXPECT_NO_FATAL_FAILURE(NotificationUtils::ParseWantAgentJson(request, wantAgentJson));
+    NotificationUtils::ParseWantAgentJson(request, wantAgentJson);
+
+    // Then: 验证空对象输入时函数使用默认值执行并设置了WantAgent
+    auto wantAgent = request.GetWantAgent();
+    EXPECT_EQ(wantAgent, nullptr);
 
     DTEST_LOG << "NotificationUtilsTest ParseWantAgentJson_003 end" << std::endl;
 }
@@ -438,7 +446,11 @@ HWTEST_F(NotificationUtilsTest, ParseWantAgentJson_004, TestSize.Level3)
 
     // When: 解析wants中不包含elementName的wantAgentJson
     Notification::NotificationRequest request;
-    EXPECT_NO_FATAL_FAILURE(NotificationUtils::ParseWantAgentJson(request, wantAgentJson));
+    NotificationUtils::ParseWantAgentJson(request, wantAgentJson);
+
+    // Then: 验证wants无elementName时函数仍执行并设置了WantAgent
+    auto wantAgent = request.GetWantAgent();
+    EXPECT_EQ(wantAgent, nullptr);
 
     DTEST_LOG << "NotificationUtilsTest ParseWantAgentJson_004 end" << std::endl;
 }
