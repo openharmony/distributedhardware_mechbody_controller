@@ -16,6 +16,7 @@
 
 #include <thread>
 
+#include <algorithm>
 #include <stdexcept>
 #include <iostream>
 
@@ -36,6 +37,9 @@ constexpr float DEFAULT_DURATION = 500;
 constexpr int TASK_COMPLETED = 2;
 constexpr float NO_LIMIT_MAX = 3.1415927f;
 constexpr float NO_LIMIT_MIN = -3.1415926f;
+
+
+
 
 void MotionManagerTest::SetUpTestCase()
 {
@@ -1686,8 +1690,9 @@ HWTEST_F(MotionManagerTest, HandleMechPlacementChange_001, TestSize.Level1)
     // 函数会调用HandlePhoneOff或HandlePhoneOn，并通知事件
     motionMgr->HandleMechPlacementChange(false);
 
-    // 验证函数执行后不会导致崩溃或异常状态
-    EXPECT_TRUE(motionMgr != nullptr);
+    // 验证函数执行后的副作用，如验证deviceStatus_相关状态
+    // 例如：验证phone off/on处理是否正确触发
+    EXPECT_TRUE(motionMgr->deviceStatus_ != nullptr);
 }
 
 /**
@@ -1755,28 +1760,134 @@ HWTEST_F(MotionManagerTest, GetProtocolVer_001, TestSize.Level1)
     EXPECT_EQ(result, MECH_CONNECT_FAILED);
 }
 
+/**
+ * @tc.name  : RegisterEventListener_001
+ * @tc.number: RegisterEventListener_001
+ * @tc.desc  : Test RegisterEventListener with protocolVer_ = 0x01, verify V01 specific events registered.
+ */
 HWTEST_F(MotionManagerTest, RegisterEventListener_001, TestSize.Level1)
 {
     int32_t mechId = 100;
     std::shared_ptr<MotionManager> motionMgr =
         std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
 
-    // Test with protocolVer_ = 0x01
     motionMgr->protocolVer_ = 0x01;
+    motionMgr->factory.SetFactoryProtocolVer(0x01);
     motionMgr->RegisterEventListener();
 
-    // Verify notifyListenerType_ is populated with V01 specific events
-    // Base events (3) + V01 events (2) = 5 events
-    EXPECT_GT(motionMgr->notifyListenerType_.size(), 0);
+    // Verify mechEventListener_ is created
+    EXPECT_NE(motionMgr->mechEventListener_, nullptr);
+    // V01: 2(V01 specific) + 3(Base) + 1(Tracking) = 6
+    EXPECT_EQ(motionMgr->notifyListenerType_.size(), 6);
+    // Verify V01 specific events: ControlResultCmd(0x0243), WheelDataCmd(0x0244)
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0243), motionMgr->notifyListenerType_.end());
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0244), motionMgr->notifyListenerType_.end());
+    // Verify base events: PositionInfo(0x0242), CameraKeyEvent(0x0240), StateInfo(0x0241)
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0242), motionMgr->notifyListenerType_.end());
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0240), motionMgr->notifyListenerType_.end());
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0241), motionMgr->notifyListenerType_.end());
+    // Verify tracking enable event: TrackingEnable(0x0245)
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0245), motionMgr->notifyListenerType_.end());
+}
 
-    // Clear and test with protocolVer_ = 0x02
-    motionMgr->notifyListenerType_.clear();
+/**
+ * @tc.name  : RegisterEventListener_002
+ * @tc.number: RegisterEventListener_002
+ * @tc.desc  : Test RegisterEventListener with protocolVer_ = 0x02 and non-WHEEL_BASE device,
+ *             verify extended events registered without cliff/obstacle events.
+ */
+HWTEST_F(MotionManagerTest, RegisterEventListener_002, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+
     motionMgr->protocolVer_ = 0x02;
+    motionMgr->factory.SetFactoryProtocolVer(0x02);
+    motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::PORTABLE_GIMBAL);
     motionMgr->RegisterEventListener();
 
-    // Verify notifyListenerType_ is populated with V02 specific events
-    // Base events (3) + extended events (1) + tracking events (1) = 5 events
-    EXPECT_GT(motionMgr->notifyListenerType_.size(), 0);
+    // V02 non-WHEEL_BASE: 3(Base) + 1(Extended) + 1(Tracking) = 5
+    EXPECT_EQ(motionMgr->notifyListenerType_.size(), 5);
+    // Verify extended event: GenericEvent(0x0248)
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0248), motionMgr->notifyListenerType_.end());
+    // Verify no V01 specific events
+    EXPECT_EQ(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0243), motionMgr->notifyListenerType_.end());
+    EXPECT_EQ(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0244), motionMgr->notifyListenerType_.end());
+    // Verify no WHEEL_BASE events: CliffInfo(0x0340), ObstacleInfo(0x0341)
+    EXPECT_EQ(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0340), motionMgr->notifyListenerType_.end());
+    EXPECT_EQ(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0341), motionMgr->notifyListenerType_.end());
+}
+
+/**
+ * @tc.name  : RegisterEventListener_003
+ * @tc.number: RegisterEventListener_003
+ * @tc.desc  : Test RegisterEventListener with protocolVer_ = 0x02 and WHEEL_BASE device,
+ *             verify cliff and obstacle events registered.
+ */
+HWTEST_F(MotionManagerTest, RegisterEventListener_003, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+
+    motionMgr->protocolVer_ = 0x02;
+    motionMgr->factory.SetFactoryProtocolVer(0x02);
+    motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::WHEEL_BASE);
+    motionMgr->RegisterEventListener();
+
+    // V02 WHEEL_BASE: 3(Base) + 1(Extended) + 2(Cliff+Obstacle) + 1(Tracking) = 7
+    EXPECT_EQ(motionMgr->notifyListenerType_.size(), 7);
+    // Verify WHEEL_BASE specific events: CliffInfo(0x0340), ObstacleInfo(0x0341)
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0340), motionMgr->notifyListenerType_.end());
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0341), motionMgr->notifyListenerType_.end());
+    // Verify extended event: GenericEvent(0x0248)
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0248), motionMgr->notifyListenerType_.end());
+}
+
+/**
+ * @tc.name  : RegisterEventListener_004
+ * @tc.number: RegisterEventListener_004
+ * @tc.desc  : Test RegisterEventListener with protocolVer_ = 0x00 (default/unknown),
+ *             verify only base events and tracking event registered.
+ */
+HWTEST_F(MotionManagerTest, RegisterEventListener_004, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+
+    motionMgr->protocolVer_ = 0x00;
+    motionMgr->factory.SetFactoryProtocolVer(0x00);
+    motionMgr->RegisterEventListener();
+
+    // V00: 3(Base) + 1(Tracking) = 4
+    EXPECT_EQ(motionMgr->notifyListenerType_.size(), 4);
+    // Verify no V01 specific events
+    EXPECT_EQ(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0243), motionMgr->notifyListenerType_.end());
+    EXPECT_EQ(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0244), motionMgr->notifyListenerType_.end());
+    // Verify no extended events
+    EXPECT_EQ(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0248), motionMgr->notifyListenerType_.end());
+    // Verify base events and tracking still present
+    EXPECT_NE(std::find(motionMgr->notifyListenerType_.begin(),
+        motionMgr->notifyListenerType_.end(), 0x0245), motionMgr->notifyListenerType_.end());
 }
 
 /**
@@ -1891,20 +2002,53 @@ HWTEST_F(MotionManagerTest, MechGenericEventNotify_004, TestSize.Level1)
 
     std::shared_ptr<NormalRegisterMechGenericEventCmd> cmd = std::make_shared<NormalRegisterMechGenericEventCmd>();
     cmd->params_.attached = static_cast<uint8_t>(-1);
-    cmd->params_.yawDisable = 0;
-    cmd->params_.rollDisable = 0;
-    cmd->params_.pitchDisable = 0;
+    cmd->params_.yawDisable = 1;
+    cmd->params_.rollDisable = 1;
+    cmd->params_.pitchDisable = 1;
 
-    // First call - status changes, triggers rotationAxesStatus assignment
+    // Default rotationAxesStatus is all enabled, now all disabled - status changes
     motionMgr->MechGenericEventNotify(cmd);
-    // Verify rotationAxesStatus is updated
-    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled);
+    // Verify rotationAxesStatus is updated from default (all enabled) to all disabled
+    EXPECT_FALSE(motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled);
+    EXPECT_FALSE(motionMgr->deviceStatus_->rotationAxesStatus.rollEnabled);
+    EXPECT_FALSE(motionMgr->deviceStatus_->rotationAxesStatus.pitchEnabled);
+}
+
+/**
+ * @tc.name  : MechGenericEventNotify_004_1
+ * @tc.number: MechGenericEventNotify_004_1
+ * @tc.desc  : Test MechGenericEventNotify when rotation axes status stays the same, verify early return.
+ */
+HWTEST_F(MotionManagerTest, MechGenericEventNotify_004_1, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    motionMgr->RegisterEventListener();
+
+    // First call - set initial status with yaw disabled
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> cmd1 = std::make_shared<NormalRegisterMechGenericEventCmd>();
+    cmd1->params_.attached = static_cast<uint8_t>(-1);
+    cmd1->params_.yawDisable = 1;
+    cmd1->params_.rollDisable = 0;
+    cmd1->params_.pitchDisable = 0;
+    motionMgr->MechGenericEventNotify(cmd1);
+    EXPECT_FALSE(motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled);
     EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.rollEnabled);
     EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.pitchEnabled);
 
-    // Second call with same status - status unchanged, returns early
-    // The function should handle this gracefully without crashing
-    motionMgr->MechGenericEventNotify(cmd);
+    // Second call with same status - status unchanged, should return early without re-assignment
+    std::shared_ptr<NormalRegisterMechGenericEventCmd> cmd2 = std::make_shared<NormalRegisterMechGenericEventCmd>();
+    cmd2->params_.attached = static_cast<uint8_t>(-1);
+    cmd2->params_.yawDisable = 1;
+    cmd2->params_.rollDisable = 0;
+    cmd2->params_.pitchDisable = 0;
+    motionMgr->MechGenericEventNotify(cmd2);
+
+    // Verify rotationAxesStatus remains unchanged after second call with same status
+    EXPECT_FALSE(motionMgr->deviceStatus_->rotationAxesStatus.yawEnabled);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.rollEnabled);
+    EXPECT_TRUE(motionMgr->deviceStatus_->rotationAxesStatus.pitchEnabled);
 }
 
 /**
