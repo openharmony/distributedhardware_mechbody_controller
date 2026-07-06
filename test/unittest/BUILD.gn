@@ -462,6 +462,7 @@ ohos_unittest("mc_command_test_0x01") {
   }
 
   sources = [ "transport/command/0x01/mc_action_gimbal_feature_control_cmd_test.cpp",
+            "transport/command/0x01/mc_set_mech_motion_control_cmd_test.cpp"
             "transport/command/0x01/mc_command_test01.cpp" ]
 
   configs = [
