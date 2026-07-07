@@ -120,7 +120,6 @@ HWTEST_F(TestSetMechMotionControlCmd, TriggerResponse_ValidDataWithCallback, Tes
     });
 
     auto data = std::make_shared<MechDataBuffer>(10);
-    data->SetRange(0, 3);
     data->AppendUint8(0x02); // cmdSet
     data->AppendUint8(0x23); // cmdId
     data->AppendUint8(1);    // result = 1 (成功)
@@ -207,7 +206,6 @@ HWTEST_F(TestSetMechMotionControlCmd, TriggerResponse_ValidDataResultValue, Test
 
     // Given: 创建包含有效响应数据的buffer
     auto data = std::make_shared<MechDataBuffer>(10);
-    data->SetRange(0, 3); // 设置范围大小为 RSP_SIZE(1) + BIT_OFFSET_2(2)
     data->AppendUint8(0x02); // cmdSet
     data->AppendUint8(0x23); // cmdId
     data->AppendUint8(1);    // result = 1 (成功)
