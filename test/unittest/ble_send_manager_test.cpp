@@ -14,8 +14,11 @@
  */
 
 #include "ble_send_manager_test.h"
+#include <atomic>
 #include <cstring>
+#include <thread>
 #include "connect/mc_connect_manager.h"
+#include "mechbody_controller_service.h"
 
 using namespace OHOS::Bluetooth;
 
@@ -530,6 +533,98 @@ HWTEST_F(BleSendManagerTest, OnReceive_005, testing::ext::TestSize.Level3) {
     
     // Then: Should return ERROR_NO_LISTENERS since no listeners are registered
     ASSERT_EQ(ret, -10001); // ERROR_NO_LISTENERS
+}
+
+/**
+ * @tc.name  : OnReceive_006
+ * @tc.number: OnReceive_006
+ * @tc.desc  : Test OnReceive with nullptr listener in bleReceviceListeners_ returns ERROR_NO_LISTENERS.
+ */
+HWTEST_F(BleSendManagerTest, OnReceive_006, testing::ext::TestSize.Level1)
+{
+    // Given: 添加nullptr listener到bleReceviceListeners_
+    bleSendManager_->bleReceviceListeners_.push_back(nullptr);
+    uint8_t data[] = {0x01, 0x02};
+    size_t size = sizeof(data);
+
+    // When: 调用OnReceive
+    int32_t ret = bleSendManager_->OnReceive(data, size);
+
+    // Then: 验证返回ERROR_NO_LISTENERS（nullptr listener触发提前返回）
+    EXPECT_EQ(ret, -10001);
+    bleSendManager_->bleReceviceListeners_.clear();
+}
+
+/**
+ * @tc.name  : OnReceive_007
+ * @tc.number: OnReceive_007
+ * @tc.desc  : Test OnReceive with valid listener calls listener->OnReceive and returns ERR_OK.
+ */
+HWTEST_F(BleSendManagerTest, OnReceive_007, testing::ext::TestSize.Level1)
+{
+    // Given: 创建MockListener并添加到bleReceviceListeners_
+    class MockListener : public BleReceviceListener {
+    public:
+        virtual ~MockListener() = default;
+        int32_t OnReceive(const uint8_t *data, uint32_t dataLen) override
+        {
+            receivedData_.assign(data, data + dataLen);
+            callCount_++;
+            return 0;
+        }
+        std::vector<uint8_t> receivedData_;
+        int callCount_ = 0;
+    };
+    auto mockListener = std::make_shared<MockListener>();
+    bleSendManager_->bleReceviceListeners_.push_back(mockListener);
+
+    uint8_t data[] = {0x01, 0x02, 0x03};
+    size_t size = sizeof(data);
+
+    // When: 调用OnReceive
+    int32_t ret = bleSendManager_->OnReceive(data, size);
+
+    // Then: 验证返回ERR_OK且listener被调用
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(mockListener->callCount_, 1);
+    EXPECT_EQ(mockListener->receivedData_.size(), size);
+    bleSendManager_->bleReceviceListeners_.clear();
+}
+
+/**
+ * @tc.name  : OnReceive_008
+ * @tc.number: OnReceive_008
+ * @tc.desc  : Test OnReceive with multiple valid listeners all receive data and returns ERR_OK.
+ */
+HWTEST_F(BleSendManagerTest, OnReceive_008, testing::ext::TestSize.Level1)
+{
+    // Given: 创建两个MockListener并添加到bleReceviceListeners_
+    class MockListener : public BleReceviceListener {
+    public:
+        virtual ~MockListener() = default;
+        int32_t OnReceive(const uint8_t *data, uint32_t dataLen) override
+        {
+            callCount_++;
+            return 0;
+        }
+        int callCount_ = 0;
+    };
+    auto mockListener1 = std::make_shared<MockListener>();
+    auto mockListener2 = std::make_shared<MockListener>();
+    bleSendManager_->bleReceviceListeners_.push_back(mockListener1);
+    bleSendManager_->bleReceviceListeners_.push_back(mockListener2);
+
+    uint8_t data[] = {0x01, 0x02};
+    size_t size = sizeof(data);
+
+    // When: 调用OnReceive
+    int32_t ret = bleSendManager_->OnReceive(data, size);
+
+    // Then: 验证返回ERR_OK且两个listener都被调用
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(mockListener1->callCount_, 1);
+    EXPECT_EQ(mockListener2->callCount_, 1);
+    bleSendManager_->bleReceviceListeners_.clear();
 }
 
 /**
@@ -1295,6 +1390,169 @@ HWTEST_F(BluetoothServiceStatusChangeListenerTest, OnRemoveSystemAbility_002, te
 
     // Then: bluetoothServiceStoped should remain unchanged
     ASSERT_EQ(bleSendManager.HasBluetoothServiceStoped(), originalBluetoothStopped);
+}
+
+/**
+ * @tc.name  : OnGattReady_001
+ * @tc.number: OnGattReady_001
+ * @tc.desc  : Test OnGattReady when MTU update timeout returns MECH_CONNECT_FAILED.
+ */
+HWTEST_F(BleSendManagerTest, OnGattReady_001, testing::ext::TestSize.Level1)
+{
+    // Given: 设置gattClient_并保持isMtuUpdated_为false（MTU超时）
+    BluetoothRemoteDevice device("AA:BB:CC:DD:EE:FF", 1);
+    bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleSendManager_->isMtuUpdated_ = false;
+
+    MechInfo mechInfo;
+    mechInfo.mechId = 9001;
+    mechInfo.mac = "AA:BB:CC:DD:EE:FF";
+
+    // When: 调用OnGattReady（MTU更新将超时）
+    int32_t ret = bleSendManager_->OnGattReady(mechInfo);
+
+    // Then: 验证返回MECH_CONNECT_FAILED（MTU更新超时）
+    EXPECT_EQ(ret, MECH_CONNECT_FAILED);
+
+    // 清理
+    bleSendManager_->gattClient_.reset();
+    bleSendManager_->gattClient_ = nullptr;
+}
+
+/**
+ * @tc.name  : OnGattReady_002
+ * @tc.number: OnGattReady_002
+ * @tc.desc  : Test OnGattReady when MTU update succeeds and NotifyMechConnect returns ERR_OK.
+ */
+HWTEST_F(BleSendManagerTest, OnGattReady_002, testing::ext::TestSize.Level1)
+{
+    // Given: 设置gattClient_，isMtuUpdated_为true（MTU立即成功），预置motionManagers_
+    BluetoothRemoteDevice device("AA:BB:CC:DD:EE:FF", 1);
+    bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleSendManager_->isMtuUpdated_ = true;
+
+    MechInfo mechInfo;
+    mechInfo.mechId = 9002;
+    mechInfo.mac = "AA:BB:CC:DD:EE:FF";
+
+    // 预置motionManagers_使OnDeviceConnected跳过创建MotionManager直接返回ERR_OK
+    MechBodyControllerService::GetInstance().CleanMotionManagers();
+    auto motionMgr = std::make_shared<MotionManager>(nullptr, mechInfo.mechId, false, 0);
+    MechBodyControllerService::GetInstance().motionManagers_[mechInfo.mechId] = motionMgr;
+
+    // When: 调用OnGattReady
+    int32_t ret = bleSendManager_->OnGattReady(mechInfo);
+
+    // Then: 验证返回ERR_OK（MTU成功且NotifyMechConnect成功）
+    EXPECT_EQ(ret, ERR_OK);
+    // 验证isMtuUpdated_被重置为false
+    EXPECT_FALSE(bleSendManager_->isMtuUpdated_);
+
+    // 清理
+    MechBodyControllerService::GetInstance().CleanMotionManagers();
+    bleSendManager_->gattClient_.reset();
+    bleSendManager_->gattClient_ = nullptr;
+}
+
+/**
+ * @tc.name  : OnGattReady_003
+ * @tc.number: OnGattReady_003
+ * @tc.desc  : Test OnGattReady when MTU update succeeds but NotifyMechConnect returns MECH_CONNECT_FAILED.
+ */
+HWTEST_F(BleSendManagerTest, OnGattReady_003, testing::ext::TestSize.Level1)
+{
+    // Given: 设置gattClient_，isMtuUpdated_为true（MTU立即成功），不预置motionManagers_
+    BluetoothRemoteDevice device("AA:BB:CC:DD:EE:FF", 1);
+    bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleSendManager_->isMtuUpdated_ = true;
+
+    MechInfo mechInfo;
+    mechInfo.mechId = 9003;
+    mechInfo.mac = "AA:BB:CC:DD:EE:11";
+
+    // 清空motionManagers_确保OnDeviceConnected创建新MotionManager
+    // MotionManager::Init()在测试环境中因BLE不可用会返回MECH_CONNECT_FAILED
+    MechBodyControllerService::GetInstance().CleanMotionManagers();
+    MechConnectManager::GetInstance().CleanMechInfo();
+
+    // When: 调用OnGattReady
+    int32_t ret = bleSendManager_->OnGattReady(mechInfo);
+
+    // Then: 验证返回MECH_CONNECT_FAILED（NotifyMechConnect失败）
+    EXPECT_EQ(ret, MECH_CONNECT_FAILED);
+
+    // 清理
+    MechBodyControllerService::GetInstance().CleanMotionManagers();
+    bleSendManager_->gattClient_.reset();
+    bleSendManager_->gattClient_ = nullptr;
+}
+
+/**
+ * @tc.name  : DisConnectOldDevice_001
+ * @tc.number: DisConnectOldDevice_001
+ * @tc.desc  : Test DisConnectOldDevice when GetConnectMechList returns false (empty list).
+ */
+HWTEST_F(BleSendManagerTest, DisConnectOldDevice_001, testing::ext::TestSize.Level1)
+{
+    // Given: 清空mechInfos_使GetConnectMechList返回false
+    MechConnectManager::GetInstance().CleanMechInfo();
+
+    // When: 调用DisConnectOldDevice
+    int32_t ret = bleSendManager_->DisConnectOldDevice();
+
+    // Then: 验证返回ERR_OK（无已连接设备，提前返回）
+    EXPECT_EQ(ret, ERR_OK);
+}
+
+/**
+ * @tc.name  : DisConnectOldDevice_002
+ * @tc.number: DisConnectOldDevice_002
+ * @tc.desc  : Test DisConnectOldDevice with device whose gattCoonectState is false skips disconnect.
+ */
+HWTEST_F(BleSendManagerTest, DisConnectOldDevice_002, testing::ext::TestSize.Level1)
+{
+    // Given: 添加gattCoonectState为false的设备到mechInfos_
+    MechConnectManager::GetInstance().CleanMechInfo();
+    MechInfo mechInfo;
+    mechInfo.mechId = 8001;
+    mechInfo.mac = "AA:BB:CC:DD:EE:01";
+    mechInfo.gattCoonectState = false;
+    MechConnectManager::GetInstance().AddMechInfo(mechInfo);
+
+    // When: 调用DisConnectOldDevice
+    int32_t ret = bleSendManager_->DisConnectOldDevice();
+
+    // Then: 验证返回ERR_OK（gattCoonectState为false，跳过断开连接）
+    EXPECT_EQ(ret, ERR_OK);
+
+    // 清理
+    MechConnectManager::GetInstance().CleanMechInfo();
+}
+
+/**
+ * @tc.name  : DisConnectOldDevice_003
+ * @tc.number: DisConnectOldDevice_003
+ * @tc.desc  : Test DisConnectOldDevice with device whose gattCoonectState is true calls MechbodyDisConnectSync.
+ */
+HWTEST_F(BleSendManagerTest, DisConnectOldDevice_003, testing::ext::TestSize.Level1)
+{
+    // Given: 添加gattCoonectState为true的设备到mechInfos_，gattClient_为nullptr
+    MechConnectManager::GetInstance().CleanMechInfo();
+    ASSERT_EQ(bleSendManager_->gattClient_, nullptr);
+    MechInfo mechInfo;
+    mechInfo.mechId = 8002;
+    mechInfo.mac = "AA:BB:CC:DD:EE:02";
+    mechInfo.gattCoonectState = true;
+    MechConnectManager::GetInstance().AddMechInfo(mechInfo);
+
+    // When: 调用DisConnectOldDevice
+    int32_t ret = bleSendManager_->DisConnectOldDevice();
+
+    // Then: 验证调用了MechbodyDisConnectSync（gattClient_为nullptr时返回MECHBODY_GATT_INVALID_PARAM）
+    EXPECT_EQ(ret, -10003); // MECHBODY_GATT_INVALID_PARAM
+
+    // 清理
+    MechConnectManager::GetInstance().CleanMechInfo();
 }
 
 } // namespace MechBodyController
