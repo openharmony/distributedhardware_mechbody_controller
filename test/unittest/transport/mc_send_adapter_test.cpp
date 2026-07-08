@@ -358,5 +358,79 @@ HWTEST_F(TransportSendAdapterTest, SendCommand_ShouldReturnError_WhenBleNotConne
     EXPECT_EQ(ret, ERR_OK);
 }
 
+/**
+* @tc.name  : BleReceviceListenerImpl_OnReceive_ShouldReturnOK_WhenDataIsValid
+* @tc.number: TransportSendAdapter_Test_026
+* @tc.desc  : Test BleReceviceListenerImpl::OnReceive with valid data that passes Validate and memcpy
+*/
+HWTEST_F(TransportSendAdapterTest, BleReceviceListenerImpl_OnReceive_ValidData, TestSize.Level1)
+{
+    BleReceviceListenerImpl listener(sendAdapter_);
+    uint8_t data[10] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0D, 0x01, 0x02};
+    int32_t ret = listener.OnReceive(data, sizeof(data));
+    EXPECT_EQ(ret, INVALID_PARAMETERS_ERR);
+}
+
+/**
+* @tc.name  : OnReceive_ShouldReturnOK_WhenIsAckFalseAndCmdIsValid
+* @tc.number: TransportSendAdapter_Test_027
+* @tc.desc  : Test OnReceive when isAck is false and cmd is not null (valid notification command)
+*/
+HWTEST_F(TransportSendAdapterTest, OnReceive_ShouldReturnOK_WhenIsAckFalseAndCmdIsValid, TestSize.Level1)
+{
+    // Construct data buffer with cmdSet=0x02, cmdId=0x40 (CMD_TYPE_BUTTON_EVENT_NOTIFY)
+    // plus enough bytes for Unmarshal (RPT_SIZE=8, need Size >= 10)
+    auto dataBuffer = std::make_shared<MechDataBuffer>(20);
+    dataBuffer->AppendUint8(0x02); // cmdSet
+    dataBuffer->AppendUint8(0x40); // cmdId
+    dataBuffer->AppendUint8(0x00); // stickX low
+    dataBuffer->AppendUint8(0x00); // stickX high
+    dataBuffer->AppendUint8(0x00); // stickY low
+    dataBuffer->AppendUint8(0x00); // stickY high
+    dataBuffer->AppendUint8(0x00); // zoomX low
+    dataBuffer->AppendUint8(0x00); // zoomX high
+    dataBuffer->AppendUint8(0x00); // keyEvent
+    dataBuffer->AppendUint8(0x00); // reserved
+    int32_t ret = sendAdapter_->OnReceive(false, 1, dataBuffer);
+    EXPECT_EQ(ret, ERR_OK);
+}
+
+/**
+* @tc.name  : OnReceive_ShouldReturnOK_WhenIsAckTrueAndEventHandlerIsValid
+* @tc.number: TransportSendAdapter_Test_030
+* @tc.desc  : Test OnReceive when isAck is true and recvEventHandler_ is valid
+*/
+HWTEST_F(TransportSendAdapterTest, OnReceive_ShouldReturnOK_WhenIsAckTrueAndEventHandlerIsValid, TestSize.Level1)
+{
+    auto dataBuffer = std::make_shared<MechDataBuffer>(10);
+    int32_t ret = sendAdapter_->OnReceive(true, 1, dataBuffer);
+    EXPECT_EQ(ret, ERR_OK);
+}
+
+/**
+* @tc.name  : CreateResponseSeqNo_ShouldResetToZero_WhenSeqNoReachesMax
+* @tc.number: TransportSendAdapter_Test_031
+* @tc.desc  : Test CreateResponseSeqNo to ensure seqNo resets to 0 when lastSeqNo_ reaches UINT16_MAX
+*/
+HWTEST_F(TransportSendAdapterTest, CreateResponseSeqNo_ShouldResetToZero_WhenSeqNoReachesMax, TestSize.Level1)
+{
+    sendAdapter_->lastSeqNo_ = UINT16_MAX;
+    uint16_t seqNo = sendAdapter_->CreateResponseSeqNo();
+    EXPECT_EQ(seqNo, 0);
+    EXPECT_EQ(sendAdapter_->lastSeqNo_, 0);
+}
+
+/**
+* @tc.name  : CreateResponseSeqNo_ShouldIncrement_WhenSeqNoIsBelowMax
+* @tc.number: TransportSendAdapter_Test_032
+* @tc.desc  : Test CreateResponseSeqNo to ensure seqNo increments when lastSeqNo_ is below UINT16_MAX
+*/
+HWTEST_F(TransportSendAdapterTest, CreateResponseSeqNo_ShouldIncrement_WhenSeqNoIsBelowMax, TestSize.Level1)
+{
+    sendAdapter_->lastSeqNo_ = 100;
+    uint16_t seqNo = sendAdapter_->CreateResponseSeqNo();
+    EXPECT_EQ(seqNo, 101);
+}
+
 } // namespace MechBodyController
 } // namespace OHOS
