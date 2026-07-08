@@ -20,6 +20,7 @@
 #include "../test_log.h"
 #include "mechbody_controller_service.h"
 #include "mc_connect_manager.h"
+#include "camera_metadata_info.h"
 #include <chrono>
 #include <thread>
 #include <atomic>
@@ -2491,6 +2492,93 @@ HWTEST_F(McCameraTrackingControllerTwoTest, MechControllerIpcDeathListener_OnRem
     // 验证：确认tokenId_对应的条目已被移除
     EXPECT_EQ(MechBodyControllerService::GetInstance().cmdChannels_.find(listener.tokenId_),
               MechBodyControllerService::GetInstance().cmdChannels_.end());
+}
+
+/**
+ * @tc.name  : OnMetadataInfo_003
+ * @tc.number: OnMetadataInfo_003
+ * @tc.desc  : Testing OnMetadataInfo with valid FOV metadata (ret == CAM_META_SUCCESS && item.count == 2),
+ *             should set fovFromMetadata_ true and return ERR_OK.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, OnMetadataInfo_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest OnMetadataInfo_003 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+
+    constexpr size_t itemCapacity = 10;
+    constexpr size_t dataCapacity = 64;
+    auto metadata = std::make_shared<OHOS::Camera::CameraMetadata>(itemCapacity, dataCapacity);
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_NE(metadata->get(), nullptr);
+
+    float fovData[2] = {90.0f, 60.0f};
+    metadata->addEntry(OHOS_STATUS_FOV_INFOS, fovData, 2);
+
+    int32_t ret = controller.OnMetadataInfo(metadata);
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_TRUE(controller.fovFromMetadata_);
+    EXPECT_EQ(controller.currentCameraInfo_->fovH, static_cast<uint8_t>(fovData[0]));
+    EXPECT_EQ(controller.currentCameraInfo_->fovV, static_cast<uint8_t>(fovData[1]));
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest OnMetadataInfo_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : OnMetadataInfo_004
+ * @tc.number: OnMetadataInfo_004
+ * @tc.desc  : Testing OnMetadataInfo with metadata that does not contain OHOS_STATUS_FOV_INFOS tag
+ *             (ret != CAM_META_SUCCESS), should set fovFromMetadata_ false and return GET_FOV_INFO_TAG_FAILED.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, OnMetadataInfo_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest OnMetadataInfo_004 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+
+    constexpr size_t itemCapacity = 10;
+    constexpr size_t dataCapacity = 64;
+    auto metadata = std::make_shared<OHOS::Camera::CameraMetadata>(itemCapacity, dataCapacity);
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_NE(metadata->get(), nullptr);
+
+    int32_t ret = controller.OnMetadataInfo(metadata);
+    EXPECT_EQ(ret, GET_FOV_INFO_TAG_FAILED);
+    EXPECT_FALSE(controller.fovFromMetadata_);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest OnMetadataInfo_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : OnMetadataInfo_005
+ * @tc.number: OnMetadataInfo_005
+ * @tc.desc  : Testing OnMetadataInfo with FOV metadata that has wrong item count
+ *             (ret == CAM_META_SUCCESS && item.count != 2), should set fovFromMetadata_ false
+ *             and return GET_FOV_INFO_TAG_FAILED.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, OnMetadataInfo_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest OnMetadataInfo_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+
+    constexpr size_t itemCapacity = 10;
+    constexpr size_t dataCapacity = 64;
+    auto metadata = std::make_shared<OHOS::Camera::CameraMetadata>(itemCapacity, dataCapacity);
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_NE(metadata->get(), nullptr);
+
+    float fovData[3] = {90.0f, 60.0f, 30.0f};
+    metadata->addEntry(OHOS_STATUS_FOV_INFOS, fovData, 3);
+
+    int32_t ret = controller.OnMetadataInfo(metadata);
+    EXPECT_EQ(ret, GET_FOV_INFO_TAG_FAILED);
+    EXPECT_FALSE(controller.fovFromMetadata_);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest OnMetadataInfo_005 end" << std::endl;
 }
 }
 }
