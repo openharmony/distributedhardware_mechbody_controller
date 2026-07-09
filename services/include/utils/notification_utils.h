@@ -22,6 +22,7 @@
 #include "configuration_observer_stub.h"
 #include "pixel_map.h"
 #include <nlohmann/json.hpp>
+#include "mechbody_controller_enums.h"
 using json = nlohmann::json;
 
 
@@ -35,6 +36,8 @@ namespace MechBodyController {
 class NotificationUtils {
 public:
     inline static bool isTrackingEnabled_ = true;
+
+    inline static MechType mechType_ = MechType::PORTABLE_GIMBAL;
     
     static void SendNotification(NotificationType notificationType);
 
@@ -44,6 +47,8 @@ public:
 
 private:
     static json GetConnectedCapsuleNotificationConfig();
+    static json BuildConnectedCapsuleLiveViewContent(const std::string &contentTitle,
+        const std::string &contentText, const std::string &capsuleTitle, const std::string &icon);
     
     static void ParseNotificationConfigJson(Notification::NotificationRequest &request, json configJson);
     static void ParseBasicFields(Notification::NotificationRequest& request, const json& configJson);

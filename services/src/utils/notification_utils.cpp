@@ -27,6 +27,7 @@
 #include "parameters.h"
 #include "mechbody_controller_service.h"
 #include "load_mechbody_adapter.h"
+#include "bool_wrapper.h"
 
 
 namespace OHOS {
@@ -37,13 +38,15 @@ namespace {
 static constexpr int32_t MECHBODY_UID = 7811;
 const int32_t MECHBODY_CONNECTED_CAPSULE_NOTIFICATION_ID = 1001;
 
-const std::string TRACE_ENABLED = "trace_enabled";
-const std::string TRACE_DISENABLED = "trace_disabled";
-const std::string SMART_TRACKING_ENABLED = "smart_tracking_enabled";
-const std::string SMART_TRACKING_DISENABLED = "smart_tracking_disabled";
-const std::string DEVICE_CONNECTED = "device_connected";
+const std::string TRACE_ENABLED = "focus_tracking";
+const std::string TRACE_DISENABLED = "focus_paused";
+const std::string SMART_TRACKING_ENABLED = "smart_focus_tracking";
+const std::string SMART_TRACKING_DISENABLED = "smart_focus_paused";
+const std::string GIMBAL_DEVICE_CONNECTED = "gimbal_connected";
+const std::string WHEEL_BASE_DEVICE_CONNECTED = "wheel_base_connected";
 const std::string TRACKING_ENABLED_CHANGE_BUTTON_CALL = "mech_intelligent_tracking";
-const std::string MECHBODY_CONNECTED_CAPSULE_ICON_NAME = "dot_viewfinder";
+const std::string MECHBODY_CONNECTED_CAPSULE_GIMBAL_ICON_NAME = "ic_gimbal_device";
+const std::string MECHBODY_CONNECTED_CAPSULE_WHEEL_BASE_ICON_NAME = "ic_wheel_base_device";
 const std::string MECHBODY_TRACKING_OPEN_BUTTON_ICON_NAME = "intelligent_tracking_1";
 const std::string MECHBODY_TRACKING_CLOSE_BUTTON_ICON_NAME = "intelligent_tracking_0";
 static constexpr const char* TRACKING_ENABLE_CHANGE_BUTTON_NAME = "TrackingEnableChange";
@@ -105,11 +108,20 @@ json NotificationUtils::GetConnectedCapsuleNotificationConfig()
 
     std::string contentTitle = ResourceManagerUtils::GetSystemStringByName(
         isTrackingEnabled_ ? SMART_TRACKING_ENABLED : SMART_TRACKING_DISENABLED);
-    std::string contentText = ResourceManagerUtils::GetSystemStringByName(DEVICE_CONNECTED);
     std::string capsuleTitle = ResourceManagerUtils::GetSystemStringByName(
         isTrackingEnabled_ ? TRACE_ENABLED : TRACE_DISENABLED);
     std::string trackingEnableChangeButtonCall = ResourceManagerUtils::GetSystemStringByName(
         TRACKING_ENABLED_CHANGE_BUTTON_CALL);
+
+    std::string icon;
+    std::string contentText;
+    if (mechType_ == MechType::WHEEL_BASE) {
+        icon = MECHBODY_CONNECTED_CAPSULE_WHEEL_BASE_ICON_NAME;
+        contentText = ResourceManagerUtils::GetSystemStringByName(WHEEL_BASE_DEVICE_CONNECTED);
+    } else {
+        icon = MECHBODY_CONNECTED_CAPSULE_GIMBAL_ICON_NAME;
+        contentText = ResourceManagerUtils::GetSystemStringByName(GIMBAL_DEVICE_CONNECTED);
+    }
 
     json connectedCapsuleNotificationConfig = {
         {"creatorUid", MECHBODY_UID},
@@ -119,35 +131,42 @@ json NotificationUtils::GetConnectedCapsuleNotificationConfig()
         {"unremovable", true},
         {"slotType", Notification::NotificationConstant::SlotType::LIVE_VIEW},
         {"extraInfo", {
-            
+            {"hw_live_view_hidden_when_keyguard", true}
         }},
-        {"liveViewContent", {
-            {"title", contentTitle},
-            {"text", contentText},
-            {"type", 3},
-            {"capsule", {
-                {"title", capsuleTitle},
-                {"content", ""},
-                {"icon", MECHBODY_CONNECTED_CAPSULE_ICON_NAME},
-                {"backgroundColor", "#3B7DF0"}
-            }},
-            {"buttons", {
-                {
-                    {"singleButtonName", TRACKING_ENABLE_CHANGE_BUTTON_NAME},
-                    {"singleButtonIcon", isTrackingEnabled_ ?
-                        MECHBODY_TRACKING_OPEN_BUTTON_ICON_NAME :
-                        MECHBODY_TRACKING_CLOSE_BUTTON_ICON_NAME},
-                }
-            }},
-            {"flags", {
-                Notification::NotificationLocalLiveViewContent::LiveViewContentInner::CAPSULE,
-                Notification::NotificationLocalLiveViewContent::LiveViewContentInner::BUTTON,
-            }}
-        }},
-        {"littleIcon", MECHBODY_CONNECTED_CAPSULE_ICON_NAME},
+        {"liveViewContent", BuildConnectedCapsuleLiveViewContent(contentTitle, contentText, capsuleTitle, icon)},
+        {"littleIcon", icon},
         {"badgeIconStyle", Notification::NotificationRequest::BadgeStyle::LITTLE}
     };
     return connectedCapsuleNotificationConfig;
+}
+
+json NotificationUtils::BuildConnectedCapsuleLiveViewContent(const std::string &contentTitle,
+    const std::string &contentText, const std::string &capsuleTitle, const std::string &icon)
+{
+    json liveViewContent = {
+        {"title", contentTitle},
+        {"text", contentText},
+        {"type", 35},
+        {"capsule", {
+            {"title", capsuleTitle},
+            {"content", ""},
+            {"icon", icon},
+            {"backgroundColor", "#3B7DF0"}
+        }},
+        {"buttons", {
+            {
+                {"singleButtonName", TRACKING_ENABLE_CHANGE_BUTTON_NAME},
+                {"singleButtonIcon", isTrackingEnabled_ ?
+                    MECHBODY_TRACKING_OPEN_BUTTON_ICON_NAME :
+                    MECHBODY_TRACKING_CLOSE_BUTTON_ICON_NAME},
+            }
+        }},
+        {"flags", {
+            Notification::NotificationLocalLiveViewContent::LiveViewContentInner::CAPSULE,
+            Notification::NotificationLocalLiveViewContent::LiveViewContentInner::BUTTON,
+        }}
+    };
+    return liveViewContent;
 }
 
 void NotificationUtils::ParseNotificationConfigJson(Notification::NotificationRequest& request, json configJson)
@@ -296,6 +315,9 @@ void NotificationUtils::ParseExtraInfoFields(Notification::NotificationRequest& 
         } else if (value.is_array()) {
             // 处理数组类型
             ParseExtraInfoArrayFields(extras, key, value);
+        } else if (value.is_boolean()) {
+            // 处理布尔类型
+            extras->SetParam(key, AAFwk::Boolean::Box(value));
         }
     }
     request.SetAdditionalData(extras);

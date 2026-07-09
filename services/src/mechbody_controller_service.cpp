@@ -169,6 +169,7 @@ int32_t MechBodyControllerService::OnAttachStateChange(const AttachmentState &at
     HILOGI("start");
     if (attachmentState == AttachmentState::ATTACHED) {
         NotificationUtils::isTrackingEnabled_ = true;
+        NotificationUtils::mechType_ = mechInfo.mechType;
         NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
     } else if (attachmentState == AttachmentState::DETACHED) {
         NotificationUtils::CancelNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
