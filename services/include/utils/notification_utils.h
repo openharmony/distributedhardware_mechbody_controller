@@ -47,6 +47,8 @@ public:
 
 private:
     static json GetConnectedCapsuleNotificationConfig();
+    static json BuildConnectedCapsuleLiveViewContent(const std::string &contentTitle,
+        const std::string &contentText, const std::string &capsuleTitle, const std::string &icon);
     
     static void ParseNotificationConfigJson(Notification::NotificationRequest &request, json configJson);
     static void ParseBasicFields(Notification::NotificationRequest& request, const json& configJson);
