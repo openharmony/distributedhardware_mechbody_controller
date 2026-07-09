@@ -131,36 +131,42 @@ json NotificationUtils::GetConnectedCapsuleNotificationConfig()
         {"unremovable", true},
         {"slotType", Notification::NotificationConstant::SlotType::LIVE_VIEW},
         {"extraInfo", {
-            {"hw_button_accessibility_text", {trackingEnableChangeButtonCall}},
             {"hw_live_view_hidden_when_keyguard", true}
         }},
-        {"liveViewContent", {
-            {"title", contentTitle},
-            {"text", contentText},
-            {"type", 35},
-            {"capsule", {
-                {"title", capsuleTitle},
-                {"content", ""},
-                {"icon", icon},
-                {"backgroundColor", "#3B7DF0"}
-            }},
-            {"buttons", {
-                {
-                    {"singleButtonName", TRACKING_ENABLE_CHANGE_BUTTON_NAME},
-                    {"singleButtonIcon", isTrackingEnabled_ ?
-                        MECHBODY_TRACKING_OPEN_BUTTON_ICON_NAME :
-                        MECHBODY_TRACKING_CLOSE_BUTTON_ICON_NAME},
-                }
-            }},
-            {"flags", {
-                Notification::NotificationLocalLiveViewContent::LiveViewContentInner::CAPSULE,
-                Notification::NotificationLocalLiveViewContent::LiveViewContentInner::BUTTON,
-            }}
-        }},
+        {"liveViewContent", BuildConnectedCapsuleLiveViewContent(contentTitle, contentText, capsuleTitle, icon)},
         {"littleIcon", icon},
         {"badgeIconStyle", Notification::NotificationRequest::BadgeStyle::LITTLE}
     };
     return connectedCapsuleNotificationConfig;
+}
+
+json NotificationUtils::BuildConnectedCapsuleLiveViewContent(const std::string &contentTitle,
+    const std::string &contentText, const std::string &capsuleTitle, const std::string &icon)
+{
+    json liveViewContent = {
+        {"title", contentTitle},
+        {"text", contentText},
+        {"type", 35},
+        {"capsule", {
+            {"title", capsuleTitle},
+            {"content", ""},
+            {"icon", icon},
+            {"backgroundColor", "#3B7DF0"}
+        }},
+        {"buttons", {
+            {
+                {"singleButtonName", TRACKING_ENABLE_CHANGE_BUTTON_NAME},
+                {"singleButtonIcon", isTrackingEnabled_ ?
+                    MECHBODY_TRACKING_OPEN_BUTTON_ICON_NAME :
+                    MECHBODY_TRACKING_CLOSE_BUTTON_ICON_NAME},
+            }
+        }},
+        {"flags", {
+            Notification::NotificationLocalLiveViewContent::LiveViewContentInner::CAPSULE,
+            Notification::NotificationLocalLiveViewContent::LiveViewContentInner::BUTTON,
+        }}
+    };
+    return liveViewContent;
 }
 
 void NotificationUtils::ParseNotificationConfigJson(Notification::NotificationRequest& request, json configJson)
