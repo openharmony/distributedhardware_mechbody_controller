@@ -1683,7 +1683,8 @@ HWTEST_F(MechBodyControllerServiceTest, SetUserOperation_004, TestSize.Level2)
 
 /**
  * @tc.name  : SetUserOperation_005
- * @tc.desc  : Test SetUserOperation with permission granted, system app, but invalid JSON, cover cJSON_Parse null branch
+ * @tc.desc  : Test SetUserOperation with permission granted, system app,
+ *             but invalid JSON, cover cJSON_Parse null branch
  * @tc.type  : FUNC
  * @tc.level  : Level 2
  */
@@ -1833,7 +1834,8 @@ HWTEST_F(MechBodyControllerServiceTest, SetUserOperation_011, TestSize.Level2)
 
 /**
  * @tc.name  : SetUserOperation_012
- * @tc.desc  : Test SetUserOperation with identifier as non-string type, cover cJSON_IsString(deviceIdentifierJson) false branch
+ * @tc.desc  : Test SetUserOperation with identifier as non-string type,
+ *             cover cJSON_IsString(deviceIdentifierJson) false branch
  * @tc.type  : FUNC
  * @tc.level  : Level 2
  */
