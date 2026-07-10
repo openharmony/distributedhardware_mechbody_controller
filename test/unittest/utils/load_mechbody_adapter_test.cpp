@@ -259,5 +259,130 @@ HWTEST_F(MechbodyAdapterUtilsTest, ResetTrackingCore_003, TestSize.Level3)
               << ", ret2=" << ret2 << std::endl;
 }
 
+/**
+ * @tc.name: InitTrackingCore_003
+ * @tc.desc: 测试InitTrackingCore后mechAdapterHandle_的状态（覆盖50-53行分支）
+ * @tc.type: FUNC
+ */
+HWTEST_F(MechbodyAdapterUtilsTest, InitTrackingCore_003, TestSize.Level3)
+{
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_003 begin" << std::endl;
+
+    // Given: 清理状态，确保句柄为空
+    MechbodyAdapterUtils::Clear();
+
+    // When: 调用InitTrackingCore
+    int32_t ret = MechbodyAdapterUtils::InitTrackingCore();
+
+    // Then: 根据环境验证返回值和mechAdapterHandle_状态
+    if (ret == ERR_OK) {
+        // so文件存在时dlopen成功，mechAdapterHandle_非空
+        EXPECT_NE(MechbodyAdapterUtils::mechAdapterHandle_, nullptr);
+    } else {
+        // so文件不存在时dlopen失败，走50-53行分支返回LOAD_MECH_ADAPTER_SO_ERROR
+        EXPECT_EQ(ret, LOAD_MECH_ADAPTER_SO_ERROR);
+        EXPECT_EQ(MechbodyAdapterUtils::mechAdapterHandle_, nullptr);
+    }
+
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_003 end, ret=" << ret << std::endl;
+}
+
+/**
+ * @tc.name: InitTrackingCore_004
+ * @tc.desc: 测试InitTrackingCore后mechBackgroundHandle_的状态（覆盖55-58行分支）
+ * @tc.type: FUNC
+ */
+HWTEST_F(MechbodyAdapterUtilsTest, InitTrackingCore_004, TestSize.Level3)
+{
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_004 begin" << std::endl;
+
+    // Given: 清理状态
+    MechbodyAdapterUtils::Clear();
+
+    // When: 调用InitTrackingCore
+    int32_t ret = MechbodyAdapterUtils::InitTrackingCore();
+
+    // Then: 根据环境验证返回值和mechBackgroundHandle_状态
+    if (ret == ERR_OK) {
+        // so文件存在时两个dlopen都成功，mechBackgroundHandle_非空
+        EXPECT_NE(MechbodyAdapterUtils::mechBackgroundHandle_, nullptr);
+    } else if (ret == LOAD_MECH_ADAPTER_SO_ERROR) {
+        // 第一个so不存在时走50-53行分支，mechBackgroundHandle_未被赋值为空
+        // 第一个so存在但第二个so不存在时走55-58行分支，mechBackgroundHandle_为nullptr
+        EXPECT_EQ(MechbodyAdapterUtils::mechBackgroundHandle_, nullptr);
+    }
+
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_004 end, ret=" << ret << std::endl;
+}
+
+/**
+ * @tc.name: InitTrackingCore_005
+ * @tc.desc: 测试LoadFunction中dlsym查找Init符号失败返回LOAD_MECH_ADAPTER_FUNCTION_ERROR
+ * @tc.type: FUNC
+ */
+HWTEST_F(MechbodyAdapterUtilsTest, InitTrackingCore_005, TestSize.Level3)
+{
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_005 begin" << std::endl;
+
+    // Given: 清理状态，预设句柄为dlopen(nullptr)有效值，
+    // dlsym在此句柄中查找"Init"符号将失败
+    MechbodyAdapterUtils::Clear();
+    MechbodyAdapterUtils::mechAdapterHandle_ = dlopen(nullptr, RTLD_LAZY);
+    MechbodyAdapterUtils::mechBackgroundHandle_ = dlopen(nullptr, RTLD_LAZY);
+    ASSERT_NE(MechbodyAdapterUtils::mechAdapterHandle_, nullptr);
+    ASSERT_NE(MechbodyAdapterUtils::mechBackgroundHandle_, nullptr);
+
+    // When: 直接调用LoadFunction，dlsym查找"Init"符号失败
+    int32_t ret = MechbodyAdapterUtils::LoadFunction();
+
+    // Then: LoadFunction返回LOAD_MECH_ADAPTER_FUNCTION_ERROR
+    EXPECT_EQ(ret, LOAD_MECH_ADAPTER_FUNCTION_ERROR);
+
+    // 清理句柄
+    dlclose(MechbodyAdapterUtils::mechAdapterHandle_);
+    dlclose(MechbodyAdapterUtils::mechBackgroundHandle_);
+    MechbodyAdapterUtils::mechAdapterHandle_ = nullptr;
+    MechbodyAdapterUtils::mechBackgroundHandle_ = nullptr;
+
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_005 end, ret=" << ret << std::endl;
+}
+
+/**
+ * @tc.name: InitTrackingCore_006
+ * @tc.desc: 测试InitTrackingCore后函数指针和后续调用的状态（覆盖61-74行分支清理效果）
+ * @tc.type: FUNC
+ */
+HWTEST_F(MechbodyAdapterUtilsTest, InitTrackingCore_006, TestSize.Level3)
+{
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_006 begin" << std::endl;
+
+    // Given: 清理状态
+    MechbodyAdapterUtils::Clear();
+
+    // When: 调用InitTrackingCore
+    int32_t ret = MechbodyAdapterUtils::InitTrackingCore();
+
+    // Then: 根据环境验证返回值和后续调用状态
+    if (ret == ERR_OK) {
+        // 初始化成功时，函数指针有效，后续调用正常工作
+        auto pushFn = [](float x, float y) {};
+        int32_t runRet = MechbodyAdapterUtils::RunTrackingCore(100.0f, 100.0f, 640.0f, 480.0f, pushFn);
+        EXPECT_EQ(runRet, ERR_OK);
+        int32_t resetRet = MechbodyAdapterUtils::ResetTrackingCore();
+        EXPECT_EQ(resetRet, ERR_OK);
+        EXPECT_TRUE(MechbodyAdapterUtils::IsSupportBackground());
+    } else {
+        // 初始化失败时，函数指针为空，后续调用返回错误码
+        auto pushFn = [](float x, float y) {};
+        int32_t runRet = MechbodyAdapterUtils::RunTrackingCore(100.0f, 100.0f, 640.0f, 480.0f, pushFn);
+        EXPECT_EQ(runRet, LOAD_MECH_ADAPTER_FUNCTION_ERROR);
+        int32_t resetRet = MechbodyAdapterUtils::ResetTrackingCore();
+        EXPECT_EQ(resetRet, LOAD_MECH_ADAPTER_FUNCTION_ERROR);
+        EXPECT_FALSE(MechbodyAdapterUtils::IsSupportBackground());
+    }
+
+    DTEST_LOG << "MechbodyAdapterUtilsTest InitTrackingCore_006 end, ret=" << ret << std::endl;
+}
+
 } // namespace MechBodyController
 } // namespace OHOS

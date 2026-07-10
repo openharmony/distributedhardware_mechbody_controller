@@ -2700,5 +2700,232 @@ HWTEST_F(MotionManagerTwoTest, Init_004, TestSize.Level1)
     motionMgr->Init();
     EXPECT_EQ(motionMgr->deviceBaseInfoReady_, true);
 }
+
+// Declaration for free function defined in mc_motion_manager.cpp
+bool CheckRotatePointParam(EulerAngles rotateDegree);
+
+/**
+ * @tc.name  : CheckRotatePointParam_001
+ * @tc.number: CheckRotatePointParam_001
+ * @tc.desc  : Test CheckRotatePointParam with yaw exceeding DEGREE_CIRCLED_MAX returns false.
+ */
+HWTEST_F(MotionManagerTwoTest, CheckRotatePointParam_001, TestSize.Level1)
+{
+    EulerAngles angles(7.0f, 0.0f, 0.0f);
+    EXPECT_FALSE(CheckRotatePointParam(angles));
+}
+
+/**
+ * @tc.name  : CheckRotatePointParam_002
+ * @tc.number: CheckRotatePointParam_002
+ * @tc.desc  : Test CheckRotatePointParam with yaw below DEGREE_CIRCLED_MIN returns false.
+ */
+HWTEST_F(MotionManagerTwoTest, CheckRotatePointParam_002, TestSize.Level1)
+{
+    EulerAngles angles(-7.0f, 0.0f, 0.0f);
+    EXPECT_FALSE(CheckRotatePointParam(angles));
+}
+
+/**
+ * @tc.name  : CheckRotatePointParam_003
+ * @tc.number: CheckRotatePointParam_003
+ * @tc.desc  : Test CheckRotatePointParam with roll exceeding DEGREE_CIRCLED_MAX returns false.
+ */
+HWTEST_F(MotionManagerTwoTest, CheckRotatePointParam_003, TestSize.Level1)
+{
+    EulerAngles angles(0.0f, 7.0f, 0.0f);
+    EXPECT_FALSE(CheckRotatePointParam(angles));
+}
+
+/**
+ * @tc.name  : CheckRotatePointParam_004
+ * @tc.number: CheckRotatePointParam_004
+ * @tc.desc  : Test CheckRotatePointParam with roll below DEGREE_CIRCLED_MIN returns false.
+ */
+HWTEST_F(MotionManagerTwoTest, CheckRotatePointParam_004, TestSize.Level1)
+{
+    EulerAngles angles(0.0f, -7.0f, 0.0f);
+    EXPECT_FALSE(CheckRotatePointParam(angles));
+}
+
+/**
+ * @tc.name  : CheckRotatePointParam_005
+ * @tc.number: CheckRotatePointParam_005
+ * @tc.desc  : Test CheckRotatePointParam with pitch exceeding DEGREE_CIRCLED_MAX returns false.
+ */
+HWTEST_F(MotionManagerTwoTest, CheckRotatePointParam_005, TestSize.Level1)
+{
+    EulerAngles angles(0.0f, 0.0f, 7.0f);
+    EXPECT_FALSE(CheckRotatePointParam(angles));
+}
+
+/**
+ * @tc.name  : CheckRotatePointParam_006
+ * @tc.number: CheckRotatePointParam_006
+ * @tc.desc  : Test CheckRotatePointParam with pitch below DEGREE_CIRCLED_MIN returns false.
+ */
+HWTEST_F(MotionManagerTwoTest, CheckRotatePointParam_006, TestSize.Level1)
+{
+    EulerAngles angles(0.0f, 0.0f, -7.0f);
+    EXPECT_FALSE(CheckRotatePointParam(angles));
+}
+
+/**
+ * @tc.name  : CheckRotatePointParam_007
+ * @tc.number: CheckRotatePointParam_007
+ * @tc.desc  : Test CheckRotatePointParam with all values within valid range returns true.
+ */
+HWTEST_F(MotionManagerTwoTest, CheckRotatePointParam_007, TestSize.Level1)
+{
+    EulerAngles angles(1.0f, 2.0f, 3.0f);
+    EXPECT_TRUE(CheckRotatePointParam(angles));
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_001
+ * @tc.number: CreateDoActionCommand_001
+ * @tc.desc  : Test CreateDoActionCommand with LANDSCAPE_PORTRAIT_SWITCH and protocolVer_ 0x01.
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_001, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    motionMgr->protocolVer_ = 0x01;
+    auto command = motionMgr->CreateDoActionCommand(ActionType::LANDSCAPE_PORTRAIT_SWITCH);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), SetMechMotionControlCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), SetMechMotionControlCmd::CMD_ID);
+    auto motionCmd = std::static_pointer_cast<SetMechMotionControlCmd>(command);
+    EXPECT_EQ(motionCmd->GetAction(), ControlCommand::GO_CENTER);
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_002
+ * @tc.number: CreateDoActionCommand_002
+ * @tc.desc  : Test CreateDoActionCommand with LANDSCAPE_PORTRAIT_SWITCH and protocolVer_ 0x02.
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_002, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    motionMgr->protocolVer_ = 0x02;
+    auto command = motionMgr->CreateDoActionCommand(ActionType::LANDSCAPE_PORTRAIT_SWITCH);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), NormalSetMechMotionControlCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), NormalSetMechMotionControlCmd::CMD_ID);
+    auto normalCmd = std::static_pointer_cast<NormalSetMechMotionControlCmd>(command);
+    EXPECT_EQ(normalCmd->GetAction(), ControlCommand::HORIZONTALLY_SWITCH);
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_003
+ * @tc.number: CreateDoActionCommand_003
+ * @tc.desc  : Test CreateDoActionCommand with LANDSCAPE_PORTRAIT_SWITCH and protocolVer_ other value.
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_003, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    motionMgr->protocolVer_ = 0x03;
+    auto command = motionMgr->CreateDoActionCommand(ActionType::LANDSCAPE_PORTRAIT_SWITCH);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), WheelSetMechSceneControlCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), WheelSetMechSceneControlCmd::CMD_ID);
+    auto wheelCmd = std::static_pointer_cast<WheelSetMechSceneControlCmd>(command);
+    EXPECT_EQ(wheelCmd->GetActionType(), ActionType::LANDSCAPE_PORTRAIT_SWITCH);
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_004
+ * @tc.number: CreateDoActionCommand_004
+ * @tc.desc  : Test CreateDoActionCommand with HEAD_UP action type.
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_004, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    auto command = motionMgr->CreateDoActionCommand(ActionType::HEAD_UP);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), SetMechRotationBySpeedCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), SetMechRotationBySpeedCmd::CMD_ID);
+    auto rotationCmd = std::static_pointer_cast<SetMechRotationBySpeedCmd>(command);
+    EXPECT_LT(rotationCmd->GetParams().speed.pitchSpeed, 0);
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_005
+ * @tc.number: CreateDoActionCommand_005
+ * @tc.desc  : Test CreateDoActionCommand with HEAD_DOWN action type.
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_005, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    auto command = motionMgr->CreateDoActionCommand(ActionType::HEAD_DOWN);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), SetMechRotationBySpeedCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), SetMechRotationBySpeedCmd::CMD_ID);
+    auto rotationCmd = std::static_pointer_cast<SetMechRotationBySpeedCmd>(command);
+    EXPECT_GT(rotationCmd->GetParams().speed.pitchSpeed, 0);
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_006
+ * @tc.number: CreateDoActionCommand_006
+ * @tc.desc  : Test CreateDoActionCommand with NOD action type.
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_006, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    auto command = motionMgr->CreateDoActionCommand(ActionType::NOD);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), SetMechRotationTraceCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), SetMechRotationTraceCmd::CMD_ID);
+    auto traceCmd = std::static_pointer_cast<SetMechRotationTraceCmd>(command);
+    EXPECT_GT(traceCmd->GetParams().size(), 0);
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_007
+ * @tc.number: CreateDoActionCommand_007
+ * @tc.desc  : Test CreateDoActionCommand with HEAD_SHAKE action type.
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_007, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    auto command = motionMgr->CreateDoActionCommand(ActionType::HEAD_SHAKE);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), SetMechRotationTraceCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), SetMechRotationTraceCmd::CMD_ID);
+    auto traceCmd = std::static_pointer_cast<SetMechRotationTraceCmd>(command);
+    EXPECT_GT(traceCmd->GetParams().size(), 0);
+}
+
+/**
+ * @tc.name  : CreateDoActionCommand_008
+ * @tc.number: CreateDoActionCommand_008
+ * @tc.desc  : Test CreateDoActionCommand with default action type (e.g. DANCE).
+ */
+HWTEST_F(MotionManagerTwoTest, CreateDoActionCommand_008, TestSize.Level1)
+{
+    int32_t mechId = 100;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    auto command = motionMgr->CreateDoActionCommand(ActionType::DANCE);
+    EXPECT_NE(command, nullptr);
+    EXPECT_EQ(command->GetCmdSet(), WheelSetMechSceneControlCmd::CMD_SET);
+    EXPECT_EQ(command->GetCmdId(), WheelSetMechSceneControlCmd::CMD_ID);
+    auto wheelCmd = std::static_pointer_cast<WheelSetMechSceneControlCmd>(command);
+    EXPECT_EQ(wheelCmd->GetActionType(), ActionType::DANCE);
+}
 }
 }
