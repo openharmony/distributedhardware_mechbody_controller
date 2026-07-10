@@ -28,7 +28,7 @@ using GetBackgroundXYFn = std::function<void(TrackingFrameParams trackingFramePa
 typedef void (*InitTrackingCore)();
 typedef int32_t (*RunTrackingCore)(float, float, float, float, const PushXYFn&);
 typedef void (*ResetTrackingCore)();
-typedef void (*RegisterBackgroundTracking)(const GetBackgroundXYFn&);
+typedef void (*RegisterBackgroundTracking)(const GetBackgroundXYFn&, int8_t deviceType);
 typedef void (*UnRegisterBackgroundTracking)();
 typedef bool (*IsSupportBackground)();
 
@@ -37,7 +37,7 @@ public:
     static int32_t InitTrackingCore();
     static int32_t RunTrackingCore(float x, float y, float width, float height, const PushXYFn& push);
     static int32_t ResetTrackingCore();
-    static void RegisterBackgroundTracking(const GetBackgroundXYFn& GetBackgroundXYFn);
+    static void RegisterBackgroundTracking(const GetBackgroundXYFn& GetBackgroundXYFn, int8_t deviceType);
     static void UnRegisterBackgroundTracking();
     static void Clear();
     static bool IsSupportBackground();
