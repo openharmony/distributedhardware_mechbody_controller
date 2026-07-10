@@ -530,6 +530,10 @@ int32_t BleSendManager::OnGattReady(MechInfo &mechInfo)
         MechConnectManager::GetInstance().SetMechanicGattState(mechInfo.mac, true);
         gattCv_.notify_all();
     }
+    {
+        std::unique_lock<std::mutex> lock(mtuMutex_);
+        isMtuUpdated_ = false;
+    }
     gattClient_->RequestBleMtuSize(MTU_UPDATE_SIZE);
     {
         std::unique_lock<std::mutex> lock(mtuMutex_);
@@ -538,9 +542,6 @@ int32_t BleSendManager::OnGattReady(MechInfo &mechInfo)
             HILOGE("MECHBODY_EXEC_CONNECT wait for mtu update timeout");
             return MECH_CONNECT_FAILED;
         }
-
-        // 重置标志位（加锁）
-        isMtuUpdated_ = false;
     }
     int32_t result = MechConnectManager::GetInstance().NotifyMechConnect(mechInfo);
     if (result == MECH_CONNECT_FAILED) {
