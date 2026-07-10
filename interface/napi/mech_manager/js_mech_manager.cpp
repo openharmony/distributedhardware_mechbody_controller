@@ -137,7 +137,17 @@ bool MechManager::ParseOnParams(napi_env env, napi_callback_info info,
         HILOGE("Second argument must be a function.");
         return false;
     }
-    napi_create_reference(env, args[1], 1, &outCallbackRef);
+    napi_status status = napi_create_reference(env, args[1], 1, &outCallbackRef);
+    if (status != napi_ok || outCallbackRef == nullptr) {
+        HILOGE("Failed to create reference to callback");
+        napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+            "Failed to create callback reference");
+        if (outCallbackRef != nullptr) {
+            napi_delete_reference(env, outCallbackRef);
+            outCallbackRef = nullptr;
+        }
+        return false;
+    }
     return true;
 }
 
@@ -405,7 +415,17 @@ bool MechManager::ParseOffParams(napi_env env, napi_callback_info info,
             HILOGE("Second argument must be a function.");
             return false;
         }
-        napi_create_reference(env, args[1], 1, &outCallbackRef);
+        napi_status status = napi_create_reference(env, args[1], 1, &outCallbackRef);
+        if (status != napi_ok || outCallbackRef == nullptr) {
+            HILOGE("Failed to create reference to callback");
+            napi_throw_error(env, std::to_string(MechNapiErrorCode::PARAMETER_CHECK_FAILED).c_str(),
+                "Failed to create callback reference");
+            if (outCallbackRef != nullptr) {
+                napi_delete_reference(env, outCallbackRef);
+                outCallbackRef = nullptr;
+            }
+            return false;
+        }
     }
     return true;
 }
