@@ -168,6 +168,7 @@ void McCameraTrackingController::HandleTrackingFrame(TrackingFrameParams trackin
         params->roi.y = params->roi.y;
     }
 
+    // When the object is identified as a body, offset compensation is required.
     if (params->objectType == static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY)) {
         if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
             params->roi.x = params->roi.x - BODY_OFFSET;
@@ -190,9 +191,11 @@ void McCameraTrackingController::HandleTrackingFrame(TrackingFrameParams trackin
         cameraInfoParams.fovV = currentCameraInfo_->fovVBasic;
         cameraInfoParams.zoomFactor = currentCameraInfo_->zoomFactor;
         cameraInfoParams.isRecording = currentCameraInfo_->isRecording;
+        // swing only has front
         cameraInfoParams.cameraType = CameraType::FRONT;
 
         ScreenInfoParams screenInfoParam;
+        // Determine portrait or landscape orientation
         screenInfoParam.isPortrait = IsVertical(sensorRotation_);
 
         int32_t result = motionManager->SetMechCameraInfo(cameraInfoParams);
