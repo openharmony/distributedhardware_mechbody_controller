@@ -15,6 +15,8 @@
 
 #include "mc_normal_register_mech_key_event_cmd.h"
 
+#include <unordered_map>
+
 #include "mechbody_controller_log.h"
 
 namespace OHOS {
@@ -27,6 +29,11 @@ namespace {
     constexpr uint8_t ZOOM_OUT = 4;
     constexpr uint8_t SWITCH_CAMERA = 5;
     constexpr uint8_t START_FILMING = 6;
+    constexpr uint8_t DIRECTION_UP = 9;
+    constexpr uint8_t DIRECTION_DOWN = 10;
+    constexpr uint8_t DIRECTION_LEFT = 11;
+    constexpr uint8_t DIRECTION_RIGHT = 12;
+    constexpr uint8_t DIRECTION_CONFIRM = 13;
     constexpr uint8_t CMD_GET_BUTTON_LENGTH = 1;
     constexpr uint8_t CMD_KEY_WHEEL_CLICK = 0x07;
     constexpr uint8_t CMD_GET_WHEEL_LENGTH = 5;
@@ -77,7 +84,10 @@ bool NormalRegisterMechKeyEventCmd::Unmarshal(std::shared_ptr<MechDataBuffer> da
     do {
         CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, keyType), false, "read keyType");
         offset++;
-        if (keyType >= SWITCH_MODE && keyType <= START_FILMING) {
+        if (
+            (keyType >= SWITCH_MODE && keyType <= START_FILMING) ||
+            (keyType >= DIRECTION_UP && keyType <= DIRECTION_CONFIRM)
+        ) {
             result = RegisterKeyEvent(data, offset, keyType);
             if (!result) {
                 return false;
@@ -119,39 +129,37 @@ bool NormalRegisterMechKeyEventCmd::RegisterKeyEvent(
     offset++;
 
     CHECK_ERR_RETURN_VALUE(data->ReadUint8(offset, buttonFrequency_), false, "read buttonFrequency");
+    
+    static const std::unordered_map<uint8_t, CameraKeyEvent> oneClickMap = {
+        {SWITCH_TRACKING, CameraKeyEvent::SWITCH_TRACKING},
+        {ZOOM_IN, CameraKeyEvent::ZOOM_IN},
+        {ZOOM_OUT, CameraKeyEvent::ZOOM_OUT},
+        {SWITCH_CAMERA, CameraKeyEvent::SWITCH_CAMERA},
+        {START_FILMING, CameraKeyEvent::START_FILMING},
+        {DIRECTION_UP, CameraKeyEvent::DIRECTION_UP},
+        {DIRECTION_DOWN, CameraKeyEvent::DIRECTION_DOWN},
+        {DIRECTION_LEFT, CameraKeyEvent::DIRECTION_LEFT},
+        {DIRECTION_RIGHT, CameraKeyEvent::DIRECTION_RIGHT},
+        {DIRECTION_CONFIRM, CameraKeyEvent::DIRECTION_CONFIRM}
+    };
+    
+    static const std::unordered_map<uint8_t, CameraKeyEvent> tripleClickMap = {
+        {SWITCH_CAMERA, CameraKeyEvent::SWITCH_PHOTO_FILM}
+    };
+    
     if (buttonFrequency_ == ONE_CLICK) {
-        switch (keyType) {
-            case SWITCH_MODE :
-                break;
-            case SWITCH_TRACKING :
-                HILOGI("ButtonEvent SWITCH_CAMERA.");
-                event_ = CameraKeyEvent::SWITCH_TRACKING;
-                break;
-            case ZOOM_IN :
-                event_ = CameraKeyEvent::ZOOM_IN;
-                break;
-            case ZOOM_OUT :
-                event_ = CameraKeyEvent::ZOOM_OUT;
-                break;
-            case SWITCH_CAMERA :
-                event_ = CameraKeyEvent::SWITCH_CAMERA;
-                break;
-            case START_FILMING :
-                event_ = CameraKeyEvent::START_FILMING;
-                break;
-            default :
-                HILOGW("ButtonEvent undefined action.");
-                break;
+        auto it = oneClickMap.find(keyType);
+        if (it != oneClickMap.end()) {
+            event_ = it->second;
+        } else {
+            HILOGW("ButtonEvent undefined action for ONE_CLICK, keyType: %{public}u", keyType);
         }
-    }
-    if (buttonFrequency_ == TRIPLE_CLICK) {
-        switch (keyType) {
-            case SWITCH_CAMERA :
-                event_ = CameraKeyEvent::SWITCH_PHOTO_FILM;
-                break;
-            default :
-                HILOGW("ButtonEvent undefined action.");
-                break;
+    } else if (buttonFrequency_ == TRIPLE_CLICK) {
+        auto it = tripleClickMap.find(keyType);
+        if (it != tripleClickMap.end()) {
+            event_ = it->second;
+        } else {
+            HILOGW("ButtonEvent undefined action for TRIPLE_CLICK, keyType: %{public}u", keyType);
         }
     }
     offset++;

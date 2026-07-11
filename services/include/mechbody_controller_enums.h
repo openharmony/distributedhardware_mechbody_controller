@@ -99,6 +99,11 @@ enum class CameraKeyEvent : int32_t {
     ZOOM_OUT = 3,
     SWITCH_PHOTO_FILM = 4,
     SWITCH_TRACKING = 5,
+    DIRECTION_UP = 9,
+    DIRECTION_DOWN = 10,
+    DIRECTION_LEFT = 11,
+    DIRECTION_RIGHT = 12,
+    DIRECTION_CONFIRM = 13,
 };
 
 enum class MechMode : uint8_t {
