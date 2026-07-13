@@ -73,6 +73,7 @@ ohos_shared_library("mechanicmanager_napi") {
     "samgr:samgr_proxy",
     "init:libbegetutil",
     "api_metrics:histogrammanager",
+    "node:node_header_notice",
   ]
   relative_install_dir = "module/distributedhardware"
   part_name = "mechbody_controller"
