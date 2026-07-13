@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <cmath>
+#include <unordered_set>
 
 #include "mechbody_controller_log.h"
 #include "mc_subscription_center.h"
@@ -79,7 +80,12 @@ const std::map<CameraKeyEvent, int32_t> MAP_KEY_EVENT_VALUE = {
     {CameraKeyEvent::SWITCH_CAMERA, MMI::KeyEvent::KEYCODE_VIDEO_NEXT},
     {CameraKeyEvent::ZOOM_IN, MMI::KeyEvent::KEYCODE_ZOOMIN},
     {CameraKeyEvent::ZOOM_OUT, MMI::KeyEvent::KEYCODE_ZOOMOUT},
-    {CameraKeyEvent::SWITCH_PHOTO_FILM, MMI::KeyEvent::KEYCODE_VCR2}
+    {CameraKeyEvent::SWITCH_PHOTO_FILM, MMI::KeyEvent::KEYCODE_VCR2},
+    {CameraKeyEvent::DIRECTION_UP, MMI::KeyEvent::KEYCODE_DPAD_UP},
+    {CameraKeyEvent::DIRECTION_DOWN, MMI::KeyEvent::KEYCODE_DPAD_DOWN},
+    {CameraKeyEvent::DIRECTION_LEFT, MMI::KeyEvent::KEYCODE_DPAD_LEFT},
+    {CameraKeyEvent::DIRECTION_RIGHT, MMI::KeyEvent::KEYCODE_DPAD_RIGHT},
+    {CameraKeyEvent::DIRECTION_CONFIRM, MMI::KeyEvent::KEYCODE_DPAD_CENTER}
 };
 
 std::map<SpeedGear, int16_t> DISTANCE_SPEED_MAP = {
@@ -252,31 +258,27 @@ void MotionManager::MechButtonEventNotify(const std::shared_ptr<CommonRegisterMe
     HILOGI("Received gimbal key press event. eventNo: %{public}d.", eventType);
     std::shared_ptr<MMI::KeyEvent> event = MMI::KeyEvent::Create();
     CHECK_POINTER_RETURN(cmd, "KeyEvent");
-    switch (eventType) {
-        case CameraKeyEvent::START_FILMING :
-            HILOGI("ButtonEvent START_FILMING.");
-            MMIKeyEvent(CameraKeyEvent::START_FILMING);
-            break;
-        case CameraKeyEvent::SWITCH_CAMERA :
-            HILOGI("ButtonEvent SWITCH_CAMERA.");
-            MMIKeyEvent(CameraKeyEvent::SWITCH_CAMERA);
-            break;
-        case CameraKeyEvent::ZOOM_IN :
-            HILOGI("ButtonEvent ZOOM_IN.");
-            MMIKeyEvent(CameraKeyEvent::ZOOM_IN);
-            break;
-        case CameraKeyEvent::ZOOM_OUT :
-            HILOGI("ButtonEvent ZOOM_OUT.");
-            MMIKeyEvent(CameraKeyEvent::ZOOM_OUT);
-            break;
-        case CameraKeyEvent::SWITCH_PHOTO_FILM :
-            HILOGI("ButtonEvent SWITCH_PHOTO_FILM.");
-            MMIKeyEvent(CameraKeyEvent::SWITCH_PHOTO_FILM);
-            break;
-        default:
-            HILOGW("ButtonEvent undefined action");
-            break;
+    
+    static const std::unordered_set<CameraKeyEvent> validEvents = {
+        CameraKeyEvent::START_FILMING,
+        CameraKeyEvent::SWITCH_CAMERA,
+        CameraKeyEvent::ZOOM_IN,
+        CameraKeyEvent::ZOOM_OUT,
+        CameraKeyEvent::SWITCH_PHOTO_FILM,
+        CameraKeyEvent::DIRECTION_UP,
+        CameraKeyEvent::DIRECTION_DOWN,
+        CameraKeyEvent::DIRECTION_LEFT,
+        CameraKeyEvent::DIRECTION_RIGHT,
+        CameraKeyEvent::DIRECTION_CONFIRM
+    };
+    
+    if (validEvents.find(eventType) != validEvents.end()) {
+        HILOGI("ButtonEvent %{public}d.", static_cast<int32_t>(eventType));
+        MMIKeyEvent(eventType);
+    } else {
+        HILOGW("ButtonEvent undefined action");
     }
+    
     McCameraTrackingController::GetInstance().SetStickOffset(cmd->GetStickX(), cmd->GetStickY());
     if (cmd->GetStickX() != 0 || cmd->GetStickY() != 0) {
         controlInfo_.stickNum++;
