@@ -178,7 +178,8 @@ ohos_shared_library("mechbody_service") {
     "ability_runtime:ability_manager",  
     "ability_runtime:app_manager",
     "i18n:intl_util",
-    "icu:shared_icuuc"
+    "icu:shared_icuuc",
+    "ability_runtime:wantagent_innerkits",
   ]
 
   install_images = [ system_base_dir ]
