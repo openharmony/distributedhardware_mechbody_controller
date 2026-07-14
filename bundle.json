@@ -39,6 +39,7 @@
           "init",
           "ipc",
           "napi",
+          "node",
           "safwk",
           "samgr",
           "ability_runtime",
