@@ -406,13 +406,7 @@ void AniMechManager::Rotate(int32_t mechId,
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
         promiseParams_.erase(rotatePromiseParam->cmdId);
-    }
-    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
-        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
-        return;
-    }
-    if (result != ERR_OK) {
-        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        ProcessOnResultCode(result);
         return;
     }
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
@@ -453,7 +447,10 @@ void AniMechManager::RotateToEulerAngles(int32_t mechId,
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        promiseParams_.erase(rotatePromiseParam->cmdId);
+        auto it = promiseParams_.find(rotatePromiseParam->cmdId);
+        if (it != promiseParams_.end()) {
+            promiseParams_.erase(it);
+        }
     }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
@@ -506,13 +503,7 @@ void AniMechManager::RotateBySpeed(
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
         promiseParams_.erase(rotatePromiseParam->cmdId);
-    }
-    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
-        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
-        return;
-    }
-    if (result != ERR_OK) {
-        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        ProcessOnResultCode(result);
         return;
     }
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
@@ -548,7 +539,10 @@ void AniMechManager::StopMoving(int32_t mechId, uintptr_t &promise)
     if (result != ERR_OK) {
         {
             std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-            promiseParams_.erase(rotatePromiseParam->cmdId);
+            auto it = promiseParams_.find(rotatePromiseParam->cmdId);
+            if (it != promiseParams_.end()) {
+                promiseParams_.erase(it);
+            }
         }
         ProcessOnResultCode(result);
         return;
@@ -687,7 +681,10 @@ void AniMechManager::SearchTarget(const TargetInfoTaihe &target, const SearchPar
     if (result != ERR_OK) {
         {
             std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
-            searchTargetPromiseParam_.erase(searchTargetPromiseParam->cmdId);
+            auto it = searchTargetPromiseParam_.find(searchTargetPromiseParam->cmdId);
+            if (it != searchTargetPromiseParam_.end()) {
+                searchTargetPromiseParam_.erase(it);
+            }
         }
         ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
         return;
@@ -735,7 +732,10 @@ void AniMechManager::Move(int32_t mechId, const MoveParamsTaihe &moveParamsTaihe
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        promiseParams_.erase(rotatePromiseParam->cmdId);
+        auto it = promiseParams_.find(rotatePromiseParam->cmdId);
+        if (it != promiseParams_.end()) {
+            promiseParams_.erase(it);
+        }
     }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
@@ -787,7 +787,10 @@ void AniMechManager::MoveBySpeed(
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        promiseParams_.erase(rotatePromiseParam->cmdId);
+        auto it = promiseParams_.find(rotatePromiseParam->cmdId);
+        if (it != promiseParams_.end()) {
+            promiseParams_.erase(it);
+        }
     }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
@@ -832,7 +835,10 @@ void AniMechManager::TurnBySpeed(int32_t mechId, float angleSpeed, int32_t durat
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        promiseParams_.erase(rotatePromiseParam->cmdId);
+        auto it = promiseParams_.find(rotatePromiseParam->cmdId);
+        if (it != promiseParams_.end()) {
+            promiseParams_.erase(it);
+        }
     }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
@@ -904,7 +910,10 @@ void AniMechManager::DoAction(int32_t mechId, const ActionTypeTaihe &actionTypeT
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        promiseParams_.erase(rotatePromiseParam->cmdId);
+        auto it = promiseParams_.find(rotatePromiseParam->cmdId);
+        if (it != promiseParams_.end()) {
+            promiseParams_.erase(it);
+        }
     }
     if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
         ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
@@ -1008,7 +1017,12 @@ int32_t AniMechManager::ExecuteOnForTrackingEvent(const TrackingEventCBTaihe &ca
             HILOGE("Init TrackingEventStu failed.");
             return MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY;
         }
-        registerResult = mechClient_->TrackingEventListenOn(trackingEventStub_);
+        sptr<AniMechManagerStub> localStub;
+        {
+            std::lock_guard<std::mutex> stubLock(trackingEventStubMutex_);
+            localStub = trackingEventStub_;
+        }
+        registerResult = mechClient_->TrackingEventListenOn(localStub);
     }
     if (registerResult != ERR_OK) {
         return registerResult;
@@ -1077,9 +1091,6 @@ bool AniMechManager::InitAttachStateChangeStub()
 
 bool AniMechManager::InitTrackingEventStub()
 {
-    if (trackingEventStub_ != nullptr) {
-        return true;
-    }
     {
         std::lock_guard<std::mutex> lock(trackingEventStubMutex_);
         if (trackingEventStub_ != nullptr) {
@@ -1462,29 +1473,24 @@ bool AniMechManager::PreCheck()
 
 bool AniMechManager::RegisterCmdChannel()
 {
+    std::lock_guard<std::mutex> lock(cmdChannelMutex_);
     if (cmdChannel_ != nullptr) {
         return true;
     }
-    {
-        std::lock_guard<std::mutex> lock(cmdChannelMutex_);
-        if (cmdChannel_ != nullptr) {
-            return true;
-        }
-        if (!InitMechClient()) {
-            return false;
-        }
-        sptr<AniMechManagerStub> stub = new  (std::nothrow) AniMechManagerStub();
-        sptr<IRemoteObject::DeathRecipient> deathListener = new (std::nothrow) AniCmdChannelDeathListener();
-        if (stub == nullptr ||  deathListener == nullptr) {
-            HILOGE("stub or deathListener is null");
-            return false;
-        }
-        stub->SetDeathRecipient(deathListener);
-        int32_t result = mechClient_->RegisterCmdChannel(stub);
-        if (result == ERR_OK) {
-            cmdChannel_ = stub;
-            return true;
-        }
+    if (!InitMechClient()) {
+        return false;
+    }
+    sptr<AniMechManagerStub> stub = new  (std::nothrow) AniMechManagerStub();
+    sptr<IRemoteObject::DeathRecipient> deathListener = new (std::nothrow) AniCmdChannelDeathListener();
+    if (stub == nullptr ||  deathListener == nullptr) {
+        HILOGE("stub or deathListener is null");
+        return false;
+    }
+    stub->SetDeathRecipient(deathListener);
+    int32_t result = mechClient_->RegisterCmdChannel(stub);
+    if (result == ERR_OK) {
+        cmdChannel_ = stub;
+        return true;
     }
     return false;
 }
@@ -1825,8 +1831,49 @@ void AniMechManager::OnRotationAxesStatusChangeRemoteDied(const wptr <IRemoteObj
 void AniMechManager::OnCmdChannelRemoteDied(const wptr <IRemoteObject> &object)
 {
     HILOGE("CmdChannel RemoteObject dead; ");
-    std::lock_guard<std::mutex> lock(cmdChannelMutex_);
-    cmdChannel_ = nullptr;
+    std::vector<std::shared_ptr<AniRotatePrimiseFulfillmentParam>> pendingParams;
+    std::vector<std::shared_ptr<AniRotatePrimiseFulfillmentParam>> pendingSearchParams;
+    {
+        std::lock_guard<std::mutex> lock(promiseParamsMutex_);
+        for (auto &item : promiseParams_) {
+            pendingParams.push_back(item.second);
+        }
+        promiseParams_.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lock(searchTargetPromiseParamMutex_);
+        for (auto &item : searchTargetPromiseParam_) {
+            pendingSearchParams.push_back(item.second);
+        }
+        searchTargetPromiseParam_.clear();
+    }
+    for (const auto &param : pendingParams) {
+        auto task = [this, param]() {
+            if (param == nullptr || param->env == nullptr) {
+                return;
+            }
+            if (param->retVoid) {
+                VoidPromise(param->env, param->deferred);
+            } else {
+                ResultTaihePromise(param->env, param->deferred,
+                    static_cast<int32_t>(ResultTaihe(ResultTaihe::key_t::SYSTEM_ERROR)));
+            }
+        };
+        AniSendEvent(task);
+    }
+    for (const auto &param : pendingSearchParams) {
+        auto task = [this, param]() {
+            if (param == nullptr || param->env == nullptr) {
+                return;
+            }
+            SearchResultTaihePromise(param->env, param->deferred, 0);
+        };
+        AniSendEvent(task);
+    }
+    {
+        std::lock_guard<std::mutex> lock(cmdChannelMutex_);
+        cmdChannel_ = nullptr;
+    }
 }
 
 void AniMechManager::OnBaseChannelRemoteDied(const wptr <IRemoteObject> &object)
