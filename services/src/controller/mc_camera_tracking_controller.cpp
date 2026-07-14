@@ -1918,8 +1918,9 @@ void MechBodyEventBaseService::OnReceiveEvent(std::string action, const EventFwk
     HILOGI("enter.");
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED) {
         auto userId = data.GetCode();
-        HILOGI("COMMON_EVENT_USER_SWITCHED. curUserId_: %{public}d, userId: %{public}d",
-            curUserId_.load(std::memory_order_relaxed), userId);
+        HILOGI("COMMON_EVENT_USER_SWITCHED. curUserId_: %{public}s, userId: %{public}s",
+            GetAnonymUint32(static_cast<uint32_t>(curUserId_.load(std::memory_order_relaxed))).c_str(),
+            GetAnonymUint32(static_cast<uint32_t>(userId)).c_str());
         if (curUserId_.load(std::memory_order_relaxed) == -1 || curUserId_.load(std::memory_order_relaxed) != userId) {
             McCameraTrackingController::GetInstance().UserIdChangeCallback();
         }
