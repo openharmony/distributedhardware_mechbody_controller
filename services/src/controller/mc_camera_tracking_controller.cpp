@@ -626,7 +626,8 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     HILOGI("trackingFrameParams param: %{public}s", trackingFrameParams->ToString().c_str());
     uint64_t lastTrackingTargetNum = currentCameraInfo_->trackingTargetNum;
     currentCameraInfo_->trackingTargetNum = detectedObjects.size();
-    if (currentCameraInfo_->searchingTarget.load(std::memory_order_relaxed) && currentCameraInfo_->trackingTargetNum > 0) {
+    if (currentCameraInfo_->searchingTarget.load(std::memory_order_relaxed) &&
+        currentCameraInfo_->trackingTargetNum > 0) {
         HILOGE("Stop searching, camera info: %{public}s", currentCameraInfo_->ToString().c_str());
         SearchTargetRotateFinish(SEARCH_TARGET_TASK_NAME);
         eventHandler_->PostTask([this]() {
@@ -1899,7 +1900,8 @@ void MechBodyEventBaseService::OnReceiveEvent(std::string action, const EventFwk
     HILOGI("enter.");
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED) {
         auto userId = data.GetCode();
-        HILOGI("COMMON_EVENT_USER_SWITCHED. curUserId_: %{public}d, userId: %{public}d", curUserId_.load(std::memory_order_relaxed), userId);
+        HILOGI("COMMON_EVENT_USER_SWITCHED. curUserId_: %{public}d, userId: %{public}d",
+            curUserId_.load(std::memory_order_relaxed), userId);
         if (curUserId_.load(std::memory_order_relaxed) == -1 || curUserId_.load(std::memory_order_relaxed) != userId) {
             McCameraTrackingController::GetInstance().UserIdChangeCallback();
         }
