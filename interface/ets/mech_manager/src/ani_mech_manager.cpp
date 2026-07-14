@@ -405,17 +405,8 @@ void AniMechManager::Rotate(int32_t mechId,
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        auto it = promiseParams_.find(rotatePromiseParam->cmdId);
-        if (it != promiseParams_.end()) {
-            promiseParams_.erase(it);
-        }
-    }
-    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
-        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
-        return;
-    }
-    if (result != ERR_OK) {
-        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+        ProcessOnResultCode(result);
         return;
     }
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
@@ -511,17 +502,8 @@ void AniMechManager::RotateBySpeed(
     HILOGI("result code: %{public}d ", result);
     if (result != ERR_OK) {
         std::lock_guard<std::mutex> lock(promiseParamsMutex_);
-        auto it = promiseParams_.find(rotatePromiseParam->cmdId);
-        if (it != promiseParams_.end()) {
-            promiseParams_.erase(it);
-        }
-    }
-    if (result == MechNapiErrorCode::DEVICE_NOT_CONNECTED) {
-        ::taihe::set_business_error(MechNapiErrorCode::DEVICE_NOT_CONNECTED, "Device not connected");
-        return;
-    }
-    if (result != ERR_OK) {
-        ::taihe::set_business_error(MechNapiErrorCode::SYSTEM_WORK_ABNORMALLY, "System exception");
+        promiseParams_.erase(rotatePromiseParam->cmdId);
+        ProcessOnResultCode(result);
         return;
     }
     promise = reinterpret_cast<uintptr_t>(rotatePromiseParam->promise);
