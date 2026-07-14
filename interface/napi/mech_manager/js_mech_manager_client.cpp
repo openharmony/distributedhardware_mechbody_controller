@@ -1191,7 +1191,7 @@ void MechBodyServiceLoadCallback::OnLoadSystemAbilitySuccess(int32_t systemAbili
 
 void MechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbilityId)
 {
-    HILOGI("OnLoadSystemAbilityFail systemAbilityId: %d.", systemAbilityId);
+    HILOGE("OnLoadSystemAbilityFail systemAbilityId: %{public}d.", systemAbilityId);
     if (systemAbilityId != MECH_SERVICE_SA_ID) {
         HILOGE("start systemabilityId is not sourceSAId!");
         return;
@@ -1200,6 +1200,9 @@ void MechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbilityI
     if (mechClient == nullptr) {
         return;
     }
+    std::shared_ptr<MechInfo> mechInfo = std::make_shared<MechInfo>();
+    mechInfo->mechId = DEFAULT_MECH_ID;
+    JsMechManagerService::GetInstance().AttachStateChangeCallback(AttachmentState::DETACHED, mechInfo);
 }
 
 MechBodyServiceLoadCallback::MechBodyServiceLoadCallback(const std::weak_ptr<MechClient> &client,
