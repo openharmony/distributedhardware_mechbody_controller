@@ -108,13 +108,7 @@ int32_t AniMechManagerStub::SearchTargetCallback(MessageParcel &data,
 int32_t AniMechManagerStub::SubscribeCallback(MessageParcel &data, MessageParcel &reply)
 {
     int32_t mechId = data.ReadInt32();
-    int32_t mechEventTypeValue = data.ReadInt32();
-    if (mechEventTypeValue < static_cast<int32_t>(MechEventType::DEVICE_ADSORBED) ||
-        mechEventTypeValue > static_cast<int32_t>(MechEventType::LOW_POWER)) {
-        HILOGE("Invalid mechEventType: %{public}d", mechEventTypeValue);
-        return NAPI_RECV_DATA_FAIL;
-    }
-    MechEventType mechEventType = static_cast<MechEventType>(mechEventTypeValue);
+    MechEventType mechEventType = static_cast<MechEventType>(data.ReadInt32());
     HILOGI("mech id: %{public}d, mechEventType: %{public}d", mechId, static_cast<int32_t>(mechEventType));
     return AniMechManager::GetInstance().SubscribeCallback(mechId, mechEventType);
 }
