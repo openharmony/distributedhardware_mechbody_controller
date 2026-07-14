@@ -67,7 +67,7 @@ struct CameraInfo {
     bool isRecording = false;
     bool currentTrackingEnable = true;
     uint64_t trackingTargetNum = 0;
-    bool searchingTarget = false;
+    std::atomic<bool> searchingTarget{false};
     std::string searchTargetNapiCmdId = "";
     CameraTrackingLayout currentCameraTrackingLayout = CameraTrackingLayout::DEFAULT;
     CameraType cameraType = CameraType::BACK;
@@ -109,7 +109,7 @@ public:
     void OnReceiveEvent(std::string action, const EventFwk::CommonEventData &data) override;
     
 private:
-    int32_t curUserId_ = -1;
+    std::atomic<int32_t> curUserId_{-1};
 };
 
 class MechSessionCallbackImpl : public CameraStandard::MechSessionCallback {
@@ -259,7 +259,7 @@ private:
     float targetHorizontal_ = 0.0f;
     std::chrono::steady_clock::time_point lastStickTime_;
     bool isStick_ = false;
-    bool isSalientDetectionLocked_ = false;
+    std::atomic<bool> isSalientDetectionLocked_{false};
     bool fovFromMetadata_ = false;
     uint8_t cameraMode_ = 0;
     uint64_t trackingTimeCur_ = 0;

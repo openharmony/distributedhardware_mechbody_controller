@@ -626,7 +626,8 @@ std::shared_ptr<TrackingFrameParams> McCameraTrackingController::BuildTrackingPa
     HILOGI("trackingFrameParams param: %{public}s", trackingFrameParams->ToString().c_str());
     uint64_t lastTrackingTargetNum = currentCameraInfo_->trackingTargetNum;
     currentCameraInfo_->trackingTargetNum = detectedObjects.size();
-    if (currentCameraInfo_->searchingTarget && currentCameraInfo_->trackingTargetNum > 0) {
+    if (currentCameraInfo_->searchingTarget.load(std::memory_order_relaxed) &&
+        currentCameraInfo_->trackingTargetNum > 0) {
         HILOGE("Stop searching, camera info: %{public}s", currentCameraInfo_->ToString().c_str());
         SearchTargetRotateFinish(SEARCH_TARGET_TASK_NAME);
         eventHandler_->PostTask([this]() {
@@ -834,11 +835,11 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
         if (item->GetType() == CameraStandard::MetadataObjectType::SALIENT_DETECTION && item->IsLockFocusTracked()) {
             HILOGI("found SALIENT_DETECTION with isLockFocusTracked true");
             selectedObject = item;
-            isSalientDetectionLocked_ = true;
+            isSalientDetectionLocked_.store(true, std::memory_order_relaxed);
             return ProcessTargetByType(selectedObject, detectedObjects, targetObject);
         }
     }
-    isSalientDetectionLocked_ = false;
+    isSalientDetectionLocked_.store(false, std::memory_order_relaxed);
 
     if (lastTrackingFrame_ != nullptr && lastTrackingFrame_->targetId >= 0) {
         for (const auto &item : detectedObjects) {
@@ -905,7 +906,7 @@ int32_t McCameraTrackingController::CinematicVideoModeTrackingTargetFilter(
     CameraStandard::FocusTrackingMetaInfo &info, std::shared_ptr<TrackingFrameParams> &trackingParams)
 {
     if (currentCameraInfo_->sessionMode != static_cast<int32_t>(CameraStandard::SceneMode::CINEMATIC_VIDEO) ||
-        !isSalientDetectionLocked_) {
+        !isSalientDetectionLocked_.load(std::memory_order_relaxed)) {
         return ERR_OK;
     }
     HILOGI("current is CINEMATIC_VIDEO mode; last target id: %{public}d; original target id: %{public}d;"
@@ -1346,11 +1347,11 @@ void McCameraTrackingController::SearchTargetStop()
 {
     HILOGI("SEARCH_TARGET start");
     auto localCameraInfo = std::atomic_load(&currentCameraInfo_);
-    if (localCameraInfo == nullptr || !localCameraInfo->searchingTarget) {
+    if (localCameraInfo == nullptr || !localCameraInfo->searchingTarget.load(std::memory_order_relaxed)) {
         HILOGI("SEARCH_TARGET search target has stoped.");
         return;
     }
-    localCameraInfo->searchingTarget = false;
+    localCameraInfo->searchingTarget.store(false, std::memory_order_relaxed);
     if (eventHandler_ != nullptr) {
         eventHandler_->RemoveTask(SEARCH_TARGET_TASK_NAME);
     }
@@ -1793,7 +1794,7 @@ void McCameraTrackingController::ExecSearchTaskWithLimit(std::string &napiCmdId,
 {
     HILOGI("SEARCH_TARGET start. ");
     auto fun = [this, startFromNeg, limit, tokenId, napiCmdId]() mutable {
-        currentCameraInfo_->searchingTarget = true;
+        currentCameraInfo_->searchingTarget.store(true, std::memory_order_relaxed);
         currentCameraInfo_->tokenId = tokenId;
         currentCameraInfo_->searchTargetNapiCmdId = napiCmdId;
         std::shared_ptr<RotateParam> rotateParam = std::make_shared<RotateParam>();
@@ -1917,11 +1918,13 @@ void MechBodyEventBaseService::OnReceiveEvent(std::string action, const EventFwk
     HILOGI("enter.");
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED) {
         auto userId = data.GetCode();
-        HILOGI("COMMON_EVENT_USER_SWITCHED. curUserId_: %{public}d, userId: %{public}d", curUserId_, userId);
-        if (curUserId_ == -1 || curUserId_ != userId) {
+        HILOGI("COMMON_EVENT_USER_SWITCHED. curUserId_: %{public}s, userId: %{public}s",
+            GetAnonymUint32(static_cast<uint32_t>(curUserId_.load(std::memory_order_relaxed))).c_str(),
+            GetAnonymUint32(static_cast<uint32_t>(userId)).c_str());
+        if (curUserId_.load(std::memory_order_relaxed) == -1 || curUserId_.load(std::memory_order_relaxed) != userId) {
             McCameraTrackingController::GetInstance().UserIdChangeCallback();
         }
-        curUserId_ = userId;
+        curUserId_.store(userId, std::memory_order_relaxed);
     }
 }
 } // namespace MechBodyController
