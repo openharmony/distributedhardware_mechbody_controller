@@ -1346,23 +1346,26 @@ void McCameraTrackingController::SearchTargetRotateFinish(const std::string &cmd
 void McCameraTrackingController::SearchTargetStop()
 {
     HILOGI("SEARCH_TARGET start");
-    if (!currentCameraInfo_->searchingTarget.load(std::memory_order_relaxed)) {
+    auto localCameraInfo = std::atomic_load(&currentCameraInfo_);
+    if (localCameraInfo == nullptr || !localCameraInfo->searchingTarget.load(std::memory_order_relaxed)) {
         HILOGI("SEARCH_TARGET search target has stoped.");
         return;
     }
-    currentCameraInfo_->searchingTarget.store(false, std::memory_order_relaxed);
+    localCameraInfo->searchingTarget.store(false, std::memory_order_relaxed);
     if (eventHandler_ != nullptr) {
         eventHandler_->RemoveTask(SEARCH_TARGET_TASK_NAME);
     }
-    uint32_t tokenId = currentCameraInfo_->tokenId;
-    HILOGI("SEARCH_TARGET camera info: %{public}s", currentCameraInfo_->ToString().c_str());
-    if (appSettings.find(tokenId) == appSettings.end()) {
-        SetTrackingEnabled(tokenId, true);
-    } else {
-        SetTrackingEnabled(tokenId, appSettings[tokenId]->isTrackingEnabled);
+    uint32_t tokenId = localCameraInfo->tokenId;
+    HILOGI("SEARCH_TARGET camera info: %{public}s", localCameraInfo->ToString().c_str());
+    bool isTrackingEnabled;
+    {
+        std::lock_guard<std::mutex> lock(appSettingsMutex_);
+        isTrackingEnabled = (appSettings.find(tokenId) == appSettings.end()) ?
+            true : appSettings[tokenId]->isTrackingEnabled;
     }
+    SetTrackingEnabled(tokenId, isTrackingEnabled);
     MechBodyControllerService::GetInstance().SearchTargetEnd(
-        tokenId, currentCameraInfo_->searchTargetNapiCmdId, currentCameraInfo_->trackingTargetNum);
+        tokenId, localCameraInfo->searchTargetNapiCmdId, localCameraInfo->trackingTargetNum);
     std::string taskId = SEARCH_TARGET_TASK_NAME;
     std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
     std::map<int32_t, std::shared_ptr<MotionManager>> motionManagers =
@@ -1371,10 +1374,10 @@ void McCameraTrackingController::SearchTargetStop()
         int32_t mechId = item.first;
         std::shared_ptr<MotionManager> motionManager = item.second;
         if (motionManager == nullptr) {
-            HILOGE("motionManager not exist. mechId: %{public}d;", mechId);
+            HILOGE("motionManager not exist. MechId: %{public}d;", mechId);
             continue;
         }
-        int32_t result = motionManager->StopRotate(currentCameraInfo_->tokenId, taskId);
+        int32_t result = motionManager->StopRotate(tokenId, taskId);
         HILOGI("mech id: %{public}d result code: %{public}d", mechId, result);
     }
     HILOGI("SEARCH_TARGET end");
@@ -1538,11 +1541,26 @@ void McCameraTrackingController::RegisterSensorListener()
     }
     user.callback = McCameraTrackingController::SensorCallback;
     int32_t subscribeRet = SubscribeSensor(SENSOR_TYPE_ID_GRAVITY, &user);
-    HILOGI("RegisterSensorCallback, subscribeRet: %{public}d", subscribeRet);
+    if (subscribeRet != 0) {
+        HILOGE("SubscribeSensor failed: %{public}d", subscribeRet);
+        user.callback = nullptr;
+        return;
+    }
     int32_t setBatchRet = SetBatch(SENSOR_TYPE_ID_GRAVITY, &user, POSTURE_INTERVAL, 0);
-    HILOGI("RegisterSensorCallback, setBatchRet: %{public}d", setBatchRet);
+    if (setBatchRet != 0) {
+        HILOGE("SetBatch failed: %{public}d", setBatchRet);
+        UnsubscribeSensor(SENSOR_TYPE_ID_GRAVITY, &user);
+        user.callback = nullptr;
+        return;
+    }
     int32_t activateRet = ActivateSensor(SENSOR_TYPE_ID_GRAVITY, &user);
-    HILOGI("RegisterSensorCallback, activateRet: %{public}d", activateRet);
+    if (activateRet != 0) {
+        HILOGE("ActivateSensor failed: %{public}d", activateRet);
+        DeactivateSensor(SENSOR_TYPE_ID_GRAVITY, &user);
+        UnsubscribeSensor(SENSOR_TYPE_ID_GRAVITY, &user);
+        user.callback = nullptr;
+        return;
+    }
     HILOGI("end");
 }
 
