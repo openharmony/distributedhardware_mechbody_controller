@@ -1160,7 +1160,7 @@ void AniMechBodyServiceLoadCallback::OnLoadSystemAbilitySuccess(int32_t systemAb
 
 void AniMechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbilityId)
 {
-    HILOGI("OnLoadSystemAbilityFail systemAbilityId: %d.", systemAbilityId);
+    HILOGE("OnLoadSystemAbilityFail systemAbilityId: %{public}d.", systemAbilityId);
     if (systemAbilityId != MECH_SERVICE_SA_ID) {
         HILOGE("start systemabilityId is not sourceSAId!");
         return;
@@ -1169,6 +1169,9 @@ void AniMechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbili
     if (mechClient == nullptr) {
         return;
     }
+    std::shared_ptr<MechInfo> mechInfo = std::make_shared<MechInfo>();
+    mechInfo->mechId = DEFAULT_MECH_ID;
+    AniMechManager::GetInstance().AttachStateChangeCallback(AttachmentState::DETACHED, mechInfo);    
 }
 
 int32_t AniMechClient::CheckAnyDeviceControlSupported(bool &isControlSupported)
