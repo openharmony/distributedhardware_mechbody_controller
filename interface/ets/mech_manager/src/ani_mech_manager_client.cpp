@@ -692,10 +692,10 @@ int32_t AniMechClient::Move(const int32_t &mechId, const std::string &cmdId,
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
- 
+
     return reply.ReadInt32();
 }
- 
+
 int32_t AniMechClient::MoveBySpeed(const int32_t &mechId, const std::string &cmdId,
     SpeedParams &speedParams, int32_t duration)
 {
@@ -727,11 +727,10 @@ int32_t AniMechClient::MoveBySpeed(const int32_t &mechId, const std::string &cmd
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
- 
+
     return reply.ReadInt32();
 }
 
- 
 int32_t AniMechClient::TurnBySpeed(const int32_t &mechId, const std::string &cmdId,
     float angleSpeed, int32_t duration)
 {
@@ -763,10 +762,10 @@ int32_t AniMechClient::TurnBySpeed(const int32_t &mechId, const std::string &cmd
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
- 
+
     return reply.ReadInt32();
 }
- 
+
 int32_t AniMechClient::IsSupportAction(const int32_t &mechId, ActionType actionType, bool &isSupport)
 {
     sptr <IRemoteObject> remote = GetDmsProxy();
@@ -795,7 +794,7 @@ int32_t AniMechClient::IsSupportAction(const int32_t &mechId, ActionType actionT
     if (result == ERR_OK) {
         isSupport = reply.ReadBool();
     }
- 
+
     return result;
 }
 
@@ -819,7 +818,7 @@ int32_t AniMechClient::DoAction(const int32_t &mechId, const std::string &cmdId,
     if (!data.WriteInt32(static_cast<int32_t>(actionType))) {
         return NAPI_SEND_DATA_FAIL;
     }
- 
+
     MessageParcel reply;
     MessageOption option;
     int32_t error = remote->SendRequest(
@@ -828,7 +827,7 @@ int32_t AniMechClient::DoAction(const int32_t &mechId, const std::string &cmdId,
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
- 
+
     return reply.ReadInt32();
 }
 
@@ -866,7 +865,7 @@ int32_t AniMechClient::UnRegisterSubscribeChannel(MechEventType mechEventType)
     if (error != ERR_NONE) {
         return NAPI_SEND_DATA_FAIL;
     }
- 
+
     int32_t unRegisterResult = reply.ReadInt32();
     if (unRegisterResult == ERR_OK) {
         systemAbilityStatusChangeListener_->RemoveSubscribeCallback(mechEventType);
