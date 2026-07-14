@@ -1170,7 +1170,7 @@ void AniMechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbili
     }
     std::shared_ptr<MechInfo> mechInfo = std::make_shared<MechInfo>();
     mechInfo->mechId = DEFAULT_MECH_ID;
-    AniMechManager::GetInstance().AttachStateChangeCallback(AttachmentState::DETACHED, mechInfo);    
+    AniMechManager::GetInstance().AttachStateChangeCallback(AttachmentState::DETACHED, mechInfo);
 }
 
 int32_t AniMechClient::CheckAnyDeviceControlSupported(bool &isControlSupported)
