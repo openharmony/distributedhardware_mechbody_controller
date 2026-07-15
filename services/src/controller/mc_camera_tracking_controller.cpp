@@ -863,6 +863,10 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
         }
     }
 
+    if (detectedObjects.empty()) {
+        HILOGW("detectedObjects is empty.");
+        return DETECTED_OBJECT_IS_EMPTY;
+    }
     HILOGW("use first object as target object.");
     selectedObject = detectedObjects[0];
     return ProcessTargetByType(selectedObject, detectedObjects, targetObject);
@@ -971,6 +975,10 @@ void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> 
         HILOGW("trackingFrameParams is nullptr.");
         return;
     }
+    if (currentCameraInfo_ == nullptr) {
+        HILOGW("currentCameraInfo_ is nullptr.");
+        return;
+    }
     if ((rect.topLeftX < TRACKING_LOST_CHECK && rect.topLeftY < TRACKING_LOST_CHECK) ||
             rect.width < TRACKING_LOST_CHECK || rect.height < TRACKING_LOST_CHECK) {
         trackingFrameParams->roi = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -978,6 +986,12 @@ void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> 
     }
     trackingFrameParams->roi.width = rect.width - rect.topLeftX;
     trackingFrameParams->roi.height = rect.height - rect.topLeftY;
+    if (trackingFrameParams->roi.width < 0 || trackingFrameParams->roi.height < 0) {
+        HILOGW("Invalid roi size, width: %{public}f, height: %{public}f",
+            trackingFrameParams->roi.width, trackingFrameParams->roi.height);
+        trackingFrameParams->roi = {0.0f, 0.0f, 0.0f, 0.0f};
+        return;
+    }
 
     AdjustROI(trackingFrameParams->roi, rect, currentCameraInfo_->cameraType, sensorRotation_);
     HILOGI("roi info, roi.x: %{public}f; roi.y: %{public}f", trackingFrameParams->roi.x, trackingFrameParams->roi.y);
@@ -989,6 +1003,10 @@ int32_t McCameraTrackingController::UpdateMotionsWithTrackingData(
     if (params == nullptr) {
         HILOGW("Params is null for tracking ID: %{public}d", trackingObjectId);
         return ERR_OK;
+    }
+    if (currentCameraInfo_ == nullptr) {
+        HILOGW("currentCameraInfo_ is nullptr.");
+        return CAMERA_INFO_IS_EMPTY;
     }
     bool isEnableTrackingMode =
             SESSION_MODE_WHITELIST.find(currentCameraInfo_->sessionMode) != SESSION_MODE_WHITELIST.end();
@@ -1116,6 +1134,10 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
 
 bool McCameraTrackingController::IsCurrentTrackingEnabled()
 {
+    if (currentCameraInfo_ == nullptr) {
+        HILOGW("currentCameraInfo_ is nullptr.");
+        return false;
+    }
     bool deviceIsEnable = false;
     {
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
@@ -1232,6 +1254,10 @@ int32_t McCameraTrackingController::SetTrackingLayout(CameraTrackingLayout &came
         }
     }
     if (hasSuccess) {
+        if (currentCameraInfo_ == nullptr) {
+            HILOGW("currentCameraInfo_ is nullptr.");
+            return CAMERA_INFO_IS_EMPTY;
+        }
         currentCameraInfo_->currentCameraTrackingLayout = cameraTrackingLayout;
     }
     return hasSuccess ? ERR_OK : INVALID_TRACKING_LAYOUT;
@@ -1241,6 +1267,10 @@ int32_t McCameraTrackingController::SetTrackingLayout(const uint32_t &tokenId,
     CameraTrackingLayout &cameraTrackingLayout)
 {
     HILOGI("tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
+    if (currentCameraInfo_ == nullptr) {
+        HILOGW("currentCameraInfo_ is nullptr.");
+        return CAMERA_INFO_IS_EMPTY;
+    }
     currentCameraInfo_->currentCameraTrackingLayout = cameraTrackingLayout;
     horizontal_ = cameraTrackingLayout == CameraTrackingLayout::RIGHT ? OFFSET_VALUE
         : (cameraTrackingLayout == CameraTrackingLayout::LEFT ? -OFFSET_VALUE : 0.0f);
@@ -1502,7 +1532,7 @@ void McCameraTrackingController::RegisterTrackingListener()
     if (err != ERR_OK) {
         HILOGE("GetLocalAccountId passing param invalid or return error!, err : %{public}d", err);
     }
-    HILOGI("Create MechSession. user id: %{public}d", userId);
+    HILOGI("Create MechSession. user id: %{public}s", GetAnonymUint32(static_cast<uint32_t>(userId)).c_str());
     sptr<CameraStandard::CameraManager> cameraManager = CameraStandard::CameraManager::GetInstance();
     if (cameraManager == nullptr) {
         HILOGE("CameraManager is nullptr.");
@@ -1603,6 +1633,10 @@ void McCameraTrackingController::AdjustROI(ROI &roi, CameraStandard::Rect &rect,
 void McCameraTrackingController::AdjustOffset(std::shared_ptr<TrackingFrameParams> &trackingParams,
     CameraType cameraType)
 {
+    if (trackingParams == nullptr) {
+        HILOGW("trackingParams is nullptr.");
+        return;
+    }
     if (std::abs(targetVertical_ - vertical_) > TRACKING_LOST_CHECK) {
         if (targetVertical_ > vertical_) {
             vertical_ += OFFSET_VALUE_BASE_1;
