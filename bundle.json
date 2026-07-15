@@ -55,7 +55,8 @@
           "distributed_notification_service",
           "api_metrics",
           "icu",
-          "i18n"
+          "i18n",
+          "taihe_ffi_gen"
         ],
         "third_party": []
       },
