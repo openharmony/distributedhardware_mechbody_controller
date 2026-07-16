@@ -1420,6 +1420,43 @@ HWTEST_F(BleSendManagerTest, OnGattReady_001, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name  : OnGattReady_002
+ * @tc.number: OnGattReady_002
+ * @tc.desc  : Test OnGattReady when MTU update succeeds and NotifyMechConnect returns ERR_OK.
+ */
+HWTEST_F(BleSendManagerTest, OnGattReady_002, testing::ext::TestSize.Level1)
+{
+    // Given: 设置gattClient_，isMtuUpdated_为true（MTU立即成功），预置motionManagers_
+    BluetoothRemoteDevice device("AA:BB:CC:DD:EE:FF", 1);
+    bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleSendManager_->isMtuUpdated_ = true;
+
+    MechInfo mechInfo;
+    mechInfo.mechId = 9002;
+    mechInfo.mac = "AA:BB:CC:DD:EE:FF";
+
+    // 预置motionManagers_使OnDeviceConnected跳过创建MotionManager直接返回ERR_OK
+    MechBodyControllerService::GetInstance().CleanMotionManagers();
+    auto motionMgr = std::make_shared<MotionManager>(nullptr, mechInfo.mechId, false, 0);
+    // 初始化deviceBaseInfo_以避免GetDeviceType()返回未初始化的值
+    motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::PORTABLE_GIMBAL);
+    MechBodyControllerService::GetInstance().motionManagers_[mechInfo.mechId] = motionMgr;
+
+    // When: 调用OnGattReady
+    int32_t ret = bleSendManager_->OnGattReady(mechInfo);
+
+    // Then: 验证返回ERR_OK（MTU成功且NotifyMechConnect成功）
+    EXPECT_EQ(ret, ERR_OK);
+    // 验证isMtuUpdated_被重置为false
+    EXPECT_FALSE(bleSendManager_->isMtuUpdated_);
+
+    // 清理
+    MechBodyControllerService::GetInstance().CleanMotionManagers();
+    bleSendManager_->gattClient_.reset();
+    bleSendManager_->gattClient_ = nullptr;
+}
+
+/**
  * @tc.name  : OnGattReady_003
  * @tc.number: OnGattReady_003
  * @tc.desc  : Test OnGattReady when MTU update succeeds but NotifyMechConnect returns MECH_CONNECT_FAILED.

@@ -184,54 +184,72 @@ void NotificationUtils::ParseNotificationConfigJson(Notification::NotificationRe
 
 void NotificationUtils::ParseBasicFields(Notification::NotificationRequest& request, const json& configJson)
 {
-    if (configJson.contains("creatorUid")) {
-        int32_t uid = configJson["creatorUid"];
-        request.SetCreatorUid(uid);
-    } else {
-        HILOGW("creatorUid is not exist!");
-    }
+    ParseBasicIntegerFields(request, configJson);
+    ParseBasicBooleanFields(request, configJson);
+}
 
-    if (configJson.contains("creatorPid")) {
-        pid_t pid = configJson["creatorPid"];
-        request.SetCreatorPid(pid);
-    } else {
-        HILOGW("creatorPid is not exist!");
-    }
+void NotificationUtils::ParseBasicIntegerFields(Notification::NotificationRequest& request, const json& configJson)
+{
+    ParseIntegerField(request, configJson, "creatorUid",
+        [&request](int32_t value) { request.SetCreatorUid(value); });
+    ParseIntegerField(request, configJson, "creatorPid",
+        [&request](pid_t value) { request.SetCreatorPid(value); });
+    ParseIntegerField(request, configJson, "creatorUserId",
+        [&request](int32_t value) { request.SetCreatorUserId(value); });
+    ParseIntegerField(request, configJson, "notificationId",
+        [&request](int32_t value) { request.SetNotificationId(value); });
+    ParseUnsignedField(request, configJson, "notificationControlFlags",
+        [&request](uint32_t value) { request.SetNotificationControlFlags(value); });
+}
 
-    if (configJson.contains("creatorUserId")) {
-        int32_t userId = configJson["creatorUserId"];
-        request.SetCreatorUserId(userId);
+void NotificationUtils::ParseIntegerField(Notification::NotificationRequest &request, const json &configJson,
+    const std::string &fieldName, std::function<void(int32_t)> setter)
+{
+    if (configJson.contains(fieldName)) {
+        const auto &value = configJson[fieldName];
+        if (value.is_number_integer()) {
+            setter(value.get<int32_t>());
+        } else {
+            HILOGW("%{public}s type mismatch, expected integer!", fieldName.c_str());
+        }
     } else {
-        HILOGW("creatorUserId is not exist!");
+        HILOGW("%{public}s is not exist!", fieldName.c_str());
     }
+}
 
-    if (configJson.contains("notificationId")) {
-        int32_t notificationId = configJson["notificationId"];
-        request.SetNotificationId(notificationId);
+void NotificationUtils::ParseUnsignedField(Notification::NotificationRequest &request, const json &configJson,
+    const std::string &fieldName, std::function<void(uint32_t)> setter)
+{
+    if (configJson.contains(fieldName)) {
+        const auto &value = configJson[fieldName];
+        if (value.is_number_unsigned()) {
+            setter(value.get<uint32_t>());
+        } else if (value.is_number_integer() && value.get<int64_t>() >= 0) {
+            setter(static_cast<uint32_t>(value.get<int64_t>()));
+        } else {
+            HILOGW("%{public}s type mismatch or negative value, expected non-negative integer!", fieldName.c_str());
+        }
     } else {
-        HILOGW("notificationId is not exist!");
+        HILOGW("%{public}s is not exist!", fieldName.c_str());
     }
+}
 
-    if (configJson.contains("notificationControlFlags")) {
-        uint32_t notificationControlFlags = configJson["notificationControlFlags"];
-        request.SetNotificationControlFlags(notificationControlFlags);
-    } else {
-        HILOGW("notificationControlFlags is not exist!");
-    }
-
-    if (configJson.contains("tapDismissed")) {
-        bool tapDismissed = configJson["tapDismissed"];
-        request.SetTapDismissed(tapDismissed);
-    } else {
-        HILOGW("tapDismissed is not exist!");
-    }
-
-    if (configJson.contains("unremovable")) {
-        bool unremovable = configJson["unremovable"];
-        request.SetUnremovable(unremovable);
-    } else {
-        HILOGW("unremovable is not exist!");
-    }
+void NotificationUtils::ParseBasicBooleanFields(Notification::NotificationRequest &request, const json &configJson)
+{
+    auto parseBool = [&](const std::string& fieldName, auto setter) {
+        if (configJson.contains(fieldName)) {
+            const auto &value = configJson[fieldName];
+            if (value.is_boolean()) {
+                setter(value.get<bool>());
+            } else {
+                HILOGW("%{public}s type mismatch , expected boolean!", fieldName.c_str());
+            }
+        } else {
+            HILOGW("%{public}s is not exist!", fieldName.c_str());
+        }
+    };
+    parseBool("tapDismissed", [&request](bool v) { request.SetTapDismissed(v); });
+    parseBool("unremovable", [&request](bool v) { request.SetUnremovable(v); });
 }
 
 void NotificationUtils::ParseAdvancedFields(Notification::NotificationRequest& request, const json& configJson)
@@ -434,7 +452,7 @@ void NotificationUtils::ParseLiveViewContentJson(Notification::NotificationReque
     }
 
     if (contentJson.contains("flags")) {
-        for (const int32_t& flag : contentJson["flags"]) {
+        for (const int32_t flag : contentJson["flags"]) {
             liveViewContent->addFlag(flag);
         }
     } else {
@@ -472,7 +490,7 @@ void NotificationUtils::ParseWantAgentJson(Notification::NotificationRequest &re
     }
 
     if (wantAgentJson.contains("flags")) {
-        for (const AbilityRuntime::WantAgent::WantAgentConstant::Flags& item : wantAgentJson["flags"]) {
+        for (const AbilityRuntime::WantAgent::WantAgentConstant::Flags item : wantAgentJson["flags"]) {
             flags.push_back(item);
         }
     } else {
