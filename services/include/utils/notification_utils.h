@@ -57,9 +57,9 @@ private:
     static void ParseBasicBooleanFields(Notification::NotificationRequest& request, const json& configJson);
     static void ParseAdvancedFields(Notification::NotificationRequest& request, const json& configJson);
     static void ParseExtraInfoFields(Notification::NotificationRequest& request, const json& configJson);
-    static void ParseIntegerField(Notification::NotificationRequest& request, 
+    static void ParseIntegerField(Notification::NotificationRequest& request,
         const json& configJson, const std::string& fieldName, std::function<void(int32_t)> setter);
-    static void ParseUnsignedField(Notification::NotificationRequest& request, 
+    static void ParseUnsignedField(Notification::NotificationRequest& request,
         const json& configJson, const std::string& fieldName, std::function<void(uint32_t)> setter);
     static void ParseExtraInfoArrayFields(
         std::shared_ptr<AAFwk::WantParams>& extras, const std::string key, const json& value);
