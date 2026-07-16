@@ -215,6 +215,7 @@ void NotificationUtils::ParseIntegerField(Notification::NotificationRequest &req
     } else {
         HILOGW("%{public}s is not exist!", fieldName.c_str());
     }
+}
 
 void NotificationUtils::ParseUnsignedField(Notification::NotificationRequest &request, const json &configJson,
     const std::string &fieldName, std::function<void(uint32_t)> setter)
@@ -233,14 +234,20 @@ void NotificationUtils::ParseUnsignedField(Notification::NotificationRequest &re
     }
 }
 
-    if (configJson.contains("notificationControlFlags")) {
-        uint32_t notificationControlFlags = configJson["notificationControlFlags"];
-        request.SetNotificationControlFlags(notificationControlFlags);
-    } else {
-        HILOGW("notificationControlFlags is not exist!");
-    }
-}
-
+void NotificationUtils::ParseBasicBooleanFields(Notification::NotificationRequest &request, const json &configJson)
+{
+    auto parseBool = [&](const std::string& fieldName, auto setter) {
+        if (configJson.contains(fieldName)) {
+            const auto &value = configJson[fieldName];
+            if (value.is_boolean()) {
+                setter(value.get<bool>());
+            } else {
+                HILOGW("%{public}s type mismatch , expected boolean!", fieldName.c_str());
+            }
+        } else {
+            HILOGW("%{public}s is not exist!", fieldName.c_str());
+        }
+    };
     parseBool("tapDismissed", [&request](bool v) { request.SetTapDismissed(v); });
     parseBool("unremovable", [&request](bool v) { request.SetUnremovable(v); });
 }
