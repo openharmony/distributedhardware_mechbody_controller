@@ -2849,7 +2849,6 @@ HWTEST_F(MechBodyControllerServiceTest, OnRotationAxesStatusChange_002, TestSize
     RotationAxesStatus status;
     // When: Call OnRotationAxesStatusChange with valid callback registered
     int32_t result = service.OnRotationAxesStatusChange(MECHID, status);
-    // Then: Should return ERR_OK after iterating callback, covering for-loop body + SendRequest success (line 1028-1053)
     service.AxesStatusChangeCallbackMutex_.lock();
     EXPECT_EQ(result, ERR_OK);
     service.rotationAxesStatusChangeCallback_.erase(1001);
