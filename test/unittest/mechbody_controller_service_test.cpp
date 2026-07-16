@@ -2472,5 +2472,809 @@ HWTEST_F(MechBodyControllerServiceTest, RotateBySpeed_007, TestSize.Level2)
     service.motionManagers_.erase(MECHID);
 }
 
+/**
+ * @tc.name  : StopMovingInner_003
+ * @tc.desc  : Test StopMoving when not system app, cover !IsSystemApp() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, StopMovingInner_003, TestSize.Level2)
+{
+    // Given: app is not system app
+    g_isSystemApp = false;
+    auto &service = MechBodyControllerService::GetInstance();
+    std::string cmdId = "test_cmd";
+    // When: Call StopMoving
+    int32_t result = service.StopMoving(MECHID, cmdId);
+    // Then: Should return PERMISSION_DENIED, covering !IsSystemApp() branch (line 850-852)
+    EXPECT_EQ(result, PERMISSION_DENIED);
+    g_isSystemApp = true;
+}
+
+/**
+ * @tc.name  : StopMovingInner_004
+ * @tc.desc  : Test StopMoving when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, StopMovingInner_004, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call StopMoving with non-existent mechId=99
+    int32_t result = service.StopMoving(99, cmdId);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 868-869)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : StopMovingInner_005
+ * @tc.desc  : Test StopMoving with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, StopMovingInner_005, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call StopMoving with MECHID that maps to nullptr
+    int32_t result = service.StopMoving(MECHID, cmdId);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 872-875)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : StopMovingInner_006
+ * @tc.desc  : Test StopMoving with valid MotionManager, cover StopRotate call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, StopMovingInner_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call StopMoving with matching mechId
+    int32_t result = service.StopMoving(MECHID, cmdId);
+    // Then: Should call MotionManager::StopRotate, covering line 877-880
+    // MotionManager::StopRotate returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationAnglesInner_003
+ * @tc.desc  : Test GetRotationAngles when not system app, cover !IsSystemApp() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAnglesInner_003, TestSize.Level2)
+{
+    // Given: app is not system app
+    g_isSystemApp = false;
+    auto &service = MechBodyControllerService::GetInstance();
+    auto angles = std::make_shared<EulerAngles>();
+    // When: Call GetRotationAngles
+    int32_t result = service.GetRotationAngles(MECHID, angles);
+    // Then: Should return PERMISSION_DENIED, covering !IsSystemApp() branch (line 887-889)
+    EXPECT_EQ(result, PERMISSION_DENIED);
+    g_isSystemApp = true;
+}
+
+/**
+ * @tc.name  : GetRotationAnglesInner_004
+ * @tc.desc  : Test GetRotationAngles when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAnglesInner_004, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    auto angles = std::make_shared<EulerAngles>();
+    // When: Call GetRotationAngles with non-existent mechId=99
+    int32_t result = service.GetRotationAngles(99, angles);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 900-902)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationAnglesInner_005
+ * @tc.desc  : Test GetRotationAngles with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAnglesInner_005, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    auto angles = std::make_shared<EulerAngles>();
+    // When: Call GetRotationAngles with MECHID that maps to nullptr
+    int32_t result = service.GetRotationAngles(MECHID, angles);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 905-908)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationAnglesInner_006
+ * @tc.desc  : Test GetRotationAngles with valid MotionManager, cover GetCurrentPosition call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAnglesInner_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    auto angles = std::make_shared<EulerAngles>();
+    // When: Call GetRotationAngles with matching mechId
+    int32_t result = service.GetRotationAngles(MECHID, angles);
+    // Then: Should call MotionManager::GetCurrentPosition, covering line 910-912
+    // MotionManager::GetCurrentPosition returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationDegreeLimitsInner_003
+ * @tc.desc  : Test GetRotationDegreeLimits when not system app, cover !IsSystemApp() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationDegreeLimitsInner_003, TestSize.Level2)
+{
+    // Given: app is not system app
+    g_isSystemApp = false;
+    auto &service = MechBodyControllerService::GetInstance();
+    RotateDegreeLimit limit;
+    // When: Call GetRotationDegreeLimits
+    int32_t result = service.GetRotationDegreeLimits(MECHID, limit);
+    // Then: Should return PERMISSION_DENIED, covering !IsSystemApp() branch (line 919-921)
+    EXPECT_EQ(result, PERMISSION_DENIED);
+    g_isSystemApp = true;
+}
+
+/**
+ * @tc.name  : GetRotationDegreeLimitsInner_004
+ * @tc.desc  : Test GetRotationDegreeLimits when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationDegreeLimitsInner_004, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    RotateDegreeLimit limit;
+    // When: Call GetRotationDegreeLimits with non-existent mechId=99
+    int32_t result = service.GetRotationDegreeLimits(99, limit);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 932-934)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationDegreeLimitsInner_005
+ * @tc.desc  : Test GetRotationDegreeLimits with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationDegreeLimitsInner_005, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    RotateDegreeLimit limit;
+    // When: Call GetRotationDegreeLimits with MECHID that maps to nullptr
+    int32_t result = service.GetRotationDegreeLimits(MECHID, limit);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 937-940)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationDegreeLimitsInner_006
+ * @tc.desc  : Test GetRotationDegreeLimits with valid MotionManager, cover GetRotationLimit call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationDegreeLimitsInner_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    RotateDegreeLimit limit;
+    // When: Call GetRotationDegreeLimits with matching mechId
+    int32_t result = service.GetRotationDegreeLimits(MECHID, limit);
+    // Then: Should call MotionManager::GetRotationLimit, covering line 942-944
+    // MotionManager::GetRotationLimit returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationAxesStatusInner_003
+ * @tc.desc  : Test GetRotationAxesStatus when not system app, cover !IsSystemApp() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAxesStatusInner_003, TestSize.Level2)
+{
+    // Given: app is not system app
+    g_isSystemApp = false;
+    auto &service = MechBodyControllerService::GetInstance();
+    RotationAxesStatus status;
+    // When: Call GetRotationAxesStatus
+    int32_t result = service.GetRotationAxesStatus(MECHID, status);
+    // Then: Should return PERMISSION_DENIED, covering !IsSystemApp() branch (line 951-953)
+    EXPECT_EQ(result, PERMISSION_DENIED);
+    g_isSystemApp = true;
+}
+
+/**
+ * @tc.name  : GetRotationAxesStatusInner_004
+ * @tc.desc  : Test GetRotationAxesStatus when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAxesStatusInner_004, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    RotationAxesStatus status;
+    // When: Call GetRotationAxesStatus with non-existent mechId=99
+    int32_t result = service.GetRotationAxesStatus(99, status);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 964-966)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationAxesStatusInner_005
+ * @tc.desc  : Test GetRotationAxesStatus with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAxesStatusInner_005, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    RotationAxesStatus status;
+    // When: Call GetRotationAxesStatus with MECHID that maps to nullptr
+    int32_t result = service.GetRotationAxesStatus(MECHID, status);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 969-972)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : GetRotationAxesStatusInner_006
+ * @tc.desc  : Test GetRotationAxesStatus with valid MotionManager, cover GetRotationAxesStatus call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, GetRotationAxesStatusInner_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    RotationAxesStatus status;
+    // When: Call GetRotationAxesStatus with matching mechId
+    int32_t result = service.GetRotationAxesStatus(MECHID, status);
+    // Then: Should call MotionManager::GetRotationAxesStatus, covering line 974-976
+    // MotionManager::GetRotationAxesStatus returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : OnRotationAxesStatusChange_002
+ * @tc.desc  : Test OnRotationAxesStatusChange with valid callback, cover for-loop body and SendRequest success path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, OnRotationAxesStatusChange_002, TestSize.Level2)
+{
+    // Given: rotationAxesStatusChangeCallback_ has a valid MockIRemoteObject
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.AxesStatusChangeCallbackMutex_);
+    sptr<IRemoteObject> callback = new MockIRemoteObject();
+    service.rotationAxesStatusChangeCallback_[1001] = callback;
+    service.AxesStatusChangeCallbackMutex_.unlock();
+    RotationAxesStatus status;
+    // When: Call OnRotationAxesStatusChange with valid callback registered
+    int32_t result = service.OnRotationAxesStatusChange(MECHID, status);
+    // Then: Should return ERR_OK after iterating callback, covering for-loop body + SendRequest success (line 1028-1053)
+    service.AxesStatusChangeCallbackMutex_.lock();
+    EXPECT_EQ(result, ERR_OK);
+    service.rotationAxesStatusChangeCallback_.erase(1001);
+}
+
+/**
+ * @tc.name  : OnRotationAxesStatusChange_003
+ * @tc.desc  : Test OnRotationAxesStatusChange with SendRequest failure, cover error!=ERR_NONE branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, OnRotationAxesStatusChange_003, TestSize.Level2)
+{
+    // Given: rotationAxesStatusChangeCallback_ has a callback whose SendRequest returns error
+    auto &service = MechBodyControllerService::GetInstance();
+    class FailSendMockIRemoteObject : public IRemoteObject {
+    public:
+        FailSendMockIRemoteObject() : IRemoteObject(u"fail_send_mock") {}
+        virtual ~FailSendMockIRemoteObject() {}
+        int32_t GetObjectRefCount() override { return 1; }
+        int SendRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override
+        {
+            return -1; // Return error to cover error != ERR_NONE branch
+        }
+        bool AddDeathRecipient(const sptr<DeathRecipient> &recipient) override { return true; }
+        bool RemoveDeathRecipient(const sptr<DeathRecipient> &recipient) override { return true; }
+        int Dump(int fd, const std::vector<std::u16string> &args) override { return 0; }
+    };
+
+    std::lock_guard<std::mutex> lock(service.AxesStatusChangeCallbackMutex_);
+    service.rotationAxesStatusChangeCallback_[2001] = new FailSendMockIRemoteObject();
+    service.AxesStatusChangeCallbackMutex_.unlock();
+    RotationAxesStatus status;
+    // When: Call OnRotationAxesStatusChange with failing callback
+    int32_t result = service.OnRotationAxesStatusChange(MECHID, status);
+    // Then: Should return ERR_OK, covering error != ERR_NONE branch (line 1053)
+    service.AxesStatusChangeCallbackMutex_.lock();
+    EXPECT_EQ(result, ERR_OK);
+    service.rotationAxesStatusChangeCallback_.erase(2001);
+}
+
+/**
+ * @tc.name  : OnRotationAxesStatusChange_004
+ * @tc.desc  : Test OnRotationAxesStatusChange with multiple callbacks, cover for-loop iteration
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, OnRotationAxesStatusChange_004, TestSize.Level2)
+{
+    // Given: rotationAxesStatusChangeCallback_ has multiple entries
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.AxesStatusChangeCallbackMutex_);
+    service.rotationAxesStatusChangeCallback_[3001] = new MockIRemoteObject();
+    service.rotationAxesStatusChangeCallback_[3002] = new MockIRemoteObject();
+    service.AxesStatusChangeCallbackMutex_.unlock();
+    RotationAxesStatus status;
+    // When: Call OnRotationAxesStatusChange with multiple callbacks
+    int32_t result = service.OnRotationAxesStatusChange(MECHID, status);
+    // Then: Should return ERR_OK after iterating all callbacks
+    service.AxesStatusChangeCallbackMutex_.lock();
+    EXPECT_EQ(result, ERR_OK);
+    service.rotationAxesStatusChangeCallback_.erase(3001);
+    service.rotationAxesStatusChangeCallback_.erase(3002);
+}
+
+/**
+ * @tc.name  : Move_005
+ * @tc.desc  : Test Move when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, Move_005, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    auto moveParams = std::make_shared<MoveParams>();
+    // When: Call Move with non-existent mechId=99
+    int32_t result = service.Move(99, cmdId, moveParams);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 1144-1146)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : Move_006
+ * @tc.desc  : Test Move with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, Move_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    auto moveParams = std::make_shared<MoveParams>();
+    // When: Call Move with MECHID that maps to nullptr
+    int32_t result = service.Move(MECHID, cmdId, moveParams);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 1149-1152)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : Move_007
+ * @tc.desc  : Test Move with valid MotionManager, cover Move call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, Move_007, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    auto moveParams = std::make_shared<MoveParams>();
+    // When: Call Move with matching mechId
+    int32_t result = service.Move(MECHID, cmdId, moveParams);
+    // Then: Should call MotionManager::Move, covering line 1154-1156
+    // MotionManager::Move returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : MoveBySpeed_006
+ * @tc.desc  : Test MoveBySpeed when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, MoveBySpeed_006, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    auto speedParams = std::make_shared<SpeedParams>();
+    // When: Call MoveBySpeed with non-existent mechId=99
+    int32_t result = service.MoveBySpeed(99, cmdId, DURATION, speedParams);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 1186-1188)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : MoveBySpeed_007
+ * @tc.desc  : Test MoveBySpeed with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, MoveBySpeed_007, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    auto speedParams = std::make_shared<SpeedParams>();
+    // When: Call MoveBySpeed with MECHID that maps to nullptr
+    int32_t result = service.MoveBySpeed(MECHID, cmdId, DURATION, speedParams);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 1191-1194)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : MoveBySpeed_008
+ * @tc.desc  : Test MoveBySpeed with valid MotionManager, cover MoveBySpeed call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, MoveBySpeed_008, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    auto speedParams = std::make_shared<SpeedParams>();
+    // When: Call MoveBySpeed with matching mechId
+    int32_t result = service.MoveBySpeed(MECHID, cmdId, DURATION, speedParams);
+    // Then: Should call MotionManager::MoveBySpeed, covering line 1196-1198
+    // MotionManager::MoveBySpeed returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : TurnBySpeed_005
+ * @tc.desc  : Test TurnBySpeed when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, TurnBySpeed_005, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call TurnBySpeed with non-existent mechId=99
+    int32_t result = service.TurnBySpeed(99, cmdId, 1.0f, DURATION);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 1224-1226)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : TurnBySpeed_006
+ * @tc.desc  : Test TurnBySpeed with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, TurnBySpeed_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call TurnBySpeed with MECHID that maps to nullptr
+    int32_t result = service.TurnBySpeed(MECHID, cmdId, 1.0f, DURATION);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 1229-1232)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : TurnBySpeed_007
+ * @tc.desc  : Test TurnBySpeed with valid MotionManager, cover TurnBySpeed call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, TurnBySpeed_007, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call TurnBySpeed with matching mechId
+    int32_t result = service.TurnBySpeed(MECHID, cmdId, 1.0f, DURATION);
+    // Then: Should call MotionManager::TurnBySpeed, covering line 1234-1236
+    // MotionManager::TurnBySpeed returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : IsSupportAction_004
+ * @tc.desc  : Test IsSupportAction when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, IsSupportAction_004, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    bool isSupport = false;
+    // When: Call IsSupportAction with non-existent mechId=99
+    int32_t result = service.IsSupportAction(99, ActionType::NOD, isSupport);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 1257-1259)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : IsSupportAction_005
+ * @tc.desc  : Test IsSupportAction with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, IsSupportAction_005, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    bool isSupport = false;
+    // When: Call IsSupportAction with MECHID that maps to nullptr
+    int32_t result = service.IsSupportAction(MECHID, ActionType::NOD, isSupport);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 1262-1265)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : IsSupportAction_006
+ * @tc.desc  : Test IsSupportAction with valid MotionManager, cover IsSupportAction call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, IsSupportAction_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    bool isSupport = false;
+    // When: Call IsSupportAction with matching mechId
+    int32_t result = service.IsSupportAction(MECHID, ActionType::NOD, isSupport);
+    // Then: Should call MotionManager::IsSupportAction, covering line 1267-1269
+    // MotionManager::IsSupportAction returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : DoAction_004
+ * @tc.desc  : Test DoAction when mechId not found in non-empty motionManagers, cover it==end() branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, DoAction_004, TestSize.Level2)
+{
+    // Given: motionManagers_ non-empty but mechId=99 not present
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call DoAction with non-existent mechId=99
+    int32_t result = service.DoAction(99, cmdId, ActionType::NOD);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering it==end() branch (line 1292-1294)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : DoAction_005
+ * @tc.desc  : Test DoAction with nullptr MotionManager in map, cover motionManager==nullptr branch
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, DoAction_005, TestSize.Level2)
+{
+    // Given: motionManagers_ has a nullptr entry for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = nullptr;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call DoAction with MECHID that maps to nullptr
+    int32_t result = service.DoAction(MECHID, cmdId, ActionType::NOD);
+    // Then: Should return DEVICE_NOT_CONNECTED, covering motionManager==nullptr branch (line 1297-1300)
+    service.motionManagersMutex.lock();
+    EXPECT_EQ(result, DEVICE_NOT_CONNECTED);
+    service.motionManagers_.erase(MECHID);
+}
+
+/**
+ * @tc.name  : DoAction_006
+ * @tc.desc  : Test DoAction with valid MotionManager, cover DoAction call path
+ * @tc.type  : FUNC
+ * @tc.level  : Level2
+ */
+HWTEST_F(MechBodyControllerServiceTest, DoAction_006, TestSize.Level2)
+{
+    // Given: motionManagers_ has a valid MotionManager for MECHID
+    auto &service = MechBodyControllerService::GetInstance();
+    auto sendAdapter = std::make_shared<TransportSendAdapter>();
+    auto manager = std::make_shared<MotionManager>(sendAdapter, MECHID, true, 1);
+    std::lock_guard<std::mutex> lock(service.motionManagersMutex);
+    service.motionManagers_[MECHID] = manager;
+    service.motionManagersMutex.unlock();
+    std::string cmdId = "test_cmd";
+    // When: Call DoAction with matching mechId
+    int32_t result = service.DoAction(MECHID, cmdId, ActionType::NOD);
+    // Then: Should call MotionManager::DoAction, covering line 1302-1304
+    // MotionManager::DoAction returns DEVICE_NOT_PLACED_ON_MECH when device not attached
+    EXPECT_EQ(result, DEVICE_NOT_PLACED_ON_MECH);
+    service.motionManagersMutex.lock();
+    service.motionManagers_.erase(MECHID);
+}
+
 } // namespace MechBodyController
 } // namespace OHOS
