@@ -2580,5 +2580,93 @@ HWTEST_F(McCameraTrackingControllerTwoTest, OnMetadataInfo_005, TestSize.Level1)
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest OnMetadataInfo_005 end" << std::endl;
 }
+
+/**
+ * @tc.name  : GetTrackingTargetFallback_005
+ * @tc.number: GetTrackingTargetFallback_005
+ * @tc.desc  : Testing GetTrackingTargetFallback with matching boundingBox in third loop (condition true).
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, GetTrackingTargetFallback_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest GetTrackingTargetFallback_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.5;
+    trackingRegion.topLeftY = 0.5;
+    trackingRegion.width = 0.2;
+    trackingRegion.height = 0.2;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.5;
+    objectRect.topLeftY = 0.5;
+    objectRect.width = 0.3;
+    objectRect.height = 0.3;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, objectRect, 200, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    controller.lastTrackingFrame_ = nullptr;
+
+    int32_t ret = controller.GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_NE(targetObject, nullptr);
+    EXPECT_EQ(targetObject->GetObjectId(), 200);
+    EXPECT_FALSE(controller.isSalientDetectionLocked_);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest GetTrackingTargetFallback_005 end" << std::endl;
+}
+
+/**
+ * @tc.name  : GetTrackingTargetFallback_006
+ * @tc.number: GetTrackingTargetFallback_006
+ * @tc.desc  : Testing GetTrackingTargetFallback with no matching boundingBox in third loop (condition false).
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, GetTrackingTargetFallback_006, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest GetTrackingTargetFallback_006 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1;
+    trackingRegion.topLeftY = 0.1;
+    trackingRegion.width = 0.2;
+    trackingRegion.height = 0.2;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.9;
+    objectRect.topLeftY = 0.9;
+    objectRect.width = 0.3;
+    objectRect.height = 0.3;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, objectRect, 300, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    sptr<CameraStandard::MetadataObject> targetObject;
+
+    controller.lastTrackingFrame_ = nullptr;
+
+    int32_t ret = controller.GetTrackingTargetFallback(trackingRegion, detectedObjects, targetObject);
+
+    EXPECT_EQ(ret, ERR_OK);
+    EXPECT_NE(targetObject, nullptr);
+    EXPECT_EQ(targetObject->GetObjectId(), 300);
+    EXPECT_FALSE(controller.isSalientDetectionLocked_);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest GetTrackingTargetFallback_006 end" << std::endl;
+}
 }
 }

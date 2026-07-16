@@ -13,12 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef MC_MOTION_MANAGER_TWO_TEST_H
-#define MC_MOTION_MANAGER_TWO_TEST_H
+#ifndef MC_MOTION_MANAGER_THREE_TEST_H
+#define MC_MOTION_MANAGER_THREE_TEST_H
 
 #include "event_handler.h"
 #include "iremote_stub.h"
 #include "gtest/gtest.h"
+#include "app_mgr_interface.h"
+#include "if_system_ability_manager.h"
+#include "iservice_registry.h"
 
 // NOLINTNEXTLINE
 #define private public
@@ -31,29 +34,14 @@
 namespace OHOS {
 namespace MechBodyController {
 
-// Mock TransportSendAdapter to track SendCommand calls
-class MockTransportSendAdapter : public TransportSendAdapter {
-public:
-    MockTransportSendAdapter() : sendCommandCallCount(0) {}
-    int32_t SendCommand(const std::shared_ptr<CommandBase> &cmd, int32_t delayMs = 0) override
-    {
-        sendCommandCallCount++;
-        return ERR_OK;
-    }
-    int sendCommandCallCount;
-    void ResetCount() { sendCommandCallCount = 0; }
-};
-
-class MotionManagerTwoTest : public testing::Test {
+class MotionManagerThreeTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
     void SetUp();
     void TearDown();
-
-    // Helper function to initialize MotionManager with common settings
-    std::shared_ptr<MotionManager> CreateInitializedMotionManager(int32_t mechId = 100);
 };
+
 } // namespace MechBodyController
 } // namespace OHOS
-#endif // MC_MOTION_MANAGER_TWO_TEST_H
+#endif // MC_MOTION_MANAGER_THREE_TEST_H
