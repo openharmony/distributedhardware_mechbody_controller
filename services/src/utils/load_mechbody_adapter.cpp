@@ -147,13 +147,13 @@ int32_t MechbodyAdapterUtils::ResetTrackingCore()
     return ERR_OK;
 }
 
-void MechbodyAdapterUtils::RegisterBackgroundTracking(const GetBackgroundXYFn& GetBackgroundXYFn)
+void MechbodyAdapterUtils::RegisterBackgroundTracking(const GetBackgroundXYFn& GetBackgroundXYFn, int8_t deviceType)
 {
     HILOGI("RegisterBackgroundTracking called");
     std::lock_guard<std::mutex> lock(mechGimbalMutex_);
 
     HILOGI("RegisterBackgroundTracking exec.");
-    backgroundRegisterFunc_(GetBackgroundXYFn);
+    backgroundRegisterFunc_(GetBackgroundXYFn, deviceType);
 }
 
 void MechbodyAdapterUtils::UnRegisterBackgroundTracking()

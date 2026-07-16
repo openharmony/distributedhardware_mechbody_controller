@@ -148,11 +148,22 @@ void McCameraTrackingController::Init()
             HILOGI("Do not support background tracking event!");
             return;
         }
+        int8_t deviceType = -1;
+        for (const auto &item : MechBodyControllerService::GetInstance().motionManagers_) {
+            int32_t mechId = item.first;
+            auto motionManager = item.second;
+ 
+            if (!motionManager) {
+                HILOGE("MotionManager not exists; mechId: %{public}d", mechId);
+                continue;
+            }
+            deviceType = motionManager->GetDeviceType();
+        }
+        HILOGE("MotionManager deviceType: %{public}d", deviceType);
         MechbodyAdapterUtils::RegisterBackgroundTracking(
             [this](TrackingFrameParams trackingFrameParams) mutable {
                 HandleTrackingFrame(std::move(trackingFrameParams));
-            }
-        );
+            }, deviceType);
     #endif
     HILOGI("end");
 }
