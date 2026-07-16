@@ -25,14 +25,33 @@
 #include "mc_motion_manager.h"
 #undef private
 
+#include "mc_send_adapter.h"
+#include "mc_command_base.h"
+
 namespace OHOS {
 namespace MechBodyController {
+
+// Mock TransportSendAdapter to track SendCommand calls
+class MockTransportSendAdapter : public TransportSendAdapter {
+public:
+    MockTransportSendAdapter() : sendCommandCallCount(0) {}
+    int32_t SendCommand(const std::shared_ptr<CommandBase> &cmd, int32_t delayMs = 0) override {
+        sendCommandCallCount++;
+        return ERR_OK;
+    }
+    int sendCommandCallCount;
+    void ResetCount() { sendCommandCallCount = 0; }
+};
+
 class MotionManagerTwoTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
     void SetUp();
     void TearDown();
+
+    // Helper function to initialize MotionManager with common settings
+    std::shared_ptr<MotionManager> CreateInitializedMotionManager(int32_t mechId = 100);
 };
 } // namespace MechBodyController
 } // namespace OHOS
