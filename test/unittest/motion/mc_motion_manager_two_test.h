@@ -35,7 +35,8 @@ namespace MechBodyController {
 class MockTransportSendAdapter : public TransportSendAdapter {
 public:
     MockTransportSendAdapter() : sendCommandCallCount(0) {}
-    int32_t SendCommand(const std::shared_ptr<CommandBase> &cmd, int32_t delayMs = 0) override {
+    int32_t SendCommand(const std::shared_ptr<CommandBase> &cmd, int32_t delayMs = 0) override
+    {
         sendCommandCallCount++;
         return ERR_OK;
     }
