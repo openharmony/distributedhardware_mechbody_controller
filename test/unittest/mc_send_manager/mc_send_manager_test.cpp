@@ -26,7 +26,6 @@ namespace OHOS {
 namespace MechBodyController {
 namespace {
     const std::string BASEDIR = "/data/service/el1/public/database/MechBodyController";
-    const int32_t WAITTIME = 2000;
 }
 
 void MechSendManagerTest::SetUpTestCase()
@@ -44,12 +43,10 @@ void MechSendManagerTest::TearDownTestCase()
 void MechSendManagerTest::TearDown()
 {
     DTEST_LOG << "MechSendManagerTest::TearDown" << std::endl;
-    usleep(WAITTIME);
 }
 
 void MechSendManagerTest::SetUp()
 {
-    usleep(WAITTIME);
     DTEST_LOG << "MechSendManagerTest::SetUp" << std::endl;
 }
 
