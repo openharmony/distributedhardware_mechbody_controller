@@ -65,7 +65,7 @@ struct CameraInfo {
     float zoomFactor = 0;
     int32_t equivalentFocus = 24;
     bool isRecording = false;
-    bool currentTrackingEnable = true;
+    std::atomic<bool> currentTrackingEnable{true};
     uint64_t trackingTargetNum = 0;
     std::atomic<bool> searchingTarget{false};
     std::string searchTargetNapiCmdId = "";

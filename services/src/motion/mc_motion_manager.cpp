@@ -424,6 +424,18 @@ void MotionManager::HandlePhoneOff(bool isPhoneOn)
 void MotionManager::HandlePhoneOn(bool isPhoneOn)
 {
     if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE)) {
+        // For wheel base device with first connect, send tracking enable command when phone is attached
+        if (isFirstConnectWheelBase_) {
+            HILOGI("Wheel base device first connect is attached, sending tracking enable command.");
+            auto tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET);
+            auto tkCallback = [this, tkCmd]() {
+                deviceStatus_->trackingStatus = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
+            };
+            tkCmd->SetResponseCallback(tkCallback);
+            CHECK_POINTER_RETURN(tkCmd, "tkCmd is empty.");
+            sendAdapter_->SendCommand(tkCmd);
+            isFirstConnectWheelBase_ = false;
+        }
         ConnectAbility();
     }
     MechBodyControllerService::GetInstance().NotifyMechEvent(mechId_, MechEventType::DEVICE_ADSORBED);
@@ -1006,6 +1018,12 @@ int32_t MotionManager::Init()
 void MotionManager::SetMechTkEnableNoTarget()
 {
     HILOGI("start");
+    if (deviceBaseInfo_.devType == static_cast<uint8_t>(MechType::WHEEL_BASE) && isFirstConnect_ &&
+        MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
+        HILOGI("Wheel base device first connect is not attached, skip sending tracking enable command.");
+        isFirstConnectWheelBase_ = true;
+        return;
+    }
 
     auto tkCmd = factory.CreateSetMechCameraTrackingEnableCmd(MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET);
     auto tkCallback = [this, tkCmd]() {
@@ -2653,9 +2671,13 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     auto cameraTrackingFrameCallback = [this]() {
     };
 
-    if (!deviceStatus_->isEnabled || deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_DISABLE
-            || !needSendTrackingData_) {
-        HILOGE("device tracking is not enabled");
+    if (!deviceStatus_->isEnabled || deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_DISABLE ||
+        !needSendTrackingData_) {
+        HILOGE("device tracking is not enabled, isEnabled: %{public}d, trackingStatus: %{public}d, "
+               "needSendTrackingData_: %{public}d",
+            deviceStatus_->isEnabled,
+            static_cast<int32_t>(deviceStatus_->trackingStatus),
+            needSendTrackingData_.load());
         return ERR_OK;
     }
 

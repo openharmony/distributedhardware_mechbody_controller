@@ -284,6 +284,7 @@ private:
     std::condition_variable deviceBaseInfoCon_;
     bool deviceBaseInfoReady_ = false;
     bool isFirstConnect_ = false;
+    bool isFirstConnectWheelBase_ = false;
     uint32_t deviceIdentifier_ = 0x00000000;
     sptr<AppExecFwk::IApplicationStateObserver> appChangeListener_;
     std::set<AppForegroundInfo> appForegroundInfos_;

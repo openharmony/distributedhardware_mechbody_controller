@@ -16,6 +16,7 @@
 #include <cmath>
 #include <memory>
 #include <valarray>
+#include <atomic>
 #include "load_mechbody_adapter.h"
 #include "mc_camera_tracking_controller.h"
 #include "mechbody_controller_service.h"
@@ -748,6 +749,24 @@ int32_t McCameraTrackingController::ProcessTargetByType(
                 HILOGI("No matching face/head found, continue tracking body");
 
                 return ERR_OK;
+            case CameraStandard::MetadataObjectType::SALIENT_DETECTION:
+                if (selectedObject->IsLockFocusTracked()) {
+                    HILOGI("SALIENT_DETECTION with IsLockFocusTracked true, treat as body to find face/head");
+                    targetObject = FindBestFaceOrHeadForBody(*selectedObject, detectedObjects);
+                    if (targetObject != nullptr) {
+                        HILOGI("Tracking %{public}s for salient detection, objectID:%{public}d",
+                            targetObject->GetType() == (CameraStandard::MetadataObjectType::HUMAN_HEAD)
+                                ? "head"
+                                : "face", targetObject->GetObjectId());
+                        return ERR_OK;
+                    }
+                    targetObject = selectedObject;
+                    HILOGI("No matching face/head found for salient detection, continue tracking salient detection");
+                    return ERR_OK;
+                }
+                targetObject = selectedObject;
+                HILOGI("Tracking salient detection (IsLockFocusTracked is false)");
+                return ERR_OK;
             default:
                 targetObject = selectedObject;
                 HILOGW("Tracking face/unknown type: %{public}d", static_cast<int>(selectedType));
@@ -1021,7 +1040,8 @@ int32_t McCameraTrackingController::UpdateMotionsWithTrackingData(
     }
     bool isEnableTrackingMode =
             SESSION_MODE_WHITELIST.find(currentCameraInfo_->sessionMode) != SESSION_MODE_WHITELIST.end();
-    if (!currentCameraInfo_->currentTrackingEnable || IsCurrentFocus() || !isEnableTrackingMode) {
+    if (!currentCameraInfo_->currentTrackingEnable.load(std::memory_order_relaxed) || IsCurrentFocus() ||
+        !isEnableTrackingMode) {
         HILOGW("current tracking is not enabled");
         return ERR_OK;
     }
@@ -1052,7 +1072,7 @@ int32_t McCameraTrackingController::SetTrackingEnabled(const uint32_t &tokenId, 
     }
     HILOGI("update tracking enable");
     appSettings[tokenId]->isTrackingEnabled = isEnabled;
-    currentCameraInfo_->currentTrackingEnable = isEnabled;
+    currentCameraInfo_->currentTrackingEnable.store(isEnabled, std::memory_order_relaxed);
     return ERR_OK;
 }
 
@@ -1153,7 +1173,7 @@ bool McCameraTrackingController::IsCurrentTrackingEnabled()
     {
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
         if (MechBodyControllerService::GetInstance().motionManagers_.empty()) {
-            return currentCameraInfo_->currentTrackingEnable;
+            return currentCameraInfo_->currentTrackingEnable.load(std::memory_order_relaxed);
         }
         for (auto it : MechBodyControllerService::GetInstance().motionManagers_) {
             int32_t mechId = it.first;
@@ -1168,7 +1188,7 @@ bool McCameraTrackingController::IsCurrentTrackingEnabled()
             deviceIsEnable |= isEnabledTmp;
         }
     }
-    return currentCameraInfo_->currentTrackingEnable && deviceIsEnable;
+    return currentCameraInfo_->currentTrackingEnable.load(std::memory_order_relaxed) && deviceIsEnable;
 }
 
 int32_t McCameraTrackingController::UpdateActionControl()
@@ -1191,7 +1211,8 @@ int32_t McCameraTrackingController::UpdateActionControl()
         (std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
             .time_since_epoch().count());
     if (currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0 &&
-        currentTime - lastTrackingFrame_->timeStamp < TRACKING_PARAM_LOST_DELAY && IsCurrentTrackingEnabled()) {
+        currentTime - lastTrackingFrame_->timeStamp < TRACKING_PARAM_LOST_DELAY &&
+        currentCameraInfo_->currentTrackingEnable.load(std::memory_order_relaxed)) {
         actionControlParam.controlReq = 1;
         actionControlParam.yawControl = 1;
         actionControlParam.pitchControl = 1;
@@ -1335,7 +1356,7 @@ int32_t McCameraTrackingController::SearchTarget(std::string &napiCmdId, uint32_
             tokenId, napiCmdId, currentCameraInfo_->trackingTargetNum);
         return ERR_OK;
     }
-    currentCameraInfo_->currentTrackingEnable = false;
+    currentCameraInfo_->currentTrackingEnable.store(false, std::memory_order_relaxed);
     RotateDegreeLimit limit;
     if (motionManager->GetRotationLimit(limit) != ERR_OK) {
         HILOGE("SEARCH_TARGET get device limited info failed.");

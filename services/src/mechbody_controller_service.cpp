@@ -69,6 +69,7 @@ void MechBodyControllerService::OnStart(const SystemAbilityOnDemandReason &start
     bool res = Publish(this);
     if (!res) {
         HILOGE("MechBodyControllerService start failed.");
+        return;
     }
     MechConnectManager::GetInstance().Init();
 
@@ -182,6 +183,10 @@ int32_t MechBodyControllerService::OnAttachStateChange(const AttachmentState &at
             GetAnonymUint32(tokenId).c_str(),
             mechInfo.ToString().c_str(), static_cast<int32_t>(attachmentState));
         sptr <IRemoteObject> callback = item.second;
+        if (callback == nullptr) {
+            HILOGE("Remote object is null");
+            continue;
+        }
         MessageParcel data;
         if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
             HILOGE("Write interface token failed, tokenId: %{public}s, mechId: %{public}d, event: %{public}s",
@@ -194,17 +199,12 @@ int32_t MechBodyControllerService::OnAttachStateChange(const AttachmentState &at
             HILOGE("Write mechId failed, tokenId: %{public}s, mechId: %{public}d, attachmentState: %{public}d",
                 GetAnonymUint32(tokenId).c_str(),
                 mechInfo.mechId, static_cast<int32_t>(attachmentState));
-            return SEND_CALLBACK_INFO_FAILED;
+            continue;
         }
 
         if (!data.WriteParcelable(&mechInfo)) {
             HILOGE("Write state failed");
-            return SEND_CALLBACK_INFO_FAILED;
-        }
-
-        if (callback == nullptr) {
-            HILOGE("Remote object is null");
-            return SEND_CALLBACK_INFO_FAILED;
+            continue;
         }
 
         MessageParcel reply;
@@ -223,6 +223,10 @@ int32_t MechBodyControllerService::SetUserOperation(const std::shared_ptr<Operat
                                                     const std::string &mac, const std::string &param)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!operation) {
+        HILOGE("operation is null.");
+        return INVALID_PARAMETERS_ERR;
+    }
     HILOGI("start,tokenId: %{public}s; user operation: %{public}d; mac: %{public}s;",
            GetAnonymUint32(tokenId).c_str(), static_cast<int32_t>(*operation),
            GetAnonymStr(mac).c_str());
@@ -313,8 +317,10 @@ int32_t MechBodyControllerService::OnDeviceDisconnected(int32_t mechId)
     auto it = motionManagers_.find(mechId);
     if (it != motionManagers_.end()) {
         HILOGD("find to erase.");
-        it->second->UnRegisterNotifyEvent();
-        it->second->UnRegisterAbilityStateChangeListener();
+        if (it->second != nullptr) {
+            it->second->UnRegisterNotifyEvent();
+            it->second->UnRegisterAbilityStateChangeListener();
+        }
         it->second = nullptr;
         motionManagers_.erase(it);
     }
@@ -349,10 +355,20 @@ std::string MechBodyControllerService::GetAppNameByTokenId(uint32_t tokenId)
     if (tokenType != ATokenTypeEnum::TOKEN_NATIVE) {
         AccessToken::HapTokenInfo callingTokenInfo;
         getTokenInfoRes = AccessTokenKit::GetHapTokenInfo(tokenId, callingTokenInfo);
+        if (getTokenInfoRes != 0) {
+            HILOGE("GetHapTokenInfo failed, res: %{public}d",
+                getTokenInfoRes);
+            return "";
+        }
         processName = callingTokenInfo.bundleName;
     } else {
         AccessToken::NativeTokenInfo callingTokenInfo;
         getTokenInfoRes = AccessTokenKit::GetNativeTokenInfo(tokenId, callingTokenInfo);
+        if (getTokenInfoRes != 0) {
+            HILOGE("GetNativeTokenInfo failed, res: %{public}d",
+                getTokenInfoRes);
+            return "";
+        }
         processName = callingTokenInfo.processName;
     }
     return processName;
@@ -403,7 +419,7 @@ int32_t MechBodyControllerService::SetTrackingEnabled(bool &isEnabled, bool isCa
             for (auto it : motionManagers_) {
                 std::shared_ptr<MotionManager> motionManager = it.second;
                 if (motionManager == nullptr) {
-                    return DEVICE_NOT_CONNECTED;
+                    continue;
                 }
                 HILOGI("Set main switch.");
                 // set device enable flag
@@ -1029,6 +1045,10 @@ int32_t MechBodyControllerService::OnRotationAxesStatusChange(const int32_t &mec
         int32_t tokenId = item.first;
         HILOGI("notify Rotation Axes Status to tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
         sptr <IRemoteObject> callback = item.second;
+        if (callback == nullptr) {
+            HILOGE("callback is null");
+            continue;
+        }
         MessageParcel data;
         if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
             HILOGE("Write interface token failed");
