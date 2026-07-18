@@ -157,6 +157,7 @@ public:
 private:
     void MMIKeyEvent(CameraKeyEvent eventType);
     void JudgingYawLimit(RotateDegreeLimit& limit);
+    bool MechJudgeCeliaFront();
     void AbsolutelyEulerAnglesJudgingLimitLocked(EulerAngles& eulerAngles);
     uint8_t CreateResponseTaskId();
     uint16_t CreateRotateTaskId();
