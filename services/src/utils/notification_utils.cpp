@@ -58,7 +58,7 @@ void NotificationUtils::SendNotification(NotificationType notificationType)
     json notificationConfig;
     switch (notificationType) {
         case NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE:
-            HILOGI("NOTIFICATION_TYPE_CONNECTED_CAPSULE, TrackingEnabled: %{public}d", isTrackingEnabled_);
+            HILOGI("NOTIFICATION_TYPE_CONNECTED_CAPSULE, TrackingEnabled: %{public}d", isTrackingEnabled_.load());
             if (!MechbodyAdapterUtils::IsSupportBackground()) {
                 HILOGW("NOTIFICATION_TYPE_CONNECTED_CAPSULE, not support sw!");
                 return;
@@ -661,7 +661,7 @@ void LocalLiveViewSubscriber::OnResponse(
     auto buttonName = buttonOption->GetButtonName();
     if (buttonName == TRACKING_ENABLE_CHANGE_BUTTON_NAME) {
         HILOGI("TRACKING_ENABLE_CHANGE_BUTTON_NAME, TrackingEnabled: %{public}d",
-            NotificationUtils::isTrackingEnabled_);
+            NotificationUtils::isTrackingEnabled_.load());
         bool trackingEnabled = !NotificationUtils::isTrackingEnabled_;
         MechBodyControllerService::GetInstance().SetTrackingEnabled(trackingEnabled, true);
     }

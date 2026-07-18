@@ -16,13 +16,14 @@
 #ifndef OHOS_NOTIFICATION_UTILS_H
 #define OHOS_NOTIFICATION_UTILS_H
 
+#include <nlohmann/json.hpp>
+#include <functional>
+#include <atomic>
 #include "notification_helper.h"
 #include "notification_content.h"
 #include "notification_request.h"
 #include "configuration_observer_stub.h"
 #include "pixel_map.h"
-#include <nlohmann/json.hpp>
-#include <functional>
 #include "mechbody_controller_enums.h"
 using json = nlohmann::json;
 
@@ -36,7 +37,7 @@ namespace OHOS {
 namespace MechBodyController {
 class NotificationUtils {
 public:
-    inline static bool isTrackingEnabled_ = true;
+    inline static std::atomic<bool> isTrackingEnabled_ = true;
 
     inline static MechType mechType_ = MechType::PORTABLE_GIMBAL;
     

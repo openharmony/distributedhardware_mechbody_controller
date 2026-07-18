@@ -541,7 +541,7 @@ void PrintOnFocusTrackingLog(CameraStandard::FocusTrackingMetaInfo &info)
             << obj->GetBoundingBox().width << ", " << obj->GetBoundingBox().height << "]" << ", Confidence: "
             << obj->GetConfidence() << ", isLockFocusTracked: " << (obj->IsLockFocusTracked() ? "true" : "false");
     }
-    HILOGI("tracking object info: %{public}s", oss.str().c_str());
+    HILOGD("tracking object info: %{public}s", oss.str().c_str());
 }
 
 int32_t McCameraTrackingController::OnFocusTracking(CameraStandard::FocusTrackingMetaInfo &info)
@@ -589,7 +589,7 @@ int32_t McCameraTrackingController::DoPrediction(std::shared_ptr<TrackingFramePa
     int32_t &objectId)
 {
 #ifdef MECHBODY_CONTROLLER_EXTENDED
-    HILOGI("Start RunTrackingCore.");
+    HILOGD("Start RunTrackingCore.");
     int32_t res = MechbodyAdapterUtils::RunTrackingCore(trackingParams->roi.x, trackingParams->roi.y,
         trackingParams->roi.width, trackingParams->roi.height,
         [this, trackingParams, objectId](float resultX, float resultY) mutable {
@@ -1698,18 +1698,18 @@ void McCameraTrackingController::AdjustOffset(std::shared_ptr<TrackingFrameParam
     if (isStick_) {
         if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
             AddYOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
-            HILOGI("AddYOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
+            HILOGD("AddYOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         } else if (sensorRotation_ == MobileRotation::LEFT || sensorRotation_ == MobileRotation::RIGHT) {
             AddXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
-            HILOGI("AddXOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
+            HILOGD("AddXOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         }
     } else {
         if (sensorRotation_ == MobileRotation::UP || sensorRotation_ == MobileRotation::DOWN) {
             AdjustYOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
-            HILOGI("AdjustYOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
+            HILOGD("AdjustYOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         } else if (sensorRotation_ == MobileRotation::LEFT || sensorRotation_ == MobileRotation::RIGHT) {
             AdjustXOffset(trackingParams->roi, cameraType, vertical_, horizontal_, isFace, isBody);
-            HILOGI("AdjustXOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
+            HILOGD("AdjustXOffset atfer ROI: %{public}s", trackingParams->roi.ToString().c_str());
         }
     }
 

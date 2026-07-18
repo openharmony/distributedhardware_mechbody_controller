@@ -72,10 +72,12 @@ void MechBodyControllerService::OnStart(const SystemAbilityOnDemandReason &start
         return;
     }
     MechConnectManager::GetInstance().Init();
-
-    if (sendAdapter_ == nullptr) {
-        sendAdapter_ = std::make_shared<TransportSendAdapter>();
-        sendAdapter_->RegisterBluetoothListener();
+    {
+        std::lock_guard<std::mutex> lock(motionManagersMutex);
+        if (sendAdapter_ == nullptr) {
+            sendAdapter_ = std::make_shared<TransportSendAdapter>();
+            sendAdapter_->RegisterBluetoothListener();
+        }
     }
     BleSendManager::GetInstance().Init();
 #ifdef MECHBODY_CONTROLLER_EXTENDED
@@ -92,9 +94,12 @@ void MechBodyControllerService::OnStart(const SystemAbilityOnDemandReason &start
 
 void MechBodyControllerService::OnStop()
 {
-    if (sendAdapter_ != nullptr) {
-        sendAdapter_->UnRegisterBluetoothListener();
-        sendAdapter_ = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(motionManagersMutex);
+        if (sendAdapter_ != nullptr) {
+            sendAdapter_->UnRegisterBluetoothListener();
+            sendAdapter_ = nullptr;
+        }
     }
     BleSendManager::GetInstance().UnInit();
     McCameraTrackingController::GetInstance().UnInit();
@@ -113,13 +118,13 @@ int32_t MechBodyControllerService::RegisterAttachStateChangeCallback(const sptr<
         HILOGE("callback is nullptr");
         return INVALID_REMOTE_OBJECT;
     }
-
-    sptr <MechControllerIpcDeathListener> diedListener = new MechControllerIpcDeathListener();
-    diedListener->tokenId_ = tokenId;
-    diedListener->objectType_ = RemoteObjectType::DEVICE_ATTACH_CALLBACK;
-    callback->AddDeathRecipient(diedListener);
+ 
     {
         std::lock_guard<std::mutex> lock(deviceAttachCallbackMutex);
+        sptr <MechControllerIpcDeathListener> diedListener = new MechControllerIpcDeathListener();
+        diedListener->tokenId_ = tokenId;
+        diedListener->objectType_ = RemoteObjectType::DEVICE_ATTACH_CALLBACK;
+        callback->AddDeathRecipient(diedListener);
         deviceAttachCallback_[tokenId] = callback;
         HILOGI("callback add success, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
         if (listener_ == nullptr) {
@@ -594,13 +599,13 @@ int32_t MechBodyControllerService::RegisterCmdChannel(const sptr<IRemoteObject> 
     // LCOV_EXCL_START
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     HILOGI("start, tokenId: %{public}s;", GetAnonymUint32(tokenId).c_str());
-    sptr <MechControllerIpcDeathListener> diedListener = new MechControllerIpcDeathListener();
-    diedListener->tokenId_ = tokenId;
-    diedListener->objectType_ = RemoteObjectType::COMMAND_CHANNEL;
     CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
-    callback->AddDeathRecipient(diedListener);
     {
         std::lock_guard<std::mutex> lock(cmdChannelMutex_);
+        sptr <MechControllerIpcDeathListener> diedListener = new MechControllerIpcDeathListener();
+        diedListener->tokenId_ = tokenId;
+        diedListener->objectType_ = RemoteObjectType::COMMAND_CHANNEL;
+        callback->AddDeathRecipient(diedListener);
         cmdChannels_[tokenId] = callback;
     }
     HILOGI("command channel add success, tokenid: %{public}s;", GetAnonymUint32(tokenId).c_str());
