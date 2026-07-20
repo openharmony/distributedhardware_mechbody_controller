@@ -2668,5 +2668,493 @@ HWTEST_F(McCameraTrackingControllerTwoTest, GetTrackingTargetFallback_006, TestS
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest GetTrackingTargetFallback_006 end" << std::endl;
 }
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_001
+ * @tc.number: SelectBestObjectByRegion_001
+ * @tc.desc  : Testing SelectBestObjectByRegion with empty detectedObjects, returns nullptr.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1f;
+    trackingRegion.topLeftY = 0.1f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects;
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_EQ(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_002
+ * @tc.number: SelectBestObjectByRegion_002
+ * @tc.desc  : Testing SelectBestObjectByRegion with single FACE object and IOU > threshold.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_002 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1f;
+    trackingRegion.topLeftY = 0.1f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.2f;
+    objectRect.topLeftY = 0.2f;
+    objectRect.width = 0.6f;
+    objectRect.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, objectRect, 100, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_NE(result, nullptr);
+    EXPECT_EQ(result->GetObjectId(), 100);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_003
+ * @tc.number: SelectBestObjectByRegion_003
+ * @tc.desc  : Testing SelectBestObjectByRegion with single BASE_FACE_DETECTION object and IOU > threshold.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_003 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1f;
+    trackingRegion.topLeftY = 0.1f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.2f;
+    objectRect.topLeftY = 0.2f;
+    objectRect.width = 0.6f;
+    objectRect.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::BASE_FACE_DETECTION,
+            timestamp, objectRect, 200, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_NE(result, nullptr);
+    EXPECT_EQ(result->GetObjectId(), 200);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_004
+ * @tc.number: SelectBestObjectByRegion_004
+ * @tc.desc  : Testing SelectBestObjectByRegion with single HUMAN_HEAD object and IOU > threshold.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_004 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1f;
+    trackingRegion.topLeftY = 0.1f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.2f;
+    objectRect.topLeftY = 0.2f;
+    objectRect.width = 0.6f;
+    objectRect.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_HEAD,
+            timestamp, objectRect, 300, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_NE(result, nullptr);
+    EXPECT_EQ(result->GetObjectId(), 300);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_005
+ * @tc.number: SelectBestObjectByRegion_005
+ * @tc.desc  : Testing SelectBestObjectByRegion with unsupported object type (HUMAN_BODY), returns nullptr.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1f;
+    trackingRegion.topLeftY = 0.1f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.2f;
+    objectRect.topLeftY = 0.2f;
+    objectRect.width = 0.6f;
+    objectRect.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::HUMAN_BODY,
+            timestamp, objectRect, 400, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_EQ(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_005 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_006
+ * @tc.number: SelectBestObjectByRegion_006
+ * @tc.desc  : Testing SelectBestObjectByRegion with multiple objects, second has higher IOU.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_006, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_006 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1f;
+    trackingRegion.topLeftY = 0.1f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.3f;
+    rect1.topLeftY = 0.3f;
+    rect1.width = 0.6f;
+    rect1.height = 0.6f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.15f;
+    rect2.topLeftY = 0.15f;
+    rect2.width = 0.55f;
+    rect2.height = 0.55f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> obj1 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, rect1, 501, 0);
+    sptr<CameraStandard::MetadataObject> obj2 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, rect2, 502, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {obj1, obj2};
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_NE(result, nullptr);
+    EXPECT_EQ(result->GetObjectId(), 502);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_006 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_007
+ * @tc.number: SelectBestObjectByRegion_007
+ * @tc.desc  : Testing SelectBestObjectByRegion with multiple objects, second has lower IOU.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_007, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_007 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.1f;
+    trackingRegion.topLeftY = 0.1f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.15f;
+    rect1.topLeftY = 0.15f;
+    rect1.width = 0.55f;
+    rect1.height = 0.55f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.3f;
+    rect2.topLeftY = 0.3f;
+    rect2.width = 0.6f;
+    rect2.height = 0.6f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> obj1 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, rect1, 601, 0);
+    sptr<CameraStandard::MetadataObject> obj2 =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, rect2, 602, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {obj1, obj2};
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_NE(result, nullptr);
+    EXPECT_EQ(result->GetObjectId(), 601);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_007 end" << std::endl;
+}
+
+/**
+ * @tc.name  : SelectBestObjectByRegion_008
+ * @tc.number: SelectBestObjectByRegion_008
+ * @tc.desc  : Testing SelectBestObjectByRegion with object IOU below threshold, returns nullptr.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, SelectBestObjectByRegion_008, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_008 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect trackingRegion;
+    trackingRegion.topLeftX = 0.0f;
+    trackingRegion.topLeftY = 0.0f;
+    trackingRegion.width = 0.5f;
+    trackingRegion.height = 0.5f;
+
+    CameraStandard::Rect objectRect;
+    objectRect.topLeftX = 0.48f;
+    objectRect.topLeftY = 0.48f;
+    objectRect.width = 0.98f;
+    objectRect.height = 0.98f;
+
+    int64_t timestamp = 0;
+    sptr<CameraStandard::MetadataObject> mockObject =
+        new CameraStandard::MetadataObject(CameraStandard::MetadataObjectType::FACE,
+            timestamp, objectRect, 700, 0);
+
+    std::vector<sptr<CameraStandard::MetadataObject>> detectedObjects = {mockObject};
+
+    sptr<CameraStandard::MetadataObject> result = controller.SelectBestObjectByRegion(trackingRegion, detectedObjects);
+
+    EXPECT_EQ(result, nullptr);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest SelectBestObjectByRegion_008 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_005
+ * @tc.number: CalculateIOU_005
+ * @tc.desc  : Testing CalculateIOU with rect1.height <= 0, returns IOU_DEFAULT.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, CalculateIOU_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.5f;
+    rect1.height = 0.0f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.2f;
+    rect2.topLeftY = 0.2f;
+    rect2.width = 0.6f;
+    rect2.height = 0.6f;
+
+    float iou = controller.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_005 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_006
+ * @tc.number: CalculateIOU_006
+ * @tc.desc  : Testing CalculateIOU with rect2.width <= 0, returns IOU_DEFAULT.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, CalculateIOU_006, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_006 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.5f;
+    rect1.height = 0.5f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.2f;
+    rect2.topLeftY = 0.2f;
+    rect2.width = 0.0f;
+    rect2.height = 0.6f;
+
+    float iou = controller.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_006 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_007
+ * @tc.number: CalculateIOU_007
+ * @tc.desc  : Testing CalculateIOU with rect2.height <= 0, returns IOU_DEFAULT.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, CalculateIOU_007, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_007 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.5f;
+    rect1.height = 0.5f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.2f;
+    rect2.topLeftY = 0.2f;
+    rect2.width = 0.6f;
+    rect2.height = 0.0f;
+
+    float iou = controller.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_007 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_008
+ * @tc.number: CalculateIOU_008
+ * @tc.desc  : Testing CalculateIOU with inverted rect1 (right <= left), returns IOU_DEFAULT.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, CalculateIOU_008, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_008 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.5f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.3f;
+    rect1.height = 0.5f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.1f;
+    rect2.topLeftY = 0.1f;
+    rect2.width = 0.6f;
+    rect2.height = 0.6f;
+
+    float iou = controller.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_008 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_009
+ * @tc.number: CalculateIOU_009
+ * @tc.desc  : Testing CalculateIOU with inverted rect2 (bottom <= top), returns IOU_DEFAULT.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, CalculateIOU_009, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_009 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.1f;
+    rect1.topLeftY = 0.1f;
+    rect1.width = 0.6f;
+    rect1.height = 0.6f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.2f;
+    rect2.topLeftY = 0.5f;
+    rect2.width = 0.6f;
+    rect2.height = 0.3f;
+
+    float iou = controller.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_009 end" << std::endl;
+}
+
+/**
+ * @tc.name  : CalculateIOU_010
+ * @tc.number: CalculateIOU_010
+ * @tc.desc  : Testing CalculateIOU with tiny area where minArea <= TRACKING_LOST_CHECK, returns IOU_DEFAULT.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, CalculateIOU_010, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_010 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+
+    CameraStandard::Rect rect1;
+    rect1.topLeftX = 0.0f;
+    rect1.topLeftY = 0.0f;
+    rect1.width = 0.01f;
+    rect1.height = 0.01f;
+
+    CameraStandard::Rect rect2;
+    rect2.topLeftX = 0.0f;
+    rect2.topLeftY = 0.0f;
+    rect2.width = 0.01f;
+    rect2.height = 0.01f;
+
+    float iou = controller.CalculateIOU(rect1, rect2);
+
+    EXPECT_EQ(iou, 0.0f);
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest CalculateIOU_010 end" << std::endl;
+}
 }
 }
