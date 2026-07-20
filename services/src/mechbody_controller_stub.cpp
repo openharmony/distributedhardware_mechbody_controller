@@ -433,7 +433,12 @@ int32_t MechBodyControllerStub::TurnBySpeedInner(MessageParcel &data, MessagePar
 int32_t MechBodyControllerStub::IsSupportActionInner(MessageParcel &data, MessageParcel &reply)
 {
     int32_t mechId = data.ReadInt32();
-    ActionType actionType = static_cast<ActionType>(data.ReadInt32());
+    int32_t actionTypeValue = data.ReadInt32();
+    if (actionTypeValue < 0 || actionTypeValue > static_cast<int32_t>(ActionType::THINKING)) {
+        HILOGE("Invalid actionType: %{public}d", actionTypeValue);
+        return INVALID_PARAMETERS_ERR;
+    }
+    ActionType actionType = static_cast<ActionType>(actionTypeValue);
     bool isSupport = 0;
     int32_t result = MechBodyControllerService::GetInstance().IsSupportAction(mechId, actionType, isSupport);
     bool writeResult = reply.WriteInt32(result);
