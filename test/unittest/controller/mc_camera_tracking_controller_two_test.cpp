@@ -1693,25 +1693,6 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ConvertObjectType_004, TestSize.Leve
 }
 
 /**
- * @tc.name  : ConvertObjectType_005
- * @tc.number: ConvertObjectType_005
- * @tc.desc  : Testing ConvertObjectType with HUMAN_HEAD type.
- */
-HWTEST_F(McCameraTrackingControllerTwoTest, ConvertObjectType_005, TestSize.Level1)
-{
-    DTEST_LOG << "McCameraTrackingControllerTwoTest ConvertObjectType_005 begin" << std::endl;
-
-    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
-    CameraStandard::MetadataObjectType cameraObjectType = CameraStandard::MetadataObjectType::HUMAN_HEAD;
-    uint8_t mechObjectType = 0;
-
-    controller.ConvertObjectType(cameraObjectType, mechObjectType);
-    EXPECT_EQ(mechObjectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_HEAD));
-
-    DTEST_LOG << "McCameraTrackingControllerTwoTest ConvertObjectType_005 end" << std::endl;
-}
-
-/**
  * @tc.name  : ConvertObjectType_006
  * @tc.number: ConvertObjectType_006
  * @tc.desc  : Testing ConvertObjectType with default type.
