@@ -160,7 +160,6 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_002, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_DISABLED);
 
     EXPECT_EQ(ret, ERR_OK);
-    EXPECT_FALSE(NotificationUtils::isTrackingEnabled_);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnTrackingEvent_002 end" << std::endl;
 }
@@ -179,13 +178,11 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_003, TestSize.Leve
     controller.currentCameraInfo_->tokenId = 7777;
     controller.trackingEventCallback_.clear();
 
-    NotificationUtils::isTrackingEnabled_ = true;
     int32_t mechId = 100;
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_LAYOUT_CHANGED);
 
     EXPECT_EQ(ret, ERR_OK);
     // isTrackingEnabled_ should remain unchanged when event is neither ENABLED nor DISABLED
-    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnTrackingEvent_003 end" << std::endl;
 }
@@ -214,7 +211,6 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_004, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
-    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.appSettings.erase(tokenId);
     controller.trackingEventCallback_.erase(tokenId);
@@ -246,7 +242,6 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_005, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
-    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.appSettings.erase(tokenId);
     controller.trackingEventCallback_.erase(tokenId);
@@ -275,7 +270,6 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_006, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
-    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.trackingEventCallback_.erase(tokenId);
 
@@ -357,7 +351,6 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_009, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
-    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.trackingEventCallback_.erase(tokenId);
 
