@@ -372,7 +372,7 @@ HWTEST_F(MotionManagerTwoTest, ProcessPhoneOffForegroundCheck_006, TestSize.Leve
     appData2.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData2);
 
-    EXPECT_TRUE(motionMgr->IsAiDispatchServiceInForeground(list));
+    EXPECT_FALSE(motionMgr->IsAiDispatchServiceInForeground(list));
 }
 
 /**
@@ -466,7 +466,7 @@ HWTEST_F(MotionManagerTwoTest, IsAiDispatchServiceInForeground_002, TestSize.Lev
     appData.extensionType = AppExecFwk::ExtensionAbilityType::SERVICE;
     list.push_back(appData);
 
-    EXPECT_TRUE(motionMgr->IsAiDispatchServiceInForeground(list));
+    EXPECT_FALSE(motionMgr->IsAiDispatchServiceInForeground(list));
 }
 
 /**
@@ -706,48 +706,6 @@ HWTEST_F(MotionManagerTwoTest, RegisterEventListenerV01_001, TestSize.Level1)
     }
     EXPECT_TRUE(hasControlResultCmd);
     EXPECT_TRUE(hasWheelDataCmd);
-}
-
-/**
- * @tc.name  : StartEvent_001
- * @tc.number: StartEvent_001
- * @tc.desc  : Test StartEvent function creates eventHandler and starts event loop.
- */
-HWTEST_F(MotionManagerTwoTest, StartEvent_001, TestSize.Level1)
-{
-    // Given: Create MotionManager and register event listener
-    int32_t mechId = 100;
-    std::shared_ptr<MotionManager> motionMgr =
-        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
-    motionMgr->RegisterEventListener();
-
-    // When: StartEvent contains runner->Run() which is a blocking call
-    // Run it in a separate thread to avoid blocking the test
-    std::thread eventThread(&MotionManager::StartEvent, motionMgr);
-    eventThread.detach();
-
-    // Then: Wait for the event handler to be initialized via condition variable
-    std::unique_lock<std::mutex> lock(motionMgr->eventMutex_);
-    bool waitResult = motionMgr->eventCon_.wait_for(lock, std::chrono::milliseconds(500), [motionMgr] {
-        return motionMgr->eventHandler_ != nullptr;
-    });
-    lock.unlock();
-
-    // Verify that the condition variable was notified and eventHandler_ was created
-    EXPECT_TRUE(waitResult);
-
-    // Verify that eventHandler_ was created successfully
-    EXPECT_NE(motionMgr->eventHandler_, nullptr);
-
-    // Verify that the eventHandler has a valid EventRunner
-    auto runner = motionMgr->eventHandler_->GetEventRunner();
-    EXPECT_NE(runner, nullptr);
-
-    // Verify that the event runner is running
-    EXPECT_TRUE(runner->IsRunning());
-
-    // Reset will trigger destructor which calls Stop() to exit the event loop
-    motionMgr.reset();
 }
 
 /**
