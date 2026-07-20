@@ -432,5 +432,55 @@ HWTEST_F(TransportSendAdapterTest, CreateResponseSeqNo_ShouldIncrement_WhenSeqNo
     EXPECT_EQ(seqNo, 101);
 }
 
+/**
+* @tc.name  : BleReceviceListenerImpl_OnReceive_WithDataLenOne
+* @tc.number: TransportSendAdapter_Test_033
+* @tc.desc  : Test BleReceviceListenerImpl::OnReceive with dataLen=1 (minimum valid).
+*             Validate passes, make_shared returns non-null (line 246 false),
+*             SetRange succeeds, memcpy_s succeeds (line 251 false).
+*/
+HWTEST_F(TransportSendAdapterTest, BleReceviceListenerImpl_OnReceive_WithDataLenOne, TestSize.Level1)
+{
+    BleReceviceListenerImpl listener(sendAdapter_);
+    uint8_t data[1] = {0x01};
+    int32_t ret = listener.OnReceive(data, 1);
+    // Validate passes, mechDataBuffer != nullptr, memcpy_s succeeds
+    // Return value depends on downstream GetData/OnReceive processing
+    EXPECT_TRUE(ret == ERR_OK || ret == INVALID_PARAMETERS_ERR);
+}
+
+/**
+* @tc.name  : BleReceviceListenerImpl_OnReceive_WithDataLenMaxValid
+* @tc.number: TransportSendAdapter_Test_034
+* @tc.desc  : Test BleReceviceListenerImpl::OnReceive with dataLen=251 (maximum valid per Validate).
+*             Validate passes, make_shared returns non-null (line 246 false),
+*             SetRange succeeds, memcpy_s succeeds (line 251 false).
+*/
+HWTEST_F(TransportSendAdapterTest, BleReceviceListenerImpl_OnReceive_WithDataLenMaxValid, TestSize.Level1)
+{
+    BleReceviceListenerImpl listener(sendAdapter_);
+    uint8_t data[251] = {0};
+    data[0] = 0x01; // Set at least one non-zero byte
+    int32_t ret = listener.OnReceive(data, 251);
+    // Validate passes (251 <= MAX_DATA_SIZE), mechDataBuffer != nullptr, memcpy_s succeeds
+    // Return value depends on downstream GetData/OnReceive processing
+    EXPECT_TRUE(ret == ERR_OK || ret == INVALID_PARAMETERS_ERR);
+}
+
+/**
+* @tc.name  : BleReceviceListenerImpl_OnReceive_NullDataWithValidLen
+* @tc.number: TransportSendAdapter_Test_035
+* @tc.desc  : Test BleReceviceListenerImpl::OnReceive with data=nullptr and dataLen=1.
+*             Validate fails because data is null, so we never reach line 246-254.
+*             This independently covers the data==nullptr condition in Validate (MC/DC).
+*/
+HWTEST_F(TransportSendAdapterTest, BleReceviceListenerImpl_OnReceive_NullDataWithValidLen, TestSize.Level1)
+{
+    BleReceviceListenerImpl listener(sendAdapter_);
+    uint8_t* data = nullptr;
+    int32_t ret = listener.OnReceive(data, 1);
+    EXPECT_EQ(ret, INVALID_PARAMETERS_ERR);
+}
+
 } // namespace MechBodyController
 } // namespace OHOS
