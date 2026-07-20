@@ -401,7 +401,8 @@ ohos_unittest("mc_camera_tracking_controller_test") {
   }
 
   sources = [ "controller/mc_camera_tracking_controller_test.cpp",
-              "controller/mc_camera_tracking_controller_two_test.cpp" ]
+              "controller/mc_camera_tracking_controller_two_test.cpp",
+              "controller/mc_camera_tracking_controller_three_test.cpp" ]
 
   configs = [
     ":mech_test_config",
