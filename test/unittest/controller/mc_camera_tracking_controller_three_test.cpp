@@ -193,7 +193,8 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_003, TestSize.Leve
 /**
  * @tc.name  : OnTrackingEvent_004
  * @tc.number: OnTrackingEvent_004
- * @tc.desc  : Testing OnTrackingEvent with CAMERA_TRACKING_USER_ENABLED, appSettings has entry with isTrackingEnabled=false.
+ * @tc.desc  : Testing OnTrackingEvent with CAMERA_TRACKING_USER_ENABLED,
+               appSettings has entry with isTrackingEnabled=false.
  */
 HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_004, TestSize.Level1)
 {
@@ -224,7 +225,8 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_004, TestSize.Leve
 /**
  * @tc.name  : OnTrackingEvent_005
  * @tc.number: OnTrackingEvent_005
- * @tc.desc  : Testing OnTrackingEvent with CAMERA_TRACKING_USER_ENABLED, appSettings has entry with isTrackingEnabled=true.
+ * @tc.desc  : Testing OnTrackingEvent with CAMERA_TRACKING_USER_ENABLED,
+                appSettings has entry with isTrackingEnabled=true.
  */
 HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_005, TestSize.Level1)
 {
