@@ -499,9 +499,11 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
         int32_t result = motionManager->SetMechCameraInfo(cameraInfoParams);
         HILOGI("mech id: %{public}d result code: %{public}d", mechId, result);
         if (result != ERR_OK) {
+            (void)memset_s(&cameraInfoParams, sizeof(cameraInfoParams), 0, sizeof(cameraInfoParams));
             return result;
         }
     }
+    (void)memset_s(&cameraInfoParams, sizeof(cameraInfoParams), 0, sizeof(cameraInfoParams));
     HILOGI("end");
     return ERR_OK;
 }
@@ -1458,6 +1460,10 @@ bool McCameraTrackingController::IsVertical(MobileRotation sensorRotation)
 void McCameraTrackingController::SensorCallback(SensorEvent* event)
 {
     if (event == nullptr) {
+        return;
+    }
+    if (event->sensorTypeId != SENSOR_TYPE_ID_GRAVITY) {
+        HILOGE("Unexpected sensor type: %{public}d", event->sensorTypeId);
         return;
     }
     GravityData* gravityData = reinterpret_cast<GravityData*>(event->data);
