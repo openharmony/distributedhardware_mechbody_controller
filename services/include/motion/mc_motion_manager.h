@@ -277,8 +277,8 @@ private:
     DeviceCapabilityInfo deviceCapabilityInfo_;
     WheelCapabilityInfo wheelCapabilityInfo_;
     uint16_t taskId_ = 1;
-    bool SetMechCameraInfo_ = false;
-    bool setMechScreenInfo_ = false;
+    std::atomic<bool> SetMechCameraInfo_ = false;
+    std::atomic<bool> setMechScreenInfo_ = false;
     std::atomic<bool> needSendTrackingData_ = true;
 
     std::mutex deviceBaseInfoMutex_;
