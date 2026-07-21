@@ -1211,6 +1211,7 @@ int32_t McCameraTrackingController::UpdateActionControl()
         (std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())
             .time_since_epoch().count());
     if (currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0 &&
+        lastTrackingFrame_->timeStamp <= currentTime &&
         currentTime - lastTrackingFrame_->timeStamp < TRACKING_PARAM_LOST_DELAY &&
         currentCameraInfo_->currentTrackingEnable.load(std::memory_order_relaxed)) {
         actionControlParam.controlReq = 1;

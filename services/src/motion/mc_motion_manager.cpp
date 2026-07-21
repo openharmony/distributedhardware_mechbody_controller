@@ -1303,6 +1303,10 @@ bool MotionManager::isSupportMoveCapability(ActionType type)
     HILOGI("start");
     uint32_t index = static_cast<uint32_t>(type) / 32;
     uint32_t bit_index = static_cast<uint32_t>(type) % 32;
+    if (index >= MAX_CAPABILITY_BIT_NUM) {
+        HILOGE("type: %{public}d", type);
+        return false;
+    }
     if ((g_capabilityInfo[index] & (1 << bit_index)) == 0) {
         return false;
     } else {

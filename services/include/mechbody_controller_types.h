@@ -693,7 +693,7 @@ struct ROI {
 
 struct TrackingFrameParams {
     uint16_t targetId = 0;
-    uint64_t timeStamp;
+    uint64_t timeStamp = 0;
     CameraType cameraType = CameraType::OTHER;
     ConfidenceLevel confidence;
     uint8_t objectType;
