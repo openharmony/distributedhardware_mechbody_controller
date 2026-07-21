@@ -2661,7 +2661,7 @@ void MotionManager::UpdateTrackingTime()
 
 int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<TrackingFrameParams> trackingFrameParams)
 {
-    HILOGI("SetMechCameraTrackingFrame start.");
+    HILOGD("SetMechCameraTrackingFrame start.");
     if (MechConnectManager::GetInstance().GetMechState(mechId_) != AttachmentStateMap::ATTACHED) {
         HILOGE("Access is not allowed if the phone is not placed on mech.");
         return DEVICE_NOT_PLACED_ON_MECH;

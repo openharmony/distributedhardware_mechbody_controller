@@ -181,6 +181,11 @@ int32_t TransportSendAdapter::SendCommand(const std::shared_ptr<CommandBase> &cm
             HILOGE("buffer is nullptr");
             return;
         }
+
+        if (cmd->NeedResponse()) {
+            PushResponseTask(cmd, seqNo);
+        }
+
         int32_t result = BleSendManager::GetInstance().SendData(buffer->Data(), buffer->Size());
         HILOGI("sendTask cmdType: 0x%{public}x; dataLen= %{public}zu, result = %{public}d",
             cmd->GetCmdType(), buffer->Size(), result);
@@ -193,10 +198,6 @@ int32_t TransportSendAdapter::SendCommand(const std::shared_ptr<CommandBase> &cm
             HILOGI("sendTask cmdType: 0x%{public}x; dataLen= %{public}zu, result = %{public}d",
                 cmd->GetCmdType(), buffer->Size(), result);
             std::this_thread::sleep_for(std::chrono::milliseconds(CMD_RETRY_INTERVAL));
-        }
-
-        if (cmd->NeedResponse()) {
-            PushResponseTask(cmd, seqNo);
         }
     };
 
