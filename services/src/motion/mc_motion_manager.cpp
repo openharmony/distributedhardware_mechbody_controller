@@ -61,6 +61,7 @@ constexpr float YAW_OFFSET = 0.2f;
 constexpr int32_t CMD_SEND_INTERVAL = 100;
 constexpr int32_t TRACKING_CHECKER_INTERVAL = 100;
 static constexpr const char* AILIFESVC_BUNDLE_NAME = "com.example.hmos.ailifesvc";
+static constexpr const char* CELIA_BUNDLE_NAME = "com.example.hmos.vassistant";
 static constexpr const char* DEVICE_CONNECT_ABILITY_NAME = "OneHopDeviceAbility";
 constexpr int32_t ABILITY_STATE_BACKGROUND = 4;
 constexpr int32_t DO_ACTION_TIME_USED = 500; //ms
@@ -251,6 +252,32 @@ int64_t MotionManager::GetSysClockTime()
     return (ts.tv_sec * TRANS_TIME * TRANS_TIME) + (ts.tv_nsec / TRANS_TIME);
 }
 
+bool MotionManager::MechJudgeCeliaFront()
+{
+    auto appManager = GetAppManagerInstance();
+    if (appManager == nullptr) {
+        HILOGE("appManager is null, cannot check foreground app");
+        return false;
+    }
+
+    std::vector<AppExecFwk::AppStateData> foregroundApps;
+    int32_t ret = appManager->GetForegroundApplications(foregroundApps);
+    if (ret != 0) {
+        HILOGE("Failed to get foreground applications, ret: %{public}d", ret);
+        return false;
+    }
+
+    for (const auto &foregroundApp : foregroundApps) {
+        if (!foregroundApp.bundleName.empty() && foregroundApp.bundleName == CELIA_BUNDLE_NAME) {
+            HILOGI("Celia is on front.");
+            return true;
+        }
+    }
+    HILOGI("Celia is not on front.");
+    return false;
+}
+
+
 void MotionManager::MechButtonEventNotify(const std::shared_ptr<CommonRegisterMechKeyEventCmd> &cmd)
 {
     CHECK_POINTER_RETURN(cmd, "cmd");
@@ -274,7 +301,13 @@ void MotionManager::MechButtonEventNotify(const std::shared_ptr<CommonRegisterMe
     
     if (validEvents.find(eventType) != validEvents.end()) {
         HILOGI("ButtonEvent %{public}d.", static_cast<int32_t>(eventType));
-        MMIKeyEvent(eventType);
+        if (eventType >= CameraKeyEvent::DIRECTION_UP && eventType <= CameraKeyEvent::DIRECTION_CONFIRM) {
+            if (MechJudgeCeliaFront()) {
+                MMIKeyEvent(eventType);
+            }
+        } else {
+            MMIKeyEvent(eventType);
+        }
     } else {
         HILOGW("ButtonEvent undefined action");
     }
