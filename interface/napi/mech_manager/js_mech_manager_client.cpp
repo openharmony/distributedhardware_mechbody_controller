@@ -230,13 +230,11 @@ const std::map<MechDeviceType, MechClient::SupportChecker> MechClient::deviceSup
 bool MechClient::IsDeviceTypeSupported(MechDeviceType type)
 {
     std::string unsupported = OHOS::system::GetParameter("persist.mechbody.unsupported_mechdevicetype", "");
-    HILOGE("mwc_unsupported: %{public}s", unsupported.c_str());
     if (unsupported.empty()) {
         return true;
     }
     std::string typeStr = "," + std::to_string(static_cast<int32_t>(type)) + ",";
     std::string normalized = "," + unsupported + ",";
-    HILOGE("mwc_typeStr: %{public}s", typeStr.c_str());
     if (normalized.find(typeStr) != std::string::npos) {
         return false;
     }
