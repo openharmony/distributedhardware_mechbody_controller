@@ -148,13 +148,12 @@ private:
     int32_t SubscribeMechAbility();
 
     static bool IsDeviceTypeSupported(MechDeviceType type);
-
-    using SupportChecker = std::function<bool()>;
-    static const std::map<MechDeviceType, SupportChecker> deviceSupportMap_;
 private:
     std::condition_variable producerCon_;
     std::mutex systemAbilityStatusChangeListenerMutex_;
     sptr<SystemAbilityStatusChangeListener> systemAbilityStatusChangeListener_;
+    using SupportChecker = std::function<bool()>;
+    static const std::map<MechDeviceType, SupportChecker> deviceSupportMap_;
 };
 
 class MechBodyServiceLoadCallback : public SystemAbilityLoadCallbackStub {
