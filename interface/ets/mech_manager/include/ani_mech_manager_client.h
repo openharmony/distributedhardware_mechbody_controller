@@ -150,7 +150,6 @@ private:
 
     using SupportChecker = std::function<bool()>;
     static const std::map<MechDeviceType, SupportChecker> deviceSupportMap_;
-
 private:
     std::condition_variable producerCon_;
     std::mutex systemAbilityStatusChangeListenerMutex_;
