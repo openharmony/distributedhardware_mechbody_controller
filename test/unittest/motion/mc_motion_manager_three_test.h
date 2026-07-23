@@ -44,4 +44,4 @@ public:
 
 } // namespace MechBodyController
 } // namespace OHOS
-#endif // MC_MOTION_MANAGER_THREE_TEST_H
+#endif
