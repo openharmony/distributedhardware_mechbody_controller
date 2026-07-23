@@ -329,13 +329,20 @@ void NotificationUtils::ParseExtraInfoFields(Notification::NotificationRequest& 
             extras->SetParam(key, AAFwk::String::Box(value.get<std::string>()));
         } else if (value.is_number()) {
             // 处理数字类型
-            extras->SetParam(key, AAFwk::Integer::Box(value.get<int32_t>()));
+            int64_t numValue = value.get<int64_t>();
+            if (numValue < INT32_MIN || numValue > INT32_MAX) {
+                HILOGE("Number value out of int32_t range for key: %{public}s", key.c_str());
+                continue;
+            }
+            extras->SetParam(key, AAFwk::Integer::Box(static_cast<int32_t>(numValue)));
         } else if (value.is_array()) {
             // 处理数组类型
             ParseExtraInfoArrayFields(extras, key, value);
         } else if (value.is_boolean()) {
             // 处理布尔类型
             extras->SetParam(key, AAFwk::Boolean::Box(value));
+        } else {
+            HILOGW("Unsupported type for key: %{public}s", key.c_str());
         }
     }
     request.SetAdditionalData(extras);

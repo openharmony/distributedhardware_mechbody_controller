@@ -2708,6 +2708,10 @@ int32_t MotionManager::SetMechCameraTrackingFrame(const std::shared_ptr<Tracking
     auto cameraTrackingFrameCallback = [this]() {
     };
 
+    if (deviceStatus_ == nullptr) {
+        HILOGE("deviceStatus_ is nullptr");
+        return INVALID_PARAMETERS_ERR;
+    }
     if (!deviceStatus_->isEnabled || deviceStatus_->trackingStatus == MechTrackingStatus::MECH_TK_DISABLE ||
         !needSendTrackingData_) {
         HILOGE("device tracking is not enabled, isEnabled: %{public}d, trackingStatus: %{public}d, "
@@ -2872,6 +2876,7 @@ int32_t MotionManager::SetMechScreenInfo(const ScreenInfoParams &screenInfo)
     auto screenInfoCmd = factory.CreateSetMechPhoneStatusCmd(screenInfo);
     CHECK_POINTER_RETURN_VALUE(screenInfoCmd, INVALID_PARAMETERS_ERR, "screenInfoCmd is empty.");
     screenInfoCmd->SetResponseCallback(setScreenInfoCallback);
+    CHECK_POINTER_RETURN_VALUE(sendAdapter_, INVALID_PARAMETERS_ERR, "sendAdapter_ is empty.");
     sendAdapter_->SendCommand(screenInfoCmd);
     HILOGI("SetScreenInfo end.");
     return ERR_OK;
