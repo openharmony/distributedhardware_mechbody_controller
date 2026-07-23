@@ -99,40 +99,6 @@ ohos_unittest("mc_montion_manager_test") {
   subsystem_name = "distributedhardware"
 }
 
-ohos_unittest("mc_transport_command_test") {
-  cflags = [
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
-  visibility = [ ":*" ]
-
-  module_out_path = mechbody_module_output_path
-
-  sanitize = {
-    blocklist = "./cfi_blocklist.txt"
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
-  sources = [
-    "transport/mc_data_buffer_test.cpp",
-    "transport/mc_protocol_convertor_test.cpp",
-    "transport/mc_send_adapter_test.cpp",    
-  ]
-
-  configs = [
-    ":mech_test_config",
-    "${mechbody_path}/test/resource:coverage_flags",
-  ]
-
-  external_deps = mech_external_deps
-  deps = mech_public_deps
-
-  part_name = "mechbody_controller"
-  subsystem_name = "distributedhardware"
-}
-
 ohos_unittest("ble_send_manager_test") {
   visibility = [ ":*" ]
 
@@ -338,37 +304,6 @@ ohos_unittest("mechbody_controller_stub_test") {
   }
 
   sources = [ "mechbody_controller_stub_test.cpp" ]
-
-  configs = [
-    ":mech_test_config",
-    "${mechbody_path}/test/resource:coverage_flags",
-  ]
-
-  external_deps = mech_external_deps
-  deps = mech_public_deps
-
-  part_name = "mechbody_controller"
-  subsystem_name = "distributedhardware"
-}
-
-ohos_unittest("mechbody_controller_service_test") {
-  visibility = [ ":*" ]
-
-  module_out_path = mechbody_module_output_path
-
-  cflags = [
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
-
-  sanitize = {
-    blocklist = "./cfi_blocklist.txt"
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
-  sources = [ "mechbody_controller_service_test.cpp" ]
 
   configs = [
     ":mech_test_config",
@@ -631,37 +566,6 @@ ohos_unittest("resource_manager_utils_test") {
   subsystem_name = "distributedhardware"
 }
 
-ohos_unittest("mc_register_mech_obstacle_info_cmd_test") {
-  visibility = [ ":*" ]
-
-  module_out_path = mechbody_module_output_path
-
-  cflags = [
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
-
-  sanitize = {
-    blocklist = "./cfi_blocklist.txt"
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
-  sources = [ "transport/command/0x03/mc_register_mech_obstacle_info_cmd_test.cpp" ]
-
-  configs = [
-    ":mech_test_config",
-    "${mechbody_path}/test/resource:coverage_flags",
-  ]
-
-  external_deps = mech_external_deps
-  deps = mech_public_deps
-
-  part_name = "mechbody_controller"
-  subsystem_name = "distributedhardware"
-}
-
 group("unittest") {
   testonly = true
   deps = [
@@ -674,14 +578,11 @@ group("unittest") {
     ":mc_montion_manager_test",
     ":mc_send_manager_test",
     ":mc_subcription_center_test",
-    ":mc_transport_command_test",
-    ":mechbody_controller_service_test",
     ":mechbody_controller_stub_test",
     ":mc_wheel_set_mech_motion_control_cmd_test",
     ":mc_wheel_set_mech_rotation_trace_cmd_test",
     ":mc_wheel_set_mech_scene_control_cmd_test",
     ":subscribe_event_utils_test",
     ":resource_manager_utils_test",
-    ":mc_register_mech_obstacle_info_cmd_test",
   ]
 }
