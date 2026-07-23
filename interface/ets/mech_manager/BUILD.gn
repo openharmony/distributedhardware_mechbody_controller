@@ -99,6 +99,7 @@ taihe_shared_library("mechanic_manager_ani") {
     "-Wl,-z,relro",
     "-Wl,-z,now",
   ]
+  shlib_type = "ani"
   deps = [ ":run_taihe" ]
   external_deps = [
     "access_token:libtokenid_sdk",
