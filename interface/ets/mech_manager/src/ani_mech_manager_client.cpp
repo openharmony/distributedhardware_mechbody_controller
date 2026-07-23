@@ -1173,37 +1173,50 @@ void AniMechBodyServiceLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbili
     AniMechManager::GetInstance().AttachStateChangeCallback(AttachmentState::DETACHED, mechInfo);
 }
 
+const std::map<MechDeviceType, AniMechClient::SupportChecker> AniMechClient::deviceSupportMap_ = {
+    {MechDeviceType::GIMBAL_DEVICE,
+        []() { return AniMechClient::IsDeviceTypeSupported(MechDeviceType::GIMBAL_DEVICE); }},
+    {MechDeviceType::DESKTOP_GIMBAL_DEVICE,
+        []() { return AniMechClient::IsDeviceTypeSupported(MechDeviceType::DESKTOP_GIMBAL_DEVICE); }},
+    {MechDeviceType::WHEELED_BASE_DEVICE,
+        []() { return AniMechClient::IsDeviceTypeSupported(MechDeviceType::WHEELED_BASE_DEVICE); }},
+};
+
+bool AniMechClient::IsDeviceTypeSupported(MechDeviceType type)
+{
+    std::string unsupported = OHOS::system::GetParameter("persist.mechbody.unsupported_mechdevicetype", "");
+    if (unsupported.empty()) {
+        return true;
+    }
+    std::string typeStr = "," + std::to_string(static_cast<int32_t>(type)) + ",";
+    std::string normalized = "," + unsupported + ",";
+    if (normalized.find(typeStr) != std::string::npos) {
+        return false;
+    }
+    return true;
+}
+
 int32_t AniMechClient::CheckAnyDeviceControlSupported(bool &isControlSupported)
 {
-    isControlSupported = DetectGimbalSupport();
+    isControlSupported = false;
+    for (const auto &[type, checker] : deviceSupportMap_) {
+        if (checker()) {
+            isControlSupported = true;
+            break;
+        }
+    }
     return ERR_OK;
 }
 
 int32_t AniMechClient::IsControlSupported(MechDeviceType mechDeviceType, bool &isControlSupported)
 {
-    switch (mechDeviceType) {
-        case MechDeviceType::GIMBAL_DEVICE:
-            isControlSupported = DetectGimbalSupport();
-            break;
-        default:
-            HILOGE("Invalid device type");
-            return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
+    auto it = deviceSupportMap_.find(mechDeviceType);
+    if (it == deviceSupportMap_.end()) {
+        HILOGE("Invalid device type: %{public}d", static_cast<int32_t>(mechDeviceType));
+        return MechNapiErrorCode::PARAMETER_CHECK_FAILED;
     }
+    isControlSupported = it->second();
     return ERR_OK;
-}
-
-bool AniMechClient::DetectGimbalSupport()
-{
-    // verifying the CCM configuration
-    std::string getDeviceTypes = OHOS::system::GetParameter("persist.mechbody.unsupported_mechdevicetype", "");
-    if (getDeviceTypes.empty()) {
-        return true;
-    }
-    std::string gimbalType = std::to_string(static_cast<int32_t>(MechDeviceType::GIMBAL_DEVICE));
-    if (getDeviceTypes.find(gimbalType) != std::string::npos) {
-        return false;
-    }
-    return true;
 }
 
 AniMechBodyServiceLoadCallback::AniMechBodyServiceLoadCallback(const std::weak_ptr<AniMechClient> &client,
