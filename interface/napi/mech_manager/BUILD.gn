@@ -47,7 +47,7 @@ ohos_shared_library("mechanicmanager_napi") {
   }
   cflags_cc = [
       "-fstack-protector-strong",
-      "-O2",
+      "-Os",
       "-fno-rtti",
       "-fno-exceptions",
   ]
