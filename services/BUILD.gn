@@ -134,7 +134,7 @@ ohos_shared_library("mechbody_service") {
   }
   cflags_cc = [
       "-fstack-protector-strong",
-      "-O2",
+      "-Os",
       "-fno-rtti",
       "-fno-exceptions",
       "-ffunction-sections",
