@@ -92,7 +92,7 @@ taihe_shared_library("mechanic_manager_ani") {
   }
   cflags_cc = [
       "-fstack-protector-strong",
-      "-O2",
+      "-Os",
   ]
   ldflags = [
     "-fpie",
