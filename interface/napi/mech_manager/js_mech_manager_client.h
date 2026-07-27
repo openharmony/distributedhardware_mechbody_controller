@@ -18,6 +18,8 @@
 
 #include <condition_variable>
 #include <atomic>
+#include <functional>
+#include <map>
 #include "iremote_broker.h"
 #include "js_mech_manager_stub.h"
 #include "mechbody_controller_types.h"
@@ -145,12 +147,13 @@ private:
 
     int32_t SubscribeMechAbility();
 
-    bool DetectGimbalSupport();
-    
+    static bool IsDeviceTypeSupported(MechDeviceType type);
 private:
     std::condition_variable producerCon_;
     std::mutex systemAbilityStatusChangeListenerMutex_;
     sptr<SystemAbilityStatusChangeListener> systemAbilityStatusChangeListener_;
+    using SupportChecker = std::function<bool()>;
+    static const std::map<MechDeviceType, SupportChecker> deviceSupportMap_;
 };
 
 class MechBodyServiceLoadCallback : public SystemAbilityLoadCallbackStub {
