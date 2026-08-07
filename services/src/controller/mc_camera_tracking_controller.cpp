@@ -188,6 +188,10 @@ void McCameraTrackingController::HandleTrackingFrame(TrackingFrameParams trackin
             params->roi.y = params->roi.y + BODY_OFFSET;
         }
     }
+    if (currentCameraInfo_ == nullptr) {
+        HILOGW("currentCameraInfo_ is nullptr in HandleTrackingFrame");
+        return;
+    }
     params->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
     for (const auto& item : MechBodyControllerService::GetInstance().motionManagers_) {
         int32_t mechId = item.first;
@@ -478,6 +482,10 @@ int32_t McCameraTrackingController::UpdateMotionManagers()
         eventHandler_->PostTask([]() {
                 McCameraTrackingController::GetInstance().UpdateMotionManagers();
             }, SEND_CAMERA_INFO_TASK_NAME, SEND_CAMERA_INFO_TASK_DELAY);
+    }
+    if (currentCameraInfo_ == nullptr) {
+        HILOGE("currentCameraInfo_ is nullptr.");
+        return ERR_INVALID_VALUE;
     }
     const auto& motionManagers = MechBodyControllerService::GetInstance().motionManagers_;
     CameraInfoParams cameraInfoParams;
@@ -945,6 +953,10 @@ int32_t McCameraTrackingController::CinematicVideoModeTrackingTargetFilter(
         !isSalientDetectionLocked_.load(std::memory_order_relaxed)) {
         return ERR_OK;
     }
+    if (lastTrackingFrame_ == nullptr) {
+        HILOGE("lastTrackingFrame_ is null");
+        return INVALID_TRACKING_TARGET;
+    }
     HILOGI("current is CINEMATIC_VIDEO mode; last target id: %{public}d; original target id: %{public}d;"
            "tracking target id:%{public}d",
         lastTrackingFrame_->targetId,
@@ -1159,7 +1171,7 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
         CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
         int32_t error = callback->SendRequest(
             static_cast<uint32_t>(IMechBodyControllerCode::TRACKING_EVENT_CALLBACK), data, reply, option);
-        HILOGI("notify tracking event to tokenId: %{public}u; result: %{public}s", tokenId,
+        HILOGI("notify tracking event to tokenId: %{public}s; result: %{public}s", GetAnonymUint32(tokenId).c_str(),
             error == ERR_NONE ? "success" : "failed");
     }
     return ERR_OK;
@@ -1354,7 +1366,11 @@ int32_t McCameraTrackingController::SearchTarget(std::string &napiCmdId, uint32_
         HILOGE("SEARCH_TARGET motion managers is empty, can not search target.");
         return NO_DEVICE_CONNECTED;
     }
-    if (currentCameraInfo_ != nullptr && currentCameraInfo_->trackingTargetNum > 0) {
+    if (currentCameraInfo_ == nullptr) {
+        HILOGE("currentCameraInfo_ is nullptr.");
+        return CAMERA_INFO_IS_EMPTY;
+    }
+    if (currentCameraInfo_->trackingTargetNum > 0) {
         MechBodyControllerService::GetInstance().SearchTargetEnd(
             tokenId, napiCmdId, currentCameraInfo_->trackingTargetNum);
         return ERR_OK;
