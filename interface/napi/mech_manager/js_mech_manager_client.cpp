@@ -912,7 +912,7 @@ int32_t MechClient::UnRegisterSubscribeChannel(MechEventType mechEventType)
     }
  
     int32_t unRegisterResult = reply.ReadInt32();
-    if (unRegisterResult == ERR_OK) {
+    if (unRegisterResult == ERR_OK && systemAbilityStatusChangeListener_ != nullptr) {
         systemAbilityStatusChangeListener_->RemoveSubscribeCallback(mechEventType);
     }
     return unRegisterResult;
