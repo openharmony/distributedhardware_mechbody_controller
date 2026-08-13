@@ -895,10 +895,6 @@ int32_t McCameraTrackingController::GetTrackingTargetFallback(CameraStandard::Re
         }
     }
 
-    if (detectedObjects.empty()) {
-        HILOGW("detectedObjects is empty.");
-        return DETECTED_OBJECT_IS_EMPTY;
-    }
     HILOGW("use first object as target object.");
     selectedObject = detectedObjects[0];
     return ProcessTargetByType(selectedObject, detectedObjects, targetObject);
@@ -1005,10 +1001,6 @@ void McCameraTrackingController::UpdateROI(std::shared_ptr<TrackingFrameParams> 
         rect.topLeftY, rect.width, rect.height);
     if (trackingFrameParams == nullptr) {
         HILOGW("trackingFrameParams is nullptr.");
-        return;
-    }
-    if (currentCameraInfo_ == nullptr) {
-        HILOGW("currentCameraInfo_ is nullptr.");
         return;
     }
     if ((rect.topLeftX < TRACKING_LOST_CHECK && rect.topLeftY < TRACKING_LOST_CHECK) ||
@@ -1167,10 +1159,6 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
 
 bool McCameraTrackingController::IsCurrentTrackingEnabled()
 {
-    if (currentCameraInfo_ == nullptr) {
-        HILOGW("currentCameraInfo_ is nullptr.");
-        return false;
-    }
     bool deviceIsEnable = false;
     {
         std::lock_guard<std::mutex> lock(MechBodyControllerService::GetInstance().motionManagersMutex);
