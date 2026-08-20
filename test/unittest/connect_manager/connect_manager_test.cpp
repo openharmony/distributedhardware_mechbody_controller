@@ -55,17 +55,32 @@ void MechConnectManagerTest::SetUp()
 
 /**
  * @tc.name: Init_001
- * @tc.desc: test Init func
+ * @tc.desc: test Init func - verify eventHandler_ is created and GetConnectMechList works after adding device
  * @tc.type: FUNC
  */
 HWTEST_F(MechConnectManagerTest, Init_001, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest Init_001 begin" << std::endl;
+    // Given: 初始化连接管理器
     MechConnectManager::GetInstance().Init();
-    int32_t mechId = 0;
+    // Given: 添加一个设备，使mechInfos_非空
+    MechConnectManager::GetInstance().CleanMechInfo();
     MechInfo mechInfo;
-    bool ret = MechConnectManager::GetInstance().GetMechBasicInfo(mechId, mechInfo);
-    EXPECT_EQ(ret, false);
+    mechInfo.mechId = 1;
+    mechInfo.mac = "00:11:22:33:44:55";
+    mechInfo.state = AttachmentState::ATTACHED;
+    MechConnectManager::GetInstance().AddMechInfo(mechInfo);
+
+    // When: 调用GetConnectMechList获取设备列表
+    std::set<MechInfo> mechInfos;
+    bool ret = MechConnectManager::GetInstance().GetConnectMechList(mechInfos);
+
+    // Then: 验证Init后eventHandler_已创建，GetConnectMechList可正常工作
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(mechInfos.size(), 1);
+
+    // Clean up
+    MechConnectManager::GetInstance().CleanMechInfo();
     DTEST_LOG << "MechConnectManagerTest Init_001 end" << std::endl;
 }
 
@@ -77,11 +92,15 @@ HWTEST_F(MechConnectManagerTest, Init_001, TestSize.Level3)
 HWTEST_F(MechConnectManagerTest, UnInit_001, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest UnInit_001 begin" << std::endl;
+    // Given: 先Init确保状态已知
+    MechConnectManager::GetInstance().Init();
+    // When: 调用UnInit
     MechConnectManager::GetInstance().UnInit();
-    int32_t mechId = 0;
-    MechInfo mechInfo;
-    bool ret = MechConnectManager::GetInstance().GetMechBasicInfo(mechId, mechInfo);
-    EXPECT_EQ(ret, false);
+    // Then: 验证UnInit成功执行，检查其副作用
+    // 例如验证设备列表已被清空或eventHandler_已重置
+    std::set<MechInfo> mechInfos;
+    bool ret = MechConnectManager::GetInstance().GetConnectMechList(mechInfos);
+    EXPECT_EQ(ret, false);  // 验证UnInit后设备列表状态
     DTEST_LOG << "MechConnectManagerTest UnInit_001 end" << std::endl;
 }
 
@@ -1258,7 +1277,7 @@ HWTEST_F(MechConnectManagerTest, GetMechInfo_EmptyMac, TestSize.Level3)
 HWTEST_F(MechConnectManagerTest, NotifyMechState_002, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest NotifyMechState_002 begin" << std::endl;
-
+ 
     // Given: 添加一个WHEEL_BASE类型、isFirstConnect为true的设备
     MechConnectManager::GetInstance().CleanMechInfo();
     MechInfo mechInfo;
@@ -1270,24 +1289,24 @@ HWTEST_F(MechConnectManagerTest, NotifyMechState_002, TestSize.Level3)
     mechInfo.state = AttachmentState::UNKNOWN;
     int32_t addRet = MechConnectManager::GetInstance().AddMechInfo(mechInfo);
     ASSERT_EQ(addRet, ERR_OK);
-
+ 
     // When: 通知设备状态为ATTACHED，forceDisconnect=false
     // 进入WHEEL_BASE first connect分支，inner find_if能找到mechInfo
     bool ret = MechConnectManager::GetInstance().NotifyMechState(2001, true, false);
-
+ 
     // Then: 应该返回true（WHEEL_BASE首次连接保持连接）
     EXPECT_TRUE(ret);
-
+ 
     // 验证isFirstConnect已被更新为false
     MechInfo resultInfo;
     bool getRet = MechConnectManager::GetInstance().GetMechBasicInfo(2001, resultInfo);
     EXPECT_TRUE(getRet);
     EXPECT_FALSE(resultInfo.isFirstConnect);
-
+ 
     MechConnectManager::GetInstance().CleanMechInfo();
     DTEST_LOG << "MechConnectManagerTest NotifyMechState_002 end" << std::endl;
 }
-
+ 
 /**
  * @tc.name  : NotifyMechState_003
  * @tc.number: NotifyMechState_003
@@ -1297,7 +1316,7 @@ HWTEST_F(MechConnectManagerTest, NotifyMechState_002, TestSize.Level3)
 HWTEST_F(MechConnectManagerTest, NotifyMechState_003, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest NotifyMechState_003 begin" << std::endl;
-
+ 
     // Given: 添加一个WHEEL_BASE类型、isFirstConnect为true的设备
     MechConnectManager::GetInstance().CleanMechInfo();
     MechInfo mechInfo;
@@ -1309,24 +1328,24 @@ HWTEST_F(MechConnectManagerTest, NotifyMechState_003, TestSize.Level3)
     mechInfo.state = AttachmentState::UNKNOWN;
     int32_t addRet = MechConnectManager::GetInstance().AddMechInfo(mechInfo);
     ASSERT_EQ(addRet, ERR_OK);
-
+ 
     // When: 通知设备状态为ATTACHED，forceDisconnect=true
     // 因forceDisconnect=true，不进入WHEEL_BASE first connect分支，继续执行后续逻辑
     bool ret = MechConnectManager::GetInstance().NotifyMechState(2002, true, true);
-
+ 
     // Then: 应该返回true（isAttached=true，不走disconnect逻辑）
     EXPECT_TRUE(ret);
-
+ 
     // 验证isFirstConnect未被修改（仍为true，因为没进入WHEEL_BASE分支）
     MechInfo resultInfo;
     bool getRet = MechConnectManager::GetInstance().GetMechBasicInfo(2002, resultInfo);
     EXPECT_TRUE(getRet);
     EXPECT_TRUE(resultInfo.isFirstConnect);
-
+ 
     MechConnectManager::GetInstance().CleanMechInfo();
     DTEST_LOG << "MechConnectManagerTest NotifyMechState_003 end" << std::endl;
 }
-
+ 
 /**
  * @tc.name  : NotifyMechState_004
  * @tc.number: NotifyMechState_004
@@ -1336,7 +1355,7 @@ HWTEST_F(MechConnectManagerTest, NotifyMechState_003, TestSize.Level3)
 HWTEST_F(MechConnectManagerTest, NotifyMechState_004, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest NotifyMechState_004 begin" << std::endl;
-
+ 
     // Given: 添加一个WHEEL_BASE类型、isFirstConnect为false的设备
     MechConnectManager::GetInstance().CleanMechInfo();
     MechInfo mechInfo;
@@ -1348,25 +1367,25 @@ HWTEST_F(MechConnectManagerTest, NotifyMechState_004, TestSize.Level3)
     mechInfo.state = AttachmentState::UNKNOWN;
     int32_t addRet = MechConnectManager::GetInstance().AddMechInfo(mechInfo);
     ASSERT_EQ(addRet, ERR_OK);
-
+ 
     // When: 通知设备状态为DETACHED，forceDisconnect=false
     // 因isFirstConnect=false，不进入WHEEL_BASE first connect分支
     // 进入!isAttached分支，PostTask成功后返回true
     bool ret = MechConnectManager::GetInstance().NotifyMechState(2003, false, false);
-
+ 
     // Then: 应该返回true（PostTask成功）
     EXPECT_TRUE(ret);
-
+ 
     // 验证设备状态已更新为DETACHED
     MechInfo resultInfo;
     bool getRet = MechConnectManager::GetInstance().GetMechBasicInfo(2003, resultInfo);
     EXPECT_TRUE(getRet);
     EXPECT_EQ(resultInfo.state, AttachmentState::DETACHED);
-
+ 
     MechConnectManager::GetInstance().CleanMechInfo();
     DTEST_LOG << "MechConnectManagerTest NotifyMechState_004 end" << std::endl;
 }
-
+ 
 /**
  * @tc.name  : GetMechState_002
  * @tc.number: GetMechState_002
@@ -1375,7 +1394,7 @@ HWTEST_F(MechConnectManagerTest, NotifyMechState_004, TestSize.Level3)
 HWTEST_F(MechConnectManagerTest, GetMechState_002, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest GetMechState_002 begin" << std::endl;
-
+ 
     // Given: 添加一个状态为UNKNOWN的设备
     MechConnectManager::GetInstance().CleanMechInfo();
     MechInfo mechInfo;
@@ -1385,17 +1404,17 @@ HWTEST_F(MechConnectManagerTest, GetMechState_002, TestSize.Level3)
     mechInfo.state = AttachmentState::UNKNOWN;
     int32_t addRet = MechConnectManager::GetInstance().AddMechInfo(mechInfo);
     ASSERT_EQ(addRet, ERR_OK);
-
+ 
     // When: 获取设备状态
     AttachmentStateMap ret = MechConnectManager::GetInstance().GetMechState(3001);
-
+ 
     // Then: 应该返回UNKNOWN
     EXPECT_EQ(ret, AttachmentStateMap::UNKNOWN);
-
+ 
     MechConnectManager::GetInstance().CleanMechInfo();
     DTEST_LOG << "MechConnectManagerTest GetMechState_002 end" << std::endl;
 }
-
+ 
 /**
  * @tc.name  : GetMechState_003
  * @tc.number: GetMechState_003
@@ -1404,7 +1423,7 @@ HWTEST_F(MechConnectManagerTest, GetMechState_002, TestSize.Level3)
 HWTEST_F(MechConnectManagerTest, GetMechState_003, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest GetMechState_003 begin" << std::endl;
-
+ 
     // Given: 添加一个状态为DETACHED的设备
     MechConnectManager::GetInstance().CleanMechInfo();
     MechInfo mechInfo;
@@ -1414,17 +1433,17 @@ HWTEST_F(MechConnectManagerTest, GetMechState_003, TestSize.Level3)
     mechInfo.state = AttachmentState::DETACHED;
     int32_t addRet = MechConnectManager::GetInstance().AddMechInfo(mechInfo);
     ASSERT_EQ(addRet, ERR_OK);
-
+ 
     // When: 获取设备状态
     AttachmentStateMap ret = MechConnectManager::GetInstance().GetMechState(3002);
-
+ 
     // Then: 应该返回DETACHED
     EXPECT_EQ(ret, AttachmentStateMap::DETACHED);
-
+ 
     MechConnectManager::GetInstance().CleanMechInfo();
     DTEST_LOG << "MechConnectManagerTest GetMechState_003 end" << std::endl;
 }
-
+ 
 /**
  * @tc.name  : GetMechState_004_01
  * @tc.number: GetMechState_004_01
@@ -1433,7 +1452,7 @@ HWTEST_F(MechConnectManagerTest, GetMechState_003, TestSize.Level3)
 HWTEST_F(MechConnectManagerTest, GetMechState_004_01, TestSize.Level3)
 {
     DTEST_LOG << "MechConnectManagerTest GetMechState_004_01 begin" << std::endl;
-
+ 
     // Given: 添加一个设备，通过强制类型转换设置一个非枚举值的state以进入else分支
     MechConnectManager::GetInstance().CleanMechInfo();
     MechInfo mechInfo;
@@ -1443,13 +1462,13 @@ HWTEST_F(MechConnectManagerTest, GetMechState_004_01, TestSize.Level3)
     mechInfo.state = static_cast<AttachmentState>(99);
     int32_t addRet = MechConnectManager::GetInstance().AddMechInfo(mechInfo);
     ASSERT_EQ(addRet, ERR_OK);
-
+ 
     // When: 获取设备状态
     AttachmentStateMap ret = MechConnectManager::GetInstance().GetMechState(3003);
-
+ 
     // Then: 非枚举值进入else分支，应返回UNKNOWN
     EXPECT_EQ(ret, AttachmentStateMap::UNKNOWN);
-
+ 
     MechConnectManager::GetInstance().CleanMechInfo();
     DTEST_LOG << "MechConnectManagerTest GetMechState_004_01 end" << std::endl;
 }
