@@ -1221,7 +1221,6 @@ HWTEST_F(MechCommandTest, SetMechCameraInfoCmd_Marshal_001, TestSize.Level1)
 */
 HWTEST_F(MechCommandTest, SetMechCameraInfoCmd_TriggerResponse_001, TestSize.Level1)
 {
-    // Given: 创建命令对象和参数
     CommandFactory factory;
     CameraInfoParams params;
     params.fovH = 90;
@@ -1230,11 +1229,13 @@ HWTEST_F(MechCommandTest, SetMechCameraInfoCmd_TriggerResponse_001, TestSize.Lev
     auto executionCmd = factory.CreateSetMechCameraInfoCmd(params);
     ASSERT_NE(executionCmd, nullptr);
     
-    // When: 触发空缓冲区响应
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    bool callbackTriggered = false;
+    executionCmd->SetResponseCallback([&callbackTriggered]() {
+        callbackTriggered = true;
+    });
     
-    // Then: 验证命令对象仍然有效
-    ASSERT_NE(executionCmd, nullptr);
+    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    EXPECT_TRUE(callbackTriggered);
 }
 
 /**
@@ -1244,7 +1245,6 @@ HWTEST_F(MechCommandTest, SetMechCameraInfoCmd_TriggerResponse_001, TestSize.Lev
 */
 HWTEST_F(MechCommandTest, SetMechCameraInfoCmd_TriggerResponse_ValidData_001, TestSize.Level1)
 {
-    // Given: 创建命令对象、参数和有效数据
     CommandFactory factory;
     CameraInfoParams params;
     params.fovH = 90;
@@ -1259,11 +1259,13 @@ HWTEST_F(MechCommandTest, SetMechCameraInfoCmd_TriggerResponse_ValidData_001, Te
     auto executionCmd = factory.CreateSetMechCameraInfoCmd(params);
     ASSERT_NE(executionCmd, nullptr);
     
-    // When: 触发有效响应
-    executionCmd->TriggerResponse(buffer);
+    bool callbackTriggered = false;
+    executionCmd->SetResponseCallback([&callbackTriggered]() {
+        callbackTriggered = true;
+    });
     
-    // Then: 验证命令对象仍然有效
-    ASSERT_NE(executionCmd, nullptr);
+    executionCmd->TriggerResponse(buffer);
+    EXPECT_TRUE(callbackTriggered);
 }
 
 /**
@@ -1298,17 +1300,18 @@ HWTEST_F(MechCommandTest, SetMechCameraInfoCmd_GetParams_001, TestSize.Level1)
 */
 HWTEST_F(MechCommandTest, SetMechCameraTrackingFrameCmd_TriggerResponse_001, TestSize.Level1)
 {
-    // Given: 创建命令对象
     CommandFactory factory;
     TrackingFrameParams params;
     auto executionCmd = factory.CreateSetMechCameraTrackingFrameCmd(params);
     ASSERT_NE(executionCmd, nullptr);
     
-    // When: 触发空缓冲区响应
-    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    bool callbackTriggered = false;
+    executionCmd->SetResponseCallback([&callbackTriggered]() {
+        callbackTriggered = true;
+    });
     
-    // Then: 验证命令对象仍然有效
-    ASSERT_NE(executionCmd, nullptr);
+    EXPECT_NO_FATAL_FAILURE(executionCmd->TriggerResponse(nullptr));
+    EXPECT_TRUE(callbackTriggered);
 }
 
 /**
@@ -1318,7 +1321,6 @@ HWTEST_F(MechCommandTest, SetMechCameraTrackingFrameCmd_TriggerResponse_001, Tes
 */
 HWTEST_F(MechCommandTest, SetMechCameraTrackingFrameCmd_TriggerResponse_ValidData_001, TestSize.Level1)
 {
-    // Given: 创建命令对象和有效数据
     CommandFactory factory;
     TrackingFrameParams params;
     size_t capacity = 100;
@@ -1330,11 +1332,13 @@ HWTEST_F(MechCommandTest, SetMechCameraTrackingFrameCmd_TriggerResponse_ValidDat
     auto executionCmd = factory.CreateSetMechCameraTrackingFrameCmd(params);
     ASSERT_NE(executionCmd, nullptr);
     
-    // When: 触发有效响应
-    executionCmd->TriggerResponse(buffer);
+    bool callbackTriggered = false;
+    executionCmd->SetResponseCallback([&callbackTriggered]() {
+        callbackTriggered = true;
+    });
     
-    // Then: 验证命令对象仍然有效
-    ASSERT_NE(executionCmd, nullptr);
+    executionCmd->TriggerResponse(buffer);
+    EXPECT_TRUE(callbackTriggered);
 }
 
 /**
@@ -2063,34 +2067,38 @@ HWTEST_F(MechCommandTest, CreateSetMechCameraInfoCmd_ProtocolVer_001, TestSize.L
 /**
 * @tc.name  : CreateSetMechCameraTrackingEnableCmd_ProtocolVer_001
 * @tc.number: CreateSetMechCameraTrackingEnableCmd_ProtocolVer_001
-* @tc.desc  : Test CreateSetMechCameraTrackingEnableCmd with different protocol versions.
+* @tc.desc  : Test CreateSetMechCameraTrackingEnableCmd with different protocol versions,
+*             verifying cmdSet and cmdId are correctly set.
 */
 HWTEST_F(MechCommandTest, CreateSetMechCameraTrackingEnableCmd_ProtocolVer_001, TestSize.Level1)
 {
-    // Given: 命令工厂
     CommandFactory factory;
     MechTrackingStatus status = MechTrackingStatus::MECH_TK_ENABLE_NO_TARGET;
 
-    // When: 设置协议版本为0
     factory.SetFactoryProtocolVer(0);
     auto cmd0 = factory.CreateSetMechCameraTrackingEnableCmd(status);
     ASSERT_NE(cmd0, nullptr);
+    EXPECT_EQ(cmd0->GetCmdSet(), SetMechCameraTrackingEnableCmd::CMD_SET);
+    EXPECT_EQ(cmd0->GetCmdId(), SetMechCameraTrackingEnableCmd::CMD_ID);
 
-    // When: 设置协议版本为0x01
     factory.SetFactoryProtocolVer(0x01);
     auto cmd1 = factory.CreateSetMechCameraTrackingEnableCmd(status);
     ASSERT_NE(cmd1, nullptr);
+    EXPECT_EQ(cmd1->GetCmdSet(), SetMechCameraTrackingEnableCmd::CMD_SET);
+    EXPECT_EQ(cmd1->GetCmdId(), SetMechCameraTrackingEnableCmd::CMD_ID);
 
-    // When: 设置协议版本为0x02
     factory.SetFactoryProtocolVer(0x02);
     auto cmd2 = factory.CreateSetMechCameraTrackingEnableCmd(status);
     ASSERT_NE(cmd2, nullptr);
+    EXPECT_EQ(cmd2->GetCmdSet(), NormalSetMechCameraTrackingEnableCmd::CMD_SET);
+    EXPECT_EQ(cmd2->GetCmdId(), NormalSetMechCameraTrackingEnableCmd::CMD_ID);
 }
 
 /**
 * @tc.name  : CreateSetMechCameraTrackingFrameCmd_ProtocolVer_001
 * @tc.number: CreateSetMechCameraTrackingFrameCmd_ProtocolVer_001
-* @tc.desc  : Test CreateSetMechCameraTrackingFrameCmd with different protocol versions.
+* @tc.desc  : Test CreateSetMechCameraTrackingFrameCmd with different protocol versions,
+*             verifying cmdSet and cmdId are correctly set.
 */
 HWTEST_F(MechCommandTest, CreateSetMechCameraTrackingFrameCmd_ProtocolVer_001, TestSize.Level1)
 {
@@ -2102,22 +2110,29 @@ HWTEST_F(MechCommandTest, CreateSetMechCameraTrackingFrameCmd_ProtocolVer_001, T
     factory.SetFactoryProtocolVer(0);
     auto cmd0 = factory.CreateSetMechCameraTrackingFrameCmd(params);
     ASSERT_NE(cmd0, nullptr);
+    EXPECT_EQ(cmd0->GetCmdSet(), SetMechCameraTrackingFrameCmd::CMD_SET);
+    EXPECT_EQ(cmd0->GetCmdId(), SetMechCameraTrackingFrameCmd::CMD_ID);
 
     // When: 设置协议版本为0x01
     factory.SetFactoryProtocolVer(0x01);
     auto cmd1 = factory.CreateSetMechCameraTrackingFrameCmd(params);
     ASSERT_NE(cmd1, nullptr);
+    EXPECT_EQ(cmd1->GetCmdSet(), SetMechCameraTrackingFrameCmd::CMD_SET);
+    EXPECT_EQ(cmd1->GetCmdId(), SetMechCameraTrackingFrameCmd::CMD_ID);
 
     // When: 设置协议版本为0x02
     factory.SetFactoryProtocolVer(0x02);
     auto cmd2 = factory.CreateSetMechCameraTrackingFrameCmd(params);
     ASSERT_NE(cmd2, nullptr);
+    EXPECT_EQ(cmd2->GetCmdSet(), NormalSetMechCameraTrackingFrameCmd::CMD_SET);
+    EXPECT_EQ(cmd2->GetCmdId(), NormalSetMechCameraTrackingFrameCmd::CMD_ID);
 }
 
 /**
 * @tc.name  : CreateSetMechRotationBySpeedCmd_ProtocolVer_001
 * @tc.number: CreateSetMechRotationBySpeedCmd_ProtocolVer_001
-* @tc.desc  : Test CreateSetMechRotationBySpeedCmd with different protocol versions.
+* @tc.desc  : Test CreateSetMechRotationBySpeedCmd with different protocol versions,
+*             verifying cmdSet and cmdId are correctly set.
 */
 HWTEST_F(MechCommandTest, CreateSetMechRotationBySpeedCmd_ProtocolVer_001, TestSize.Level1)
 {
@@ -2129,22 +2144,29 @@ HWTEST_F(MechCommandTest, CreateSetMechRotationBySpeedCmd_ProtocolVer_001, TestS
     factory.SetFactoryProtocolVer(0);
     auto cmd0 = factory.CreateSetMechRotationBySpeedCmd(params);
     ASSERT_NE(cmd0, nullptr);
+    EXPECT_EQ(cmd0->GetCmdSet(), SetMechRotationBySpeedCmd::CMD_SET);
+    EXPECT_EQ(cmd0->GetCmdId(), SetMechRotationBySpeedCmd::CMD_ID);
 
     // When: 设置协议版本为0x01
     factory.SetFactoryProtocolVer(0x01);
     auto cmd1 = factory.CreateSetMechRotationBySpeedCmd(params);
     ASSERT_NE(cmd1, nullptr);
+    EXPECT_EQ(cmd1->GetCmdSet(), SetMechRotationBySpeedCmd::CMD_SET);
+    EXPECT_EQ(cmd1->GetCmdId(), SetMechRotationBySpeedCmd::CMD_ID);
 
     // When: 设置协议版本为0x02
     factory.SetFactoryProtocolVer(0x02);
     auto cmd2 = factory.CreateSetMechRotationBySpeedCmd(params);
     ASSERT_NE(cmd2, nullptr);
+    EXPECT_EQ(cmd2->GetCmdSet(), NormalSetMechRotationBySpeedCmd::CMD_SET);
+    EXPECT_EQ(cmd2->GetCmdId(), NormalSetMechRotationBySpeedCmd::CMD_ID);
 }
 
 /**
 * @tc.name  : CreateSetMechRotationTraceCmd_ProtocolVer_001
 * @tc.number: CreateSetMechRotationTraceCmd_ProtocolVer_001
-* @tc.desc  : Test CreateSetMechRotationTraceCmd with different protocol versions.
+* @tc.desc  : Test CreateSetMechRotationTraceCmd with different protocol versions,
+*             verifying cmdSet and cmdId are correctly set.
 */
 HWTEST_F(MechCommandTest, CreateSetMechRotationTraceCmd_ProtocolVer_001, TestSize.Level1)
 {
@@ -2156,22 +2178,29 @@ HWTEST_F(MechCommandTest, CreateSetMechRotationTraceCmd_ProtocolVer_001, TestSiz
     factory.SetFactoryProtocolVer(0);
     auto cmd0 = factory.CreateSetMechRotationTraceCmd(1, params);
     ASSERT_NE(cmd0, nullptr);
+    EXPECT_EQ(cmd0->GetCmdSet(), SetMechRotationTraceCmd::CMD_SET);
+    EXPECT_EQ(cmd0->GetCmdId(), SetMechRotationTraceCmd::CMD_ID);
 
     // When: 设置协议版本为0x01
     factory.SetFactoryProtocolVer(0x01);
     auto cmd1 = factory.CreateSetMechRotationTraceCmd(1, params);
     ASSERT_NE(cmd1, nullptr);
+    EXPECT_EQ(cmd1->GetCmdSet(), SetMechRotationTraceCmd::CMD_SET);
+    EXPECT_EQ(cmd1->GetCmdId(), SetMechRotationTraceCmd::CMD_ID);
 
     // When: 设置协议版本为0x02
     factory.SetFactoryProtocolVer(0x02);
     auto cmd2 = factory.CreateSetMechRotationTraceCmd(1, params);
     ASSERT_NE(cmd2, nullptr);
+    EXPECT_EQ(cmd2->GetCmdSet(), NormalSetMechRotationTraceCmd::CMD_SET);
+    EXPECT_EQ(cmd2->GetCmdId(), NormalSetMechRotationTraceCmd::CMD_ID);
 }
 
 /**
 * @tc.name  : CreateRegisterMechCameraKeyEventCmd_ProtocolVer_001
 * @tc.number: CreateRegisterMechCameraKeyEventCmd_ProtocolVer_001
-* @tc.desc  : Test CreateRegisterMechCameraKeyEventCmd with different protocol versions.
+* @tc.desc  : Test CreateRegisterMechCameraKeyEventCmd with different protocol versions,
+*             verifying cmdSet and cmdId are correctly set.
 */
 HWTEST_F(MechCommandTest, CreateRegisterMechCameraKeyEventCmd_ProtocolVer_001, TestSize.Level1)
 {
@@ -2182,22 +2211,29 @@ HWTEST_F(MechCommandTest, CreateRegisterMechCameraKeyEventCmd_ProtocolVer_001, T
     factory.SetFactoryProtocolVer(0);
     auto cmd0 = factory.CreateRegisterMechCameraKeyEventCmd();
     ASSERT_NE(cmd0, nullptr);
+    EXPECT_EQ(cmd0->GetCmdSet(), RegisterMechCameraKeyEventCmd::CMD_SET);
+    EXPECT_EQ(cmd0->GetCmdId(), RegisterMechCameraKeyEventCmd::CMD_ID);
 
     // When: 设置协议版本为0x01
     factory.SetFactoryProtocolVer(0x01);
     auto cmd1 = factory.CreateRegisterMechCameraKeyEventCmd();
     ASSERT_NE(cmd1, nullptr);
+    EXPECT_EQ(cmd1->GetCmdSet(), RegisterMechCameraKeyEventCmd::CMD_SET);
+    EXPECT_EQ(cmd1->GetCmdId(), RegisterMechCameraKeyEventCmd::CMD_ID);
 
     // When: 设置协议版本为0x02
     factory.SetFactoryProtocolVer(0x02);
     auto cmd2 = factory.CreateRegisterMechCameraKeyEventCmd();
     ASSERT_NE(cmd2, nullptr);
+    EXPECT_EQ(cmd2->GetCmdSet(), NormalRegisterMechKeyEventCmd::CMD_SET);
+    EXPECT_EQ(cmd2->GetCmdId(), NormalRegisterMechKeyEventCmd::CMD_ID);
 }
 
 /**
 * @tc.name  : CreateRegisterMechPositionInfoCmd_ProtocolVer_001
 * @tc.number: CreateRegisterMechPositionInfoCmd_ProtocolVer_001
-* @tc.desc  : Test CreateRegisterMechPositionInfoCmd with different protocol versions.
+* @tc.desc  : Test CreateRegisterMechPositionInfoCmd with different protocol versions,
+*             verifying cmdSet and cmdId are correctly set.
 */
 HWTEST_F(MechCommandTest, CreateRegisterMechPositionInfoCmd_ProtocolVer_001, TestSize.Level1)
 {
@@ -2208,22 +2244,29 @@ HWTEST_F(MechCommandTest, CreateRegisterMechPositionInfoCmd_ProtocolVer_001, Tes
     factory.SetFactoryProtocolVer(0);
     auto cmd0 = factory.CreateRegisterMechPositionInfoCmd();
     ASSERT_NE(cmd0, nullptr);
+    EXPECT_EQ(cmd0->GetCmdSet(), RegisterMechPositionInfoCmd::CMD_SET);
+    EXPECT_EQ(cmd0->GetCmdId(), RegisterMechPositionInfoCmd::CMD_ID);
 
     // When: 设置协议版本为0x01
     factory.SetFactoryProtocolVer(0x01);
     auto cmd1 = factory.CreateRegisterMechPositionInfoCmd();
     ASSERT_NE(cmd1, nullptr);
+    EXPECT_EQ(cmd1->GetCmdSet(), RegisterMechPositionInfoCmd::CMD_SET);
+    EXPECT_EQ(cmd1->GetCmdId(), RegisterMechPositionInfoCmd::CMD_ID);
 
     // When: 设置协议版本为0x02
     factory.SetFactoryProtocolVer(0x02);
     auto cmd2 = factory.CreateRegisterMechPositionInfoCmd();
     ASSERT_NE(cmd2, nullptr);
+    EXPECT_EQ(cmd2->GetCmdSet(), NormalRegisterMechPositionInfoCmd::CMD_SET);
+    EXPECT_EQ(cmd2->GetCmdId(), NormalRegisterMechPositionInfoCmd::CMD_ID);
 }
 
 /**
 * @tc.name  : CreateRegisterMechStateInfoCmd_ProtocolVer_001
 * @tc.number: CreateRegisterMechStateInfoCmd_ProtocolVer_001
-* @tc.desc  : Test CreateRegisterMechStateInfoCmd with different protocol versions.
+* @tc.desc  : Test CreateRegisterMechStateInfoCmd with different protocol versions,
+*             verifying cmdSet and cmdId are correctly set.
 */
 HWTEST_F(MechCommandTest, CreateRegisterMechStateInfoCmd_ProtocolVer_001, TestSize.Level1)
 {
@@ -2234,16 +2277,22 @@ HWTEST_F(MechCommandTest, CreateRegisterMechStateInfoCmd_ProtocolVer_001, TestSi
     factory.SetFactoryProtocolVer(0);
     auto cmd0 = factory.CreateRegisterMechStateInfoCmd();
     ASSERT_NE(cmd0, nullptr);
+    EXPECT_EQ(cmd0->GetCmdSet(), RegisterMechStateInfoCmd::CMD_SET);
+    EXPECT_EQ(cmd0->GetCmdId(), RegisterMechStateInfoCmd::CMD_ID);
 
     // When: 设置协议版本为0x01
     factory.SetFactoryProtocolVer(0x01);
     auto cmd1 = factory.CreateRegisterMechStateInfoCmd();
     ASSERT_NE(cmd1, nullptr);
+    EXPECT_EQ(cmd1->GetCmdSet(), RegisterMechStateInfoCmd::CMD_SET);
+    EXPECT_EQ(cmd1->GetCmdId(), RegisterMechStateInfoCmd::CMD_ID);
 
     // When: 设置协议版本为0x02
     factory.SetFactoryProtocolVer(0x02);
     auto cmd2 = factory.CreateRegisterMechStateInfoCmd();
     ASSERT_NE(cmd2, nullptr);
+    EXPECT_EQ(cmd2->GetCmdSet(), NormalRegisterMechStateInfoCmd::CMD_SET);
+    EXPECT_EQ(cmd2->GetCmdId(), NormalRegisterMechStateInfoCmd::CMD_ID);
 }
 
 /**
@@ -2659,6 +2708,248 @@ HWTEST_F(MechCommandTest, SetMechRotationTraceCmd_TriggerResponse_NoCallback_001
     // When: 触发响应
     // Then: 程序正常执行，不崩溃
     EXPECT_NO_FATAL_FAILURE(cmd.TriggerResponse(buffer));
+}
+
+// CreateFromData uncovered branch tests
+
+/**
+* @tc.name  : CreateFromData_ExeResultNotify_001
+* @tc.number: CreateFromData_ExeResultNotify_001
+* @tc.desc  : Test CreateFromData with CMD_TYPE_EXE_RESULT_NOTIFY (0x0243).
+*/
+HWTEST_F(MechCommandTest, CreateFromData_ExeResultNotify_001, TestSize.Level1)
+{
+    // Given: 命令工厂和CMD_TYPE_EXE_RESULT_NOTIFY数据
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(10);
+    buffer->AppendUint8(0x02);  // cmdSet
+    buffer->AppendUint8(0x43);  // cmdId = 0x43 → type = 0x0243
+    buffer->AppendUint8(0x00);  // controlResult
+    buffer->AppendUint8(0x01);  // taskId
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: 成功创建RegisterMechControlResultCmd
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmd->GetCmdId(), 0x43);
+}
+
+/**
+* @tc.name  : CreateFromData_NormalButtonEventNotify_001
+* @tc.number: CreateFromData_NormalButtonEventNotify_001
+* @tc.desc  : Test CreateFromData with CMD_TYPE_NORMAL_BUTTON_EVENT_NOTIFY (0x0246).
+*/
+HWTEST_F(MechCommandTest, CreateFromData_NormalButtonEventNotify_001, TestSize.Level1)
+{
+    // Given: 命令工厂和CMD_TYPE_NORMAL_BUTTON_EVENT_NOTIFY数据
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(20);
+    buffer->AppendUint8(0x02);  // cmdSet
+    buffer->AppendUint8(0x46);  // cmdId = 0x46 → type = 0x0246
+    // NormalRegisterMechKeyEventCmd Unmarshal expects TLV key events at offset 2
+    buffer->AppendUint8(0x01);  // keyType = SWITCH_MODE
+    buffer->AppendUint8(0x01);  // length
+    buffer->AppendUint8(0x01);  // buttonFrequency
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: 成功创建NormalRegisterMechKeyEventCmd
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmd->GetCmdId(), 0x46);
+}
+
+/**
+* @tc.name  : CreateFromData_NormalAttitudeNotify_001
+* @tc.number: CreateFromData_NormalAttitudeNotify_001
+* @tc.desc  : Test CreateFromData with CMD_TYPE_NORMAL_ATTITUDE_NOTIFY (0x0247).
+*/
+HWTEST_F(MechCommandTest, CreateFromData_NormalAttitudeNotify_001, TestSize.Level1)
+{
+    // Given: 命令工厂和CMD_TYPE_NORMAL_ATTITUDE_NOTIFY数据
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(20);
+    buffer->AppendUint8(0x02);  // cmdSet
+    buffer->AppendUint8(0x47);  // cmdId = 0x47 → type = 0x0247
+    // NormalRegisterMechPositionInfoCmd: limitStatus(1) + yaw(4) + roll(4) + pitch(4) = 13
+    buffer->AppendUint8(0x00);  // limitStatus
+    buffer->AppendFloat(1.0f);  // yaw
+    buffer->AppendFloat(2.0f);  // roll
+    buffer->AppendFloat(3.0f);  // pitch
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: 成功创建NormalRegisterMechPositionInfoCmd
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmd->GetCmdId(), 0x47);
+}
+
+/**
+* @tc.name  : CreateFromData_NormalGenericNotify_001
+* @tc.number: CreateFromData_NormalGenericNotify_001
+* @tc.desc  : Test CreateFromData with CMD_TYPE_NORMAL_GENERIC_NOTIFY (0x0248).
+*/
+HWTEST_F(MechCommandTest, CreateFromData_NormalGenericNotify_001, TestSize.Level1)
+{
+    // Given: 命令工厂和CMD_TYPE_NORMAL_GENERIC_NOTIFY数据
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(20);
+    buffer->AppendUint8(0x02);  // cmdSet
+    buffer->AppendUint8(0x48);  // cmdId = 0x48 → type = 0x0248
+    // NormalRegisterMechGenericEventCmd: resultType(1) + TLV
+    buffer->AppendUint8(0x00);  // resultType = CMD_GET_MECH_ATTACH_TYPE
+    buffer->AppendUint8(0x01);  // length
+    buffer->AppendUint8(0x01);  // attached
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: 成功创建NormalRegisterMechGenericEventCmd
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), 0x02);
+    EXPECT_EQ(cmd->GetCmdId(), 0x48);
+}
+
+/**
+* @tc.name  : CreateFromData_CliffInfoNotify_001
+* @tc.number: CreateFromData_CliffInfoNotify_001
+* @tc.desc  : Test CreateFromData with CMD_TYPE_CLIFF_INFO_NOTIFY (0x0340).
+*/
+HWTEST_F(MechCommandTest, CreateFromData_CliffInfoNotify_001, TestSize.Level1)
+{
+    // Given: 命令工厂和CMD_TYPE_CLIFF_INFO_NOTIFY数据
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(20);
+    buffer->AppendUint8(0x03);  // cmdSet
+    buffer->AppendUint8(0x40);  // cmdId = 0x40 → type = 0x0340
+    // RegisterMechCliffInfoCmd: cliffNums(1) + cliff entries
+    buffer->AppendUint8(0x01);  // cliffNums = 1
+    buffer->AppendInt16(0);      // cliffDirection
+    buffer->AppendUint8(0x00);  // cliffInfoLen = 0
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: 成功创建RegisterMechCliffInfoCmd
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), 0x03);
+    EXPECT_EQ(cmd->GetCmdId(), 0x40);
+}
+
+/**
+* @tc.name  : CreateFromData_ObstacleInfoNotify_001
+* @tc.number: CreateFromData_ObstacleInfoNotify_001
+* @tc.desc  : Test CreateFromData with CMD_TYPE_OBSTACLE_INFO_NOTIFY (0x0341).
+*/
+HWTEST_F(MechCommandTest, CreateFromData_ObstacleInfoNotify_001, TestSize.Level1)
+{
+    // Given: 命令工厂和CMD_TYPE_OBSTACLE_INFO_NOTIFY数据
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(20);
+    buffer->AppendUint8(0x03);  // cmdSet
+    buffer->AppendUint8(0x41);  // cmdId = 0x41 → type = 0x0341
+    // RegisterMechObstacleInfoCmd: obstacleNums(1) + obstacle entries
+    buffer->AppendUint8(0x01);  // obstacleNums = 1
+    buffer->AppendInt16(0);      // direction
+    buffer->AppendInt16(0);      // pitchAngle
+    buffer->AppendUint8(0x00);  // detailLenth = 0
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: 成功创建RegisterMechObstacleInfoCmd
+    ASSERT_NE(cmd, nullptr);
+    EXPECT_EQ(cmd->GetCmdSet(), 0x03);
+    EXPECT_EQ(cmd->GetCmdId(), 0x41);
+}
+
+/**
+* @tc.name  : CreateFromData_UnknownType_001
+* @tc.number: CreateFromData_UnknownType_001
+* @tc.desc  : Test CreateFromData with unknown command type returns nullptr.
+*/
+HWTEST_F(MechCommandTest, CreateFromData_UnknownType_001, TestSize.Level1)
+{
+    // Given: 命令工厂和未知命令类型数据
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(10);
+    buffer->AppendUint8(0xFF);  // cmdSet (unknown)
+    buffer->AppendUint8(0xFF);  // cmdId (unknown) → type = 0xFFFF
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: 返回nullptr（default分支）
+    EXPECT_EQ(cmd, nullptr);
+}
+
+/**
+* @tc.name  : CreateFromData_ReadCmdTypeFails_001
+* @tc.number: CreateFromData_ReadCmdTypeFails_001
+* @tc.desc  : Test CreateFromData when ReadUint8 for cmdType fails.
+*/
+HWTEST_F(MechCommandTest, CreateFromData_ReadCmdTypeFails_001, TestSize.Level1)
+{
+    // Given: 构造一个rangeLength不足以读取cmdType的buffer
+    // ReadUint8(0, cmdType)需要rangeLength_ >= 1
+    // 创建capacity=1的buffer不写入任何数据，rangeLength_=0，ReadUint8(0,...)会失败
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(1);
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: CHECK_ERR_RETURN_VALUE返回nullptr
+    EXPECT_EQ(cmd, nullptr);
+}
+
+/**
+* @tc.name  : CreateFromData_ReadCmdIdFails_001
+* @tc.number: CreateFromData_ReadCmdIdFails_001
+* @tc.desc  : Test CreateFromData when ReadUint8 for cmdId fails.
+*/
+HWTEST_F(MechCommandTest, CreateFromData_ReadCmdIdFails_001, TestSize.Level1)
+{
+    // Given: 构造一个只够读取cmdType但不够读取cmdId的buffer
+    // ReadUint8(0, cmdType)需要rangeLength_ >= 1，ReadUint8(1, cmdId)需要rangeLength_ >= 2
+    // 创建capacity=1的buffer，写入1字节(rangeLength_=1)，cmdType可读但cmdId不可读
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(1);
+    buffer->AppendUint8(0x02);  // rangeLength_=1，可读cmdType
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: CHECK_ERR_RETURN_VALUE(cmdId读取失败)返回nullptr
+    EXPECT_EQ(cmd, nullptr);
+}
+
+/**
+* @tc.name  : CreateFromData_UnmarshalFails_001
+* @tc.number: CreateFromData_UnmarshalFails_001
+* @tc.desc  : Test CreateFromData when CreateAndUnmarshal fails due to Unmarshal returning false.
+*/
+HWTEST_F(MechCommandTest, CreateFromData_UnmarshalFails_001, TestSize.Level1)
+{
+    // Given: 命令工厂和CMD_TYPE_EXE_RESULT_NOTIFY数据，但buffer数据不足以Unmarshal
+    // RegisterMechControlResultCmd.Unmarshal需要Size() >= 3 (RPT_SIZE=1 + BIT_OFFSET_2=2)
+    // 构造size=2的buffer(cmdSet + cmdId)，满足CreateFromData的前置检查但Unmarshal失败
+    CommandFactory factory;
+    auto buffer = std::make_shared<MechDataBuffer>(2);
+    buffer->AppendUint8(0x02);  // cmdSet
+    buffer->AppendUint8(0x43);  // cmdId → type = 0x0243
+    // rangeLength_=2，满足Size() >= 2，但Unmarshal中Size() < 3会返回false
+
+    // When: 调用CreateFromData
+    auto cmd = factory.CreateFromData(buffer);
+
+    // Then: CreateAndUnmarshal中Unmarshal返回false，CreateFromData返回nullptr
+    EXPECT_EQ(cmd, nullptr);
 }
 
 } // namespace MechBodyController
