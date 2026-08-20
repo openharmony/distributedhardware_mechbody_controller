@@ -1851,17 +1851,31 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechGenericEventCmd_Unmarshal_003, T
     std::shared_ptr<NormalRegisterMechGenericEventCmd> executionCmd = factory.CreateRegisterMechGenericEventCmd();
     ASSERT_NE(executionCmd, nullptr);
 
-    // When: 测试正常情况 - 0xFF事件类型
+    // When: 测试正常情况 - 包含ATTACH、AXIS和未知(0xFF)事件类型的混合数据
     {
         int capacity = 100;
         auto buffer = std::make_shared<MechDataBuffer>(capacity);
         AppendUint8BySize(buffer, 2);
+        // ATTACH_TYPE(0x00): length=1, value=1(attached=1)
+        buffer->AppendUint8(0x00);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(1);
+        // AXIS_TYPE(0x01): length=1, value=0x04(bit2=1 => pitchDisable=1)
+        buffer->AppendUint8(0x01);
+        buffer->AppendUint8(1);
+        buffer->AppendUint8(0x04);
+        // Unknown type(0xFF): length=1, value=1(DropGenericTLV)
         buffer->AppendUint8(0xFF);
         buffer->AppendUint8(1);
         buffer->AppendUint8(1);
 
-        // Then: 验证反序列化成功
+        // Then: 验证反序列化成功并校验解析后的业务数据
         EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+        DeviceStateInfo params = executionCmd->GetParams();
+        EXPECT_EQ(params.attached, 1);
+        EXPECT_EQ(params.pitchDisable, 1);
+        EXPECT_EQ(params.yawDisable, 0);
+        EXPECT_EQ(params.rollDisable, 0);
     }
 }
 
@@ -1955,13 +1969,22 @@ HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_004, TestS
         std::static_pointer_cast<NormalRegisterMechKeyEventCmd>(executionCmdCommon);
     EXPECT_NE(executionCmd, nullptr);
 
-    // When: 测试按键按下事件
+    // When: 测试按键事件和未知按键(0xFF)的混合数据
     auto buffer = std::make_shared<MechDataBuffer>(100);
     AppendUint8BySize(buffer, 2);
+    // START_FILMING(6) key event: length=1, frequency=1(ONE_CLICK)
+    buffer->AppendUint8(6);
+    buffer->AppendUint8(1);
+    buffer->AppendUint8(1);
+    // Unknown key type(0xFF): length=1, value=1(DropButtonTLV)
     buffer->AppendUint8(0xFF);
     buffer->AppendUint8(1);
     buffer->AppendUint8(1);
     EXPECT_EQ(executionCmd->Unmarshal(buffer), true);
+
+    // Then: 验证解析出的按键事件数据
+    EXPECT_EQ(executionCmd->GetEvent(), CameraKeyEvent::START_FILMING);
+    EXPECT_EQ(executionCmd->buttonFrequency_, 1);
 }
 
 HWTEST_F(MechCommandTest0x02, NormalRegisterMechKeyEventCmd_Unmarshal_005, TestSize.Level1)
