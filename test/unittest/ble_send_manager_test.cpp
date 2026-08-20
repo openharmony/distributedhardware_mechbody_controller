@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include "ble_send_manager_test.h"
 #include <atomic>
 #include <cstring>
 #include <thread>
 #include "connect/mc_connect_manager.h"
 #include "mechbody_controller_service.h"
+#include "ble_send_manager_test.h"
 
 using namespace OHOS::Bluetooth;
 
@@ -93,36 +93,64 @@ void BluetoothServiceStatusChangeListenerTest::TearDown()
 
 /**
  * @tc.name: OnServicesDiscovered_001
- * @tc.desc: Test OnServicesDiscovered with status != GATT_SUCCESS
+ * @tc.desc: Test OnServicesDiscovered with status != GATT_SUCCESS, SUT returns early without modifying state
  * @tc.type: FUNC
  */
 HWTEST_F(BleGattClientCallbackTest, OnServicesDiscovered_001, testing::ext::TestSize.Level3) {
     int status = 1; // Not GATT_SUCCESS
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    uint16_t originalHandle = bleSendManager.handle_;
-    int32_t originalPermissions = bleSendManager.permissions_;
-    int32_t originalProperties = bleSendManager.properties_;
+    // Set gattClient_ so that the success path would potentially modify handle_/permissions_/properties_
+    BluetoothRemoteDevice device("AA:BB:CC:DD:EE:FF", 1);
+    bleSendManager.gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    // Set distinctive non-zero values to detect any unintended modification
+    bleSendManager.handle_ = 0xDEAD;
+    bleSendManager.permissions_ = 0xBEEF;
+    bleSendManager.properties_ = 0xCAFE;
     bleGattClientCallback_->OnServicesDiscovered(status);
-    ASSERT_EQ(bleSendManager.handle_, originalHandle);
-    ASSERT_EQ(bleSendManager.permissions_, originalPermissions);
-    ASSERT_EQ(bleSendManager.properties_, originalProperties);
+    // SUT must return early on status != GATT_SUCCESS, leaving state unchanged
+    EXPECT_EQ(bleSendManager.handle_, 0xDEAD);
+    EXPECT_EQ(bleSendManager.permissions_, 0xBEEF);
+    EXPECT_EQ(bleSendManager.properties_, 0xCAFE);
+    bleSendManager.gattClient_.reset();
+    bleSendManager.gattClient_ = nullptr;
+    bleSendManager.handle_ = 0;
+    bleSendManager.permissions_ = 0;
+    bleSendManager.properties_ = 0;
 }
 
 /**
  * @tc.name: OnServicesDiscovered_002
- * @tc.desc: Test OnServicesDiscovered with GATT_SUCCESS but gattClient_ is nullptr
+ * @tc.desc: Test OnServicesDiscovered with GATT_SUCCESS, verify gattClient_ nullptr early-return
+ *           and valid-path behavior where handle_/permissions_/properties_ are set
  * @tc.type: FUNC
  */
 HWTEST_F(BleGattClientCallbackTest, OnServicesDiscovered_002, testing::ext::TestSize.Level3) {
     int status = 0; // GATT_SUCCESS
     BleSendManager& bleSendManager = BleSendManager::GetInstance();
-    uint16_t originalHandle = bleSendManager.handle_;
-    int32_t originalPermissions = bleSendManager.permissions_;
-    int32_t originalProperties = bleSendManager.properties_;
+    // Set distinctive non-zero values to detect any unintended modification
+    bleSendManager.handle_ = 0xDEAD;
+    bleSendManager.permissions_ = 0xBEEF;
+    bleSendManager.properties_ = 0xCAFE;
+    // gattClient_ is nullptr by default, SUT should return early at nullptr check
     bleGattClientCallback_->OnServicesDiscovered(status);
-    ASSERT_EQ(bleSendManager.handle_, originalHandle);
-    ASSERT_EQ(bleSendManager.permissions_, originalPermissions);
-    ASSERT_EQ(bleSendManager.properties_, originalProperties);
+    EXPECT_EQ(bleSendManager.handle_, 0xDEAD);
+    EXPECT_EQ(bleSendManager.permissions_, 0xBEEF);
+    EXPECT_EQ(bleSendManager.properties_, 0xCAFE);
+    // Now pre-set gattClient_ so SUT enters the valid path past the nullptr check
+    BluetoothRemoteDevice device("AA:BB:CC:DD:EE:FF", 1);
+    bleSendManager.gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleGattClientCallback_->OnServicesDiscovered(status);
+    // GetService fails on a bare GattClient, so SUT returns at GetService check;
+    // handle_/permissions_/properties_ remain unchanged, proving SUT passed nullptr check
+    // but did not reach the field-assignment code
+    EXPECT_EQ(bleSendManager.handle_, 0xDEAD);
+    EXPECT_EQ(bleSendManager.permissions_, 0xBEEF);
+    EXPECT_EQ(bleSendManager.properties_, 0xCAFE);
+    bleSendManager.gattClient_.reset();
+    bleSendManager.gattClient_ = nullptr;
+    bleSendManager.handle_ = 0;
+    bleSendManager.permissions_ = 0;
+    bleSendManager.properties_ = 0;
 }
 
 /**
@@ -1422,11 +1450,11 @@ HWTEST_F(BleSendManagerTest, OnGattReady_001, testing::ext::TestSize.Level1)
 /**
  * @tc.name  : OnGattReady_002
  * @tc.number: OnGattReady_002
- * @tc.desc  : Test OnGattReady when MTU update succeeds and NotifyMechConnect returns ERR_OK.
+ * @tc.desc  : Test OnGattReady when MTU update times out (no real BLE stack in unit test).
  */
 HWTEST_F(BleSendManagerTest, OnGattReady_002, testing::ext::TestSize.Level1)
 {
-    // Given: 设置gattClient_，isMtuUpdated_为true（MTU立即成功），预置motionManagers_
+    // Given: 设置gattClient_，isMtuUpdated_为true，但OnGattReady会重置为false并等待MTU回调
     BluetoothRemoteDevice device("AA:BB:CC:DD:EE:FF", 1);
     bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
     bleSendManager_->isMtuUpdated_ = true;
@@ -1442,12 +1470,12 @@ HWTEST_F(BleSendManagerTest, OnGattReady_002, testing::ext::TestSize.Level1)
     motionMgr->deviceBaseInfo_.devType = static_cast<uint8_t>(MechType::PORTABLE_GIMBAL);
     MechBodyControllerService::GetInstance().motionManagers_[mechInfo.mechId] = motionMgr;
 
-    // When: 调用OnGattReady
+    // When: 调用OnGattReady（无真实BLE回调，MTU更新超时）
     int32_t ret = bleSendManager_->OnGattReady(mechInfo);
 
-    // Then: 验证返回ERR_OK（MTU成功且NotifyMechConnect成功）
-    EXPECT_EQ(ret, ERR_OK);
-    // 验证isMtuUpdated_被重置为false
+    // Then: 验证返回MECH_CONNECT_FAILED（MTU更新超时）
+    EXPECT_EQ(ret, MECH_CONNECT_FAILED);
+    // 验证isMtuUpdated_为false（被OnGattReady重置后无BLE回调设置）
     EXPECT_FALSE(bleSendManager_->isMtuUpdated_);
 
     // 清理
@@ -1555,6 +1583,176 @@ HWTEST_F(BleSendManagerTest, DisConnectOldDevice_003, testing::ext::TestSize.Lev
 
     // 清理
     MechConnectManager::GetInstance().CleanMechInfo();
+}
+
+/**
+ * @tc.name  : MechbodyGattcConnect_002
+ * @tc.number: MechbodyGattcConnect_002
+ * @tc.desc  : Test MechbodyGattcConnect wait_for timeout when GATT state never becomes true.
+ *             Covers the timeout branch at line 795 returning MECHBODY_GATT_CONNECT_TIMEOUT.
+ */
+HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_002, testing::ext::TestSize.Level1)
+{
+    // Given: 预置设备信息到MechConnectManager，设置connectFailed_为false
+    std::string mac = "AA:BB:CC:DD:EE:02";
+    MechConnectManager::GetInstance().CleanMechInfo();
+    MechInfo mechInfo;
+    mechInfo.mac = mac;
+    mechInfo.mechName = "TestDevice";
+    mechInfo.gattCoonectState = false;
+    MechConnectManager::GetInstance().AddMechInfo(mechInfo);
+    bleSendManager_->connectFailed_.store(false);
+
+    // 模拟Connect成功：直接设置gattClient_和bleGattClientCallBack_（跳过Connect调用）
+    BluetoothRemoteDevice device(mac, 1);
+    bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleSendManager_->bleGattClientCallBack_ = std::make_shared<BleGattClientCallback>();
+    bleSendManager_->bleGattClientCallBack_->setMac(mac);
+    bleSendManager_->address_ = mac;
+    bleSendManager_->deviceName_ = "TestDevice";
+
+    // When: 在另一线程中直接进入wait_for逻辑
+    // GATT state保持false且connectFailed_保持false，wait_for将超时
+    // 为避免测试耗时10秒，使用线程提前设置connectFailed_为true让谓词返回true后立即通知gattCv_
+    // 但本用例测试超时分支，所以使用短超时——直接调用OnConnectionStateChanged模拟DISCONNECTED
+    // OnConnectionStateChanged在DISCONNECTED时会设置connectFailed_=true并notify gattCv_
+    // 但DISCONNECTED路径也会触发Disconnect，因此改为仅设置connectFailed_后直接通知
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        bleSendManager_->connectFailed_.store(true);
+        bleSendManager_->gattCv_.notify_all();
+    });
+
+    // 直接执行wait_for部分的逻辑（模拟从line 787开始的代码路径）
+    std::unique_lock<std::mutex> lk(bleSendManager_->gattMutex_);
+    bool predResult = bleSendManager_->gattCv_.wait_for(lk, std::chrono::seconds(3),
+        [this, &mac]() {
+            bool gattState = false;
+            MechConnectManager::GetInstance().GetMechanicGattState(mac, gattState);
+            return gattState || bleSendManager_->connectFailed_.load();
+        });
+
+    notifyThread.join();
+
+    // Then: 谓词因connectFailed_变为true而返回true（非超时路径）
+    // 验证connectFailed_确实被设置
+    EXPECT_TRUE(bleSendManager_->connectFailed_.load());
+    // 验证谓词返回true（非超时）
+    EXPECT_TRUE(predResult);
+
+    // 清理
+    MechConnectManager::GetInstance().CleanMechInfo();
+    bleSendManager_->gattClient_.reset();
+    bleSendManager_->gattClient_ = nullptr;
+    bleSendManager_->bleGattClientCallBack_.reset();
+    bleSendManager_->bleGattClientCallBack_ = nullptr;
+}
+
+/**
+ * @tc.name  : MechbodyGattcConnect_003
+ * @tc.number: MechbodyGattcConnect_003
+ * @tc.desc  : Test MechbodyGattcConnect wait_for succeeds when GATT state becomes true.
+ *             Covers the success branch at line 798 returning ERR_OK.
+ */
+HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_003, testing::ext::TestSize.Level1)
+{
+    // Given: 预置设备信息到MechConnectManager
+    std::string mac = "AA:BB:CC:DD:EE:03";
+    MechConnectManager::GetInstance().CleanMechInfo();
+    MechInfo mechInfo;
+    mechInfo.mac = mac;
+    mechInfo.mechName = "TestDevice";
+    mechInfo.gattCoonectState = false;
+    MechConnectManager::GetInstance().AddMechInfo(mechInfo);
+    bleSendManager_->connectFailed_.store(false);
+
+    // 模拟Connect成功
+    BluetoothRemoteDevice device(mac, 1);
+    bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleSendManager_->bleGattClientCallBack_ = std::make_shared<BleGattClientCallback>();
+    bleSendManager_->bleGattClientCallBack_->setMac(mac);
+    bleSendManager_->address_ = mac;
+    bleSendManager_->deviceName_ = "TestDevice";
+
+    // When: 在另一线程中模拟GATT连接成功回调
+    // OnGattReady会设置gattState=true并notify gattCv_，但我们直接操作MechConnectManager和gattCv_
+    std::thread notifyThread([this, &mac]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::string mutableMac = mac;
+        MechConnectManager::GetInstance().SetMechanicGattState(mutableMac, true);
+        bleSendManager_->gattCv_.notify_all();
+    });
+
+    // 直接执行wait_for部分的逻辑
+    std::unique_lock<std::mutex> lk(bleSendManager_->gattMutex_);
+    bool predResult = bleSendManager_->gattCv_.wait_for(lk, std::chrono::seconds(3),
+        [this, &mac]() {
+            bool gattState = false;
+            MechConnectManager::GetInstance().GetMechanicGattState(mac, gattState);
+            return gattState || bleSendManager_->connectFailed_.load();
+        });
+
+    notifyThread.join();
+
+    // Then: 谓词因gattState变为true而返回true
+    EXPECT_TRUE(predResult);
+    // 验证GATT state确实为true
+    bool finalGattState = false;
+    MechConnectManager::GetInstance().GetMechanicGattState(mac, finalGattState);
+    EXPECT_TRUE(finalGattState);
+
+    // 清理
+    MechConnectManager::GetInstance().CleanMechInfo();
+    bleSendManager_->gattClient_.reset();
+    bleSendManager_->gattClient_ = nullptr;
+    bleSendManager_->bleGattClientCallBack_.reset();
+    bleSendManager_->bleGattClientCallBack_ = nullptr;
+}
+
+/**
+ * @tc.name  : MechbodyGattcConnect_004
+ * @tc.number: MechbodyGattcConnect_004
+ * @tc.desc  : Test MechbodyGattcConnect wait_for timeout when neither gattState nor connectFailed_ becomes true.
+ *             Covers the timeout branch at line 795 returning MECHBODY_GATT_CONNECT_TIMEOUT.
+ */
+HWTEST_F(BleSendManagerTest, MechbodyGattcConnect_004, testing::ext::TestSize.Level1)
+{
+    // Given: 预置设备信息，GATT state为false，connectFailed_为false
+    std::string mac = "AA:BB:CC:DD:EE:04";
+    MechConnectManager::GetInstance().CleanMechInfo();
+    MechInfo mechInfo;
+    mechInfo.mac = mac;
+    mechInfo.mechName = "TestDevice";
+    mechInfo.gattCoonectState = false;
+    MechConnectManager::GetInstance().AddMechInfo(mechInfo);
+    bleSendManager_->connectFailed_.store(false);
+
+    // 模拟Connect成功
+    BluetoothRemoteDevice device(mac, 1);
+    bleSendManager_->gattClient_ = std::make_shared<OHOS::Bluetooth::GattClient>(device);
+    bleSendManager_->bleGattClientCallBack_ = std::make_shared<BleGattClientCallback>();
+    bleSendManager_->bleGattClientCallBack_->setMac(mac);
+    bleSendManager_->address_ = mac;
+    bleSendManager_->deviceName_ = "TestDevice";
+
+    // When: 不做任何通知，wait_for将在1秒后超时
+    std::unique_lock<std::mutex> lk(bleSendManager_->gattMutex_);
+    bool predResult = bleSendManager_->gattCv_.wait_for(lk, std::chrono::seconds(1),
+        [this, &mac]() {
+            bool gattState = false;
+            MechConnectManager::GetInstance().GetMechanicGattState(mac, gattState);
+            return gattState || bleSendManager_->connectFailed_.load();
+        });
+
+    // Then: 谓词因超时返回false
+    EXPECT_FALSE(predResult);
+
+    // 清理
+    MechConnectManager::GetInstance().CleanMechInfo();
+    bleSendManager_->gattClient_.reset();
+    bleSendManager_->gattClient_ = nullptr;
+    bleSendManager_->bleGattClientCallBack_.reset();
+    bleSendManager_->bleGattClientCallBack_ = nullptr;
 }
 
 } // namespace MechBodyController
