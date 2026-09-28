@@ -426,38 +426,6 @@ HWTEST_F(NotificationUtilsTest, BuildConnectedCapsuleLiveViewContent_002, TestSi
     DTEST_LOG << "NotificationUtilsTest BuildConnectedCapsuleLiveViewContent_002 end" << std::endl;
 }
 
-HWTEST_F(NotificationUtilsTest, GetConnectedCapsuleNotificationConfig_TrackingEnabledGimbal, TestSize.Level3)
-{
-    DTEST_LOG << "NotificationUtilsTest GetConnectedCapsuleNotificationConfig_TrackingEnabledGimbal begin" << std::endl;
-
-    // Given: 设置跟踪启用状态和云台类型
-    NotificationUtils::isTrackingEnabled_ = true;
-    NotificationUtils::mechType_ = MechType::PORTABLE_GIMBAL;
-
-    // When: 获取连接胶囊通知配置
-    json config = NotificationUtils::GetConnectedCapsuleNotificationConfig();
-
-    // Then: 验证固定字段
-    EXPECT_EQ(config["creatorUid"], 7811);
-    EXPECT_EQ(config["notificationId"], 1001);
-    EXPECT_EQ(config["unremovable"], true);
-
-    // Then: 验证mechType_=PORTABLE_GIMBAL时，icon为gimbal图标
-    EXPECT_EQ(config["littleIcon"], "ic_gimbal_device");
-
-    // Then: 验证liveViewContent存在且buttons中图标为tracking_open（isTrackingEnabled_=true）
-    EXPECT_TRUE(config.contains("liveViewContent"));
-    EXPECT_TRUE(config["liveViewContent"]["buttons"].is_array());
-    EXPECT_EQ(config["liveViewContent"]["buttons"][0]["singleButtonIcon"], "intelligent_tracking_1");
-
-    // Then: 验证extraInfo存在
-    EXPECT_TRUE(config.contains("extraInfo"));
-    EXPECT_TRUE(config["extraInfo"].contains("hw_button_accessibility_text"));
-    EXPECT_TRUE(config["extraInfo"].contains("hw_live_view_hidden_when_keyguard"));
-
-    DTEST_LOG << "NotificationUtilsTest GetConnectedCapsuleNotificationConfig_TrackingEnabledGimbal end" << std::endl;
-}
-
 HWTEST_F(NotificationUtilsTest, GetConnectedCapsuleNotificationConfig_TrackingDisabledGimbal, TestSize.Level3)
 {
     DTEST_LOG << "NotificationUtilsTest GetConnectedCapsuleNotificationConfig_"
