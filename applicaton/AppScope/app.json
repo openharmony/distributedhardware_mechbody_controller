@@ -1,0 +1,15 @@
+{
+  "app": {
+    "bundleName": "com.ohos.mechbodyui",
+    "vendor": "example",
+    "versionCode": 701000100,
+    "versionName": "7.1.0.100",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name",
+    "minAPIVersion": 12,
+    "targetAPIVersion": 12,
+    "apiReleaseType": "Beta1",
+    "debug": false,
+    "configuration": "$profile:configuration"
+  }
+}
