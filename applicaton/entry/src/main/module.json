@@ -1,0 +1,64 @@
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "description": "$string:module_desc",
+    "mainElement": "EntryAbility",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "EntryAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "description": "$string:EntryAbility_desc",
+        "icon": "$media:icon",
+        "label": "$string:EntryAbility_label",
+        "startWindowIcon": "$media:icon01",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": false,
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home"
+            ],
+            "actions": [
+              "ohos.want.action.home"
+            ]
+          }
+        ]
+      }
+    ],
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.CONNECT_MECHANIC_HARDWARE"
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "MechExtAbility",
+        "srcEntry": "./ets/mechextability/MechExtAbility.ets",
+        "description": "$string:MechExtAbility_desc",
+        "label": "$string:MechExtAbility_label",
+        "type": "sys/commonUI",
+        "exported": false
+      },
+      {
+        "name": "MechFirstConnectAbility",
+        "description": "UIExtAbility",
+        "type": "sys/commonUI",
+        "exported": false,
+        "srcEntry": "./ets/mechextability/MechFirstConnectAbility.ets"
+      }
+    ],
+    "metadata": [
+      {
+        "name": "ohos.graphics2d.text.adapter_text_height"
+      }
+    ]
+  }
+}
