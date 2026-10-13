@@ -16,7 +16,6 @@
 import mechanicManager from '@ohos.distributedHardware.mechanicManager';
 import { BusinessError } from '@ohos.base';
 import curves from '@ohos.curves';
-import accessibility from '@ohos.accessibility';
 import common from '@ohos.app.ability.common';
 
 import { logger } from '../utils/Logger';
@@ -159,23 +158,6 @@ struct MechControl {
       .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.9 })
       .onClick(() => {
         this.toggleEffectChange();
-        try {
-          let eventInfo: accessibility.EventInfo = ({
-            type: 'announceForAccessibility',
-            bundleName: BUNDLE_NAME,
-            triggerAction: 'click',
-            textAnnouncedForAccessibility: this.getSwitchStateInfo(this.isTrackingEnabled)
-          });
-          accessibility.sendAccessibilityEvent(eventInfo).then(() => {
-            logger.info(TAG, `Succeeded in send event, eventInfo is ${JSON.stringify(eventInfo)}`);
-          }).catch((err: Error) => {
-            logger.error(TAG, 'Failed to send accessibility event');
-          });
-        } catch (error) {
-          let code: number = (error as BusinessError).code;
-          let message: string = (error as BusinessError).message;
-          logger.error(TAG, `sendAccessibilityEvent failed,error code: ${code},message: ${message}.`);
-        }
         logger.info(TAG, `onClick end, isTrackingEnabled = ${this.isTrackingEnabled}`);
       })
 
