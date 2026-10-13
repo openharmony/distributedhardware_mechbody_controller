@@ -1,0 +1,108 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "MechExtAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "MechExtAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "pause",
+      "value": "Pause"
+    },
+    {
+      "name": "mech_intelligent_tracking",
+      "value": "Smart tracking"
+    },
+    {
+      "name": "mech_tracking_layout",
+      "value": "Framing mode"
+    },
+    {
+      "name": "mech_enable",
+      "value": "On"
+    },
+    {
+      "name": "mech_left",
+      "value": "Left"
+    },
+    {
+      "name": "mech_center",
+      "value": "Center"
+    },
+    {
+      "name": "mech_right",
+      "value": "Right"
+    },
+    {
+      "name": "audio_tracking_switch_on",
+      "value": "Smart tracking is turned on, double-tap to turn it off"
+    },
+    {
+      "name": "audio_tracking_switch_off",
+      "value": "Smart tracking is turned off, double-tap to turn it on"
+    },
+    {
+      "name": "audio_back",
+      "value": "Back"
+    },
+    {
+      "name": "smart_focus_tracking",
+      "value": "Smart tracking on"
+    },
+    {
+      "name": "smart_focus_paused",
+      "value": "Smart tracking paused"
+    },
+    {
+      "name": "focus_tracking",
+      "value": "Tracking"
+    },
+    {
+      "name": "focus_paused",
+      "value": "Tracking paused"
+    },
+    {
+      "name": "gimbal_connected",
+      "value": "Gimbal connected."
+    },
+    {
+      "name": "wheel_base_connected",
+      "value": "Wheel base connected."
+    },
+    {
+      "name": "harmony_mech_intelligent_tracking",
+      "value": "Smart focus tracking"
+    },
+    {
+      "name": "mech_first_connect_text1",
+      "value": "Keep yourself front and center."
+    },
+    {
+      "name": "mech_first_connect_text2",
+      "value": "This service does not collect or store your facial information. You can disable it from the Control Panel or live view window."
+    },
+    {
+      "name": "open_soon",
+      "value": "Not now"
+    },
+    {
+      "name": "open_now",
+      "value": "Enable"
+    }
+  ]
+}
