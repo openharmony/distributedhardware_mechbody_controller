@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-export const BUNDLE_NAME = 'com.ohos.dhardwareui';
+export const BUNDLE_NAME = 'com.ohos.mechbodyui';
 
 export enum FontSizeScale {
   SM = 0.85,
