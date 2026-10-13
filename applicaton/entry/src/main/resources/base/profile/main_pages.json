@@ -1,0 +1,7 @@
+{
+  "src": [
+    "pages/MechControl",
+    "pages/TrackingLayout",
+    "pages/MechFirstConnectPage"
+  ]
+}
