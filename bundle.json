@@ -62,6 +62,7 @@
       },
       "build": {
         "sub_component": [
+          "//foundation/distributedhardware/mechbody_controller/application:MechBody_UI",
           "//foundation/distributedhardware/mechbody_controller/services:mechbody_service",
           "//foundation/distributedhardware/mechbody_controller/interface/ets/mech_manager:mechanic_manager_group_ani",
           "//foundation/distributedhardware/mechbody_controller/interface/napi/mech_manager:mechanicmanager_napi",
