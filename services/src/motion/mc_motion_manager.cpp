@@ -2189,8 +2189,14 @@ void MotionManager::RegisterDoActionCallback(uint8_t taskId, uint32_t tokenId, s
         std::unique_lock<std::mutex> lock(seqCallbackMutex_);
         seqCallbacks_.insert({taskId, callbackInfo});
     }
-    command->SetResponseCallback([this, taskId, command, actionType]() {
-        HandleDoActionResponse(taskId, actionType, command);
+    command->SetResponseCallback([weakThis = std::weak_ptr<MotionManager>(shared_from_this()),
+        taskId, command, actionType]() {
+        auto sharedThis = weakThis.lock();
+        if (!sharedThis) {
+            HILOGI("MotionManager already destroyed, skip DoAction response, taskId=%{public}d", taskId);
+            return;
+        }
+        sharedThis->HandleDoActionResponse(taskId, actionType, command);
     });
 }
 
@@ -2281,16 +2287,26 @@ ExecResult MotionManager::ExtractRotationBySpeedResult(std::shared_ptr<CommandBa
 
 void MotionManager::CreateDoActionTimeoutCallback(uint8_t taskId, bool needRestoreTracking)
 {
-    auto timeoutFunc = [this, taskId, needRestoreTracking]() {
-        std::unique_lock<std::mutex> lock(seqCallbackMutex_);
-        auto it = seqCallbacks_.find(taskId);
-        if (it != seqCallbacks_.end()) {
+    auto timeoutFunc = [weakThis = std::weak_ptr<MotionManager>(shared_from_this()),
+        taskId, needRestoreTracking]() {
+        auto sharedThis = weakThis.lock();
+        if (!sharedThis) {
+            return;
+        }
+        std::unique_lock<std::mutex> lock(sharedThis->seqCallbackMutex_);
+        auto it = sharedThis->seqCallbacks_.find(taskId);
+        if (it != sharedThis->seqCallbacks_.end()) {
             auto cbInfo = it->second;
-            seqCallbacks_.erase(it);
+            sharedThis->seqCallbacks_.erase(it);
             lock.unlock();
-            if (cbInfo.needRestoreTracking) {
-                HILOGI("Restore camera tracking after DoAction timeout");
-                needSendTrackingData_ = true;
+ 
+            {
+                std::unique_lock<std::mutex> lock(sharedThis->activeTaskIdMutex_);
+                if (taskId == sharedThis->activeDoActionTaskId_ && cbInfo.needRestoreTracking) {
+                    HILOGI("Restore camera tracking after DoAction timeout. activeDoActionTaskId_ %{public}d",
+                        sharedThis->activeDoActionTaskId_);
+                    sharedThis->needSendTrackingData_ = true;
+                }
             }
             MechBodyControllerService::GetInstance().NotifyOperationResult(
                 cbInfo.tokenId, cbInfo.napiCmdId, ExecResult::TIMEOUT);
