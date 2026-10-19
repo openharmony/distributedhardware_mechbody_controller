@@ -189,10 +189,16 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
     const int32_t &result)
 {
     HILOGI("RotatePrimiseFulfillmentParam cmdId: %{public}s", cmdId.c_str());
-    std::shared_ptr<RotatePrimiseFulfillmentParam> param = JsMechManagerService::promiseParams_[cmdId];
-    if (param == nullptr) {
-        HILOGE("RotatePrimiseFulfillmentParam is nullptr, cmdId: %{public}s", cmdId.c_str());
-        return ERR_OK;
+    std::shared_ptr<RotatePrimiseFulfillmentParam> param;
+    {
+        std::lock_guard<std::mutex> lock(JsMechManagerService::GetInstance().promiseParamsMutex_);
+        auto it = JsMechManagerService::GetInstance().promiseParams_.find(cmdId);
+        if (it == JsMechManagerService::GetInstance().promiseParams_.end()) {
+            HILOGE("RotatePrimiseFulfillmentParam not found, cmdId: %{public}s", cmdId.c_str());
+            return ERR_OK;
+        }
+        param = it->second;
+        JsMechManagerService::GetInstance().promiseParams_.erase(it);
     }
     auto task = [cmdId, param, result]() {
         napi_handle_scope scope;
@@ -215,7 +221,6 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
         if (status != napi_ok) {
             HILOGI("Promise Fulfillment failed for cmdId: %{public}s", cmdId.c_str());
         }
-        JsMechManagerService::GetInstance().promiseParams_.erase(cmdId);
         napi_close_handle_scope(param->env, scope);
     };
     napi_status status = napi_send_event(param->env, task, napi_eprio_high, "MechbodyTask");
@@ -226,11 +231,17 @@ int32_t JsMechManagerService::RotatePromiseFulfillment(const std::string &cmdId,
 int32_t JsMechManagerService::SearchTargetCallback(std::string &cmdId, const int32_t &targetsNum, const int32_t &result)
 {
     HILOGI("cmdId: %{public}s; targetCount: %{public}d", cmdId.c_str(), targetsNum);
-    if (searchTargetCallback_.find(cmdId) == searchTargetCallback_.end()) {
-        HILOGE("searchTarget Callback is nullptr, cmdId: %{public}s", cmdId.c_str());
-        return ERR_OK;
+    std::shared_ptr<RotatePrimiseFulfillmentParam> param;
+    {
+        std::lock_guard<std::mutex> lock(searchTargetCallbackMutex_);
+        auto it = searchTargetCallback_.find(cmdId);
+        if (it == searchTargetCallback_.end()) {
+            HILOGE("searchTarget Callback not found, cmdId: %{public}s", cmdId.c_str());
+            return ERR_OK;
+        }
+        param = it->second;
+        searchTargetCallback_.erase(it);
     }
-    std::shared_ptr<RotatePrimiseFulfillmentParam> param = searchTargetCallback_[cmdId];
     auto task = [cmdId, param, targetsNum]() {
         napi_handle_scope scope;
         napi_status res = napi_open_handle_scope(param->env, &scope);
@@ -250,7 +261,6 @@ int32_t JsMechManagerService::SearchTargetCallback(std::string &cmdId, const int
         if (status != napi_ok) {
             HILOGI("Promise Fulfillment failed for cmdId: %{public}s", cmdId.c_str());
         }
-        JsMechManagerService::GetInstance().searchTargetCallback_.erase(cmdId);
         napi_close_handle_scope(param->env, scope);
     };
     napi_send_event(param->env, task, napi_eprio_high, "MechbodyTask");
