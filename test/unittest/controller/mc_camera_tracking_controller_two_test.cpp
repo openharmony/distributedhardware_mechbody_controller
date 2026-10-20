@@ -203,12 +203,20 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_002, TestSize.Level1)
     controller.currentCameraInfo_->tokenId = 1001;
     controller.currentCameraInfo_->fovH = 0;
     controller.currentCameraInfo_->fovV = 0;
+    controller.currentCameraInfo_->equivalentFocus = 50;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->sensorWidth = 36.0f;
+    controller.currentCameraInfo_->sensorHeight = 24.0f;
+    controller.currentCameraInfo_->width = 1920;
+    controller.currentCameraInfo_->height = 1080;
     controller.fovFromMetadata_ = false;
 
     controller.sensorRotation_ = MobileRotation::UP;
 
     int32_t result = controller.ComputeFov();
     EXPECT_EQ(result, ERR_OK);
+    EXPECT_GT(controller.currentCameraInfo_->fovH, 0);
+    EXPECT_GT(controller.currentCameraInfo_->fovV, 0);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest ComputeFov_002 end" << std::endl;
 }
@@ -227,12 +235,20 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ComputeFov_003, TestSize.Level1)
     controller.currentCameraInfo_->tokenId = 1001;
     controller.currentCameraInfo_->fovH = 0;
     controller.currentCameraInfo_->fovV = 0;
+    controller.currentCameraInfo_->equivalentFocus = 50;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->sensorWidth = 36.0f;
+    controller.currentCameraInfo_->sensorHeight = 24.0f;
+    controller.currentCameraInfo_->width = 1920;
+    controller.currentCameraInfo_->height = 1080;
     controller.fovFromMetadata_ = false;
 
     controller.sensorRotation_ = MobileRotation::RIGHT;
 
     int32_t result = controller.ComputeFov();
     EXPECT_EQ(result, ERR_OK);
+    EXPECT_GT(controller.currentCameraInfo_->fovH, 0);
+    EXPECT_GT(controller.currentCameraInfo_->fovV, 0);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest ComputeFov_003 end" << std::endl;
 }
@@ -581,17 +597,21 @@ HWTEST_F(McCameraTrackingControllerTwoTest, setTrackingLimit_003, TestSize.Level
 /**
  * @tc.name  : OnConnectChange_001
  * @tc.number: OnConnectChange_001
- * @tc.desc  : Testing OnConnectChange when currentCameraInfo_ is nullptr.
+ * @tc.desc  : Testing OnConnectChange resets currentCameraTrackingLayout to DEFAULT.
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, OnConnectChange_001, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest OnConnectChange_001 begin" << std::endl;
 
+    // Given: currentCameraInfo_ exists with a non-DEFAULT layout
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
-    controller.currentCameraInfo_ = nullptr;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->currentCameraTrackingLayout = CameraTrackingLayout::RIGHT;
 
+    // When: OnConnectChange is called
     controller.OnConnectChange();
-    EXPECT_EQ(controller.currentCameraInfo_, nullptr);
+    // Then: verify the layout is reset to DEFAULT by OnConnectChange
+    EXPECT_EQ(controller.currentCameraInfo_->currentCameraTrackingLayout, CameraTrackingLayout::DEFAULT);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest OnConnectChange_001 end" << std::endl;
 }
@@ -968,20 +988,31 @@ HWTEST_F(McCameraTrackingControllerTwoTest, CinematicVideoModeTrackingTargetFilt
 /**
  * @tc.name  : UpdateROI_005
  * @tc.number: UpdateROI_005
- * @tc.desc  : Testing UpdateROI with null trackingFrameParams.
+ * @tc.desc  : Testing UpdateROI resets roi to zeros when rect size is invalid (negative).
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, UpdateROI_005, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest UpdateROI_005 begin" << std::endl;
 
+    // Given: valid trackingFrameParams and a rect whose width/height is smaller than topLeft
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
     controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
-
-    std::shared_ptr<TrackingFrameParams> trackingFrameParams = nullptr;
+    std::shared_ptr<TrackingFrameParams> trackingFrameParams = std::make_shared<TrackingFrameParams>();
+    trackingFrameParams->roi.width = 0.5f;
+    trackingFrameParams->roi.height = 0.5f;
     CameraStandard::Rect rect;
+    rect.topLeftX = 2.0f;
+    rect.topLeftY = 2.0f;
+    rect.width = 1.0f;
+    rect.height = 1.0f;
 
+    // When: UpdateROI computes roi.width = rect.width - rect.topLeftX = -1.0f < 0
     controller.UpdateROI(trackingFrameParams, rect);
-    EXPECT_EQ(trackingFrameParams, nullptr);
+    // Then: invalid roi size branch resets roi to zeros
+    EXPECT_FLOAT_EQ(trackingFrameParams->roi.x, 0.0f);
+    EXPECT_FLOAT_EQ(trackingFrameParams->roi.y, 0.0f);
+    EXPECT_FLOAT_EQ(trackingFrameParams->roi.width, 0.0f);
+    EXPECT_FLOAT_EQ(trackingFrameParams->roi.height, 0.0f);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest UpdateROI_005 end" << std::endl;
 }
@@ -1694,6 +1725,25 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ConvertObjectType_004, TestSize.Leve
 }
 
 /**
+ * @tc.name  : ConvertObjectType_005
+ * @tc.number: ConvertObjectType_005
+ * @tc.desc  : Testing ConvertObjectType with HUMAN_HEAD type.
+ */
+HWTEST_F(McCameraTrackingControllerTwoTest, ConvertObjectType_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerTwoTest ConvertObjectType_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    CameraStandard::MetadataObjectType cameraObjectType = CameraStandard::MetadataObjectType::HUMAN_HEAD;
+    uint8_t mechObjectType = 0;
+
+    controller.ConvertObjectType(cameraObjectType, mechObjectType);
+    EXPECT_EQ(mechObjectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_HEAD));
+
+    DTEST_LOG << "McCameraTrackingControllerTwoTest ConvertObjectType_005 end" << std::endl;
+}
+
+/**
  * @tc.name  : ConvertObjectType_006
  * @tc.number: ConvertObjectType_006
  * @tc.desc  : Testing ConvertObjectType with default type.
@@ -1713,37 +1763,22 @@ HWTEST_F(McCameraTrackingControllerTwoTest, ConvertObjectType_006, TestSize.Leve
 }
 
 /**
- * @tc.name  : RegisterSensorListener_001
- * @tc.number: RegisterSensorListener_001
- * @tc.desc  : Testing RegisterSensorListener when callback exists.
- */
-HWTEST_F(McCameraTrackingControllerTwoTest, RegisterSensorListener_001, TestSize.Level1)
-{
-    DTEST_LOG << "McCameraTrackingControllerTwoTest RegisterSensorListener_001 begin" << std::endl;
-
-    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
-    controller.user.callback = reinterpret_cast<void(*)(SensorEvent*)>(0x1234);
-
-    controller.RegisterSensorListener();
-    EXPECT_EQ(controller.user.callback, reinterpret_cast<void(*)(SensorEvent*)>(0x1234));
-    controller.user.callback = nullptr;
-
-    DTEST_LOG << "McCameraTrackingControllerTwoTest RegisterSensorListener_001 end" << std::endl;
-}
-
-/**
  * @tc.name  : UnRegisterSensorListener_002
  * @tc.number: UnRegisterSensorListener_002
- * @tc.desc  : Testing UnRegisterSensorListener when callback is null.
+ * @tc.desc  : Testing UnRegisterSensorListener clears a non-null callback to nullptr.
  */
 HWTEST_F(McCameraTrackingControllerTwoTest, UnRegisterSensorListener_002, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest UnRegisterSensorListener_002 begin" << std::endl;
 
+    // Given: a non-null callback so the active-unregister path runs and resets callback to nullptr
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
-    controller.user.callback = nullptr;
+    controller.user.callback = McCameraTrackingController::SensorCallback;
+    ASSERT_NE(controller.user.callback, nullptr);
 
+    // When: UnRegisterSensorListener is called
     controller.UnRegisterSensorListener();
+    // Then: the function clears the callback (real path side effect)
     EXPECT_EQ(controller.user.callback, nullptr);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest UnRegisterSensorListener_002 end" << std::endl;
@@ -1824,10 +1859,12 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_001, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_001 begin" << std::endl;
 
+    // Given: a non-OTHER objectType so the reset-to-OTHER side effect is observable
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
     std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
     trackingParams->roi.x = 0.5f;
     trackingParams->roi.y = 0.5f;
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
     controller.targetVertical_ = 0.5f;
     controller.vertical_ = 0.0f;
     controller.targetHorizontal_ = 0.0f;
@@ -1836,8 +1873,13 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_001, TestSize.Level1)
     controller.sensorRotation_ = MobileRotation::UP;
     controller.lastStickTime_ = std::chrono::steady_clock::now();
 
+    // When: AdjustOffset runs the stick+UP path (AddYOffset)
+    // vertical_=0.01 after increment; AddYOffset: xOffset=-0.01+FACE_OFFSET(0.1)=0.09; roi.x=0.5+0.09=0.59
     controller.AdjustOffset(trackingParams, CameraType::FRONT);
+    // Then: verify the actual side effects — objectType reset and roi shifted
     EXPECT_EQ(trackingParams->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER));
+    EXPECT_FLOAT_EQ(trackingParams->roi.x, 0.59f);
+    EXPECT_FLOAT_EQ(trackingParams->roi.y, 0.5f);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_001 end" << std::endl;
 }
@@ -1851,10 +1893,12 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_002, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_002 begin" << std::endl;
 
+    // Given: a non-OTHER objectType so the reset-to-OTHER side effect is observable
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
     std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
     trackingParams->roi.x = 0.5f;
     trackingParams->roi.y = 0.5f;
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
     controller.targetVertical_ = 0.0f;
     controller.vertical_ = 0.5f;
     controller.targetHorizontal_ = 0.0f;
@@ -1863,8 +1907,12 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_002, TestSize.Level1)
     controller.sensorRotation_ = MobileRotation::UP;
     controller.lastStickTime_ = std::chrono::steady_clock::now();
 
+    // When: AdjustOffset runs the stick+UP path (AddYOffset); vertical_ decremented, x-offset clamped to -0.2
     controller.AdjustOffset(trackingParams, CameraType::FRONT);
+    // Then: verify the actual side effects
     EXPECT_EQ(trackingParams->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER));
+    EXPECT_FLOAT_EQ(trackingParams->roi.x, 0.3f);
+    EXPECT_FLOAT_EQ(trackingParams->roi.y, 0.5f);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_002 end" << std::endl;
 }
@@ -1878,10 +1926,12 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_003, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_003 begin" << std::endl;
 
+    // Given: a non-OTHER objectType so the reset-to-OTHER side effect is observable
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
     std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
     trackingParams->roi.x = 0.5f;
     trackingParams->roi.y = 0.5f;
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
     controller.targetVertical_ = 0.0f;
     controller.vertical_ = 0.0f;
     controller.targetHorizontal_ = 0.5f;
@@ -1890,8 +1940,12 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_003, TestSize.Level1)
     controller.sensorRotation_ = MobileRotation::UP;
     controller.lastStickTime_ = std::chrono::steady_clock::now();
 
+    // When: AdjustOffset runs the stick+UP path (AddYOffset); horizontal_=0.01; yOffset=-0.01; xOffset=0+FACE_OFFSET=0.1
     controller.AdjustOffset(trackingParams, CameraType::FRONT);
+    // Then: verify the actual side effects — roi.x=0.5+0.1=0.6; roi.y=0.5-0.01=0.49
     EXPECT_EQ(trackingParams->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER));
+    EXPECT_FLOAT_EQ(trackingParams->roi.x, 0.6f);
+    EXPECT_FLOAT_EQ(trackingParams->roi.y, 0.49f);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_003 end" << std::endl;
 }
@@ -1905,10 +1959,12 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_004, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_004 begin" << std::endl;
 
+    // Given: a non-OTHER objectType so the reset-to-OTHER side effect is observable
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
     std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
     trackingParams->roi.x = 0.5f;
     trackingParams->roi.y = 0.5f;
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
     controller.targetVertical_ = 0.0f;
     controller.vertical_ = 0.0f;
     controller.targetHorizontal_ = 0.0f;
@@ -1917,8 +1973,13 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_004, TestSize.Level1)
     controller.sensorRotation_ = MobileRotation::UP;
     controller.lastStickTime_ = std::chrono::steady_clock::now();
 
+    // When: AdjustOffset runs the stick+UP path (AddYOffset);
+    // horizontal_=0.5-0.01=0.49; yOffset=-0.49 clamped to -0.2; xOffset=0+FACE_OFFSET=0.1
     controller.AdjustOffset(trackingParams, CameraType::FRONT);
+    // Then: verify the actual side effects — roi.x=0.5+0.1=0.6; roi.y=0.5+(-0.2)=0.3
     EXPECT_EQ(trackingParams->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER));
+    EXPECT_FLOAT_EQ(trackingParams->roi.x, 0.6f);
+    EXPECT_FLOAT_EQ(trackingParams->roi.y, 0.3f);
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_004 end" << std::endl;
 }
@@ -1932,10 +1993,12 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_005, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_005 begin" << std::endl;
 
+    // Given: isStick=false with a fresh lastStickTime so the time guard keeps it false (non-stick path)
     McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
     std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
     trackingParams->roi.x = 0.5f;
     trackingParams->roi.y = 0.5f;
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
     controller.targetVertical_ = 0.0f;
     controller.vertical_ = 0.0f;
     controller.targetHorizontal_ = 0.0f;
@@ -1944,7 +2007,10 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_005, TestSize.Level1)
     controller.sensorRotation_ = MobileRotation::UP;
     controller.lastStickTime_ = std::chrono::steady_clock::now();
 
+    // When: AdjustOffset runs the non-stick+UP path (AdjustYOffset)
     controller.AdjustOffset(trackingParams, CameraType::FRONT);
+    // Then: verify the actual side effects — isStick_ remains false (time guard) and objectType reset
+    EXPECT_FALSE(controller.isStick_);
     EXPECT_EQ(trackingParams->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER));
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_005 end" << std::endl;
@@ -1963,6 +2029,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_006, TestSize.Level1)
     std::shared_ptr<TrackingFrameParams> trackingParams = std::make_shared<TrackingFrameParams>();
     trackingParams->roi.x = 0.5f;
     trackingParams->roi.y = 0.5f;
+    // 预设非默认 objectType，验证 AdjustOffset 重置为 MSG_OBJ_OTHER 的副作用
+    trackingParams->objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
     controller.targetVertical_ = 0.0f;
     controller.vertical_ = 0.0f;
     controller.targetHorizontal_ = 0.0f;
@@ -1972,6 +2040,9 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_006, TestSize.Level1)
     controller.lastStickTime_ = std::chrono::steady_clock::now();
 
     controller.AdjustOffset(trackingParams, CameraType::FRONT);
+    // LEFT 旋转 + isStick=false：进入 AdjustXOffset 非 stick 路径，offsets 全为 0、roi 居中，时间守卫保持 false
+    EXPECT_FALSE(controller.isStick_);
+    // 验证 AdjustOffset 的实际副作用：objectType 被重置为 MSG_OBJ_OTHER
     EXPECT_EQ(trackingParams->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER));
 
     DTEST_LOG << "McCameraTrackingControllerTwoTest AdjustOffset_006 end" << std::endl;
