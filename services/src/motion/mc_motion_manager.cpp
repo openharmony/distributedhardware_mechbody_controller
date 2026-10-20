@@ -2193,7 +2193,7 @@ void MotionManager::RegisterDoActionCallback(uint8_t taskId, uint32_t tokenId, s
         taskId, command, actionType]() {
         auto sharedThis = weakThis.lock();
         if (!sharedThis) {
-            HILOGI("MotionManager already destroyed, skip DoAction response, taskId=%{public}d", taskId);
+            HILOGW("MotionManager already destroyed, skip DoAction response, taskId=%{public}d", taskId);
             return;
         }
         sharedThis->HandleDoActionResponse(taskId, actionType, command);
