@@ -1940,7 +1940,8 @@ HWTEST_F(McCameraTrackingControllerTwoTest, AdjustOffset_003, TestSize.Level1)
     controller.sensorRotation_ = MobileRotation::UP;
     controller.lastStickTime_ = std::chrono::steady_clock::now();
 
-    // When: AdjustOffset runs the stick+UP path (AddYOffset); horizontal_=0.01; yOffset=-0.01; xOffset=0+FACE_OFFSET=0.1
+    // When: AdjustOffset runs the stick+UP path (AddYOffset);
+    // horizontal_=0.01; yOffset=-0.01; xOffset=0+FACE_OFFSET=0.1
     controller.AdjustOffset(trackingParams, CameraType::FRONT);
     // Then: verify the actual side effects — roi.x=0.5+0.1=0.6; roi.y=0.5-0.01=0.49
     EXPECT_EQ(trackingParams->objectType, static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER));
