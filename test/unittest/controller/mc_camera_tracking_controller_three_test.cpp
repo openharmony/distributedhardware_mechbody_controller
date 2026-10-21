@@ -19,6 +19,7 @@
 #include "mc_camera_tracking_controller.h"
 #include "mc_controller_manager.h"
 #include "mc_controller_ipc_death_listener.h"
+#include "subscribe_event_utils.h"
 #undef private
 
 #include "../mechbody_controller_log.h"
@@ -26,6 +27,8 @@
 #include "mechbody_controller_service.h"
 #include "mechbody_controller_enums.h"
 #include "mc_connect_manager.h"
+#include "common_event_subscribe_info.h"
+#include "common_event_support.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -160,6 +163,7 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_002, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_DISABLED);
 
     EXPECT_EQ(ret, ERR_OK);
+    EXPECT_FALSE(NotificationUtils::isTrackingEnabled_);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnTrackingEvent_002 end" << std::endl;
 }
@@ -178,11 +182,13 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_003, TestSize.Leve
     controller.currentCameraInfo_->tokenId = 7777;
     controller.trackingEventCallback_.clear();
 
+    NotificationUtils::isTrackingEnabled_ = true;
     int32_t mechId = 100;
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_LAYOUT_CHANGED);
 
     EXPECT_EQ(ret, ERR_OK);
     // isTrackingEnabled_ should remain unchanged when event is neither ENABLED nor DISABLED
+    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnTrackingEvent_003 end" << std::endl;
 }
@@ -211,6 +217,7 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_004, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
+    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.appSettings.erase(tokenId);
     controller.trackingEventCallback_.erase(tokenId);
@@ -242,6 +249,7 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_005, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
+    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.appSettings.erase(tokenId);
     controller.trackingEventCallback_.erase(tokenId);
@@ -270,6 +278,7 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_006, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
+    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.trackingEventCallback_.erase(tokenId);
 
@@ -351,6 +360,7 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnTrackingEvent_009, TestSize.Leve
     int32_t ret = controller.OnTrackingEvent(mechId, TrackingEvent::CAMERA_TRACKING_USER_ENABLED);
 
     EXPECT_EQ(ret, ERR_OK);
+    EXPECT_TRUE(NotificationUtils::isTrackingEnabled_);
 
     controller.trackingEventCallback_.erase(tokenId);
 
@@ -530,8 +540,9 @@ HWTEST_F(McCameraTrackingControllerThreeTest, SearchTarget_006, TestSize.Level1)
 /**
  * @tc.name  : SearchTarget_007
  * @tc.number: SearchTarget_007
- * @tc.desc  : Testing SearchTarget with valid motionManager and trackingTargetNum == 0,
- *             verifying the function reaches GetRotationLimit/GetCurrentPosition checks.
+ * @tc.desc  : Testing SearchTarget with valid motionManager and trackingTargetNum == 0.
+ *             Verifies SUT side effect: currentTrackingEnable is stored to false on the
+ *             trackingTargetNum==0 path (line 1464), independent of later GetRotationLimit result.
  */
 HWTEST_F(McCameraTrackingControllerThreeTest, SearchTarget_007, TestSize.Level1)
 {
@@ -560,14 +571,17 @@ HWTEST_F(McCameraTrackingControllerThreeTest, SearchTarget_007, TestSize.Level1)
     // Given: currentCameraInfo_ with trackingTargetNum == 0 so we reach GetRotationLimit
     controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
     controller.currentCameraInfo_->trackingTargetNum = 0;
+    // Pre-set currentTrackingEnable=true so SUT line 1464 store(false) is observable
+    controller.currentCameraInfo_->currentTrackingEnable.store(true);
 
-    // When: Call SearchTarget - result depends on whether GetRotationLimit/GetCurrentPosition succeed
-    // In test environment, GetMechState may not return ATTACHED even after AddMechInfo + NotifyMechState
-    // so the function may return GET_LIMIT_INFO_FAILED or ERR_OK depending on mech state
-    int32_t ret = controller.SearchTarget(napiCmdId, tokenId, targetInfo, searchParams);
+    // When: Call SearchTarget - reaches line 1464 (trackingTargetNum==0 path) which stores
+    // currentTrackingEnable=false before invoking GetRotationLimit
+    controller.SearchTarget(napiCmdId, tokenId, targetInfo, searchParams);
 
-    EXPECT_TRUE(ret == ERR_OK || ret == GET_LIMIT_INFO_FAILED || ret == GET_CURRENT_POSITION_FAILED
-        || ret == MECH_HAS_DISCONNECTED);
+    // Then: Verify SUT side effect at line 1464 (currentTrackingEnable set to false).
+    // This is the deterministic observable effect on the trackingTargetNum==0 path,
+    // independent of whether GetRotationLimit/GetCurrentPosition later succeed.
+    EXPECT_FALSE(controller.currentCameraInfo_->currentTrackingEnable.load());
 
     // Clean up
     MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
@@ -801,15 +815,18 @@ HWTEST_F(McCameraTrackingControllerThreeTest, RunSearchTarget_004, TestSize.Leve
 /**
  * @tc.name  : OnReceiveEvent_001
  * @tc.number: OnReceiveEvent_001
- * @tc.desc  : Test OnReceiveEvent with action != COMMON_EVENT_USER_SWITCHED.
+ * @tc.desc  : Test ExtCommonEventSubscriber::OnReceiveEvent with action != COMMON_EVENT_USER_SWITCHED.
  *             curUserId_ should remain unchanged.
  */
 HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_001, TestSize.Level1)
 {
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_001 begin" << std::endl;
 
-    MechBodyEventBaseService& service = MechBodyEventBaseService::GetInstance();
-    int32_t originalUserId = service.curUserId_.load(std::memory_order_relaxed);
+    EventFwk::MatchingSkills matchingSkills;
+    matchingSkills.AddEvent(EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED);
+    EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
+    auto subscriber = std::make_shared<ExtCommonEventSubscriber>(subscribeInfo);
+    int32_t originalUserId = subscriber->curUserId_.load(std::memory_order_relaxed);
 
     // When: action is not COMMON_EVENT_USER_SWITCHED
     std::string action = "some.other.action";
@@ -818,10 +835,10 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_001, TestSize.Level
     EventFwk::CommonEventData data(want);
     data.SetCode(200);
 
-    service.OnReceiveEvent(action, data);
+    subscriber->OnReceiveEvent(data);
 
     // Then: curUserId_ should remain unchanged
-    EXPECT_EQ(service.curUserId_.load(std::memory_order_relaxed), originalUserId);
+    EXPECT_EQ(subscriber->curUserId_.load(std::memory_order_relaxed), originalUserId);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_001 end" << std::endl;
 }
@@ -829,7 +846,7 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_001, TestSize.Level
 /**
  * @tc.name  : OnReceiveEvent_002
  * @tc.number: OnReceiveEvent_002
- * @tc.desc  : Test OnReceiveEvent with COMMON_EVENT_USER_SWITCHED and curUserId_==-1.
+ * @tc.desc  : Test ExtCommonEventSubscriber::OnReceiveEvent with COMMON_EVENT_USER_SWITCHED and curUserId_==-1.
  *             This satisfies the inner condition (curUserId_==-1), so UserIdChangeCallback is called.
  *             curUserId_ should be updated to the new userId.
  */
@@ -837,9 +854,12 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_002, TestSize.Level
 {
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_002 begin" << std::endl;
 
-    MechBodyEventBaseService& service = MechBodyEventBaseService::GetInstance();
+    EventFwk::MatchingSkills matchingSkills;
+    matchingSkills.AddEvent(EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED);
+    EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
+    auto subscriber = std::make_shared<ExtCommonEventSubscriber>(subscribeInfo);
     // Given: curUserId_ is -1 (initial state)
-    service.curUserId_.store(-1, std::memory_order_relaxed);
+    subscriber->curUserId_.store(-1, std::memory_order_relaxed);
     int32_t newUserId = 100;
 
     // When: action is COMMON_EVENT_USER_SWITCHED
@@ -849,13 +869,10 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_002, TestSize.Level
     EventFwk::CommonEventData data(want);
     data.SetCode(newUserId);
 
-    service.OnReceiveEvent(action, data);
+    subscriber->OnReceiveEvent(data);
 
     // Then: curUserId_ should be updated to newUserId
-    EXPECT_EQ(service.curUserId_.load(std::memory_order_relaxed), newUserId);
-
-    // Clean up
-    service.curUserId_.store(-1, std::memory_order_relaxed);
+    EXPECT_EQ(subscriber->curUserId_.load(std::memory_order_relaxed), newUserId);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_002 end" << std::endl;
 }
@@ -863,7 +880,8 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_002, TestSize.Level
 /**
  * @tc.name  : OnReceiveEvent_003
  * @tc.number: OnReceiveEvent_003
- * @tc.desc  : Test OnReceiveEvent with COMMON_EVENT_USER_SWITCHED and curUserId_!=-1 but curUserId_!=userId.
+ * @tc.desc  : Test ExtCommonEventSubscriber::OnReceiveEvent with COMMON_EVENT_USER_SWITCHED and
+ *             curUserId_!=-1 but curUserId_!=userId.
  *             This satisfies the inner condition (curUserId_!=userId), so UserIdChangeCallback is called.
  *             curUserId_ should be updated to the new userId.
  */
@@ -871,9 +889,12 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_003, TestSize.Level
 {
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_003 begin" << std::endl;
 
-    MechBodyEventBaseService& service = MechBodyEventBaseService::GetInstance();
+    EventFwk::MatchingSkills matchingSkills;
+    matchingSkills.AddEvent(EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED);
+    EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
+    auto subscriber = std::make_shared<ExtCommonEventSubscriber>(subscribeInfo);
     // Given: curUserId_ is 50 (not -1), and new userId is 100 (different)
-    service.curUserId_.store(50, std::memory_order_relaxed);
+    subscriber->curUserId_.store(50, std::memory_order_relaxed);
     int32_t newUserId = 100;
 
     std::string action = EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED;
@@ -882,13 +903,10 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_003, TestSize.Level
     EventFwk::CommonEventData data(want);
     data.SetCode(newUserId);
 
-    service.OnReceiveEvent(action, data);
+    subscriber->OnReceiveEvent(data);
 
     // Then: curUserId_ should be updated to newUserId
-    EXPECT_EQ(service.curUserId_.load(std::memory_order_relaxed), newUserId);
-
-    // Clean up
-    service.curUserId_.store(-1, std::memory_order_relaxed);
+    EXPECT_EQ(subscriber->curUserId_.load(std::memory_order_relaxed), newUserId);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_003 end" << std::endl;
 }
@@ -896,7 +914,8 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_003, TestSize.Level
 /**
  * @tc.name  : OnReceiveEvent_004
  * @tc.number: OnReceiveEvent_004
- * @tc.desc  : Test OnReceiveEvent with COMMON_EVENT_USER_SWITCHED and curUserId_==userId!=-1.
+ * @tc.desc  : Test ExtCommonEventSubscriber::OnReceiveEvent with COMMON_EVENT_USER_SWITCHED and
+ *             curUserId_==userId!=-1.
  *             The inner condition is false, so UserIdChangeCallback is NOT called.
  *             curUserId_ should remain at the same value (store is unconditional but value is same).
  */
@@ -904,10 +923,13 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_004, TestSize.Level
 {
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_004 begin" << std::endl;
 
-    MechBodyEventBaseService& service = MechBodyEventBaseService::GetInstance();
+    EventFwk::MatchingSkills matchingSkills;
+    matchingSkills.AddEvent(EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED);
+    EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
+    auto subscriber = std::make_shared<ExtCommonEventSubscriber>(subscribeInfo);
     // Given: curUserId_ is 100 and new userId is also 100 (same user)
     int32_t sameUserId = 100;
-    service.curUserId_.store(sameUserId, std::memory_order_relaxed);
+    subscriber->curUserId_.store(sameUserId, std::memory_order_relaxed);
 
     std::string action = EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED;
     AAFwk::Want want;
@@ -915,15 +937,668 @@ HWTEST_F(McCameraTrackingControllerThreeTest, OnReceiveEvent_004, TestSize.Level
     EventFwk::CommonEventData data(want);
     data.SetCode(sameUserId);
 
-    service.OnReceiveEvent(action, data);
+    subscriber->OnReceiveEvent(data);
 
     // Then: curUserId_ should remain at sameUserId (inner condition false, no callback)
-    EXPECT_EQ(service.curUserId_.load(std::memory_order_relaxed), sameUserId);
-
-    // Clean up
-    service.curUserId_.store(-1, std::memory_order_relaxed);
+    EXPECT_EQ(subscriber->curUserId_.load(std::memory_order_relaxed), sameUserId);
 
     DTEST_LOG << "McCameraTrackingControllerThreeTest OnReceiveEvent_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_001
+ * @tc.number: HandleTrackingFrame_001
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=UP and non-BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of rotation/objectType branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_001, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_001 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    // Given: sensorRotation_ is UP, objectType is FACE (non-BODY)
+    controller.sensorRotation_ = MobileRotation::UP;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    // Pre-set isAutoCentering_=true and isCameraDisabled_=false so SUT reaches line 195
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.3f;
+    params.roi.y = 0.4f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+
+    int32_t mechId = 501;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with sensorRotation_=UP, valid roi (width/height > TRACKING_LOST_CHECK)
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false (deterministic side effect)
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_001 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_002
+ * @tc.number: HandleTrackingFrame_002
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=LEFT and non-BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of rotation branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_002, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_002 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::LEFT;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.2f;
+    params.roi.y = 0.5f;
+    params.roi.width = 0.1f;
+    params.roi.height = 0.1f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_HEAD);
+
+    int32_t mechId = 502;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with sensorRotation_=LEFT, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_002 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_003
+ * @tc.number: HandleTrackingFrame_003
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=RIGHT and non-BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of rotation branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_003, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_003 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::RIGHT;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.3f;
+    params.roi.y = 0.4f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+
+    int32_t mechId = 503;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with sensorRotation_=RIGHT, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_003 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_004
+ * @tc.number: HandleTrackingFrame_004
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=DOWN and non-BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of rotation branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_004, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_004 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::DOWN;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.5f;
+    params.roi.y = 0.6f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_HEAD);
+
+    int32_t mechId = 504;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with sensorRotation_=DOWN, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_004 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_005
+ * @tc.number: HandleTrackingFrame_005
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=INVALID and non-BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197). INVALID rotation skips CalcRoiRotate
+ *             branches but still reaches the isAutoCentering_ reset path.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_005, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_005 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::INVALID;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.5f;
+    params.roi.y = 0.5f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_OTHER);
+
+    int32_t mechId = 505;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with sensorRotation_=INVALID, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_005 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_006
+ * @tc.number: HandleTrackingFrame_006
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=UP and BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of BODY offset branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_006, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_006 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::UP;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.3f;
+    params.roi.y = 0.4f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
+
+    int32_t mechId = 506;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with UP + BODY, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_006 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_007
+ * @tc.number: HandleTrackingFrame_007
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=DOWN and BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of BODY offset branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_007, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_007 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::DOWN;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.5f;
+    params.roi.y = 0.5f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
+
+    int32_t mechId = 507;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with DOWN + BODY, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_007 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_008
+ * @tc.number: HandleTrackingFrame_008
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=RIGHT and BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of BODY offset branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_008, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_008 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::RIGHT;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.5f;
+    params.roi.y = 0.5f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
+
+    int32_t mechId = 508;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with RIGHT + BODY, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_008 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_009
+ * @tc.number: HandleTrackingFrame_009
+ * @tc.desc  : Test HandleTrackingFrame with sensorRotation_=LEFT and BODY objectType.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), regardless of BODY offset branch.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_009, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_009 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::LEFT;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.2f;
+    params.roi.y = 0.3f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
+
+    int32_t mechId = 509;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with LEFT + BODY, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_009 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_010
+ * @tc.number: HandleTrackingFrame_010
+ * @tc.desc  : Test HandleTrackingFrame with null motionManager in motionManagers_.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197). The null motionManager is skipped in
+ *             the loop (line 215 continue), but the isAutoCentering_ reset still executes.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_010, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_010 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::UP;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.3f;
+    params.roi.y = 0.4f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+
+    // Given: motionManagers_ contains a null entry
+    int32_t mechId = 200;
+    std::shared_ptr<MotionManager> nullMgr = nullptr;
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = nullMgr;
+
+    // When: call HandleTrackingFrame with null motionManager, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false (loop skip does
+    // not affect the isAutoCentering_ reset which happens before the loop at line 195)
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_010 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_011
+ * @tc.number: HandleTrackingFrame_011
+ * @tc.desc  : Test HandleTrackingFrame with valid motionManager in motionManagers_.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197), covering the full SUT path including
+ *             the motionManager loop body.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_011, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_011 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::UP;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.3f;
+    params.roi.y = 0.4f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_FACE);
+
+    // Given: motionManagers_ contains a valid MotionManager
+    int32_t mechId = 300;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with valid motionManager, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_011 end" << std::endl;
+}
+
+/**
+ * @tc.name  : HandleTrackingFrame_012
+ * @tc.number: HandleTrackingFrame_012
+ * @tc.desc  : Test HandleTrackingFrame with BODY objectType and INVALID sensorRotation.
+ *             Verifies SUT side effect: isAutoCentering_ is reset to false when a valid
+ *             tracking frame arrives (line 195-197). INVALID+BODY skips both ROI flip and
+ *             body offset branches but still reaches the isAutoCentering_ reset path.
+ */
+HWTEST_F(McCameraTrackingControllerThreeTest, HandleTrackingFrame_012, TestSize.Level1)
+{
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_012 begin" << std::endl;
+
+    McCameraTrackingController& controller = McCameraTrackingController::GetInstance();
+    MobileRotation origRotation = controller.sensorRotation_;
+    auto origCameraInfo = controller.currentCameraInfo_;
+    bool origAutoCentering = controller.isAutoCentering_.load();
+    bool origCameraDisabled = controller.isCameraDisabled_.load();
+
+    controller.sensorRotation_ = MobileRotation::INVALID;
+    controller.currentCameraInfo_ = std::make_shared<CameraInfo>();
+    controller.currentCameraInfo_->fovHBasic = 60;
+    controller.currentCameraInfo_->fovVBasic = 40;
+    controller.currentCameraInfo_->zoomFactor = 1.0f;
+    controller.currentCameraInfo_->isRecording = false;
+    controller.isAutoCentering_.store(true);
+    controller.isCameraDisabled_.store(false);
+
+    TrackingFrameParams params;
+    params.roi.x = 0.5f;
+    params.roi.y = 0.5f;
+    params.roi.width = 0.2f;
+    params.roi.height = 0.2f;
+    params.objectType = static_cast<uint8_t>(TrackingObjectType::MSG_OBJ_BODY);
+
+    int32_t mechId = 512;
+    std::shared_ptr<MotionManager> motionMgr =
+        std::make_shared<MotionManager>(std::make_shared<TransportSendAdapter>(), mechId);
+    MechBodyControllerService::GetInstance().motionManagers_[mechId] = motionMgr;
+
+    // When: call HandleTrackingFrame with INVALID + BODY, valid roi
+    controller.HandleTrackingFrame(params);
+
+    // Then: SUT line 195-197 resets isAutoCentering_ from true to false
+    EXPECT_FALSE(controller.isAutoCentering_.load());
+
+    // Clean up
+    MechBodyControllerService::GetInstance().motionManagers_.erase(mechId);
+    controller.sensorRotation_ = origRotation;
+    controller.currentCameraInfo_ = origCameraInfo;
+    controller.isAutoCentering_.store(origAutoCentering);
+    controller.isCameraDisabled_.store(origCameraDisabled);
+
+    DTEST_LOG << "McCameraTrackingControllerThreeTest HandleTrackingFrame_012 end" << std::endl;
 }
 
 } // namespace MechBodyController
