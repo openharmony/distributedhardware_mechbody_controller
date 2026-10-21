@@ -266,6 +266,10 @@ private:
     std::unique_ptr<std::thread> trackingCheckerThread_;
     std::atomic<bool> startTrackingChecker_;
 
+    // DoAction task tracking state
+    uint8_t activeDoActionTaskId_ = 0;
+    std::mutex activeTaskIdMutex_;
+
     std::condition_variable deviceRealNameVisitCon_;
     std::mutex deviceRealNameVisitMutex_;
     std::string deviceRealName_;
