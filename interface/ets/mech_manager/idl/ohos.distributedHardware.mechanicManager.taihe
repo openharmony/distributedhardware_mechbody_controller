@@ -178,7 +178,8 @@ enum Result : i32 {
 enum MechDeviceType : i32 {
     GIMBAL_DEVICE = 0,
     DESKTOP_GIMBAL_DEVICE = 1,
-    WHEELED_BASE_DEVICE = 2
+    WHEELED_BASE_DEVICE = 2,
+    POCKET_GIMBAL_CAMERA_DEVICE = 3
 }
 
 enum AttachState : i32 {

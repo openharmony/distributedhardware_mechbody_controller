@@ -225,6 +225,8 @@ const std::map<MechDeviceType, MechClient::SupportChecker> MechClient::deviceSup
         []() { return MechClient::IsDeviceTypeSupported(MechDeviceType::DESKTOP_GIMBAL_DEVICE); }},
     {MechDeviceType::WHEELED_BASE_DEVICE,
         []() { return MechClient::IsDeviceTypeSupported(MechDeviceType::WHEELED_BASE_DEVICE); }},
+    {MechDeviceType::POCKET_GIMBAL_CAMERA_DEVICE,
+        []() { return MechClient::IsDeviceTypeSupported(MechDeviceType::POCKET_GIMBAL_CAMERA_DEVICE); }},
 };
 
 bool MechClient::IsDeviceTypeSupported(MechDeviceType type)
