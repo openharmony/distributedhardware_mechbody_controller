@@ -2480,7 +2480,8 @@ static napi_value DefineEnums(napi_env env, napi_value exports)
     napi_set_named_property(env, exports, "Result", resultEnum);
 
     napi_value mechDeviceTypeEnum =
-        CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}, {"DESKTOP_GIMBAL_DEVICE", 1}, {"WHEELED_BASE_DEVICE", 2}});
+        CreateEnumObject(env, {{"GIMBAL_DEVICE", 0}, {"DESKTOP_GIMBAL_DEVICE", 1},
+                                {"WHEELED_BASE_DEVICE", 2}, {"POCKET_GIMBAL_CAMERA_DEVICE", 3}});
     napi_set_named_property(env, exports, "MechDeviceType", mechDeviceTypeEnum);
 
     napi_value attachStateEnum = CreateEnumObject(env, {{"ATTACHED", 0}, {"DETACHED", 1}});
