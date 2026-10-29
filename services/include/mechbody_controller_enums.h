@@ -230,7 +230,8 @@ enum class ProtocolVersion : int8_t {
 enum class MechDeviceType : int32_t {
     GIMBAL_DEVICE = 0,
     DESKTOP_GIMBAL_DEVICE = 1,
-    WHEELED_BASE_DEVICE = 2
+    WHEELED_BASE_DEVICE = 2,
+    POCKET_GIMBAL_CAMERA_DEVICE = 3
 };
 
 enum class SpeedGear: int32_t {
