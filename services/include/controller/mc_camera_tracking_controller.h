@@ -53,7 +53,7 @@ struct AppSetting {
 
 struct CameraInfo {
     int32_t targetId;
-    uint32_t tokenId = 0;
+    std::atomic<uint32_t> tokenId{0};
     float sensorWidth = 36.0f; // All devices have sensor width equivalent to 36mm
     float sensorHeight = 24.0f; // All devices have sensor height equivalent to 24mm
     uint8_t fovVBasic = 0;
@@ -64,9 +64,9 @@ struct CameraInfo {
     int32_t height = 0;
     float zoomFactor = 0;
     int32_t equivalentFocus = 24;
-    bool isRecording = false;
+    std::atomic<bool> isRecording{false};
     std::atomic<bool> currentTrackingEnable{true};
-    uint64_t trackingTargetNum = 0;
+    std::atomic<uint64_t> trackingTargetNum{0};
     std::atomic<bool> searchingTarget{false};
     std::string searchTargetNapiCmdId = "";
     CameraTrackingLayout currentCameraTrackingLayout = CameraTrackingLayout::DEFAULT;
@@ -75,7 +75,7 @@ struct CameraInfo {
     int32_t sessionMode;
     int32_t videoStabilizationMode =
         static_cast<int32_t>(CameraVideoStabilizationMode::OHOS_CAMERA_VIDEO_STABILIZATION_OFF);
-    bool isCameraOn = false;
+    std::atomic<bool> isCameraOn{false};
     int32_t pauseFrameCount = 0;
 
     std::string ToString() const
@@ -91,15 +91,15 @@ struct CameraInfo {
                ", height=" + std::to_string(height) +
                ", zoomFactor=" + std::to_string(zoomFactor) +
                ", equivalentFocus=" + std::to_string(equivalentFocus) +
-               ", isRecording=" + std::to_string(isRecording) +
-               ", currentTrackingEnable=" + std::to_string(currentTrackingEnable) +
-               ", trackingTargetNum=" + std::to_string(trackingTargetNum) +
+               ", isRecording=" + std::to_string(isRecording.load(std::memory_order_relaxed)) +
+               ", currentTrackingEnable=" + std::to_string(currentTrackingEnable.load(std::memory_order_relaxed)) +
+               ", trackingTargetNum=" + std::to_string(trackingTargetNum.load(std::memory_order_relaxed)) +
                ", currentCameraTrackingLayout=" + std::to_string(static_cast<int>(currentCameraTrackingLayout)) +
                ", cameraType=" + std::to_string(static_cast<int>(cameraType)) +
                ", focusMode=" + std::to_string(focusMode) +
                ", sessionMode=" + std::to_string(sessionMode) +
                ", videoStabilizationMode=" + std::to_string(videoStabilizationMode) +
-               ", isCameraOn=" + std::to_string(isCameraOn) + " }";
+               ", isCameraOn=" + std::to_string(isCameraOn.load(std::memory_order_relaxed)) + " }";
     }
 };
 
@@ -261,7 +261,7 @@ private:
     bool isStick_ = false;
     std::atomic<bool> isSalientDetectionLocked_{false};
     bool fovFromMetadata_ = false;
-    uint8_t cameraMode_ = 0;
+    std::atomic<uint8_t> cameraMode_{0};
     uint64_t trackingTimeCur_ = 0;
 };
 } // namespace MechBodyController
