@@ -132,9 +132,11 @@ void BleGattClientCallback::OnServicesDiscovered(int status)
     int wPermissions = writeCharacteristic->GetPermissions();
     int wProperties = writeCharacteristic->GetProperties();
     uint16_t wHandle = writeCharacteristic->GetHandle();
-    bleSendManager.handle_ = wHandle;
-    bleSendManager.permissions_ = wPermissions;
-    bleSendManager.properties_ = wProperties;
+    {
+        bleSendManager.handle_ = wHandle;
+        bleSendManager.permissions_ = wPermissions;
+        bleSendManager.properties_ = wProperties;
+    }
     HILOGI("end");
 }
 
