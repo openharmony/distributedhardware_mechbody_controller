@@ -121,7 +121,7 @@ public:
     void MechTrackingStatusNotify(const std::shared_ptr<CommonRegisterMechTrackingEnableCmd> &cmd);
     void UnRegisterNotifyEvent();
     int32_t ActionGimbalFeatureControl(const ActionControlParams &actionControlParams);
-    const std::string &GetDeviceRealName() const;
+    std::string GetDeviceRealName();
     const std::string &TryGetDeviceRealNameSync(uint32_t timeoutMs);
 
     int32_t Move(uint32_t tokenId, std::string &napiCmdId, const std::shared_ptr<MoveParams> &moveParams);
@@ -297,6 +297,7 @@ private:
     uint64_t trackingTime_ = 0;
     MechkitControlInfo controlInfo_ = {0};
     std::vector<SendCmdInfo> sendCmdInfo_;
+    std::mutex sendCmdInfoMutex_;
 };
 
 class MechEventListenerImpl : public IMechEventListener {
