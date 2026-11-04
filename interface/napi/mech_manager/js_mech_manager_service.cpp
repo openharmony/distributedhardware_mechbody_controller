@@ -41,6 +41,7 @@ int32_t JsMechManagerService::AttachStateChangeCallback(const AttachmentState &a
     const std::shared_ptr<MechInfo> &mechInfo)
 {
     CHECK_POINTER_RETURN_VALUE(mechInfo, INVALID_PARAMETERS_ERR, "mechInfo");
+    std::vector<CallbackFunctionInfo> callbacksCopy;
     for (const auto &item: attachStateChangeCallback_) {
         auto task = [item, attachmentState, mechInfo]() {
             napi_handle_scope scope;
