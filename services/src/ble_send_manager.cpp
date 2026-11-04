@@ -133,6 +133,7 @@ void BleGattClientCallback::OnServicesDiscovered(int status)
     int wProperties = writeCharacteristic->GetProperties();
     uint16_t wHandle = writeCharacteristic->GetHandle();
     {
+        std::lock_guard<std::mutex> lock(bleSendManager.handleMutex_);
         bleSendManager.handle_ = wHandle;
         bleSendManager.permissions_ = wPermissions;
         bleSendManager.properties_ = wProperties;
@@ -1125,8 +1126,17 @@ int32_t BleSendManager::MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t
         HILOGE("gattClient_ is nullptr");
         return MECHBODY_GATT_INVALID_PARAM;
     }
+    uint16_t handle;
+    int32_t permissions;
+    int32_t properties;
+    {
+        std::lock_guard<std::mutex> lock(handleMutex_);
+        handle = handle_;
+        permissions = permissions_;
+        properties = properties_;
+    }
     GattCharacteristic wrCharacteristic = GattCharacteristic(MECHBODY_CHARACTERISTIC_WRITE_UUID,
-        handle_, permissions_, properties_);
+        handle, permissions, properties);
     wrCharacteristic.SetValue(data, dataLen);
     wrCharacteristic.SetWriteType(GattCharacteristic::WriteType::NO_RESPONSE);
     HILOGI("Mech writeC");
@@ -1134,7 +1144,7 @@ int32_t BleSendManager::MechbodyGattcWriteCharacteristic(uint8_t *data, uint32_t
     result = gattClient_->WriteCharacteristic(wrCharacteristic);
     uint64_t endTime = GetTimeStampMs();
     HILOGI("Mech writeC, result = %{public}d handle: %{public}d dataLen: %{public}d, castTime:%{public}s \n", \
-        result, handle_, dataLen, std::to_string(endTime - beginTime).c_str());
+        result, handle, dataLen, std::to_string(endTime - beginTime).c_str());
     return result;
 }
 
