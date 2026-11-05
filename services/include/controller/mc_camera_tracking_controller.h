@@ -260,7 +260,7 @@ private:
     std::chrono::steady_clock::time_point lastStickTime_;
     bool isStick_ = false;
     std::atomic<bool> isSalientDetectionLocked_{false};
-    bool fovFromMetadata_ = false;
+    std::atomic<bool> fovFromMetadata_{false};
     std::atomic<uint8_t> cameraMode_{0};
     uint64_t trackingTimeCur_ = 0;
 };
