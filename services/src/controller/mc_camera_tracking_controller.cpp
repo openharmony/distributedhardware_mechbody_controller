@@ -1913,10 +1913,10 @@ void McCameraTrackingController::ExecSearchTaskWithLimit(std::string &napiCmdId,
         }
         std::unique_lock<std::mutex> lock(searchTargetMutex_);
         searchTargetCv_.wait_for(lock, std::chrono::seconds(SEARCH_TARGET_ROTATE_TO_START_WAIT_TME),
-                                 [this]() mutable {
-                                     return currentCameraInfo_ != nullptr &&
-                                         currentCameraInfo_->trackingTargetNum.load(std::memory_order_relaxed) > 0;
-                                 });
+            [this]() mutable {
+                return currentCameraInfo_ != nullptr &&
+                    currentCameraInfo_->trackingTargetNum.load(std::memory_order_relaxed) > 0;
+            });
 
         eventHandler_->PostTask([this, napiCmdId, taskId, tokenId, startFromNeg]() mutable {
             int32_t searchTimes = 0;
