@@ -101,6 +101,7 @@ int32_t JsMechManagerService::TrackingEventCallback(const int32_t &mechId,
         std::lock_guard<std::mutex> lock(trackingEventCallbackMutex_);
         callbacksCopy.assign(trackingEventCallback.begin(), trackingEventCallback.end());
     }
+    for (const auto &item: callbacksCopy) {
         auto task = [item, mechId, trackingEvent]() {
             napi_handle_scope scope;
             napi_status res = napi_open_handle_scope(item.env, &scope);
