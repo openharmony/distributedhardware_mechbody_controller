@@ -1130,10 +1130,17 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
            static_cast<int32_t>(event));
     if (event == TrackingEvent::CAMERA_TRACKING_USER_ENABLED) {
         NotificationUtils::isTrackingEnabled_ = true;
+        bool retSet = OHOS::system::SetParameter(PARAM_TRACKING_ENABLED, "1");
+        HILOGI("set tacking enabled flag ret: %{public}d", retSet);
+        isAutoCentering_.store(false);
     } else if (event == TrackingEvent::CAMERA_TRACKING_USER_DISABLED) {
         NotificationUtils::isTrackingEnabled_ = false;
+        bool retSet = OHOS::system::SetParameter(PARAM_TRACKING_ENABLED, "0");
+        HILOGI("set tacking enabled flag ret: %{public}d", retSet);
     }
-    NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    if (NotificationUtils::isSendConnectedCapsule_) {
+        NotificationUtils::SendNotification(NotificationType::NOTIFICATION_TYPE_CONNECTED_CAPSULE);
+    }
 
     std::map<uint32_t, bool> appTrackingEnabledSnapshot;
     {
@@ -1152,32 +1159,26 @@ int32_t McCameraTrackingController::OnTrackingEvent(const int32_t &mechId, const
             HILOGE("App tracking enabled setting is false");
             isTrackingEnableNum = static_cast<int32_t>(TrackingEvent::CAMERA_TRACKING_USER_DISABLED);
         }
-        HILOGI("notify tracking event to tokenId: %{public}s; isTrackingEnableNum: %{public}d",
-            GetAnonymUint32(tokenId).c_str(), isTrackingEnableNum);
-        sptr <IRemoteObject> callback = item.second;
-        MessageParcel data;
-        if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN)) {
-            HILOGE("Write interface token failed.");
-            continue;
-        }
-        if (!data.WriteInt32(mechId)) {
-            HILOGE("Write mechId failed.");
-            continue;
-        }
-
-        if (!data.WriteInt32(isTrackingEnableNum)) {
-            HILOGE("Write event failed.");
-            continue;
-        }
-        MessageParcel reply;
-        MessageOption option;
-        CHECK_POINTER_RETURN_VALUE(callback, INVALID_PARAMETERS_ERR, "callback");
-        int32_t error = callback->SendRequest(
-            static_cast<uint32_t>(IMechBodyControllerCode::TRACKING_EVENT_CALLBACK), data, reply, option);
-        HILOGI("notify tracking event to tokenId: %{public}s; result: %{public}s", GetAnonymUint32(tokenId).c_str(),
-            error == ERR_NONE ? "success" : "failed");
+        NotifyTrackingEventToCallback(mechId, item.second, isTrackingEnableNum);
     }
     return ERR_OK;
+}
+
+void McCameraTrackingController::NotifyTrackingEventToCallback(int32_t mechId,
+    const sptr<IRemoteObject> &callback, int32_t isTrackingEnableNum)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(MECH_SERVICE_IPC_TOKEN) || !data.WriteInt32(mechId) ||
+        !data.WriteInt32(isTrackingEnableNum)) {
+        HILOGE("Write tracking event data failed.");
+        return;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    CHECK_POINTER_RETURN(callback, "callback");
+    int32_t error = callback->SendRequest(
+        static_cast<uint32_t>(IMechBodyControllerCode::TRACKING_EVENT_CALLBACK), data, reply, option);
+    HILOGI("notify tracking event result: %{public}s", error == ERR_NONE ? "success" : "failed");
 }
 
 bool McCameraTrackingController::IsCurrentTrackingEnabled()
