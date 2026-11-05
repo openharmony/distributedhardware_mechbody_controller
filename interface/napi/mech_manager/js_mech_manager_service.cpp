@@ -41,7 +41,12 @@ int32_t JsMechManagerService::AttachStateChangeCallback(const AttachmentState &a
     const std::shared_ptr<MechInfo> &mechInfo)
 {
     CHECK_POINTER_RETURN_VALUE(mechInfo, INVALID_PARAMETERS_ERR, "mechInfo");
-    for (const auto &item: attachStateChangeCallback_) {
+    std::vector<CallbackFunctionInfo> callbacksCopy;
+    {
+        std::lock_guard<std::mutex> lock(attachStateChangeCallbackMutex_);
+        callbacksCopy.assign(attachStateChangeCallback_.begin(), attachStateChangeCallback_.end());
+    }
+    for (const auto &item: callbacksCopy) {
         auto task = [item, attachmentState, mechInfo]() {
             napi_handle_scope scope;
             napi_status res = napi_open_handle_scope(item.env, &scope);
@@ -91,7 +96,12 @@ int32_t JsMechManagerService::TrackingEventCallback(const int32_t &mechId,
     const TrackingEvent &trackingEvent)
 {
     HILOGI("start. mechId: %{public}d, TrackingEvent: %{public}d", mechId, static_cast<int32_t>(trackingEvent));
-    for (const auto &item: trackingEventCallback) {
+    std::vector<CallbackFunctionInfo> callbacksCopy;
+    {
+        std::lock_guard<std::mutex> lock(trackingEventCallbackMutex_);
+        callbacksCopy.assign(trackingEventCallback.begin(), trackingEventCallback.end());
+    }
+    for (const auto &item: callbacksCopy) {
         auto task = [item, mechId, trackingEvent]() {
             napi_handle_scope scope;
             napi_status res = napi_open_handle_scope(item.env, &scope);

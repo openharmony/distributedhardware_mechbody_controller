@@ -207,6 +207,7 @@ public:
     uint16_t handle_ = 0;
     int32_t permissions_ = 0;
     int32_t properties_ = 0;
+    std::mutex handleMutex_;
     std::mutex mtuMutex_;
     std::condition_variable mtuUpdateCv_;
     bool isMtuUpdated_ = false;

@@ -883,6 +883,7 @@ void MotionManager::DfxGetSendCmdInfo(uint16_t cmdType, uint8_t result)
 {
     HILOGI("enter");
     if (result != 0) {
+        std::lock_guard<std::mutex> lock(sendCmdInfoMutex_);
         bool cmdWordExists = false;
         for (const auto& cmdInfo : sendCmdInfo_) {
             if (cmdInfo.cmdWord == cmdType) {
@@ -901,6 +902,7 @@ void MotionManager::DfxGetSendCmdInfo(uint16_t cmdType, uint8_t result)
 
 void MotionManager::UpdateSendCmdInfoToDfx()
 {
+    std::lock_guard<std::mutex> lock(sendCmdInfoMutex_);
     size_t topCount = std::min(sendCmdInfo_.size(), static_cast<size_t>(CMD_WORD_NUM));
 
     for (size_t i = 0; i < topCount; ++i) {
@@ -1175,9 +1177,9 @@ int32_t MotionManager::GetDeviceBaseInfo()
 
     auto baseInfoCallback = [this, baseInfoCmd]() {
         deviceBaseInfo_ = baseInfoCmd->GetParams();
-        deviceRealName_ = baseInfoCmd->GetParams().realName;
+        SetDeviceRealName(baseInfoCmd->GetParams().realName);
         HILOGI("device callback real name: %{public}s, devType: %{public}d",
-            GetAnonymStr(deviceRealName_).c_str(), deviceBaseInfo_.devType);
+            GetAnonymStr(baseInfoCmd->GetParams().realName).c_str(), deviceBaseInfo_.devType);
         if (deviceBaseInfo_.devType != static_cast<uint8_t>(MechType::PORTABLE_GIMBAL) &&
             deviceBaseInfo_.devType != static_cast<uint8_t>(MechType::WHEEL_BASE)) {
             std::shared_ptr<SetMechDisconnectCmd> disconnectCmd = factory.CreateSetMechDisconnectCmd(0x00);
@@ -1681,11 +1683,16 @@ void MotionManager::HandelRotateParam(std::shared_ptr<RotateParam> &rotateParam,
         HILOGW("rotateParam is nullptr");
         return;
     }
-    EulerAngles currentPosition = deviceStatus_->eulerAngles;
-    auto limit = deviceStatus_->rotationLimitWithOffset;
+    EulerAngles currentPosition;
+    RotateDegreeLimit limit;
+    {
+        std::unique_lock<std::mutex> lock(deviceStatusMutex_);
+        currentPosition = deviceStatus_->eulerAngles;
+        limit = deviceStatus_->rotationLimitWithOffset;
+    }
     RotationAxesStatus status = status_;
     HILOGI("Limit is: %{public}s; YAW_OFFSET: %{public}f",
-        deviceStatus_->rotationLimitWithOffset.ToString().c_str(), YAW_OFFSET);
+        limit.ToString().c_str(), YAW_OFFSET);
     HILOGI("current position: %{public}s", currentPosition.ToString().c_str());
     HILOGI("rotateParam before: %{public}s", rotateParam->ToString().c_str());
 
@@ -2121,7 +2128,11 @@ std::shared_ptr<CommandBase> MotionManager::CreateDoActionCommand(ActionType act
 std::shared_ptr<CommandBase> MotionManager::CreateHeadUpCmd()
 {
     HILOGI("called, action HEAD_UP");
-    EulerAngles currentPosition = deviceStatus_->eulerAngles;
+    EulerAngles currentPosition;
+    {
+        std::unique_lock<std::mutex> lock(deviceStatusMutex_);
+        currentPosition = deviceStatus_->eulerAngles;
+    }
     std::shared_ptr<RotateBySpeedParam> param = std::make_shared<RotateBySpeedParam>();
     param->speed.yawSpeed = 0;
     param->speed.rollSpeed = 0;
@@ -2151,7 +2162,11 @@ std::shared_ptr<CommandBase> MotionManager::CreateNodCmd()
     std::vector<RotateParam> trace;
     std::shared_ptr<CommonSetMechRotationTraceCmd> setMechRotationTraceCmd = nullptr;
     uint16_t taskId = CreateRotateTaskId();
-    EulerAngles currentPosition = deviceStatus_->eulerAngles;
+    EulerAngles currentPosition;
+    {
+        std::unique_lock<std::mutex> lock(deviceStatusMutex_);
+        currentPosition = deviceStatus_->eulerAngles;
+    }
     for (auto action : NOD_TWICE_ACTIONS) {
         action.degree.yaw += currentPosition.yaw;
         HILOGI("current position: %{public}s", currentPosition.ToString().c_str());
@@ -2168,7 +2183,11 @@ std::shared_ptr<CommandBase> MotionManager::CreateHeadShakeCmd()
     std::vector<RotateParam> trace;
     std::shared_ptr<CommonSetMechRotationTraceCmd> setMechRotationTraceCmd = nullptr;
     uint16_t taskId = CreateRotateTaskId();
-    EulerAngles currentPosition = deviceStatus_->eulerAngles;
+    EulerAngles currentPosition;
+    {
+        std::unique_lock<std::mutex> lock(deviceStatusMutex_);
+        currentPosition = deviceStatus_->eulerAngles;
+    }
     for (auto action : HEAD_SHAKE_TWICE_ACTIONS) {
         action.degree.pitch += currentPosition.pitch;
         action.degree.yaw += currentPosition.yaw;
@@ -2479,11 +2498,16 @@ void MotionManager::HandelRotateSpeedParam(std::shared_ptr<RotateBySpeedParam> &
         HILOGW("rotateBySpeedParam is nullptr");
         return;
     }
-    EulerAngles currentPosition = deviceStatus_->eulerAngles;
-    auto limit = deviceStatus_->rotationLimitWithOffset;
+    EulerAngles currentPosition;
+    RotateDegreeLimit limit;
+    {
+        std::unique_lock<std::mutex> lock(deviceStatusMutex_);
+        currentPosition = deviceStatus_->eulerAngles;
+        limit = deviceStatus_->rotationLimitWithOffset;
+    }
     RotationAxesStatus status = status_;
     HILOGI("Limit is: %{public}s; YAW_OFFSET: %{public}f",
-        deviceStatus_->rotationLimitWithOffset.ToString().c_str(), YAW_OFFSET);
+        limit.ToString().c_str(), YAW_OFFSET);
     HILOGI("current position: %{public}s", currentPosition.ToString().c_str());
     HILOGI("rotateBySpeedParam before: %{public}s", rotateBySpeedParam->ToString().c_str());
     HILOGI("status before: %{public}s", status.ToString().c_str());
@@ -3074,8 +3098,9 @@ int32_t MotionManager::ActionGimbalFeatureControl(const ActionControlParams &act
     return ERR_OK;
 }
 
-const std::string &MotionManager::GetDeviceRealName() const
+std::string MotionManager::GetDeviceRealName()
 {
+    std::lock_guard<std::mutex> lock(deviceRealNameVisitMutex_);
     return deviceRealName_;
 }
 
